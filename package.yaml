@@ -1,9 +1,33 @@
 name: ff
 
+library:
+  dependencies:
+    - aeson
+    - bytestring
+    - crdt
+    - directory
+    - filepath
+    - text
+  source-dirs: lib
+
 executables:
   ff:
+    dependencies:
+      - ff
     main: Main
     source-dirs: exe
 
+tests:
+  test:
+    dependencies:
+      - tasty
+      - tasty-hunit
+
+      - ff
+
+    main: Main
+    source-dirs: test
+
 dependencies:
   - base
+  - containers
