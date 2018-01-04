@@ -1,0 +1,9 @@
+name: ff
+
+executables:
+  ff:
+    main: Main
+    source-dirs: exe
+
+dependencies:
+  - base
