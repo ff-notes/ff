@@ -18,6 +18,7 @@ executables:
       - directory
       - filepath
       - optparse-applicative
+      - text
       - yaml
 
       - ff

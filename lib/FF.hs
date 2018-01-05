@@ -4,15 +4,19 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module FF
-    ( Agenda
+    (
+    -- * Agenda
+      Agenda
     , cmdAgenda
+    -- * New
+    , cmdNew
     ) where
 
 import           CRDT.Cv (CvRDT)
-import           CRDT.LamportClock (LamportTime, Pid)
-import           CRDT.LWW (LWW)
+import           CRDT.LamportClock (LamportTime, Pid, getRealLamportTime)
+import           CRDT.LWW (LWW (LWW), time, value)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON, eitherDecode)
+import           Data.Aeson (FromJSON, eitherDecode, encode)
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import qualified Data.ByteString.Lazy as BS
 import           Data.List.NonEmpty (nonEmpty)
@@ -23,7 +27,7 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Traversable (for)
-import           System.Directory (listDirectory)
+import           System.Directory (createDirectoryIfMissing, listDirectory)
 import           System.FilePath ((</>))
 
 deriveJSON defaultOptions ''LamportTime
@@ -64,3 +68,18 @@ cmdAgenda dataDir = do
         note <- loadDocument notesDir name
         pure (Text.pack name, noteView <$> note)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
+
+cmdNew :: FilePath -> Text -> IO NoteId
+cmdNew dataDir text = do
+    let notesDir = dataDir </> "note"
+    noteTime <- getRealLamportTime
+    let noteId = show noteTime
+    let noteDir = notesDir </> noteId
+    version <- getRealLamportTime
+    let versionFile = noteDir </> show version
+
+    createDirectoryIfMissing True noteDir
+    -- TODO(cblp, 2018-01-05) use LWW.new from crdt
+    BS.writeFile versionFile $ encode $ Note LWW{value = text, time = version}
+
+    pure $ Text.pack noteId
