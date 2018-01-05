@@ -110,8 +110,7 @@ cmdNew dataDir content = do
     noteTime <- getRealLamportTime
     let noteId = show noteTime
     let noteDir = notesDir </> noteId
-    version <- getRealLamportTime
-    let versionFile = noteDir </> show version
+    let versionFile = noteDir </> show noteTime
 
     status <- Just <$> lwwIitial' Active
     text <- lwwIitial' content
