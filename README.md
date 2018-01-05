@@ -23,6 +23,21 @@ Or, if no tasks
 
     $ ff new 'learn Haskell'
 
+Now you can find it in your agenda:
+
     $ ff
     1: buy milk
+    2: learn Haskell
+
+### Mark task "done"
+
+Marking "done" is actually moving to archive.
+
+    $ ff done 1
+    archived:
+      1: buy milk
+
+Archived tasks don't appear in an agenda:
+
+    $ ff
     2: learn Haskell
