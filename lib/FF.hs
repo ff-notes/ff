@@ -79,7 +79,7 @@ cmdNew dataDir text = do
     let versionFile = noteDir </> show version
 
     createDirectoryIfMissing True noteDir
-    -- TODO(cblp, 2018-01-05) use LWW.new from crdt
+    -- TODO(cblp, 2018-01-05) use LWW.initial from crdt
     BS.writeFile versionFile $ encode $ Note LWW{value = text, time = version}
 
     pure $ Text.pack noteId
