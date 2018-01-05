@@ -17,6 +17,7 @@ executables:
       - bytestring
       - directory
       - filepath
+      - optparse-applicative
       - yaml
 
       - ff

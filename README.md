@@ -12,4 +12,4 @@ The best note taker and task manager.
 ### Get some unfinished tasks
 
     $ ff
-    agenda: {}
+    {}
