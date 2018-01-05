@@ -4,6 +4,7 @@ library:
   dependencies:
     - aeson
     - bytestring
+    - containers
     - crdt
     - directory
     - filepath
@@ -13,13 +14,20 @@ library:
 executables:
   ff:
     dependencies:
+      - bytestring
+      - directory
+      - filepath
+      - yaml
+
       - ff
+
     main: Main
     source-dirs: exe
 
 tests:
   test:
     dependencies:
+      - containers
       - tasty
       - tasty-hunit
 
@@ -30,4 +38,3 @@ tests:
 
 dependencies:
   - base
-  - containers
