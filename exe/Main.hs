@@ -27,11 +27,10 @@ cmdInfo =
     cmdParser =
         subparser (command "agenda" cmdAgendaInfo <> command "new" cmdNewInfo)
         <|> cmdAgendaParser
-      where
-        cmdAgendaInfo = info cmdAgendaParser fullDesc
-        cmdAgendaParser = pure Agenda
-        cmdNewInfo = info cmdNewParser fullDesc
-        cmdNewParser = New <$> strArgument (metavar "TEXT")
+    cmdAgendaInfo = info cmdAgendaParser fullDesc
+    cmdAgendaParser = pure Agenda
+    cmdNewInfo = info cmdNewParser fullDesc
+    cmdNewParser = New <$> strArgument (metavar "TEXT")
 
 main :: IO ()
 main = do
