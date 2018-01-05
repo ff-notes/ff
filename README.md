@@ -2,6 +2,19 @@
 
 The best note taker and task manager.
 
+## What's the big deal?
+
+1.  _ﬀ_ synchronizes via any file sync application, like Yandex.Disk,
+    Dropbox or Google Drive.
+2.  _ﬀ_ is available offline and synchronizes without conflicts thanks to
+    [CRDT](https://github.com/cblp/crdt).
+
+## Stability
+
+Alpha. Works on my laptop.
+_ﬀ_'s own issues are tracked in _ﬀ_ since the first day of development.
+Please feel free to test it in your environment.
+
 ## Install
 
     $ git clone https://github.com/cblp/ff.git
