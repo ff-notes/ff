@@ -5,6 +5,7 @@ module Main where
 
 import           Control.Applicative ((<|>))
 import qualified Data.ByteString as BS
+import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Yaml (ToJSON, object, (.=))
@@ -15,9 +16,9 @@ import           Options.Applicative (ParserInfo, command, execParser, fullDesc,
 import           System.Directory (getHomeDirectory)
 import           System.FilePath ((</>))
 
-import           FF (cmdAgenda, cmdNew)
+import           FF (DocId (DocId), cmdAgenda, cmdDone, cmdNew)
 
-data Cmd = Agenda | New Text
+data Cmd = Agenda | Done DocId | New Text
 
 cmdInfo :: ParserInfo Cmd
 cmdInfo =
@@ -25,12 +26,16 @@ cmdInfo =
     fullDesc <> progDesc "A note taker and task tracker"
   where
     cmdParser =
-        subparser (command "agenda" cmdAgendaInfo <> command "new" cmdNewInfo)
+        subparser (mconcat
+            [ command' "agenda" cmdAgendaParser
+            , command' "done"   cmdDoneParser
+            , command' "new"    cmdNewParser
+            ])
         <|> cmdAgendaParser
-    cmdAgendaInfo = info cmdAgendaParser fullDesc
     cmdAgendaParser = pure Agenda
-    cmdNewInfo = info cmdNewParser fullDesc
-    cmdNewParser = New <$> strArgument (metavar "TEXT")
+    cmdDoneParser   = Done . DocId  <$> strArgument (metavar "ID")
+    cmdNewParser    = New           <$> strArgument (metavar "TEXT")
+    command' name parser = command name $ info (parser <**> helper) fullDesc
 
 main :: IO ()
 main = do
@@ -45,7 +50,10 @@ runCmd dataDir Agenda = do
     if null agenda then putStrLn "nothing" else yprint agenda
 runCmd dataDir (New text) = do
     noteId <- cmdNew dataDir text
-    yprint $ object [noteId .= text]
+    yprint $ Map.singleton noteId text
+runCmd dataDir (Done noteId) = do
+    text <- cmdDone dataDir noteId
+    yprint $ object ["archived" .= Map.singleton noteId text]
 
 yprint :: ToJSON a => a -> IO ()
 yprint = BS.putStr . Yaml.encodePretty Yaml.defConfig
