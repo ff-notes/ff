@@ -16,12 +16,16 @@ module FF
     ) where
 
 import           CRDT.Cv (CvRDT)
-import           CRDT.LamportClock (LamportTime, Pid, getRealLamportTime)
+import           CRDT.LamportClock (LamportTime (LamportTime), Pid (Pid),
+                                    getRealLamportTime)
 import           CRDT.LWW (LWW (LWW))
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON, eitherDecode, encode)
+import           Data.Aeson (FromJSON, ToJSON, Value (Array), eitherDecode,
+                             encode, parseJSON, toJSON)
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
+import           Data.Aeson.Types (typeMismatch)
 import qualified Data.ByteString.Lazy as BS
+import           Data.Foldable (toList)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -30,16 +34,32 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Traversable (for)
+import           GHC.Exts (fromList)
 import           System.Directory (createDirectoryIfMissing, listDirectory)
 import           System.FilePath ((</>))
 
-deriveJSON defaultOptions ''LamportTime
-deriveJSON defaultOptions ''LWW
-deriveJSON defaultOptions ''Pid
+instance FromJSON a => FromJSON (LWW a) where
+    parseJSON (Array a) = case toList a of
+        [valueJ, timeJ, pidJ] -> LWW <$> parseJSON valueJ <*> parseTime
+          where
+            parseTime = LamportTime <$> parseJSON timeJ <*> parsePid
+            parsePid = Pid <$> parseJSON pidJ
+        _ -> fail $ unwords
+            ["expected array of 3 values, got", show $ length a, "values"]
+    parseJSON v = typeMismatch "Array" v
+
+instance ToJSON a => ToJSON (LWW a) where
+    toJSON LWW{value, time = LamportTime time (Pid pid)} =
+        Array $ fromList [toJSON value, toJSON time, toJSON pid]
+
+data Status = Active | Archived | Deleted
+    deriving (Eq, Show)
+
+deriveJSON defaultOptions ''Status
 
 data Note = Note
-    { alive :: !(Maybe (LWW Bool)) -- ^ undone, unfinished
-    , text  :: !(LWW Text)
+    { status :: !(Maybe (LWW Status))
+    , text   :: !(LWW Text)
     }
     deriving (Eq, Show)
 
@@ -76,10 +96,10 @@ cmdAgenda dataDir = do
     mnotes <- for files $ \name -> do
         note <- loadDocument notesDir name
         let noteView = case note of
-                Just Note{alive = Nothing, text} ->
+                Just Note{status = Nothing, text} ->
                     Just $ LWW.query text
-                Just Note{alive = Just alive, text} | LWW.query alive ->
-                    Just $ LWW.query text
+                Just Note{status = Just status, text}
+                    | LWW.query status == Active -> Just $ LWW.query text
                 _ -> Nothing
         pure (Text.pack name, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
@@ -93,11 +113,11 @@ cmdNew dataDir content = do
     version <- getRealLamportTime
     let versionFile = noteDir </> show version
 
-    alive <- Just <$> lwwIitial' True
+    status <- Just <$> lwwIitial' Active
     text <- lwwIitial' content
 
     createDirectoryIfMissing True noteDir
-    BS.writeFile versionFile $ encode Note{alive, text}
+    BS.writeFile versionFile $ encode Note{status, text}
 
     pure $ Text.pack noteId
 

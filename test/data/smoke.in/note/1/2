@@ -1,1 +1,1 @@
-{"text": {"value": "hello", "time": [6, 7]}}
+{"text": ["hello", 6, 7]}
