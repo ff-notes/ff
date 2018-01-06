@@ -17,7 +17,7 @@ module FF
 import           Control.Monad.IO.Class (liftIO)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (LamportClock, LamportTime (LamportTime),
-                                    Pid, getTime)
+                                    Pid (..), getTime)
 import           CRDT.LWW (LWW (LWW))
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, Value (Array),
@@ -25,6 +25,7 @@ import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, Value (Array),
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import           Data.Aeson.Types (typeMismatch)
 import qualified Data.ByteString.Lazy as BS
+import           Data.Char (chr, ord)
 import           Data.Foldable (toList)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Map.Strict (Map)
@@ -35,6 +36,7 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import           Data.Traversable (for)
 import           GHC.Exts (fromList)
+import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, listDirectory)
 import           System.FilePath ((</>))
 
@@ -100,7 +102,7 @@ saveDocument
 saveDocument dir (DocId docId) doc = do
     let docDir = dir </> docId
     version <- getTime
-    let versionFile = docDir </> show version
+    let versionFile = docDir </> lamportTimeToFileName version
     liftIO $ do
         createDirectoryIfMissing True docDir
         BS.writeFile versionFile $ encode doc
@@ -108,7 +110,7 @@ saveDocument dir (DocId docId) doc = do
 saveNewDocument
     :: (CvRDT doc, ToJSON doc) => FilePath -> doc -> LamportClock DocId
 saveNewDocument dir doc = do
-    docId <- DocId . show <$> getTime
+    docId <- DocId . lamportTimeToFileName <$> getTime
     saveDocument dir docId doc
     pure docId
 
@@ -153,3 +155,16 @@ cmdDone dataDir noteId = do
     saveDocument notesDir noteId note{status = Just status'}
 
     pure $ LWW.query $ text note
+
+showBase36 :: (Integral a, Show a) => a -> String -> String
+showBase36 = showIntAtBase 36 intToDigit36
+
+intToDigit36 :: Int -> Char
+intToDigit36 i
+    | (i >=  0) && (i <=  9) = chr (ord '0'      + i)
+    | (i >= 10) && (i <= 35) = chr (ord 'a' - 10 + i)
+    | otherwise              = error ("not a digit " ++ show i)
+
+lamportTimeToFileName :: LamportTime -> FilePath
+lamportTimeToFileName (LamportTime time (Pid pid)) =
+    showBase36 time $ '-' : showBase36 pid ""
