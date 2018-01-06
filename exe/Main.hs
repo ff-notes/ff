@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -28,10 +27,10 @@ data Config = Config{
     dataDir :: FilePath
 }
 
+$(deriveJSON defaultOptions ''Config)
+
 cfgFileName :: FilePath
 cfgFileName = "cfg.yaml"
-
-$(deriveJSON defaultOptions ''Config)
 
 cmdInfo :: ParserInfo Cmd
 cmdInfo =
