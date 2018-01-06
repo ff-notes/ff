@@ -15,9 +15,11 @@ executables:
   ff:
     dependencies:
       - bytestring
+      - crdt
       - directory
       - filepath
       - optparse-applicative
+      - stm
       - text
       - yaml
 

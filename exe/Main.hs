@@ -4,6 +4,10 @@
 module Main where
 
 import           Control.Applicative ((<|>))
+import           Control.Concurrent.STM (newTVarIO)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           CRDT.LamportClock (LamportClock, getRealLocalTime,
+                                    runLamportClock)
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
@@ -42,10 +46,11 @@ main = do
     home <- getHomeDirectory
     let dataDir = home </> "Yandex.Disk.localized/Apps/ff"
     cmd <- execParser cmdInfo
-    runCmd dataDir cmd
+    timeVar <- newTVarIO =<< getRealLocalTime
+    runLamportClock timeVar $ runCmd dataDir cmd
 
-runCmd :: FilePath -> Cmd -> IO ()
-runCmd dataDir Agenda = do
+runCmd :: FilePath -> Cmd -> LamportClock ()
+runCmd dataDir Agenda = liftIO $ do
     agenda <- cmdAgenda dataDir
     if null agenda then putStrLn "nothing" else yprint agenda
 runCmd dataDir (New text) = do
@@ -55,5 +60,5 @@ runCmd dataDir (Done noteId) = do
     text <- cmdDone dataDir noteId
     yprint $ object ["archived" .= Map.singleton noteId text]
 
-yprint :: ToJSON a => a -> IO ()
-yprint = BS.putStr . Yaml.encodePretty Yaml.defConfig
+yprint :: (ToJSON a, MonadIO io) => a -> io ()
+yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig

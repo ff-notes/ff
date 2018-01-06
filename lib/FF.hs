@@ -14,9 +14,10 @@ module FF
     , cmdNew
     ) where
 
+import           Control.Monad.IO.Class (liftIO)
 import           CRDT.Cv (CvRDT)
-import           CRDT.LamportClock (LamportTime (LamportTime), Pid,
-                                    getRealLamportTime)
+import           CRDT.LamportClock (LamportClock, LamportTime (LamportTime),
+                                    Pid, getTime)
 import           CRDT.LWW (LWW (LWW))
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, Value (Array),
@@ -95,13 +96,21 @@ loadDocument dir (DocId doc) = do
     pure $ sconcat <$> nonEmpty versions
 
 saveDocument
-    :: (CvRDT doc, ToJSON doc)
-    => FilePath -> DocId -> LamportTime -> doc -> IO ()
-saveDocument dir (DocId docId) version doc = do
+    :: (CvRDT doc, ToJSON doc) => FilePath -> DocId -> doc -> LamportClock ()
+saveDocument dir (DocId docId) doc = do
     let docDir = dir </> docId
-    createDirectoryIfMissing True docDir
+    version <- getTime
     let versionFile = docDir </> show version
-    BS.writeFile versionFile $ encode doc
+    liftIO $ do
+        createDirectoryIfMissing True docDir
+        BS.writeFile versionFile $ encode doc
+
+saveNewDocument
+    :: (CvRDT doc, ToJSON doc) => FilePath -> doc -> LamportClock DocId
+saveNewDocument dir doc = do
+    docId <- DocId . show <$> getTime
+    saveDocument dir docId doc
+    pure docId
 
 cmdAgenda :: FilePath -> IO Agenda
 cmdAgenda dataDir = do
@@ -119,26 +128,17 @@ cmdAgenda dataDir = do
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: FilePath -> Text -> IO DocId
+cmdNew :: FilePath -> Text -> LamportClock DocId
 cmdNew dataDir content = do
     let notesDir = dataDir </> "note"
-    time <- getRealLamportTime
-    let noteId = show time
-    let docId = DocId noteId
+    status <- Just <$> LWW.initial Active
+    text <- LWW.initial content
+    saveNewDocument notesDir Note{status, text}
 
-    status <- Just <$> lwwIitial' Active
-    text <- lwwIitial' content
-    saveDocument notesDir docId time Note{status, text}
-
-    pure docId
-
-lwwIitial' :: a -> IO (LWW a)
-lwwIitial' value = LWW value <$> getRealLamportTime
-
-cmdDone :: FilePath -> DocId -> IO Text
+cmdDone :: FilePath -> DocId -> LamportClock Text
 cmdDone dataDir noteId = do
     let notesDir = dataDir </> "note"
-    mnote <- loadDocument notesDir noteId
+    mnote <- liftIO $ loadDocument notesDir noteId
     let note =
             fromMaybe
                 (error $ concat
@@ -147,11 +147,9 @@ cmdDone dataDir noteId = do
                     , ". Where did you get this id?"
                     ])
                 mnote
-    time <- getRealLamportTime
-    saveDocument
-        notesDir
-        noteId
-        time
-        note{status = Just LWW{value = Archived, time}}
+    status' <- case status note of
+        Nothing     -> LWW.initial  Archived
+        Just status -> LWW.assign   Archived status
+    saveDocument notesDir noteId note{status = Just status'}
 
     pure $ LWW.query $ text note

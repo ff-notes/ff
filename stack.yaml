@@ -1,4 +1,6 @@
 resolver: lts-10.2
 
 extra-deps:
-  - crdt-4.2
+  # - crdt-6.1
+  - git: https://github.com/cblp/crdt.git
+    commit: '6.1'
