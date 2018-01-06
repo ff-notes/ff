@@ -1,26 +1,28 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
+import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import           Control.Applicative ((<|>))
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
+import           Control.Exception (throw)
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
-import           Data.Yaml (ToJSON, FromJSON, object, (.=), encodeFile, decodeFileEither)
+import           Data.Yaml (ToJSON, ParseException(..), YamlException(..), object, (.=), encodeFile, decodeFileEither)
 import qualified Data.Yaml.Pretty as Yaml
-import           GHC.Generics (Generic)
 import           Options.Applicative (ParserInfo, command, execParser, fullDesc,
                                       helper, info, metavar, progDesc,
                                       strArgument, subparser, (<**>))
-import           System.Directory (getHomeDirectory)
-import           System.FilePath ((</>), FilePath)
+import           System.FilePath (FilePath)
+import           System.Directory (XdgDirectory(XdgConfig), getXdgDirectory)
 
 import           FF (DocId (DocId), cmdAgenda, cmdDone, cmdNew)
 
@@ -28,13 +30,12 @@ data Cmd = Agenda | Done DocId | New Text | Dir FilePath
 
 data Config = Config{
     dataDir :: FilePath
-} deriving Generic
+}
 
-instance FromJSON Config
-instance ToJSON Config
+cfgFileName :: FilePath
+cfgFileName = "cfg.yaml"
 
-cfgFile :: FilePath
-cfgFile = "cfg.yaml"
+$(deriveJSON defaultOptions ''Config)
 
 cmdInfo :: ParserInfo Cmd
 cmdInfo =
@@ -57,16 +58,19 @@ cmdInfo =
 
 main :: IO ()
 main = do
+    cfgFile <- getXdgDirectory XdgConfig cfgFileName
     ecfg <- decodeFileEither cfgFile
     cmd <- execParser cmdInfo
     case ecfg of
         Right cfg ->
-            runCmd (Just cfg) cmd
-        Left _    ->
-            runCmd Nothing cmd
+            runCmd cfgFile (Just cfg) cmd
+        Left (InvalidYaml (Just (YamlException _))) ->
+            runCmd cfgFile Nothing cmd
+        Left parseException ->
+            throw parseException
 
-runCmd :: Maybe Config -> Cmd -> IO ()
-runCmd mcfg cmd =
+runCmd :: FilePath -> Maybe Config -> Cmd -> IO ()
+runCmd cfgFile mcfg cmd =
     case mcfg of
         Just cfg ->
             let dir = dataDir cfg in
