@@ -60,23 +60,24 @@ main = do
     cfgFile <- getXdgDirectory XdgConfig cfgFileName
     ecfg <- decodeFileEither cfgFile
     cmd <- execParser cmdInfo
+    timeVar <- newTVarIO =<< getRealLocalTime
     case ecfg of
         Right cfg ->
-            runCmd cfgFile (Just cfg) cmd
+            runLamportClock timeVar $ runCmd cfgFile (Just cfg) cmd
         Left (InvalidYaml (Just (YamlException _))) ->
-            runCmd cfgFile Nothing cmd
+            runLamportClock timeVar $ runCmd cfgFile Nothing cmd
         Left parseException ->
             throw parseException
 
-runCmd :: FilePath -> Maybe Config -> Cmd -> IO ()
+runCmd :: FilePath -> Maybe Config -> Cmd -> LamportClock ()
 runCmd cfgFile mcfg cmd =
     case mcfg of
         Just cfg ->
             let dir = dataDir cfg in
             case cmd of
                 Dir newDir ->
-                    encodeFile cfgFile (cfg{dataDir = newDir})
-                Agenda -> do
+                    liftIO $ encodeFile cfgFile (cfg{dataDir = newDir})
+                Agenda -> liftIO $ do
                     agenda <- cmdAgenda dir
                     if null agenda then putStrLn "nothing" else yprint agenda
                 Done noteId -> do
@@ -88,9 +89,9 @@ runCmd cfgFile mcfg cmd =
         Nothing  ->
             case cmd of
                 Dir dir ->
-                    encodeFile cfgFile (Config dir)
+                    liftIO $ encodeFile cfgFile (Config dir)
                 _       ->
-                    putStrLn "Working directory isn't specified, use *dir* command to specify it"
+                    liftIO $ putStrLn "Working directory isn't specified, use *dir* command to specify it"
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
 yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig
