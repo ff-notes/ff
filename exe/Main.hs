@@ -4,7 +4,6 @@
 
 module Main where
 
-import           Control.Applicative ((<|>))
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Exception (throw)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -13,21 +12,17 @@ import           CRDT.LamportClock (LamportClock, getRealLocalTime,
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
 import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
                             YamlException (YamlException), decodeFileEither,
                             encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
-import           Options.Applicative (ParserInfo, command, execParser, fullDesc,
-                                      helper, info, metavar, progDesc,
-                                      strArgument, subparser, (<**>))
+import           Options.Applicative (execParser)
 import           System.Directory (XdgDirectory (XdgConfig), getXdgDirectory)
 import           System.FilePath (FilePath)
 
-import           FF (DocId (DocId), cmdAgenda, cmdDone, cmdNew)
+import           FF (cmdAgenda, cmdDone, cmdNew)
 
-data Cmd = Agenda | Dir FilePath | Done DocId | New Text
+import           Options (Cmd (Agenda, Dir, Done, New), cmdInfo)
 
 newtype Config = Config
     { dataDir :: FilePath
@@ -37,25 +32,6 @@ deriveJSON defaultOptions ''Config
 
 cfgFileName :: FilePath
 cfgFileName = "cfg.yaml"
-
-cmdInfo :: ParserInfo Cmd
-cmdInfo =
-    info (cmdParser <**> helper) $
-    fullDesc <> progDesc "A note taker and task tracker"
-  where
-    cmdParser =
-        subparser (mconcat
-            [ command' "agenda" cmdAgendaParser
-            , command' "done"   cmdDoneParser
-            , command' "new"    cmdNewParser
-            , command' "dir"    cmdDirParser
-            ])
-        <|> cmdAgendaParser
-    cmdAgendaParser = pure Agenda
-    cmdDoneParser   = Done . DocId  <$> strArgument (metavar "ID")
-    cmdNewParser    = New           <$> strArgument (metavar "TEXT")
-    cmdDirParser    = Dir           <$> strArgument (metavar "DIRECTORY")
-    command' name parser = command name $ info (parser <**> helper) fullDesc
 
 main :: IO ()
 main = do
