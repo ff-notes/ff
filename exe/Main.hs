@@ -1,6 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -9,7 +8,6 @@ import           Control.Exception (throw)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
-import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
@@ -22,13 +20,8 @@ import           System.FilePath (FilePath, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
 
-import           Options (Cmd (Agenda, Dir, Done, New), cmdInfo)
-
-newtype Config = Config
-    { dataDir :: FilePath
-    }
-
-deriveJSON defaultOptions ''Config
+import           Config (Config (..), emptyConfig)
+import           Options (Cmd (..), CmdConfig (..), cmdInfo)
 
 appName :: String
 appName = "ff"
@@ -40,39 +33,41 @@ main :: IO ()
 main = do
     cfgFile <- getXdgDirectory XdgConfig cfgFilePath
     ecfg <- decodeFileEither cfgFile
-    cmd <- execParser cmdInfo
-    timeVar <- newTVarIO =<< getRealLocalTime
-    case ecfg of
-        Right cfg ->
-            runLamportClock timeVar $ runCmd cfgFile (Just cfg) cmd
-        Left (InvalidYaml (Just (YamlException _))) ->
-            runLamportClock timeVar $ runCmd cfgFile Nothing cmd
-        Left parseException ->
-            throw parseException
+    cfg <- case ecfg of
+        Right cfg                                 -> pure cfg
+        Left (InvalidYaml (Just YamlException{})) -> pure emptyConfig
+        Left parseException                       -> throw parseException
 
-runCmd :: FilePath -> Maybe Config -> Cmd -> LamportClock ()
-runCmd cfgFile mcfg cmd =
-    case mcfg of
-        Just cfg ->
-            let dir = dataDir cfg in
-            case cmd of
-                Dir newDir ->
-                    liftIO $ encodeFile cfgFile (cfg{dataDir = newDir})
-                Agenda -> liftIO $ do
-                    agenda <- cmdAgenda dir
-                    if null agenda then putStrLn "nothing" else yprint agenda
-                Done noteId -> do
-                    text <- cmdDone dir noteId
-                    yprint $ object ["archived" .= Map.singleton noteId text]
-                New text -> do
-                    noteId <- cmdNew dir text
-                    yprint $ Map.singleton noteId text
-        Nothing  ->
-            case cmd of
-                Dir dir ->
-                    liftIO $ encodeFile cfgFile (Config dir)
-                _       ->
-                    liftIO $ putStrLn "Working directory isn't specified, use *dir* command to specify it"
+    cmd <- execParser cmdInfo
+
+    timeVar <- newTVarIO =<< getRealLocalTime
+    runLamportClock timeVar $ runCmd cfgFile cfg cmd
+
+runCmd :: FilePath -> Config -> Cmd -> LamportClock ()
+runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
+    Agenda -> liftIO $ do
+        agenda <- cmdAgenda =<< checkDataDir
+        if null agenda then putStrLn "nothing" else yprint agenda
+    Done noteId -> do
+        dir <- checkDataDir
+        text <- cmdDone dir noteId
+        yprint $ object ["archived" .= Map.singleton noteId text]
+    New text -> do
+        dir <- checkDataDir
+        noteId <- cmdNew dir text
+        yprint $ Map.singleton noteId text
+    Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
+  where
+    checkDataDir :: Monad m => m FilePath
+    checkDataDir = case dataDir of
+        Just dir -> pure dir
+        Nothing  -> fail
+            "Working directory isn't specified, use `ff config dataDir DIR` to set it"
+
+    runCmdConfig Nothing = yprint cfg
+    runCmdConfig (Just (DataDir mdir)) = case mdir of
+        Just dir -> encodeFile cfgFile cfg{dataDir = Just dir}
+        Nothing  -> yprint $ object ["dataDir" .= dataDir]
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
 yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig
