@@ -18,7 +18,7 @@ import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
 import qualified Data.Yaml.Pretty as Yaml
 import           Options.Applicative (execParser)
 import           System.Directory (XdgDirectory (XdgConfig), getXdgDirectory)
-import           System.FilePath (FilePath)
+import           System.FilePath (FilePath, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
 
@@ -30,12 +30,15 @@ newtype Config = Config
 
 deriveJSON defaultOptions ''Config
 
-cfgFileName :: FilePath
-cfgFileName = "cfg.yaml"
+appName :: String
+appName = "ff"
+
+cfgFilePath :: FilePath
+cfgFilePath = appName </> "config.yaml"
 
 main :: IO ()
 main = do
-    cfgFile <- getXdgDirectory XdgConfig cfgFileName
+    cfgFile <- getXdgDirectory XdgConfig cfgFilePath
     ecfg <- decodeFileEither cfgFile
     cmd <- execParser cmdInfo
     timeVar <- newTVarIO =<< getRealLocalTime
