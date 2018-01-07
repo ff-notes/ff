@@ -42,9 +42,9 @@ Now you can find it in your agenda:
     1: buy milk
     2: learn Haskell
 
-### Mark task "done"
+### Mark task done
 
-Marking "done" is actually moving to archive.
+Marking done is actually moving to archive.
 
     $ ff done 1
     archived:
