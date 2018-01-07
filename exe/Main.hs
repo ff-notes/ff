@@ -21,7 +21,7 @@ import           System.FilePath (FilePath, (</>))
 import           FF (cmdAgenda, cmdDone, cmdNew)
 
 import           Config (Config (..), emptyConfig)
-import           Options (Cmd (..), CmdConfig (..), cmdInfo)
+import           Options (Cmd (..), CmdConfig (..), info)
 
 appName :: String
 appName = "ff"
@@ -38,7 +38,7 @@ main = do
         Left (InvalidYaml (Just YamlException{})) -> pure emptyConfig
         Left parseException                       -> throw parseException
 
-    cmd <- execParser cmdInfo
+    cmd <- execParser info
 
     timeVar <- newTVarIO =<< getRealLocalTime
     runLamportClock timeVar $ runCmd cfgFile cfg cmd

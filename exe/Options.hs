@@ -4,8 +4,9 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Options.Applicative (ParserInfo, command, fullDesc, helper,
-                                      info, metavar, progDesc, strArgument,
-                                      subparser, (<**>))
+                                      metavar, progDesc, strArgument, subparser,
+                                      (<**>))
+import qualified Options.Applicative as OptApp
 
 import           FF (DocId (DocId))
 
@@ -15,33 +16,29 @@ newtype CmdConfig =
     DataDir (Maybe FilePath)
     -- ^ TODO(cblp, 2018-01-07) add autodetection of dropbox and yadisk
 
-cmdInfo :: ParserInfo Cmd
-cmdInfo =
-    info (cmdParser <**> helper) $
-    fullDesc <> progDesc "A note taker and task tracker"
+info :: ParserInfo Cmd
+info = i parser "A note taker and task tracker"
   where
-    cmdParser =
-        subparser (mconcat
-            [ command' "agenda" cmdAgendaParser "show what you can do right now [default action]"
-            , command' "config" cmdConfigParser "show/edit configuration"
-            , command' "done"   cmdDoneParser   "mark task done (archive)"
-            , command' "new"    cmdNewParser    "add new task or note"
-            ])
-        <|> cmdAgendaParser
+    parser = subparser commands <|> pAgenda
+    commands = mconcat
+        [ command "agenda" iAgenda
+        , command "config" iConfig
+        , command "done"   iDone
+        , command "new"    iNew
+        ]
 
-    cmdAgendaParser = pure Agenda
-    cmdDoneParser   = Done . DocId <$> strArgument (metavar "ID")
-    cmdNewParser    = New <$> strArgument (metavar "TEXT")
+    iAgenda = i pAgenda "show what you can do right now [default action]"
+    iConfig = i pConfig "show/edit configuration"
+    iDone   = i pDone   "mark task done (archive)"
+    iNew    = i pNew    "add new task or note"
 
-    cmdConfigParser =
-        Config
-        <$> optional
-            (subparser $
-                command'
-                    "dataDir"
-                    cmdConfigDataDirParser
-                    "the database directory")
-    cmdConfigDataDirParser = DataDir <$> optional (strArgument $ metavar "DIR")
+    pAgenda = pure Agenda
+    pDone   = Done . DocId <$> strArgument (metavar "ID")
+    pNew    = New <$> strArgument (metavar "TEXT")
 
-    command' name parser desc =
-        command name $ info (parser <**> helper) $ fullDesc <> progDesc desc
+    pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
+      where
+        iDataDir = i pDataDir "the database directory"
+        pDataDir = DataDir <$> optional (strArgument $ metavar "DIR")
+
+    i prsr desc = OptApp.info (prsr <**> helper) $ fullDesc <> progDesc desc
