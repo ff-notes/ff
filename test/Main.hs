@@ -11,6 +11,8 @@ import           FF.Storage (DocId (DocId), runStorage)
 
 main :: IO ()
 main =
-    defaultMain $ testCase "cmdAgenda" $
+    defaultMain $ testCase "cmdAgenda" $ do
+        assertEqual "not exist" (Map.fromList [])
+            =<< runStorage "test/data/not exist" undefined cmdAgenda
         assertEqual "smoke" (Map.fromList [(DocId "1", "hello")])
-        =<< runStorage "test/data/smoke.in" undefined cmdAgenda
+            =<< runStorage "test/data/smoke.in" undefined cmdAgenda

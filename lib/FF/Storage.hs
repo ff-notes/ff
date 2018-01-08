@@ -20,7 +20,8 @@ import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
 import           Numeric (showIntAtBase)
-import           System.Directory (createDirectoryIfMissing, listDirectory)
+import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
+                                   listDirectory)
 import           System.FilePath ((</>))
 
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
@@ -41,13 +42,14 @@ runStorage dataDir var action = runLamportClock var $ runReaderT action dataDir
 list :: forall doc. Collection doc => Storage [DocId doc]
 list = do
     dataDir <- ask
-    liftIO $ map DocId <$> listDirectory (dataDir </> collectionName @doc)
+    map DocId
+        <$> liftIO (listDirectoryIfExists $ dataDir </> collectionName @doc)
 
 load :: forall doc. Collection doc => DocId doc -> Storage (Maybe doc)
 load docId = do
     docDir <- askDocDir docId
     liftIO $ do
-        versionFiles <- listDirectory docDir
+        versionFiles <- listDirectoryIfExists docDir
         versions <- for versionFiles $ \version -> do
             let versionPath = docDir </> version
             contents <- BSL.readFile versionPath
@@ -86,3 +88,8 @@ intToDigit36 i
 lamportTimeToFileName :: LamportTime -> FilePath
 lamportTimeToFileName (LamportTime time (Pid pid)) =
     showBase36 time $ '-' : showBase36 pid ""
+
+listDirectoryIfExists :: FilePath -> IO [FilePath]
+listDirectoryIfExists dir = do
+    exists <- doesDirectoryExist dir
+    if exists then listDirectory dir else pure []
