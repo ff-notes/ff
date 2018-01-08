@@ -65,9 +65,8 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
     checkDataDir :: Monad m => m FilePath
     checkDataDir = case dataDir of
         Just dir -> pure dir
-        Nothing  -> fail
-            "Working directory isn't specified,\
-            \ use `ff config dataDir` to set it"
+        Nothing  ->
+            fail "Data directory isn't set, run `ff config dataDir --help`"
 
     runCmdConfig Nothing = yprint cfg
     runCmdConfig (Just (DataDir mdir)) = do
