@@ -17,16 +17,17 @@ import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
                             YamlException (YamlException), decodeFileEither,
                             encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
-import           Options.Applicative (execParser)
 import           System.Directory (XdgDirectory (XdgConfig),
                                    createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory, getXdgDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
+import           FF.Options (Cmd (..), CmdConfig (..), DataDir (..),
+                             parseOptions)
+import qualified FF.Options as Options
 
 import           Config (Config (..), emptyConfig)
-import           Options (Cmd (..), CmdConfig (..), DataDir (..), info)
 
 appName :: String
 appName = "ff"
@@ -43,7 +44,7 @@ main = do
         Left (InvalidYaml (Just YamlException{})) -> pure emptyConfig
         Left parseException                       -> throw parseException
 
-    cmd <- execParser info
+    cmd <- parseOptions
 
     timeVar <- newTVarIO =<< getRealLocalTime
     runLamportClock timeVar $ runCmd cfgFile cfg cmd
@@ -58,10 +59,10 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         text <- (`runReaderT` dir) $ cmdDone noteId
         yprint $ object ["archived" .= Map.singleton noteId text]
-    New text start end -> do
+    New new -> do
         dir <- checkDataDir
-        noteId <- (`runReaderT` dir) $ cmdNew text start end
-        yprint $ Map.singleton noteId text
+        (noteId, noteView) <- (`runReaderT` dir) $ cmdNew new
+        yprint $ Map.singleton noteId noteView
     Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
   where
 

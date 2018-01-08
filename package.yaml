@@ -9,6 +9,7 @@ library:
     - directory
     - filepath
     - mtl
+    - optparse-applicative
     - stm
     - text
     - time
@@ -23,10 +24,8 @@ executables:
       - directory
       - filepath
       - mtl
-      - optparse-applicative
       - stm
       - text
-      - time
       - yaml
 
       - ff

@@ -1,27 +1,38 @@
-module Options where
+module FF.Options
+    ( Cmd (..)
+    , CmdConfig (..)
+    , CmdNew (..)
+    , DataDir (..)
+    , parseOptions
+    ) where
 
 import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time.Calendar (Day)
-import           Options.Applicative (ParserInfo, auto, command, flag', fullDesc,
-                                      help, helper, long, metavar, option,
-                                      progDesc, short, strArgument, subparser,
-                                      (<**>))
-import qualified Options.Applicative as OptApp
+import           Options.Applicative (auto, command, execParser, flag',
+                                      fullDesc, help, helper, info, long,
+                                      metavar, option, progDesc, short,
+                                      strArgument, subparser, (<**>))
 
-import           FF (Note)
 import           FF.Storage (DocId (DocId))
+import           FF.Types (Note)
 
-data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !Text !(Maybe Day) !(Maybe Day)
+data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !CmdNew
 
 newtype CmdConfig =
     DataDir (Maybe DataDir)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
-info :: ParserInfo Cmd
-info = i parser "A note taker and task tracker"
+data CmdNew = CmdNew
+    { newText   :: !Text
+    , newStart  :: !(Maybe Day)
+    , newEnd    :: !(Maybe Day)
+    }
+
+parseOptions :: IO Cmd
+parseOptions = execParser $ i parser "A note taker and task tracker"
   where
     parser = subparser commands <|> pAgenda
     commands = mconcat
@@ -38,9 +49,11 @@ info = i parser "A note taker and task tracker"
 
     pAgenda = pure Agenda
     pDone   = Done . DocId <$> strArgument (metavar "ID")
-    pNew    = New <$> strArgument (metavar "TEXT")
-                  <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
-                  <*> optional (option auto (long "end" <> short 'e' <> metavar "DATE"))
+    pNew    = New <$> pCmdNew
+    pCmdNew = CmdNew
+        <$> strArgument (metavar "TEXT")
+        <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
+        <*> optional (option auto (long "end"   <> short 'e' <> metavar "DATE"))
 
     pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
       where
@@ -52,4 +65,4 @@ info = i parser "A note taker and task tracker"
                 flag' DataDirYandexDisk $
                 long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk"
 
-    i prsr desc = OptApp.info (prsr <**> helper) $ fullDesc <> progDesc desc
+    i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
