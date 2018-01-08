@@ -3,15 +3,17 @@ module Options where
 import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
-import           Options.Applicative (ParserInfo, command, flag', fullDesc,
-                                      help, helper, long, metavar, progDesc,
-                                      short, strArgument, subparser, (<**>))
+import           Data.Time.Calendar (Day)
+import           Options.Applicative (ParserInfo, auto, command, flag', fullDesc,
+                                      help, helper, long, metavar, option,
+                                      progDesc, short, strArgument, subparser,
+                                      (<**>))
 import qualified Options.Applicative as OptApp
 
 import           FF (Note)
 import           FF.Document (DocId (DocId))
 
-data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !Text
+data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !Text !(Maybe Day) !(Maybe Day)
 
 newtype CmdConfig =
     DataDir (Maybe DataDir)
@@ -37,6 +39,8 @@ info = i parser "A note taker and task tracker"
     pAgenda = pure Agenda
     pDone   = Done . DocId <$> strArgument (metavar "ID")
     pNew    = New <$> strArgument (metavar "TEXT")
+                  <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
+                  <*> optional (option auto (long "end" <> short 'e' <> metavar "DATE"))
 
     pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
       where

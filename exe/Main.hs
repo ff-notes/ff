@@ -55,9 +55,9 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         text <- cmdDone dir noteId
         yprint $ object ["archived" .= Map.singleton noteId text]
-    New text -> do
+    New text start end -> do
         dir <- checkDataDir
-        noteId <- cmdNew dir text
+        noteId <- cmdNew dir text start end
         yprint $ Map.singleton noteId text
     Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
   where
