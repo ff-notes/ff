@@ -34,6 +34,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Semigroup (Semigroup, sconcat, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
+import           Data.Time.Calendar (Day)
 import           Data.Traversable (for)
 import           GHC.Exts (fromList)
 import           Numeric (showIntAtBase)
@@ -63,12 +64,14 @@ deriveJSON defaultOptions ''Status
 data Note = Note
     { status :: !(Maybe (LWW Status))
     , text   :: !(LWW Text)
+    , startDate :: !(LWW (Maybe Day))
+    , endDate :: !(LWW (Maybe Day))
     }
     deriving (Eq, Show)
 
 instance Semigroup Note where
-    Note alive1 text1 <> Note alive2 text2 =
-        Note (alive1 <> alive2) (text1 <> text2)
+    Note alive1 text1 s1 e1 <> Note alive2 text2 s2 e2 =
+        Note (alive1 <> alive2) (text1 <> text2) (s1 <> s2) (e1 <> e2)
 
 instance Semilattice Note
 
@@ -130,12 +133,14 @@ cmdAgenda dataDir = do
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: FilePath -> Text -> LamportClock DocId
-cmdNew dataDir content = do
+cmdNew :: FilePath -> Text -> Maybe Day -> Maybe Day -> LamportClock DocId
+cmdNew dataDir content start end = do
     let notesDir = dataDir </> "note"
     status <- Just <$> LWW.initial Active
     text <- LWW.initial content
-    saveNewDocument notesDir Note{status, text}
+    startDate <- LWW.initial start
+    endDate <- LWW.initial end
+    saveNewDocument notesDir Note{status, text, startDate, endDate}
 
 cmdDone :: FilePath -> DocId -> LamportClock Text
 cmdDone dataDir noteId = do

@@ -15,17 +15,18 @@ import qualified Data.ByteString as BS
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
+import           Data.Time.Calendar (Day)
 import           Data.Yaml (ToJSON, ParseException(..), YamlException(..), object, (.=), encodeFile, decodeFileEither)
 import qualified Data.Yaml.Pretty as Yaml
-import           Options.Applicative (ParserInfo, command, execParser, fullDesc,
-                                      helper, info, metavar, progDesc,
-                                      strArgument, subparser, (<**>))
+import           Options.Applicative (ParserInfo, auto, command, execParser, fullDesc,
+                                      helper, info, metavar, long, option, optional, progDesc,
+                                      short, strArgument, subparser, (<**>))
 import           System.FilePath (FilePath)
 import           System.Directory (XdgDirectory(XdgConfig), getXdgDirectory)
 
 import           FF (DocId (DocId), cmdAgenda, cmdDone, cmdNew)
 
-data Cmd = Agenda | Done DocId | New Text | Dir FilePath
+data Cmd = Agenda | Done DocId | New Text (Maybe Day) (Maybe Day) | Dir FilePath
 
 data Config = Config{
     dataDir :: FilePath
@@ -52,6 +53,8 @@ cmdInfo =
     cmdAgendaParser = pure Agenda
     cmdDoneParser   = Done . DocId  <$> strArgument (metavar "ID")
     cmdNewParser    = New           <$> strArgument (metavar "TEXT")
+                                        <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
+                                        <*> optional (option auto (long "end" <> short 'e' <> metavar "DATE"))
     cmdDirParser    = Dir           <$> strArgument (metavar "DIRECTORY")
     command' name parser = command name $ info (parser <**> helper) fullDesc
 
@@ -83,8 +86,8 @@ runCmd cfgFile mcfg cmd =
                 Done noteId -> do
                     text <- cmdDone dir noteId
                     yprint $ object ["archived" .= Map.singleton noteId text]
-                New text -> do
-                    noteId <- cmdNew dir text
+                New text start end -> do
+                    noteId <- cmdNew dir text start end
                     yprint $ Map.singleton noteId text
         Nothing  ->
             case cmd of

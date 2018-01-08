@@ -1,4 +1,4 @@
-name: ff
+Blname: ff
 version: '0.1'
 
 library:
@@ -9,6 +9,7 @@ library:
     - directory
     - filepath
     - text
+    - time
   source-dirs: lib
 
 executables:
@@ -22,6 +23,7 @@ executables:
       - optparse-applicative
       - stm
       - text
+      - time
       - yaml
 
       - ff
