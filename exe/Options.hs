@@ -39,8 +39,8 @@ info = i parser "A note taker and task tracker"
     pAgenda = pure Agenda
     pDone   = Done . DocId <$> strArgument (metavar "ID")
     pNew    = New <$> strArgument (metavar "TEXT")
-                  <*> optional (option auto (long "start" <> short 's' <> metavar "DATA"))
-                  <*> optional (option auto (long "end" <> short 'e' <> metavar "DATA"))
+                  <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
+                  <*> optional (option auto (long "end" <> short 'e' <> metavar "DATE"))
 
     pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
       where
