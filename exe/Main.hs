@@ -23,9 +23,7 @@ import           System.Directory (XdgDirectory (XdgConfig),
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
-import           FF.Options (Cmd (..), CmdConfig (..), DataDir (..),
-                             parseOptions)
-import qualified FF.Options as Options
+import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
 
 import           Config (Config (..), emptyConfig)
 
@@ -49,21 +47,21 @@ main = do
     timeVar <- newTVarIO =<< getRealLocalTime
     runLamportClock timeVar $ runCmd cfgFile cfg cmd
 
-runCmd :: FilePath -> Config -> Cmd -> LamportClock ()
+runCmd :: FilePath -> Config.Config -> Cmd -> LamportClock ()
 runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
-    Agenda -> do
+    CmdAgenda -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) cmdAgenda
         if null agenda then yprint ("nothing" :: Text) else yprint agenda
-    Done noteId -> do
+    CmdDone noteId -> do
         dir <- checkDataDir
         text <- (`runReaderT` dir) $ cmdDone noteId
         yprint $ object ["archived" .= Map.singleton noteId text]
-    New new -> do
+    CmdNew new -> do
         dir <- checkDataDir
         (noteId, noteView) <- (`runReaderT` dir) $ cmdNew new
         yprint $ Map.singleton noteId noteView
-    Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
+    CmdConfig config -> liftIO $ runCmdConfig config
   where
 
     checkDataDir :: Monad m => m FilePath
@@ -73,7 +71,7 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
             fail "Data directory isn't set, run `ff config dataDir --help`"
 
     runCmdConfig Nothing = yprint cfg
-    runCmdConfig (Just (DataDir mdir)) = do
+    runCmdConfig (Just (ConfigDataDir mdir)) = do
         dir <- case mdir of
             Nothing -> pure dataDir
             Just (DataDirJust dir) -> saveDataDir dir

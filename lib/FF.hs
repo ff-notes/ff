@@ -17,7 +17,7 @@ import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import           Data.Traversable (for)
 
-import           FF.Options (CmdNew (CmdNew), newEnd, newStart, newText)
+import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (DocId, Storage, list, load, save, saveNew)
 import           FF.Types (Agenda, Note (Note), NoteView,
                            Status (Active, Archived), end, start, status, text)
@@ -34,8 +34,8 @@ cmdAgenda = do
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: CmdNew -> Storage (DocId Note, NoteView)
-cmdNew CmdNew{newText, newStart, newEnd} = do
+cmdNew :: New -> Storage (DocId Note, NoteView)
+cmdNew New{newText, newStart, newEnd} = do
     note <- lift $ do
         status  <- LWW.initial Active
         text    <- LWW.initial newText

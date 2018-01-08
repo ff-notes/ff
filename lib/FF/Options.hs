@@ -1,7 +1,7 @@
 module FF.Options
     ( Cmd (..)
-    , CmdConfig (..)
-    , CmdNew (..)
+    , Config (..)
+    , New (..)
     , DataDir (..)
     , parseOptions
     ) where
@@ -18,14 +18,17 @@ import           Options.Applicative (auto, command, execParser, flag',
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Note)
 
-data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !CmdNew
+data Cmd
+    = CmdAgenda
+    | CmdConfig !(Maybe Config)
+    | CmdDone !(DocId Note)
+    | CmdNew !New
 
-newtype CmdConfig =
-    DataDir (Maybe DataDir)
+newtype Config = ConfigDataDir (Maybe DataDir)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
-data CmdNew = CmdNew
+data New = New
     { newText   :: !Text
     , newStart  :: !(Maybe Day)
     , newEnd    :: !(Maybe Day)
@@ -34,31 +37,31 @@ data CmdNew = CmdNew
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser = subparser commands <|> pAgenda
+    parser = subparser commands <|> pCmdAgenda
     commands = mconcat
-        [ command "agenda" iAgenda
-        , command "config" iConfig
-        , command "done"   iDone
-        , command "new"    iNew
+        [ command "agenda" iCmdAgenda
+        , command "config" iCmdConfig
+        , command "done"   iCmdDone
+        , command "new"    iCmdNew
         ]
 
-    iAgenda = i pAgenda "show what you can do right now [default action]"
-    iConfig = i pConfig "show/edit configuration"
-    iDone   = i pDone   "mark task done (archive)"
-    iNew    = i pNew    "add new task or note"
+    iCmdAgenda = i pCmdAgenda "show what you can do right now [default action]"
+    iCmdConfig = i pCmdConfig "show/edit configuration"
+    iCmdDone   = i pCmdDone   "mark task done (archive)"
+    iCmdNew    = i pCmdNew    "add new task or note"
 
-    pAgenda = pure Agenda
-    pDone   = Done . DocId <$> strArgument (metavar "ID")
-    pNew    = New <$> pCmdNew
-    pCmdNew = CmdNew
+    pCmdAgenda = pure CmdAgenda
+    pCmdDone   = CmdDone . DocId <$> strArgument (metavar "ID")
+    pCmdNew    = CmdNew <$> pNew
+    pNew = New
         <$> strArgument (metavar "TEXT")
         <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
         <*> optional (option auto (long "end"   <> short 'e' <> metavar "DATE"))
 
-    pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
+    pCmdConfig = CmdConfig <$> optional (subparser $ command "dataDir" iDataDir)
       where
         iDataDir = i pDataDir "the database directory"
-        pDataDir = DataDir <$> optional (pJust <|> pYandexDisk)
+        pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
             pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
             pYandexDisk =
