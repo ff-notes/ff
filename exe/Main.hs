@@ -6,11 +6,13 @@ module Main where
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Exception (throw)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.Reader (runReaderT)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
 import qualified Data.ByteString as BS
 import           Data.Functor (($>))
 import qualified Data.Map.Strict as Map
+import           Data.Text (Text)
 import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
                             YamlException (YamlException), decodeFileEither,
                             encodeFile, object, (.=))
@@ -48,16 +50,17 @@ main = do
 
 runCmd :: FilePath -> Config -> Cmd -> LamportClock ()
 runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
-    Agenda -> liftIO $ do
-        agenda <- cmdAgenda =<< checkDataDir
-        if null agenda then putStrLn "nothing" else yprint agenda
+    Agenda -> do
+        dir <- checkDataDir
+        agenda <- (`runReaderT` dir) cmdAgenda
+        if null agenda then yprint ("nothing" :: Text) else yprint agenda
     Done noteId -> do
         dir <- checkDataDir
-        text <- cmdDone dir noteId
+        text <- (`runReaderT` dir) $ cmdDone noteId
         yprint $ object ["archived" .= Map.singleton noteId text]
     New text start end -> do
         dir <- checkDataDir
-        noteId <- cmdNew dir text start end
+        noteId <- (`runReaderT` dir) $ cmdNew text start end
         yprint $ Map.singleton noteId text
     Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
   where

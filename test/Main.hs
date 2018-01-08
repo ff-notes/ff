@@ -7,10 +7,10 @@ import           Test.Tasty (defaultMain)
 import           Test.Tasty.HUnit (assertEqual, testCase)
 
 import           FF (cmdAgenda)
-import           FF.Document (DocId (DocId))
+import           FF.Storage (DocId (DocId), runStorage)
 
 main :: IO ()
 main =
     defaultMain $ testCase "cmdAgenda" $
         assertEqual "smoke" (Map.fromList [(DocId "1", "hello")])
-        =<< cmdAgenda "test/data/smoke.in"
+        =<< runStorage "test/data/smoke.in" undefined cmdAgenda

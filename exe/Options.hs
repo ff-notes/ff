@@ -11,7 +11,7 @@ import           Options.Applicative (ParserInfo, auto, command, flag', fullDesc
 import qualified Options.Applicative as OptApp
 
 import           FF (Note)
-import           FF.Document (DocId (DocId))
+import           FF.Storage (DocId (DocId))
 
 data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !Text !(Maybe Day) !(Maybe Day)
 

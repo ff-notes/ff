@@ -3,12 +3,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.Document where
+module FF.Storage where
 
+import           Control.Concurrent.STM (TVar)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (ReaderT, ask, asks, runReaderT)
+import           Control.Monad.Trans (lift)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (LamportClock, LamportTime (LamportTime),
-                                    Pid (Pid), getTime)
+                                    LocalTime, Pid (Pid), getTime,
+                                    runLamportClock)
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
@@ -28,38 +32,46 @@ newtype DocId doc = DocId FilePath
 instance Show (DocId doc) where
     show (DocId path) = path
 
-list :: forall doc. Collection doc => FilePath -> IO [DocId doc]
-list dataDir = map DocId <$> listDirectory (dataDir </> collectionName @doc)
+-- | Environment is the dataDir
+type Storage = ReaderT FilePath LamportClock
 
-load :: forall doc. Collection doc => FilePath -> DocId doc -> IO (Maybe doc)
-load dataDir (DocId docId) = do
-    versionFiles <- listDirectory docDir
-    versions <- for versionFiles $ \version -> do
-        let versionPath = docDir </> version
-        contents <- BSL.readFile versionPath
-        pure $
-            either (error . ((versionPath ++ ": ") ++)) id $
-            eitherDecode contents
-    pure $ sconcat <$> nonEmpty versions
-  where
-    docDir = dataDir </> collectionName @doc </> docId
+runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
+runStorage dataDir var action = runLamportClock var $ runReaderT action dataDir
 
-save
-    :: forall doc
-    . Collection doc => FilePath -> DocId doc -> doc -> LamportClock ()
-save dataDir (DocId docId) doc = do
-    version <- getTime
+list :: forall doc. Collection doc => Storage [DocId doc]
+list = do
+    dataDir <- ask
+    liftIO $ map DocId <$> listDirectory (dataDir </> collectionName @doc)
+
+load :: forall doc. Collection doc => DocId doc -> Storage (Maybe doc)
+load docId = do
+    docDir <- askDocDir docId
+    liftIO $ do
+        versionFiles <- listDirectory docDir
+        versions <- for versionFiles $ \version -> do
+            let versionPath = docDir </> version
+            contents <- BSL.readFile versionPath
+            pure $
+                either (error . ((versionPath ++ ": ") ++)) id $
+                eitherDecode contents
+        pure $ sconcat <$> nonEmpty versions
+
+askDocDir :: forall doc. Collection doc => DocId doc -> Storage FilePath
+askDocDir (DocId docId) = asks (</> collectionName @doc </> docId)
+
+save :: forall doc. Collection doc => DocId doc -> doc -> Storage ()
+save docId doc = do
+    docDir <- askDocDir docId
+    version <- lift getTime
     let versionFile = docDir </> lamportTimeToFileName version
     liftIO $ do
         createDirectoryIfMissing True docDir
         BSL.writeFile versionFile $ encode doc
-  where
-    docDir = dataDir </> collectionName @doc </> docId
 
-saveNew :: Collection doc => FilePath -> doc -> LamportClock (DocId doc)
-saveNew dataDir doc = do
-    docId <- DocId . lamportTimeToFileName <$> getTime
-    save dataDir docId doc
+saveNew :: Collection doc => doc -> Storage (DocId doc)
+saveNew doc = do
+    docId <- DocId . lamportTimeToFileName <$> lift getTime
+    save docId doc
     pure docId
 
 showBase36 :: (Integral a, Show a) => a -> String -> String

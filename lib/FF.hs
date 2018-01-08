@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -12,9 +13,8 @@ module FF
     , cmdNew
     ) where
 
-import           Control.Monad.IO.Class (liftIO)
-import           CRDT.LamportClock (LamportClock, LamportTime (LamportTime),
-                                    Pid)
+import           Control.Monad.Trans (lift)
+import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
 import           CRDT.LWW (LWW (LWW), time, value)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (FromJSON, ToJSON, Value (Array), parseJSON, toJSON)
@@ -31,8 +31,8 @@ import           Data.Time.Calendar (Day)
 import           Data.Traversable (for)
 import           GHC.Exts (fromList)
 
-import           FF.Document (Collection, DocId, collectionName, list, load,
-                              save, saveNew)
+import           FF.Storage (Collection, DocId, Storage, collectionName, list,
+                             load, save, saveNew)
 
 deriveJSON defaultOptions ''Pid
 
@@ -55,10 +55,10 @@ data Status = Active | Archived | Deleted
 deriveJSON defaultOptions ''Status
 
 data Note = Note
-    { status :: !(Maybe (LWW Status))
-    , text   :: !(LWW Text)
+    { status    :: !(Maybe (LWW Status))
+    , text      :: !(LWW Text)
     , startDate :: !(LWW (Maybe Day))
-    , endDate :: !(LWW (Maybe Day))
+    , endDate   :: !(LWW (Maybe Day))
     }
     deriving (Eq, Show)
 
@@ -77,11 +77,11 @@ type NoteView = Text
 
 type Agenda = Map (DocId Note) NoteView
 
-cmdAgenda :: FilePath -> IO Agenda
-cmdAgenda dataDir = do
-    docs <- list dataDir
+cmdAgenda :: Storage Agenda
+cmdAgenda = do
+    docs <- list
     mnotes <- for docs $ \doc -> do
-        mnote <- load dataDir doc
+        mnote <- load doc
         let noteView = case mnote of
                 Just Note{status = Nothing, text} -> Just $ LWW.query text
                 Just Note{status = Just (LWW.query -> Active), text} ->
@@ -90,17 +90,19 @@ cmdAgenda dataDir = do
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: FilePath -> Text -> Maybe Day -> Maybe Day -> LamportClock (DocId Note)
-cmdNew dataDir content start end = do
-    status <- Just <$> LWW.initial Active
-    text <- LWW.initial content
-    startDate <- LWW.initial start
-    endDate <- LWW.initial end
-    saveNew dataDir Note{status, text, startDate, endDate}
+cmdNew :: Text -> Maybe Day -> Maybe Day -> Storage (DocId Note)
+cmdNew content start end = do
+    note <- lift $ do
+        status    <- Just <$> LWW.initial Active
+        text      <- LWW.initial content
+        startDate <- LWW.initial start
+        endDate   <- LWW.initial end
+        pure Note{..}
+    saveNew note
 
-cmdDone :: FilePath -> DocId Note -> LamportClock Text
-cmdDone dataDir noteId = do
-    mnote <- liftIO $ load dataDir noteId
+cmdDone :: DocId Note -> Storage Text
+cmdDone noteId = do
+    mnote <- load noteId
     let note =
             fromMaybe
                 (error $ concat
@@ -109,9 +111,9 @@ cmdDone dataDir noteId = do
                     , ". Where did you get this id?"
                     ])
                 mnote
-    status' <- case status note of
+    status' <- lift $ case status note of
         Nothing     -> LWW.initial  Archived
         Just status -> LWW.assign   Archived status
-    save dataDir noteId note{status = Just status'}
+    save noteId note{status = Just status'}
 
     pure $ LWW.query $ text note
