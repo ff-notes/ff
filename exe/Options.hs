@@ -8,13 +8,13 @@ import           Options.Applicative (ParserInfo, command, flag', fullDesc,
                                       short, strArgument, subparser, (<**>))
 import qualified Options.Applicative as OptApp
 
-import           FF (DocId (DocId))
+import           FF (Note)
+import           FF.Document (DocId (DocId))
 
-data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !DocId | New !Text
+data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !(DocId Note) | New !Text
 
 newtype CmdConfig =
     DataDir (Maybe DataDir)
-    -- ^ TODO(cblp, 2018-01-07) add autodetection of dropbox and yadisk
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 

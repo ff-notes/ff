@@ -2,10 +2,11 @@
 
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module FF
     ( Agenda
-    , DocId (..)
+    , Note
     , cmdAgenda
     , cmdDone
     , cmdNew
@@ -28,11 +29,9 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import           Data.Traversable (for)
 import           GHC.Exts (fromList)
-import           System.Directory (listDirectory)
-import           System.FilePath ((</>))
 
-import           FF.Document (Collection, DocId (DocId), collectionName,
-                              loadDocument, saveDocument, saveNewDocument)
+import           FF.Document (Collection, DocId, collectionName, list, load,
+                              save, saveNew)
 
 deriveJSON defaultOptions ''Pid
 
@@ -73,32 +72,30 @@ instance Collection Note where
 
 type NoteView = Text
 
-type Agenda = Map DocId NoteView
+type Agenda = Map (DocId Note) NoteView
 
 cmdAgenda :: FilePath -> IO Agenda
 cmdAgenda dataDir = do
-    files <- listDirectory $ dataDir </> "note" -- TODO(cblp, 2018-01-08) listDocuments
-    mnotes <- for files $ \name -> do
-        let doc = DocId name
-        note <- loadDocument dataDir doc
-        let noteView = case note of
-                Just Note{status = Nothing, text} ->
+    docs <- list dataDir
+    mnotes <- for docs $ \doc -> do
+        mnote <- load dataDir doc
+        let noteView = case mnote of
+                Just Note{status = Nothing, text} -> Just $ LWW.query text
+                Just Note{status = Just (LWW.query -> Active), text} ->
                     Just $ LWW.query text
-                Just Note{status = Just status, text}
-                    | LWW.query status == Active -> Just $ LWW.query text
                 _ -> Nothing
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: FilePath -> Text -> LamportClock DocId
+cmdNew :: FilePath -> Text -> LamportClock (DocId Note)
 cmdNew dataDir content = do
     status <- Just <$> LWW.initial Active
     text <- LWW.initial content
-    saveNewDocument dataDir Note{status, text}
+    saveNew dataDir Note{status, text}
 
-cmdDone :: FilePath -> DocId -> LamportClock Text
+cmdDone :: FilePath -> DocId Note -> LamportClock Text
 cmdDone dataDir noteId = do
-    mnote <- liftIO $ loadDocument dataDir noteId
+    mnote <- liftIO $ load dataDir noteId
     let note =
             fromMaybe
                 (error $ concat
@@ -110,6 +107,6 @@ cmdDone dataDir noteId = do
     status' <- case status note of
         Nothing     -> LWW.initial  Archived
         Just status -> LWW.assign   Archived status
-    saveDocument dataDir noteId note{status = Just status'}
+    save dataDir noteId note{status = Just status'}
 
     pure $ LWW.query $ text note

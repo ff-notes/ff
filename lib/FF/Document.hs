@@ -22,15 +22,17 @@ import           System.FilePath ((</>))
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
 
-newtype DocId = DocId FilePath
+newtype DocId doc = DocId FilePath
     deriving (Eq, Ord, ToJSONKey)
 
-instance Show DocId where
+instance Show (DocId doc) where
     show (DocId path) = path
 
-loadDocument
-    :: forall doc. Collection doc => FilePath -> DocId -> IO (Maybe doc)
-loadDocument dataDir (DocId docId) = do
+list :: forall doc. Collection doc => FilePath -> IO [DocId doc]
+list dataDir = map DocId <$> listDirectory (dataDir </> collectionName @doc)
+
+load :: forall doc. Collection doc => FilePath -> DocId doc -> IO (Maybe doc)
+load dataDir (DocId docId) = do
     versionFiles <- listDirectory docDir
     versions <- for versionFiles $ \version -> do
         let versionPath = docDir </> version
@@ -42,9 +44,10 @@ loadDocument dataDir (DocId docId) = do
   where
     docDir = dataDir </> collectionName @doc </> docId
 
-saveDocument
-    :: forall doc. Collection doc => FilePath -> DocId -> doc -> LamportClock ()
-saveDocument dataDir (DocId docId) doc = do
+save
+    :: forall doc
+    . Collection doc => FilePath -> DocId doc -> doc -> LamportClock ()
+save dataDir (DocId docId) doc = do
     version <- getTime
     let versionFile = docDir </> lamportTimeToFileName version
     liftIO $ do
@@ -53,11 +56,10 @@ saveDocument dataDir (DocId docId) doc = do
   where
     docDir = dataDir </> collectionName @doc </> docId
 
-saveNewDocument
-    :: Collection doc => FilePath -> doc -> LamportClock DocId
-saveNewDocument dataDir doc = do
+saveNew :: Collection doc => FilePath -> doc -> LamportClock (DocId doc)
+saveNew dataDir doc = do
     docId <- DocId . lamportTimeToFileName <$> getTime
-    saveDocument dataDir docId doc
+    save dataDir docId doc
     pure docId
 
 showBase36 :: (Integral a, Show a) => a -> String -> String
