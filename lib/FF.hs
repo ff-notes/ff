@@ -10,11 +10,13 @@ module FF
     , cmdNew
     ) where
 
+import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans (lift)
 import qualified CRDT.LWW as LWW
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
+import           Data.Time (getCurrentTime, utctDay)
 import           Data.Traversable (for)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
@@ -36,10 +38,11 @@ cmdAgenda = do
 
 cmdNew :: New -> Storage (DocId Note, NoteView)
 cmdNew New{newText, newStart, newEnd} = do
+    newStart' <- fromMaybeA (liftIO $ utctDay <$> getCurrentTime) newStart
     note <- lift $ do
         status  <- LWW.initial Active
         text    <- LWW.initial newText
-        start   <- LWW.initial newStart
+        start   <- LWW.initial newStart'
         end     <- LWW.initial newEnd
         pure Note{..}
     nid <- saveNew note
@@ -60,3 +63,6 @@ cmdDone nid = do
     save nid note{status = status'}
 
     pure $ LWW.query text
+
+fromMaybeA :: Applicative m => m a -> Maybe a -> m a
+fromMaybeA m = maybe m pure

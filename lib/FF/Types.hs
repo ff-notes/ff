@@ -43,7 +43,7 @@ deriveJSON defaultOptions ''Status
 data Note = Note
     { status  :: !(LWW Status)
     , text    :: !(LWW Text)
-    , start   :: !(LWW (Maybe Day))
+    , start   :: !(LWW Day)
     , end     :: !(LWW (Maybe Day))
     }
     deriving (Eq, Show)
