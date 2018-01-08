@@ -57,7 +57,7 @@ deriveJSON defaultOptions ''Status
 data Note = Note
     { status :: !(Maybe (LWW Status))
     , text   :: !(LWW Text)
-    , startDate :: !(LWW (Maybe Day))
+    , startDate :: !(LWW Day)
     , endDate :: !(LWW (Maybe Day))
     }
     deriving (Eq, Show)
@@ -90,7 +90,7 @@ cmdAgenda dataDir = do
         pure (doc, noteView)
     pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
 
-cmdNew :: FilePath -> Text -> Maybe Day -> Maybe Day -> LamportClock (DocId Note)
+cmdNew :: FilePath -> Text -> Day -> Maybe Day -> LamportClock (DocId Note)
 cmdNew dataDir content start end = do
     status <- Just <$> LWW.initial Active
     text <- LWW.initial content

@@ -11,6 +11,7 @@ import           CRDT.LamportClock (LamportClock, getRealLocalTime,
 import qualified Data.ByteString as BS
 import           Data.Functor (($>))
 import qualified Data.Map.Strict as Map
+import           Data.Time.Clock (utctDay, getCurrentTime)
 import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
                             YamlException (YamlException), decodeFileEither,
                             encodeFile, object, (.=))
@@ -55,12 +56,16 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         text <- cmdDone dir noteId
         yprint $ object ["archived" .= Map.singleton noteId text]
-    New text start end -> do
+    New text mStart mEnd -> do
         dir <- checkDataDir
-        noteId <- cmdNew dir text start end
+        start <- fromMaybeA (liftIO $ utctDay <$> getCurrentTime) mStart
+        noteId <- cmdNew dir text start mEnd
         yprint $ Map.singleton noteId text
     Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
   where
+
+    fromMaybeA :: Applicative m => m a -> Maybe a -> m a
+    fromMaybeA m = maybe m pure
 
     checkDataDir :: Monad m => m FilePath
     checkDataDir = case dataDir of
