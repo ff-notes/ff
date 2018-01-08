@@ -1,4 +1,7 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.Document where
 
@@ -16,6 +19,9 @@ import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, listDirectory)
 import           System.FilePath ((</>))
 
+class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
+    collectionName :: FilePath
+
 newtype DocId = DocId FilePath
     deriving (Eq, Ord, ToJSONKey)
 
@@ -23,32 +29,35 @@ instance Show DocId where
     show (DocId path) = path
 
 loadDocument
-    :: (CvRDT doc, FromJSON doc) => FilePath -> DocId -> IO (Maybe doc)
-loadDocument dir (DocId doc) = do
-    versionFiles <- listDirectory $ dir </> doc
+    :: forall doc. Collection doc => FilePath -> DocId -> IO (Maybe doc)
+loadDocument dataDir (DocId docId) = do
+    versionFiles <- listDirectory docDir
     versions <- for versionFiles $ \version -> do
-        let versionPath = dir </> doc </> version
+        let versionPath = docDir </> version
         contents <- BSL.readFile versionPath
         pure $
             either (error . ((versionPath ++ ": ") ++)) id $
             eitherDecode contents
     pure $ sconcat <$> nonEmpty versions
+  where
+    docDir = dataDir </> collectionName @doc </> docId
 
 saveDocument
-    :: (CvRDT doc, ToJSON doc) => FilePath -> DocId -> doc -> LamportClock ()
-saveDocument dir (DocId docId) doc = do
-    let docDir = dir </> docId
+    :: forall doc. Collection doc => FilePath -> DocId -> doc -> LamportClock ()
+saveDocument dataDir (DocId docId) doc = do
     version <- getTime
     let versionFile = docDir </> lamportTimeToFileName version
     liftIO $ do
         createDirectoryIfMissing True docDir
         BSL.writeFile versionFile $ encode doc
+  where
+    docDir = dataDir </> collectionName @doc </> docId
 
 saveNewDocument
-    :: (CvRDT doc, ToJSON doc) => FilePath -> doc -> LamportClock DocId
-saveNewDocument dir doc = do
+    :: Collection doc => FilePath -> doc -> LamportClock DocId
+saveNewDocument dataDir doc = do
     docId <- DocId . lamportTimeToFileName <$> getTime
-    saveDocument dir docId doc
+    saveDocument dataDir docId doc
     pure docId
 
 showBase36 :: (Integral a, Show a) => a -> String -> String
