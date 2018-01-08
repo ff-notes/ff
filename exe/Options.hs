@@ -3,9 +3,9 @@ module Options where
 import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
-import           Options.Applicative (ParserInfo, command, fullDesc, helper,
-                                      metavar, progDesc, strArgument, subparser,
-                                      (<**>))
+import           Options.Applicative (ParserInfo, command, flag', fullDesc,
+                                      help, helper, long, metavar, progDesc,
+                                      short, strArgument, subparser, (<**>))
 import qualified Options.Applicative as OptApp
 
 import           FF (DocId (DocId))
@@ -13,8 +13,10 @@ import           FF (DocId (DocId))
 data Cmd = Agenda | Config !(Maybe CmdConfig) | Done !DocId | New !Text
 
 newtype CmdConfig =
-    DataDir (Maybe FilePath)
+    DataDir (Maybe DataDir)
     -- ^ TODO(cblp, 2018-01-07) add autodetection of dropbox and yadisk
+
+data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
 info :: ParserInfo Cmd
 info = i parser "A note taker and task tracker"
@@ -39,6 +41,11 @@ info = i parser "A note taker and task tracker"
     pConfig = Config <$> optional (subparser $ command "dataDir" iDataDir)
       where
         iDataDir = i pDataDir "the database directory"
-        pDataDir = DataDir <$> optional (strArgument $ metavar "DIR")
+        pDataDir = DataDir <$> optional (pJust <|> pYandexDisk)
+          where
+            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
+            pYandexDisk =
+                flag' DataDirYandexDisk $
+                long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk"
 
     i prsr desc = OptApp.info (prsr <**> helper) $ fullDesc <> progDesc desc

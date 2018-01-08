@@ -9,19 +9,22 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
 import qualified Data.ByteString as BS
+import           Data.Functor (($>))
 import qualified Data.Map.Strict as Map
 import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
                             YamlException (YamlException), decodeFileEither,
                             encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
 import           Options.Applicative (execParser)
-import           System.Directory (XdgDirectory (XdgConfig), getXdgDirectory)
-import           System.FilePath (FilePath, (</>))
+import           System.Directory (XdgDirectory (XdgConfig),
+                                   createDirectoryIfMissing, doesDirectoryExist,
+                                   getHomeDirectory, getXdgDirectory)
+import           System.FilePath (FilePath, takeDirectory, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
 
 import           Config (Config (..), emptyConfig)
-import           Options (Cmd (..), CmdConfig (..), info)
+import           Options (Cmd (..), CmdConfig (..), DataDir (..), info)
 
 appName :: String
 appName = "ff"
@@ -58,16 +61,32 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
         yprint $ Map.singleton noteId text
     Options.Config cmdConfig -> liftIO $ runCmdConfig cmdConfig
   where
+
     checkDataDir :: Monad m => m FilePath
     checkDataDir = case dataDir of
         Just dir -> pure dir
         Nothing  -> fail
-            "Working directory isn't specified, use `ff config dataDir DIR` to set it"
+            "Working directory isn't specified,\
+            \ use `ff config dataDir` to set it"
 
     runCmdConfig Nothing = yprint cfg
-    runCmdConfig (Just (DataDir mdir)) = case mdir of
-        Just dir -> encodeFile cfgFile cfg{dataDir = Just dir}
-        Nothing  -> yprint $ object ["dataDir" .= dataDir]
+    runCmdConfig (Just (DataDir mdir)) = do
+        dir <- case mdir of
+            Nothing -> pure dataDir
+            Just (DataDirJust dir) -> saveDataDir dir
+            Just DataDirYandexDisk -> do
+                home <- getHomeDirectory
+                let ydl = home </> "Yandex.Disk.localized"
+                ydlExists <- doesDirectoryExist ydl
+                if ydlExists then
+                    saveDataDir $ ydl </> "Apps" </> appName
+                else
+                    fail "Cant't detect Yandex.Disk directory"
+        yprint $ object ["dataDir" .= dir]
+      where
+        saveDataDir dir = do
+            createDirectoryIfMissing True $ takeDirectory cfgFile
+            encodeFile cfgFile cfg{dataDir = Just dir} $> Just dir
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
 yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig
