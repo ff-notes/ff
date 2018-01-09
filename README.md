@@ -5,7 +5,7 @@ A distributed note taker and task manager.
 ## What's the big deal?
 
 1.  𝑓𝑓 synchronizes via any file sync application, like Yandex.Disk,
-    Dropbox or Google Drive.
+    Dropbox, or Google Drive.
 2.  𝑓𝑓 is available offline and synchronizes without conflicts thanks to
     [CRDT](https://github.com/cblp/crdt).
 
