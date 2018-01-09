@@ -5,11 +5,13 @@ module Main where
 
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Exception (throw)
+import           Control.Monad (guard)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (runReaderT)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
 import qualified Data.ByteString as BS
+import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
@@ -77,14 +79,16 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
             Just (DataDirJust dir) -> saveDataDir dir
             Just DataDirYandexDisk -> do
                 home <- getHomeDirectory
-                let ydl = home </> "Yandex.Disk.localized"
-                ydlExists <- doesDirectoryExist ydl
-                if ydlExists then
-                    saveDataDir $ ydl </> "Apps" </> appName
-                else
-                    fail "Cant't detect Yandex.Disk directory"
+                asum
+                    [ trySaveDataDir $ home </> "Yandex.Disk"
+                    , trySaveDataDir $ home </> "Yandex.Disk.localized"
+                    , fail "Cant't detect Yandex.Disk directory"
+                    ]
         yprint $ object ["dataDir" .= dir]
       where
+        trySaveDataDir baseDir = do
+            guard =<< doesDirectoryExist baseDir
+            saveDataDir $ baseDir </> "Apps" </> appName
         saveDataDir dir = do
             createDirectoryIfMissing True $ takeDirectory cfgFile
             encodeFile cfgFile cfg{dataDir = Just dir} $> Just dir
