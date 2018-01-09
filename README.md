@@ -11,9 +11,10 @@ A distributed note taker and task manager.
 
 ## Stability
 
-Alpha. Works on my laptop.
+Works on all my computers and synchronizes between them successfully.
 𝑓𝑓's own issues are tracked in 𝑓𝑓 since the first day of development.
 Please feel free to test it in your environment.
+But no guarantees.
 
 ## Install
 
