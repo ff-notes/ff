@@ -25,7 +25,7 @@ Please feel free to test it in your environment.
 ### Get some unfinished tasks
 
     $ ff
-    1: buy milk
+    457zi9nhn51-12z3opnykw: buy milk
 
 Or, if no tasks
 
@@ -39,18 +39,18 @@ Or, if no tasks
 Now you can find it in your agenda:
 
     $ ff
-    1: buy milk
-    2: learn Haskell
+    457zi9nhn51-12z3opnykw: buy milk
+    457zifxyxpz-12z3opnykw: learn Haskell
 
 ### Mark task done
 
 Marking done is actually moving to archive.
 
-    $ ff done 1
+    $ ff done 457zi9nhn51-12z3opnykw
     archived:
-      1: buy milk
+      457zi9nhn51-12z3opnykw: buy milk
 
 Archived tasks don't appear in an agenda:
 
     $ ff
-    2: learn Haskell
+    457zifxyxpz-12z3opnykw: learn Haskell
