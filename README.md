@@ -1,6 +1,6 @@
 # 𝑓𝑓
 
-The best note taker and task manager.
+A distributed note taker and task manager.
 
 ## What's the big deal?
 
