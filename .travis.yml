@@ -37,3 +37,8 @@ matrix:
         - $STACK build hlint
       script:
         - $STACK exec -- hlint .
+    - compiler: weeder
+      install:
+        - $STACK build weeder
+      script:
+        - $STACK exec -- weeder
