@@ -61,6 +61,9 @@ Features in clients
       - \:x:
 
     * - Configuration
+      -
+      -
+      -
 
     * - - detect ~/Yandex.Disk
         - detect ~/Yandex.Disk.localized
