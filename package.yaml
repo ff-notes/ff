@@ -33,7 +33,7 @@ executables:
       - ff
 
     main: Main
-    source-dirs: exe
+    source-dirs: exe/ff
 
 tests:
   test:
