@@ -37,13 +37,13 @@ executables:
       - Config
     source-dirs: exe/ff
 
-  ff-gui:
+  ff-qt:
     dependencies:
       - hoppy-runtime
       - qtah
     ghc-options: -dynamic  # to find libqtah.so automatically
     main: Main
-    source-dirs: exe/ff-gui
+    source-dirs: exe/ff-qt
 
 tests:
   test:
