@@ -4,7 +4,6 @@
 module Main where
 
 import           Control.Concurrent.STM (newTVarIO)
-import           Control.Exception (throw)
 import           Control.Monad (guard)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (runReaderT)
@@ -15,42 +14,26 @@ import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
-import           Data.Yaml (ParseException (InvalidYaml), ToJSON,
-                            YamlException (YamlException), decodeFileEither,
-                            encodeFile, object, (.=))
+import           Data.Yaml (ToJSON, encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
-import           System.Directory (XdgDirectory (XdgConfig),
-                                   createDirectoryIfMissing, doesDirectoryExist,
-                                   getHomeDirectory, getXdgDirectory)
+import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
+                                   getHomeDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
 import           FF (cmdAgenda, cmdDone, cmdNew)
+import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
+import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
-
-import           Config (Config (..), emptyConfig)
-
-appName :: String
-appName = "ff"
-
-cfgFilePath :: FilePath
-cfgFilePath = appName </> "config.yaml"
 
 main :: IO ()
 main = do
-    cfgFile <- getXdgDirectory XdgConfig cfgFilePath
-    ecfg <- decodeFileEither cfgFile
-    cfg <- case ecfg of
-        Right cfg                                 -> pure cfg
-        Left (InvalidYaml (Just YamlException{})) -> pure emptyConfig
-        Left parseException                       -> throw parseException
-
+    cfg <- loadConfig
     cmd <- parseOptions
-
     timeVar <- newTVarIO =<< getRealLocalTime
-    runLamportClock timeVar $ runCmd cfgFile cfg cmd
+    runLamportClock timeVar $ runCmd cfg cmd
 
-runCmd :: FilePath -> Config.Config -> Cmd -> LamportClock ()
-runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
+runCmd :: Config.Config -> Cmd -> LamportClock ()
+runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdAgenda -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) cmdAgenda
@@ -90,8 +73,9 @@ runCmd cfgFile cfg@Config.Config{dataDir} cmd = case cmd of
             guard =<< doesDirectoryExist baseDir
             saveDataDir $ baseDir </> "Apps" </> appName
         saveDataDir dir = do
-            createDirectoryIfMissing True $ takeDirectory cfgFile
-            encodeFile cfgFile cfg{dataDir = Just dir} $> Just dir
+            cfgFilePath <- getCfgFilePath
+            createDirectoryIfMissing True $ takeDirectory cfgFilePath
+            encodeFile cfgFilePath cfg{dataDir = Just dir} $> Just dir
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
 yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig

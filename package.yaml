@@ -7,6 +7,7 @@ library:
   dependencies:
     - aeson
     - bytestring
+    - containers
     - crdt
     - directory
     - filepath
@@ -15,13 +16,14 @@ library:
     - stm
     - text
     - time
+    - yaml
   source-dirs: lib
 
 executables:
   ff:
     dependencies:
-      - aeson
       - bytestring
+      - containers
       - crdt
       - directory
       - filepath
@@ -33,21 +35,28 @@ executables:
       - ff
 
     main: Main
-    other-modules:
-      - Config
+    other-modules: []
     source-dirs: exe/ff
 
   ff-qt:
     dependencies:
+      - crdt
       - hoppy-runtime
       - qtah
+      - stm
+      - text
+
+      - ff
+
     ghc-options: -dynamic  # to find libqtah.so automatically
     main: Main
+    other-modules: []
     source-dirs: exe/ff-qt
 
 tests:
   test:
     dependencies:
+      - containers
       - tasty
       - tasty-hunit
 
@@ -58,4 +67,3 @@ tests:
 
 dependencies:
   - base
-  - containers
