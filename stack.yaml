@@ -5,7 +5,7 @@ extra-deps:
     - crdt-6.1
   # ff-qt:
     - git: https://gitlab.com/cblp/qtah.git
-      commit: cc26ea2  # branch 'fix-qmake-empty-filename', 2018-01-13
+      commit: 913d45b  # master, 2018-01-13
       subdirs:
         - qtah
         - qtah-cpp
