@@ -33,12 +33,15 @@ executables:
       - ff
 
     main: Main
+    other-modules:
+      - Config
     source-dirs: exe/ff
 
   ff-gui:
     dependencies:
       - hoppy-runtime
       - qtah
+    ghc-options: -dynamic  # to find libqtah.so automatically
     main: Main
     source-dirs: exe/ff-gui
 
@@ -56,5 +59,3 @@ tests:
 dependencies:
   - base
   - containers
-
-ghc-options: -dynamic  # to find libqtah.so automagically (how does it work?)
