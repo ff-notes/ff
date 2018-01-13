@@ -56,8 +56,10 @@ features =
 
 main :: IO ()
 main = writeFile "/tmp/features.html" $ renderHtml $ do
-    style "th, td { border: solid 1px; }"
-    style "table { border-collapse: collapse; }"
+    style
+        "table { border-collapse: collapse; }\n\
+        \th, td { border: solid 1px; }\n\
+        \ul { margin: 0; }"
     table $ do
         tr $ do
             th ! A.rowspan "2" $ "Feature"
