@@ -6,6 +6,7 @@
 module Main (main) where
 
 import           Data.Foldable (for_)
+import           Data.Function ((&))
 import           Data.Semigroup ((<>))
 import           Data.String (IsString, fromString)
 import           Text.Blaze.Html.Renderer.Pretty (renderHtml)
@@ -16,42 +17,42 @@ import qualified Text.Blaze.Html5.Attributes as A
 type Implemetation = Bool
 
 data Feature = Feature
-    { description :: String
-    , cli         :: Implemetation
-    , qt          :: Implemetation
-    , gtk         :: Implemetation
-    , wx          :: Implemetation
-    , android     :: Implemetation
-    , ios         :: Implemetation
+    { fDescription  :: String
+    , fCli          :: Implemetation
+    , fQt           :: Implemetation
+    , fGtk          :: Implemetation
+    , fWx           :: Implemetation
+    , fAndroid      :: Implemetation
+    , fIos          :: Implemetation
     }
 
 instance IsString Feature where
     fromString description = Feature
-        { description = fromString description
-        , cli = False
-        , qt = False
-        , gtk = False
-        , wx = False
-        , android = False
-        , ios = False
+        { fDescription = fromString description
+        , fCli = False
+        , fQt = False
+        , fGtk = False
+        , fWx = False
+        , fAndroid = False
+        , fIos = False
         }
 
 features :: [Feature]
 features =
-    [ "Agenda"{cli=True, qt=True}
-    , "- Show only active"{cli=True, qt=True}
+    [ "Agenda" & cli & qt
+    , "- Show only active" & cli & qt
     , "- Show only started (now >= start)"
     , "- Show start/end dates"
-    , "Add note/task"{cli=True}
-    , "- with start date"{cli=True}
+    , "Add note/task" & cli
+    , "- with start date" & cli
     , "- with start time"
-    , "- with end date"{cli=True}
+    , "- with end date" & cli
     , "- with end time"
-    , "Mark as done/archive"{cli=True}
-    , "Configuration"{cli=True}
-    , "- detect folder"{cli=True}
-    , "- - ~/Yandex.Disk"{cli=True}
-    , "- - ~/Yandex.Disk.localized"{cli=True}
+    , "Mark as done/archive" & cli
+    , "Configuration" & cli
+    , "- detect folder" & cli
+    , "- - ~/Yandex.Disk" & cli
+    , "- - ~/Yandex.Disk.localized" & cli
     ]
 
 main :: IO ()
@@ -73,13 +74,13 @@ main = writeFile "/tmp/features.html" $ renderHtml $ do
             th "Android"
             th "iOS"
         for_ features $ \Feature{..} -> tr $ do
-            td $ deep description
-            td $ check cli
-            td $ check qt
-            td $ check gtk
-            td $ check wx
-            td $ check android
-            td $ check ios
+            td $ deep fDescription
+            td $ check fCli
+            td $ check fQt
+            td $ check fGtk
+            td $ check fWx
+            td $ check fAndroid
+            td $ check fIos
 
 check :: IsString string => Bool -> string
 check False = "❌"
@@ -89,3 +90,7 @@ deep :: String -> Html
 deep = \case
     '-' : ' ' : s -> ul $ li $ deep s
     s -> string s
+
+cli, qt :: Feature -> Feature
+cli f = f{fCli = True}
+qt  f = f{fQt  = True}
