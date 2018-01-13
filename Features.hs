@@ -75,16 +75,21 @@ main = writeFile "/tmp/features.html" $ renderHtml $ do
             th "iOS"
         for_ features $ \Feature{..} -> tr $ do
             td $ deep fDescription
-            td $ check fCli
-            td $ check fQt
-            td $ check fGtk
-            td $ check fWx
-            td $ check fAndroid
-            td $ check fIos
+            td $ check True  fCli
+            td $ check True  fQt
+            td $ check False fGtk
+            td $ check False fWx
+            td $ check True  fAndroid
+            td $ check False fIos
 
-check :: IsString string => Bool -> string
-check False = "❌"
-check True = "✅"
+check
+    :: IsString string
+    => Bool -- ^ needed
+    -> Bool -- ^ implemeted
+    -> string
+check False False = ""
+check True  False = "❌"
+check _     True  = "✅"
 
 deep :: String -> Html
 deep = \case
