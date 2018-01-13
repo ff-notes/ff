@@ -48,7 +48,9 @@ executables:
 
       - ff
 
-    ghc-options: -dynamic  # to find libqtah.so automatically
+    ghc-options: -dynamic -optl-pthread
+      # -dynamic -- to find libqtah.so automatically
+      # -optl-pthread -- Travis can't find pthread
     main: Main
     other-modules: []
     source-dirs: exe/ff-qt
@@ -64,6 +66,11 @@ tests:
 
     main: Main
     source-dirs: test
+
+  features:
+    dependencies:
+      - blaze-html
+    main: Features.hs
 
 dependencies:
   - base
