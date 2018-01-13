@@ -24,7 +24,7 @@ import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
-import           FF (cmdAgenda)
+import           FF (getAgenda)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
 
@@ -56,7 +56,7 @@ mkAgendaWidget :: FilePath -> TVar LocalTime -> IO QTreeWidget
 mkAgendaWidget dataDir timeVar = do
     tree <- QTreeWidget.new
     setHeaderHidden tree True
-    notes <- runStorage dataDir timeVar cmdAgenda
+    notes <- runStorage dataDir timeVar getAgenda
     for_ notes $ \note ->
         QTreeWidgetItem.newWithParentTreeAndStrings tree [Text.unpack note]
     pure tree

@@ -20,7 +20,7 @@ import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
-import           FF (cmdAgenda, cmdDone, cmdNew)
+import           FF (getAgenda, cmdDone, cmdNew)
 import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
@@ -36,7 +36,7 @@ runCmd :: Config.Config -> Cmd -> LamportClock ()
 runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdAgenda -> do
         dir <- checkDataDir
-        agenda <- (`runReaderT` dir) cmdAgenda
+        agenda <- (`runReaderT` dir) getAgenda
         if null agenda then yprint ("nothing" :: Text) else yprint agenda
     CmdDone noteId -> do
         dir <- checkDataDir

@@ -5,7 +5,7 @@
 module FF
     ( Agenda
     , Note
-    , cmdAgenda
+    , getAgenda
     , cmdDone
     , cmdNew
     ) where
@@ -24,8 +24,8 @@ import           FF.Storage (DocId, Storage, list, load, save, saveNew)
 import           FF.Types (Agenda, Note (Note), NoteView,
                            Status (Active, Archived), end, start, status, text)
 
-cmdAgenda :: Storage Agenda
-cmdAgenda = do
+getAgenda :: Storage Agenda
+getAgenda = do
     docs <- list
     mnotes <- for docs $ \doc -> do
         mnote <- load doc
