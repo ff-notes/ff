@@ -17,3 +17,9 @@ extra-deps:
     - hoppy-generator-0.3.4
     - hoppy-runtime-0.3.2
     - hoppy-std-0.3.0
+
+flags:
+  qtah:
+    qt5: true
+  qtah-cpp:
+    qt5: true
