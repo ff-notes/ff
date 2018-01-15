@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main (main) where
@@ -9,10 +10,11 @@ import           Data.Foldable (for_)
 import           Data.Function ((&))
 import           Data.Semigroup ((<>))
 import           Data.String (IsString, fromString)
+import           Data.String.Interpolate.IsString (i)
 import           Text.Blaze.Html.Renderer.Pretty (renderHtml)
-import           Text.Blaze.Html5 (Html, code, li, string, style, table, td, th,
-                                   tr, ul, (!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 (Html, code, li, meta, string, style, table,
+                                   td, th, tr, ul, (!))
+import           Text.Blaze.Html5.Attributes (charset, colspan, rowspan)
 
 type Implemetation = Bool
 
@@ -57,16 +59,18 @@ features =
 
 main :: IO ()
 main = writeFile "/tmp/features.html" $ renderHtml $ do
-    style
-        "table { border-collapse: collapse; }\n\
-        \th, td { border: solid 1px; }\n\
-        \ul { margin: 0; }"
+    meta ! charset "utf-8"
+    style [i|
+        table { border-collapse: collapse; }
+        th, td { border: solid 1px; }
+        ul { margin: 0; }
+        |]
     table $ do
         tr $ do
-            th ! A.rowspan "2" $ "Feature"
-            th ! A.rowspan "2" $ "CLI" <> code "ff"
-            th ! A.colspan "3" $ "GUI"
-            th ! A.colspan "2" $ "Mobile"
+            th ! rowspan "2" $ "Feature"
+            th ! rowspan "2" $ "CLI" <> code "ff"
+            th ! colspan "3" $ "GUI"
+            th ! colspan "2" $ "Mobile"
         tr $ do
             th $ code "ff-qt"
             th $ code "ff-gtk"

@@ -70,6 +70,7 @@ tests:
   features:
     dependencies:
       - blaze-html
+      - interpolate
     main: Features.hs
 
 dependencies:
