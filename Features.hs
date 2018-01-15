@@ -14,7 +14,7 @@ import           Data.String.Interpolate.IsString (i)
 import           Text.Blaze.Html.Renderer.Pretty (renderHtml)
 import           Text.Blaze.Html5 (Html, code, li, meta, string, style, table,
                                    td, th, tr, ul, (!))
-import           Text.Blaze.Html5.Attributes (charset, colspan, rowspan)
+import           Text.Blaze.Html5.Attributes (charset, class_, colspan, rowspan)
 
 type Implemetation = Bool
 
@@ -55,6 +55,8 @@ features =
     , "- detect folder" & cli
     , "- - ~/Yandex.Disk" & cli
     , "- - ~/Yandex.Disk.localized" & cli
+    , "UI" & cli & qt
+    , "- поддержка русского языка (кириллицы, Юникода) в заметках" & cli
     ]
 
 main :: IO ()
@@ -63,6 +65,8 @@ main = writeFile "/tmp/features.html" $ renderHtml $ do
     style [i|
         table { border-collapse: collapse; }
         th, td { border: solid 1px; }
+        td.no  { background: lightcoral; }
+        td.yes { background: lightgreen; }
         ul { margin: 0; }
         |]
     table $ do
@@ -79,21 +83,20 @@ main = writeFile "/tmp/features.html" $ renderHtml $ do
             th "iOS"
         for_ features $ \Feature{..} -> tr $ do
             td $ deep fDescription
-            td $ check True  fCli
-            td $ check True  fQt
-            td $ check False fGtk
-            td $ check False fWx
-            td $ check True  fAndroid
-            td $ check False fIos
+            check True  fCli
+            check True  fQt
+            check False fGtk
+            check False fWx
+            check True  fAndroid
+            check False fIos
 
 check
-    :: IsString string
-    => Bool -- ^ needed
+    :: Bool -- ^ needed
     -> Bool -- ^ implemeted
-    -> string
-check False False = ""
-check True  False = "❌"
-check _     True  = "✅"
+    -> Html
+check False False = td ""
+check True  False = td ! class_ "no"  $ "❌"
+check _     True  = td ! class_ "yes" $ "✅"
 
 deep :: String -> Html
 deep = \case
