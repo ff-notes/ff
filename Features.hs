@@ -57,6 +57,7 @@ features =
     , "- - ~/Yandex.Disk.localized" & cli
     , "UI" & cli & qt
     , "- поддержка русского языка (кириллицы, Юникода) в заметках" & cli & qt
+    , "- multiline notes" & qt
     ]
 
 main :: IO ()
