@@ -85,7 +85,7 @@ main = writeFile "/tmp/features.html" $ renderHtml $ do
         for_ features $ \Feature{..} -> tr $ do
             td $ deep fDescription
             check True  fCli
-            check True  fQt
+            check False fQt
             check False fGtk
             check False fWx
             check True  fAndroid

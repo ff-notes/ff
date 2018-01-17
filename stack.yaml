@@ -3,23 +3,16 @@ resolver: lts-10.3
 extra-deps:
   # ff:
     - crdt-6.1
-  # ff-qt:
-    - git: https://gitlab.com/cblp/qtah.git
-      commit: 913d45b  # master, 2018-01-13
-      subdirs:
-        - qtah
-        - qtah-cpp
-        - qtah-generator
-    # - ../qtah/qtah
-    # - ../qtah/qtah-cpp
-    # - ../qtah/qtah-generator
-  # qtah:
-    - hoppy-generator-0.3.4
-    - hoppy-runtime-0.3.2
-    - hoppy-std-0.3.0
 
-flags:
-  qtah:
-    qt5: true
-  qtah-cpp:
-    qt5: true
+# ff-qt -- temporarily disabled
+# extra-deps:
+#   - git: https://gitlab.com/cblp/qtah.git
+#     commit: 913d45b  # master, 2018-01-13
+#     subdirs:
+#       - qtah
+#       - qtah-cpp
+#       - qtah-generator
+#   # - ../qtah/qtah
+#   # - ../qtah/qtah-cpp
+#   # - ../qtah/qtah-generator
+# flags: {qtah: {qt5: true}, qtah-cpp: {qt5: true}}

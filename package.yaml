@@ -38,22 +38,22 @@ executables:
     other-modules: []
     source-dirs: exe/ff
 
-  ff-qt:
-    dependencies:
-      - crdt
-      - hoppy-runtime
-      - qtah
-      - stm
-      - text
-
-      - ff
-
-    ghc-options: -dynamic -optl-pthread
-      # -dynamic -- to find libqtah.so automatically
-      # -optl-pthread -- Travis can't find pthread
-    main: Main
-    other-modules: []
-    source-dirs: exe/ff-qt
+  # ff-qt:  # temporarily disabled
+  #   dependencies:
+  #     - crdt
+  #     - hoppy-runtime
+  #     - qtah
+  #     - stm
+  #     - text
+  #
+  #     - ff
+  #
+  #   ghc-options: -dynamic -optl-pthread
+  #     # -dynamic -- to find libqtah.so automatically
+  #     # -optl-pthread -- Travis can't find pthread
+  #   main: Main
+  #   other-modules: []
+  #   source-dirs: exe/ff-qt
 
 tests:
   test:
