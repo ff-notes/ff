@@ -1,3 +1,5 @@
+{-# LANGUAGE StrictData #-}
+
 module FF.Options
     ( Cmd (..)
     , Config (..)
@@ -13,25 +15,27 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, subparser, (<**>))
+                                      strArgument, subparser, switch, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Note)
 
 data Cmd
-    = CmdAgenda
-    | CmdConfig !(Maybe Config)
-    | CmdDone !(DocId Note)
-    | CmdNew !New
+    = CmdAgenda All
+    | CmdConfig (Maybe Config)
+    | CmdDone   (DocId Note)
+    | CmdNew    New
+
+type All = Bool
 
 newtype Config = ConfigDataDir (Maybe DataDir)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
 data New = New
-    { newText   :: !Text
-    , newStart  :: !(Maybe Day)
-    , newEnd    :: !(Maybe Day)
+    { newText   :: Text
+    , newStart  :: Maybe Day
+    , newEnd    :: Maybe Day
     }
 
 parseOptions :: IO Cmd
@@ -50,7 +54,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdDone   = i pCmdDone   "mark task done (archive)"
     iCmdNew    = i pCmdNew    "add new task or note"
 
-    pCmdAgenda = pure CmdAgenda
+    pCmdAgenda = CmdAgenda <$> switch (long "all" <> short 'a')
     pCmdDone   = CmdDone . DocId <$> strArgument (metavar "ID")
     pCmdNew    = CmdNew <$> pNew
     pNew = New

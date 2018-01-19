@@ -17,7 +17,7 @@ import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Yaml (ToJSON, Value, encodeFile, object, toJSON, (.=))
+import           Data.Yaml (ToJSON, Value, array, encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory)
@@ -38,12 +38,12 @@ main = do
 
 runCmd :: Config.Config -> Cmd -> LamportClock ()
 runCmd cfg@Config.Config{dataDir} cmd = case cmd of
-    CmdAgenda -> do
+    CmdAgenda showAll -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) $ getAgenda agendaLimit
         yprint $ agendaUI agenda
       where
-        agendaLimit = Just 10
+        agendaLimit = if showAll then Nothing else Just 10
     CmdDone noteId -> do
         dir <- checkDataDir
         text <- (`runReaderT` dir) $ cmdDone noteId
@@ -90,19 +90,22 @@ yprint = liftIO . BS.putStr . Yaml.encodePretty config
 
 agendaUI :: Agenda -> Value
 agendaUI Agenda{notes, total}
-    | count == total = toJSON notes
+    | count == total = notesUI notes
     | otherwise = object
-        [ Text.unwords ["first", tshow count, "notes"]
-            .=  [ object $
-                    [Text.pack (show _id) .= text, "start" .= start]
-                    ++ ["end" .= e | Just e <- pure end]
-                | NoteView{..} <- notes
-                ]
+        [ Text.unwords ["first", tshow count, "notes"] .= notesUI notes
         , Text.unwords ["to see all", tshow total, "notes, run"]
             .= ("ff agenda --all" :: Text)
         ]
   where
     count = genericLength notes
+
+notesUI :: [NoteView] -> Value
+notesUI notes = array
+    [ object $
+        [Text.pack (show _id) .= text, "start" .= start]
+        ++ ["end" .= e | Just e <- pure end]
+    | NoteView{..} <- notes
+    ]
 
 tshow :: Show a => a -> Text
 tshow = Text.pack . show
