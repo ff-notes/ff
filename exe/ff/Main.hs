@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -26,7 +27,7 @@ import           FF (cmdDone, cmdNew, getAgenda)
 import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
-import           FF.Types (Agenda (..))
+import           FF.Types (Agenda (..), NoteView (..))
 
 main :: IO ()
 main = do
@@ -83,13 +84,20 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
             encodeFile cfgFilePath cfg{dataDir = Just dir} $> Just dir
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
-yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig
+yprint = liftIO . BS.putStr . Yaml.encodePretty config
+  where
+    config = Yaml.setConfCompare compare Yaml.defConfig
 
 agendaUI :: Agenda -> Value
 agendaUI Agenda{notes, total}
     | count == total = toJSON notes
     | otherwise = object
-        [ Text.unwords ["first", tshow count, "notes"] .= notes
+        [ Text.unwords ["first", tshow count, "notes"]
+            .=  [ object $
+                    [Text.pack (show _id) .= text, "start" .= start]
+                    ++ ["end" .= e | Just e <- pure end]
+                | NoteView{..} <- notes
+                ]
         , Text.unwords ["to see all", tshow total, "notes, run"]
             .= ("ff agenda --all" :: Text)
         ]
