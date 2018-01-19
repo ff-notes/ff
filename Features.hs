@@ -44,7 +44,7 @@ features =
     [ "Any note list" & cli & qt
     , "- Show start/end dates" & cli
     , "- Sort by start date/time" & cli
-    , "- Limit by default"
+    , "- Limit by default" & cli
     , "- Agenda" & cli & qt
     , "- - Show only active" & cli & qt
     , "- - Show only started (now >= start)"
@@ -61,6 +61,7 @@ features =
     , "UI" & cli & qt
     , "- поддержка русского языка (кириллицы, Юникода) в заметках" & cli & qt
     , "- multiline notes" & qt
+    , "Search"
     ]
 
 main :: IO ()

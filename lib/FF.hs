@@ -14,7 +14,7 @@ module FF
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans (lift)
 import qualified CRDT.LWW as LWW
-import           Data.List (sortOn)
+import           Data.List (genericLength, sortOn)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import           Data.Time (getCurrentTime, utctDay)
@@ -22,18 +22,24 @@ import           Data.Traversable (for)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (DocId, Storage, list, load, save, saveNew)
-import           FF.Types (Agenda, Note (..), NoteView (..),
+import           FF.Types (Agenda (..), Note (..), NoteView (..),
                            Status (Active, Archived), noteView)
 
-getAgenda :: Storage Agenda
-getAgenda = do
+getAgenda :: Maybe Int -> Storage Agenda
+getAgenda mlimit = do
     docs <- list
     mnotes <- for docs load
-    pure $ sortOn (\NoteView{start} -> start)
-        [ noteView doc note
-        | doc <- docs
-        | Just note@Note{status = (LWW.query -> Active)} <- mnotes
-        ]
+    let allNotes = sortOn (\NoteView{start, _id} -> (start, _id))
+            [ noteView doc note
+            | doc <- docs
+            | Just note@Note{status = (LWW.query -> Active)} <- mnotes
+            ]
+    pure Agenda
+        { notes = case mlimit of
+            Nothing    -> allNotes
+            Just limit -> take limit allNotes
+        , total = genericLength allNotes
+        }
 
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do

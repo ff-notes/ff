@@ -12,18 +12,21 @@ import           CRDT.LamportClock (LamportClock, getRealLocalTime,
 import qualified Data.ByteString as BS
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
+import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
-import           Data.Yaml (ToJSON, encodeFile, object, (.=))
+import qualified Data.Text as Text
+import           Data.Yaml (ToJSON, Value, encodeFile, object, toJSON, (.=))
 import qualified Data.Yaml.Pretty as Yaml
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
-import           FF (getAgenda, cmdDone, cmdNew)
+import           FF (cmdDone, cmdNew, getAgenda)
 import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
+import           FF.Types (Agenda (..))
 
 main :: IO ()
 main = do
@@ -36,8 +39,10 @@ runCmd :: Config.Config -> Cmd -> LamportClock ()
 runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdAgenda -> do
         dir <- checkDataDir
-        agenda <- (`runReaderT` dir) getAgenda
-        if null agenda then yprint ("nothing" :: Text) else yprint agenda
+        agenda <- (`runReaderT` dir) $ getAgenda agendaLimit
+        yprint $ agendaUI agenda
+      where
+        agendaLimit = Just 10
     CmdDone noteId -> do
         dir <- checkDataDir
         text <- (`runReaderT` dir) $ cmdDone noteId
@@ -79,3 +84,17 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
 
 yprint :: (ToJSON a, MonadIO io) => a -> io ()
 yprint = liftIO . BS.putStr . Yaml.encodePretty Yaml.defConfig
+
+agendaUI :: Agenda -> Value
+agendaUI Agenda{notes, total}
+    | count == total = toJSON notes
+    | otherwise = object
+        [ Text.unwords ["first", tshow count, "notes"] .= notes
+        , Text.unwords ["to see all", tshow total, "notes, run"]
+            .= ("ff agenda --all" :: Text)
+        ]
+  where
+    count = genericLength notes
+
+tshow :: Show a => a -> Text
+tshow = Text.pack . show

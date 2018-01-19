@@ -21,6 +21,7 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import           Data.Time (Day)
 import           GHC.Exts (fromList)
+import           Numeric.Natural (Natural)
 
 import           FF.Storage (Collection, DocId, collectionName)
 
@@ -73,7 +74,11 @@ data NoteView = NoteView
 
 deriveToJSON defaultOptions{omitNothingFields = True} ''NoteView
 
-type Agenda = [NoteView]
+data Agenda = Agenda
+    { notes :: [NoteView]
+    , total :: Natural
+    }
+    deriving (Eq, Show)
 
 noteView :: DocId Note -> Note -> NoteView
 noteView _id Note{..} = NoteView
