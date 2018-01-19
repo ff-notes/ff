@@ -42,7 +42,7 @@ instance IsString Feature where
 features :: [Feature]
 features =
     [ "Any note list" & cli & qt
-    , "- Show start/end dates"
+    , "- Show start/end dates" & cli
     , "- Sort by start date/time"
     , "- Agenda" & cli & qt
     , "- - Show only active" & cli & qt

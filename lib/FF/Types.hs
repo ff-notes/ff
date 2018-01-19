@@ -1,14 +1,18 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module FF.Types where
 
 import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
 import           CRDT.LWW (LWW (LWW), time, value)
+import qualified CRDT.LWW as LWW
 import           Data.Aeson (FromJSON, ToJSON, Value (Array), parseJSON, toJSON)
-import           Data.Aeson.TH (defaultOptions, deriveJSON)
+import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON,
+                                omitNothingFields)
 import           Data.Aeson.Types (typeMismatch)
 import           Data.Foldable (toList)
 import           Data.Map.Strict (Map)
@@ -59,6 +63,17 @@ deriveJSON defaultOptions ''Note
 instance Collection Note where
     collectionName = "note"
 
-type NoteView = Text
+data NoteView = NoteView
+    { text    :: !Text
+    , start   :: !Day
+    , end     :: !(Maybe Day)
+    }
+    deriving (Eq, Show)
+
+deriveToJSON defaultOptions{omitNothingFields = True} ''NoteView
 
 type Agenda = Map (DocId Note) NoteView
+
+noteView :: Note -> NoteView
+noteView Note{..} = NoteView
+    {text = LWW.query text, start = LWW.query start, end = LWW.query end}

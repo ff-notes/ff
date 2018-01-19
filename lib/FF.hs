@@ -21,20 +21,20 @@ import           Data.Traversable (for)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (DocId, Storage, list, load, save, saveNew)
-import           FF.Types (Agenda, Note (Note), NoteView,
-                           Status (Active, Archived), end, start, status, text)
+import           FF.Types (Agenda, Note (..), NoteView,
+                           Status (Active, Archived), noteView)
 
 getAgenda :: Storage Agenda
 getAgenda = do
     docs <- list
     mnotes <- for docs $ \doc -> do
         mnote <- load doc
-        let noteView = case mnote of
-                Just Note{status = (LWW.query -> Active), text} ->
-                    Just $ LWW.query text
+        let nv = case mnote of
+                Just note@Note{status = (LWW.query -> Active)} ->
+                    Just $ noteView note
                 _ -> Nothing
-        pure (doc, noteView)
-    pure $ Map.fromList [(k, note) | (k, Just note) <- mnotes]
+        pure (doc, nv)
+    pure $ Map.fromList [(k, nv) | (k, Just nv) <- mnotes]
 
 cmdNew :: New -> Storage (DocId Note, NoteView)
 cmdNew New{newText, newStart, newEnd} = do
@@ -46,7 +46,7 @@ cmdNew New{newText, newStart, newEnd} = do
         end     <- LWW.initial newEnd
         pure Note{..}
     nid <- saveNew note
-    pure (nid, newText)
+    pure (nid, noteView note)
 
 cmdDone :: DocId Note -> Storage Text
 cmdDone nid = do
