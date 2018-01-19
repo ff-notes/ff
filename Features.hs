@@ -43,7 +43,8 @@ features :: [Feature]
 features =
     [ "Any note list" & cli & qt
     , "- Show start/end dates" & cli
-    , "- Sort by start date/time"
+    , "- Sort by start date/time" & cli
+    , "- Limit by default"
     , "- Agenda" & cli & qt
     , "- - Show only active" & cli & qt
     , "- - Show only started (now >= start)"

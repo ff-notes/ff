@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module FF.Types where
@@ -15,7 +16,6 @@ import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON,
                                 omitNothingFields)
 import           Data.Aeson.Types (typeMismatch)
 import           Data.Foldable (toList)
-import           Data.Map.Strict (Map)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
@@ -45,10 +45,10 @@ data Status = Active | Archived | Deleted
 deriveJSON defaultOptions ''Status
 
 data Note = Note
-    { status  :: !(LWW Status)
-    , text    :: !(LWW Text)
-    , start   :: !(LWW Day)
-    , end     :: !(LWW (Maybe Day))
+    { status  :: LWW Status
+    , text    :: LWW Text
+    , start   :: LWW Day
+    , end     :: LWW (Maybe Day)
     }
     deriving (Eq, Show)
 
@@ -64,16 +64,17 @@ instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { text    :: !Text
-    , start   :: !Day
-    , end     :: !(Maybe Day)
+    { _id   :: DocId Note
+    , text  :: Text
+    , start :: Day
+    , end   :: Maybe Day
     }
     deriving (Eq, Show)
 
 deriveToJSON defaultOptions{omitNothingFields = True} ''NoteView
 
-type Agenda = Map (DocId Note) NoteView
+type Agenda = [NoteView]
 
-noteView :: Note -> NoteView
-noteView Note{..} = NoteView
-    {text = LWW.query text, start = LWW.query start, end = LWW.query end}
+noteView :: DocId Note -> Note -> NoteView
+noteView _id Note{..} = NoteView
+    {text = LWW.query text, start = LWW.query start, end = LWW.query end, ..}

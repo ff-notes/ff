@@ -44,8 +44,8 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         yprint $ object ["archived" .= Map.singleton noteId text]
     CmdNew new -> do
         dir <- checkDataDir
-        (noteId, noteView) <- (`runReaderT` dir) $ cmdNew new
-        yprint $ Map.singleton noteId noteView
+        noteView <- (`runReaderT` dir) $ cmdNew new
+        yprint noteView
     CmdConfig config -> liftIO $ runCmdConfig config
   where
 

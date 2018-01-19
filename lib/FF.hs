@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -13,7 +14,7 @@ module FF
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans (lift)
 import qualified CRDT.LWW as LWW
-import qualified Data.Map.Strict as Map
+import           Data.List (sortOn)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import           Data.Time (getCurrentTime, utctDay)
@@ -21,22 +22,20 @@ import           Data.Traversable (for)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (DocId, Storage, list, load, save, saveNew)
-import           FF.Types (Agenda, Note (..), NoteView,
+import           FF.Types (Agenda, Note (..), NoteView (..),
                            Status (Active, Archived), noteView)
 
 getAgenda :: Storage Agenda
 getAgenda = do
     docs <- list
-    mnotes <- for docs $ \doc -> do
-        mnote <- load doc
-        let nv = case mnote of
-                Just note@Note{status = (LWW.query -> Active)} ->
-                    Just $ noteView note
-                _ -> Nothing
-        pure (doc, nv)
-    pure $ Map.fromList [(k, nv) | (k, Just nv) <- mnotes]
+    mnotes <- for docs load
+    pure $ sortOn (\NoteView{start} -> start)
+        [ noteView doc note
+        | doc <- docs
+        | Just note@Note{status = (LWW.query -> Active)} <- mnotes
+        ]
 
-cmdNew :: New -> Storage (DocId Note, NoteView)
+cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
     newStart' <- fromMaybeA (liftIO $ utctDay <$> getCurrentTime) newStart
     note <- lift $ do
@@ -46,7 +45,7 @@ cmdNew New{newText, newStart, newEnd} = do
         end     <- LWW.initial newEnd
         pure Note{..}
     nid <- saveNew note
-    pure (nid, noteView note)
+    pure $ noteView nid note
 
 cmdDone :: DocId Note -> Storage Text
 cmdDone nid = do

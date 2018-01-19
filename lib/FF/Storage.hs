@@ -28,7 +28,7 @@ class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
 
 newtype DocId doc = DocId FilePath
-    deriving (Eq, Ord, ToJSONKey)
+    deriving (Eq, Ord, ToJSON, ToJSONKey)
 
 instance Show (DocId doc) where
     show (DocId path) = path
