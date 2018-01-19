@@ -41,10 +41,12 @@ instance IsString Feature where
 
 features :: [Feature]
 features =
-    [ "Agenda" & cli & qt
-    , "- Show only active" & cli & qt
-    , "- Show only started (now >= start)"
+    [ "Any note list" & cli & qt
     , "- Show start/end dates"
+    , "- Sort by start date/time"
+    , "- Agenda" & cli & qt
+    , "- - Show only active" & cli & qt
+    , "- - Show only started (now >= start)"
     , "Add note/task" & cli
     , "- with start date" & cli
     , "- with start time"
