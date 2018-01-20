@@ -14,7 +14,10 @@ main :: IO ()
 main =
     defaultMain $ testCase "getAgenda" $ do
         assertEqual "not exist" Agenda{notes = [], total = 0}
-            =<< runStorage "test/data/not exist" undefined (getAgenda agendaLimit)
+            =<< runStorage
+                "test/data/not exist"
+                undefined
+                (getAgenda agendaLimit)
         assertEqual "smoke"
             Agenda
                 { notes =
@@ -26,6 +29,9 @@ main =
                         }]
                 , total = 1
                 }
-            =<< runStorage "test/data/smoke.in" undefined (getAgenda agendaLimit)
+            =<< runStorage
+                "test/data/smoke.in"
+                undefined
+                (getAgenda agendaLimit)
   where
     agendaLimit = Just 10
