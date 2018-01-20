@@ -2,6 +2,7 @@
 
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -11,14 +12,15 @@ module FF.Types where
 import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
 import           CRDT.LWW (LWW (LWW), time, value)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON, ToJSON, Value (Array), parseJSON, toJSON)
-import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON,
-                                omitNothingFields)
+import           Data.Aeson (FromJSON, ToJSON, Value (Array), camelTo2, object,
+                             parseJSON, toJSON, (.=))
+import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
 import           Data.Aeson.Types (typeMismatch)
 import           Data.Foldable (toList)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import           Data.Time (Day)
 import           GHC.Exts (fromList)
 import           Numeric.Natural (Natural)
@@ -46,10 +48,10 @@ data Status = Active | Archived | Deleted
 deriveJSON defaultOptions ''Status
 
 data Note = Note
-    { status  :: LWW Status
-    , text    :: LWW Text
-    , start   :: LWW Day
-    , end     :: LWW (Maybe Day)
+    { noteStatus  :: LWW Status
+    , noteText    :: LWW Text
+    , noteStart   :: LWW Day
+    , noteEnd     :: LWW (Maybe Day)
     }
     deriving (Eq, Show)
 
@@ -59,20 +61,23 @@ instance Semigroup Note where
 
 instance Semilattice Note
 
-deriveJSON defaultOptions ''Note
+deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 4} ''Note
 
 instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { _id   :: DocId Note
+    { nid   :: DocId Note
     , text  :: Text
     , start :: Day
     , end   :: Maybe Day
     }
     deriving (Eq, Show)
 
-deriveToJSON defaultOptions{omitNothingFields = True} ''NoteView
+instance ToJSON NoteView where
+    toJSON NoteView{..} = object $
+        [Text.pack (show nid) .= text, "start" .= start]
+        ++ ["end" .= e | Just e <- pure end]
 
 data Agenda = Agenda
     { notes :: [NoteView]
@@ -81,5 +86,9 @@ data Agenda = Agenda
     deriving (Eq, Show)
 
 noteView :: DocId Note -> Note -> NoteView
-noteView _id Note{..} = NoteView
-    {text = LWW.query text, start = LWW.query start, end = LWW.query end, ..}
+noteView nid Note{..} = NoteView
+    { nid   = nid
+    , text  = LWW.query noteText
+    , start = LWW.query noteStart
+    , end   = LWW.query noteEnd
+    }

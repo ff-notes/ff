@@ -21,10 +21,11 @@ import           FF.Storage (DocId (DocId))
 import           FF.Types (Note)
 
 data Cmd
-    = CmdAgenda All
-    | CmdConfig (Maybe Config)
-    | CmdDone   (DocId Note)
-    | CmdNew    New
+    = CmdAgenda   All
+    | CmdConfig   (Maybe Config)
+    | CmdDone     (DocId Note)
+    | CmdNew      New
+    | CmdPostpone (DocId Note)
 
 type All = Bool
 
@@ -43,20 +44,24 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
   where
     parser = subparser commands <|> pCmdAgenda
     commands = mconcat
-        [ command "agenda" iCmdAgenda
-        , command "config" iCmdConfig
-        , command "done"   iCmdDone
-        , command "new"    iCmdNew
+        [ command "agenda"    iCmdAgenda
+        , command "config"    iCmdConfig
+        , command "done"      iCmdDone
+        , command "new"       iCmdNew
+        , command "postpone"  iCmdPostpone
         ]
 
-    iCmdAgenda = i pCmdAgenda "show what you can do right now [default action]"
-    iCmdConfig = i pCmdConfig "show/edit configuration"
-    iCmdDone   = i pCmdDone   "mark task done (archive)"
-    iCmdNew    = i pCmdNew    "add new task or note"
+    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
+                                    \ [default action]"
+    iCmdConfig    = i pCmdConfig    "show/edit configuration"
+    iCmdDone      = i pCmdDone      "mark task done (archive)"
+    iCmdNew       = i pCmdNew       "add new task or note"
+    iCmdPostpone  = i pCmdPostpone  "make a task start later"
 
-    pCmdAgenda = CmdAgenda <$> switch (long "all" <> short 'a')
-    pCmdDone   = CmdDone . DocId <$> strArgument (metavar "ID")
-    pCmdNew    = CmdNew <$> pNew
+    pCmdAgenda    = CmdAgenda <$> switch (long "all" <> short 'a')
+    pCmdDone      = CmdDone     . DocId <$> strArgument (metavar "ID")
+    pCmdPostpone  = CmdPostpone . DocId <$> strArgument (metavar "ID")
+    pCmdNew       = CmdNew <$> pNew
     pNew = New
         <$> strArgument (metavar "TEXT")
         <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))

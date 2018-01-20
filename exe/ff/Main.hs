@@ -1,6 +1,6 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -14,20 +14,19 @@ import qualified Data.ByteString as BS
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import           Data.List (genericLength)
-import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Yaml (ToJSON, Value, array, encodeFile, object, (.=))
+import           Data.Yaml (ToJSON, Value, encodeFile, object, toJSON, (.=))
 import qualified Data.Yaml.Pretty as Yaml
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
-import           FF (cmdDone, cmdNew, getAgenda)
+import           FF (cmdDone, cmdNew, cmdPostpone, getAgenda)
 import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
-import           FF.Types (Agenda (..), NoteView (..))
+import           FF.Types (Agenda (..))
 
 main :: IO ()
 main = do
@@ -44,15 +43,19 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         yprint $ agendaUI agenda
       where
         agendaLimit = if showAll then Nothing else Just 10
+    CmdConfig config -> liftIO $ runCmdConfig config
     CmdDone noteId -> do
         dir <- checkDataDir
-        text <- (`runReaderT` dir) $ cmdDone noteId
-        yprint $ object ["archived" .= Map.singleton noteId text]
+        nv <- (`runReaderT` dir) $ cmdDone noteId
+        yprint $ object ["archived" .= nv]
     CmdNew new -> do
         dir <- checkDataDir
         noteView <- (`runReaderT` dir) $ cmdNew new
         yprint noteView
-    CmdConfig config -> liftIO $ runCmdConfig config
+    CmdPostpone noteId -> do
+        dir <- checkDataDir
+        nv <- (`runReaderT` dir) $ cmdPostpone noteId
+        yprint $ object ["postponed" .= nv]
   where
 
     checkDataDir :: Monad m => m FilePath
@@ -90,22 +93,14 @@ yprint = liftIO . BS.putStr . Yaml.encodePretty config
 
 agendaUI :: Agenda -> Value
 agendaUI Agenda{notes, total}
-    | count == total = notesUI notes
+    | count == total = toJSON notes
     | otherwise = object
-        [ Text.unwords ["first", tshow count, "notes"] .= notesUI notes
+        [ Text.unwords ["first", tshow count, "notes"] .= notes
         , Text.unwords ["to see all", tshow total, "notes, run"]
             .= ("ff agenda --all" :: Text)
         ]
   where
     count = genericLength notes
-
-notesUI :: [NoteView] -> Value
-notesUI notes = array
-    [ object $
-        [Text.pack (show _id) .= text, "start" .= start]
-        ++ ["end" .= e | Just e <- pure end]
-    | NoteView{..} <- notes
-    ]
 
 tshow :: Show a => a -> Text
 tshow = Text.pack . show

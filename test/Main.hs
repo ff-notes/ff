@@ -22,7 +22,7 @@ main =
             Agenda
                 { notes =
                     [NoteView
-                        { _id = DocId "1"
+                        { nid = DocId "1"
                         , text = "hello"
                         , start = fromGregorian 22 11 24
                         , end = Just $ fromGregorian 17 06 19

@@ -62,6 +62,7 @@ features =
     , "- поддержка русского языка (кириллицы, Юникода) в заметках" & cli & qt
     , "- multiline notes" & qt
     , "Search"
+    , "Postpone"
     ]
 
 main :: IO ()
