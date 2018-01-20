@@ -1,5 +1,4 @@
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -29,11 +28,13 @@ getAgenda :: Maybe Int -> Storage Agenda
 getAgenda mlimit = do
     docs <- list
     mnotes <- for docs load
-    let allNotes = sortOn (\NoteView{start, _id} -> (start, _id))
-            [ noteView doc note
-            | doc <- docs
-            | Just note@Note{status = (LWW.query -> Active)} <- mnotes
-            ]
+    let allNotes =
+            sortOn
+                (\NoteView{start, _id} -> (start, _id))
+                [ noteView doc note
+                | (doc, Just note@Note{status = (LWW.query -> Active)}) <-
+                    zip docs mnotes
+                ]
     pure Agenda
         { notes = case mlimit of
             Nothing    -> allNotes
