@@ -95,8 +95,8 @@ agendaUI :: Agenda -> Value
 agendaUI Agenda{notes, total}
     | count == total = toJSON notes
     | otherwise = object
-        [ Text.unwords ["nearest", tshow count, "notes"] .= notes
-        , Text.unwords ["to see all", tshow total, "notes, run either"]
+        [ Text.unwords ["nearest", tshow count, "tasks"] .= notes
+        , Text.unwords ["to see all", tshow total, "tasks, run either"]
             .= ["ff -a", "ff agenda --all" :: Text]
         ]
   where
