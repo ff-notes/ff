@@ -63,6 +63,7 @@ features =
     , "- multiline notes" & qt
     , "Search"
     , "Postpone" & cli
+    , "Workspaces"
     ]
 
 main :: IO ()
