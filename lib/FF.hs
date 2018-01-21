@@ -13,6 +13,8 @@ module FF
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Trans (lift)
+import           CRDT.LamportClock (Clock)
+import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.List (genericLength, sortOn)
 import           Data.Time (Day, addDays, getCurrentTime, utctDay)
@@ -66,9 +68,8 @@ cmdPostpone :: DocId Note -> Storage NoteView
 cmdPostpone nid = do
     note@Note{noteStart} <- loadOrFail nid
     today <- getUtcToday
-    let start = LWW.query noteStart
-    let start' = 1 `addDays` max today start
-    noteStart' <- lift $ LWW.assign start' noteStart  -- TODO LWW.modify
+    noteStart' <- lift $
+        lwwModify (\start -> 1 `addDays` max today start) noteStart
     let note' = note{noteStart = noteStart'} -- TODO Storage.modify
     save nid note'
     pure $ noteView nid note'
@@ -84,3 +85,6 @@ loadOrFail nid = fromMaybeA (fail msg) =<< load nid  -- TODO ExceptT
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
+
+lwwModify :: Clock m => (a -> a) -> LWW a -> m (LWW a)
+lwwModify f x = LWW.assign (f $ LWW.query x) x
