@@ -32,7 +32,7 @@ getAgenda mlimit = do
     mnotes <- for docs load
     let allNotes =
             sortOn
-                (\NoteView{start, nid} -> (start, nid))
+                agendaOrdering
                 [ noteView doc note
                 | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <-
                     zip docs mnotes
@@ -43,6 +43,11 @@ getAgenda mlimit = do
             Just limit -> take limit allNotes
         , total = genericLength allNotes
         }
+  where
+    agendaOrdering NoteView{start, nid} =
+        ( start -- oldest first
+        , nid   -- no business-logic involved, just for determinism
+        )
 
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
