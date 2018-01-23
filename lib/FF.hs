@@ -16,38 +16,43 @@ import           Control.Monad.Trans (lift)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.List (genericLength, sortOn)
+import           Data.List (genericLength, partition, sortOn)
+import           Data.Maybe (isJust)
 import           Data.Time (Day, addDays, getCurrentTime, utctDay)
 import           Data.Traversable (for)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (Collection, DocId, Storage, list, load, save,
                              saveNew)
-import           FF.Types (Agenda (..), Note (..), NoteView (..),
+import           FF.Types (Agenda (..), Note (..), NoteView (..), Sample (..),
                            Status (Active, Archived), noteView)
 
-getAgenda :: Maybe Int -> Storage Agenda
-getAgenda mlimit = do
+getAgenda :: Int -> Storage Agenda
+getAgenda limit = do
     docs <- list
     mnotes <- for docs load
-    let allNotes =
-            sortOn
-                agendaOrdering
-                [ noteView doc note
-                | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <-
-                    zip docs mnotes
-                ]
+    let activeNotes =
+            [ noteView doc note
+            | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <-
+                zip docs mnotes
+            ]
+    let (endingNotes, startingNotes) = partition (isJust . end) activeNotes
     pure Agenda
-        { notes = case mlimit of
-            Nothing    -> allNotes
-            Just limit -> take limit allNotes
-        , total = genericLength allNotes
+        { ending   = sample limit $ sortOn endingOrder endingNotes
+        , starting =
+            sample (limit - length endingNotes) $
+            sortOn startingOrder startingNotes
         }
   where
-    agendaOrdering NoteView{start, nid} =
+    endingOrder NoteView{end, nid} =
+        ( end -- closest first
+        , nid -- no business-logic involved, just for determinism
+        )
+    startingOrder NoteView{start, nid} =
         ( start -- oldest first
         , nid   -- no business-logic involved, just for determinism
         )
+    sample n xs = Sample (take n xs) (genericLength xs)
 
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do

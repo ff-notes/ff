@@ -79,11 +79,23 @@ instance ToJSON NoteView where
         [Text.pack (show nid) .= text, "start" .= start]
         ++ ["end" .= e | Just e <- pure end]
 
-data Agenda = Agenda
+data Sample = Sample
     { notes :: [NoteView]
     , total :: Natural
     }
     deriving (Eq, Show)
+
+emptySample :: Sample
+emptySample = Sample{notes = [], total = 0}
+
+data Agenda = Agenda
+    { ending   :: Sample
+    , starting :: Sample
+    }
+    deriving (Eq, Show)
+
+emptyAgenda :: Agenda
+emptyAgenda = Agenda{ending = emptySample, starting = emptySample}
 
 noteView :: DocId Note -> Note -> NoteView
 noteView nid Note{..} = NoteView

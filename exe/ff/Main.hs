@@ -13,10 +13,12 @@ import qualified Data.ByteString as BS
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import           Data.List (genericLength)
+import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Yaml (ToJSON, Value, encodeFile, object, toJSON, (.=))
+import           Data.Yaml (ToJSON, Value, array, encodeFile, object, (.=))
 import qualified Data.Yaml.Pretty as Yaml
+import           Numeric.Natural (Natural)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
@@ -25,7 +27,7 @@ import           FF (cmdDone, cmdNew, cmdPostpone, getAgenda)
 import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
-import           FF.Types (Agenda (..))
+import           FF.Types (Agenda (..), Sample (..))
 
 main :: IO ()
 main = do
@@ -36,12 +38,10 @@ main = do
 
 runCmd :: Config.Config -> Cmd -> LamportClock ()
 runCmd cfg@Config.Config{dataDir} cmd = case cmd of
-    CmdAgenda showAll -> do
+    CmdAgenda limit -> do
         dir <- checkDataDir
-        agenda <- (`runReaderT` dir) $ getAgenda agendaLimit
-        yprint $ agendaUI agenda
-      where
-        agendaLimit = if showAll then Nothing else Just 10
+        agenda <- (`runReaderT` dir) $ getAgenda limit
+        yprint $ agendaUI limit agenda
     CmdConfig config -> liftIO $ runCmdConfig config
     CmdDone noteId -> do
         dir <- checkDataDir
@@ -90,16 +90,28 @@ yprint = liftIO . BS.putStr . Yaml.encodePretty config
   where
     config = Yaml.setConfCompare compare Yaml.defConfig
 
-agendaUI :: Agenda -> Value
-agendaUI Agenda{notes, total}
-    | count == total = toJSON notes
-    | otherwise = object
-        [ Text.unwords ["nearest", tshow count, "tasks"] .= notes
-        , Text.unwords ["to see all", tshow total, "tasks, run either"]
-            .= ["ff -a", "ff agenda --all" :: Text]
+agendaUI :: Int -> Agenda -> Value
+agendaUI limit Agenda{ending, starting} = array
+    [ sampleUI labelEnding   "ff search --started --ending" ending
+    , sampleUI labelStarting "ff search --starting"         starting
+    , object
+        [ "to see more tasks, run"
+            .= ("ff --limit=" <> tshow (max 0 limit + 10))
         ]
+    ]
+  where
+    labelEnding   count = tshow count <> " started task(s) ending soon"
+    labelStarting count = tshow count <> " task(s) starting soon"
+
+type Template a = a -> Text
+
+sampleUI :: Template Natural -> Text -> Sample -> Value
+sampleUI labelTemplate cmdToSeeAll Sample{notes, total} = object $
+    labelTemplate count .= notes
+    : [toSeeAllLabel .= cmdToSeeAll | count /= total]
   where
     count = genericLength notes
+    toSeeAllLabel = Text.unwords ["to see all", tshow total, "task(s), run"]
 
 tshow :: Show a => a -> Text
 tshow = Text.pack . show

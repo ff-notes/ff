@@ -15,19 +15,19 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, subparser, switch, (<**>))
+                                      strArgument, subparser, value, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Note)
 
 data Cmd
-    = CmdAgenda   All
+    = CmdAgenda   Limit
     | CmdConfig   (Maybe Config)
     | CmdDone     (DocId Note)
     | CmdNew      New
     | CmdPostpone (DocId Note)
 
-type All = Bool
+type Limit = Int
 
 newtype Config = ConfigDataDir (Maybe DataDir)
 
@@ -58,7 +58,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdNew       = i pCmdNew       "add new task or note"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
 
-    pCmdAgenda    = CmdAgenda <$> switch (long "all" <> short 'a')
+    pCmdAgenda    =
+        CmdAgenda <$> option auto (long "limit" <> short 'l' <> value 10)
     pCmdDone      = CmdDone     . DocId <$> strArgument (metavar "ID")
     pCmdPostpone  = CmdPostpone . DocId <$> strArgument (metavar "ID")
     pCmdNew       = CmdNew <$> pNew
