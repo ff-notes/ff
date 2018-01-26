@@ -7,9 +7,9 @@ import           Data.List (genericLength)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Numeric.Natural (Natural)
-import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
-                                            stack, star, strictText, (<+/>),
-                                            (</>), (<>), (<|>))
+import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, stack,
+                                            strictText, (<+/>), (</>), (<>),
+                                            (<|>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -49,9 +49,9 @@ sample labelTemplate cmdToSeeAll Sample{notes, total} = stack $
 
 noteView :: NoteView -> Doc
 noteView NoteView{nid, text, start, end} =
-    hang indentation (sep $ star : map strictText (Text.words text))
-    </> indent indentation (fieldsSep fields)
+    hang indentation noteText </> indent indentation (fieldsSep fields)
   where
+    noteText = stack $ map strictText $ Text.lines text
     fields
         =   "id" .= pshow nid
         :   "start" .= pshow start
