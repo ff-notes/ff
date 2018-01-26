@@ -43,15 +43,15 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdDone noteId -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdDone noteId
-        pprint $ withHeader "archived:" nv
+        pprint $ withHeader "archived:" $ UI.noteView nv
     CmdNew new -> do
         dir <- checkDataDir
-        noteView <- (`runReaderT` dir) $ cmdNew new
-        pprint noteView
+        nv <- (`runReaderT` dir) $ cmdNew new
+        pprint $ UI.noteView nv
     CmdPostpone noteId -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdPostpone noteId
-        pprint $ withHeader "postponed:" nv
+        pprint $ withHeader "postponed:" $ UI.noteView nv
   where
 
     checkDataDir :: Monad m => m FilePath
