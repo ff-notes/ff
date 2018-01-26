@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -9,25 +10,21 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (runReaderT)
 import           CRDT.LamportClock (LamportClock, getRealLocalTime,
                                     runLamportClock)
-import qualified Data.ByteString as BS
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
-import           Data.List (genericLength)
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
-import qualified Data.Text as Text
-import           Data.Yaml (ToJSON, Value, array, encodeFile, object, (.=))
-import qualified Data.Yaml.Pretty as Yaml
-import           Numeric.Natural (Natural)
-import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                                   getHomeDirectory)
-import           System.FilePath (FilePath, takeDirectory, (</>))
+import qualified System.Console.Terminal.Size as Terminal
+import           System.Directory (doesDirectoryExist, getHomeDirectory)
+import           System.FilePath (FilePath, (</>))
+import           Text.PrettyPrint.Mainland (pretty)
+import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDone, cmdNew, cmdPostpone, getAgenda)
-import           FF.Config (Config (..), appName, getCfgFilePath, loadConfig)
+import           FF.Config (Config (..), appName, loadConfig, printConfig,
+                            saveConfig)
 import qualified FF.Config as Config
 import           FF.Options (Cmd (..), Config (..), DataDir (..), parseOptions)
-import           FF.Types (Agenda (..), Sample (..))
+import           FF.UI (withHeader)
+import qualified FF.UI as UI
 
 main :: IO ()
 main = do
@@ -41,20 +38,20 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdAgenda limit -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) $ getAgenda limit
-        yprint $ agendaUI limit agenda
+        pprint $ UI.agenda limit agenda
     CmdConfig config -> liftIO $ runCmdConfig config
     CmdDone noteId -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdDone noteId
-        yprint $ object ["archived" .= nv]
+        pprint $ withHeader "archived:" nv
     CmdNew new -> do
         dir <- checkDataDir
         noteView <- (`runReaderT` dir) $ cmdNew new
-        yprint noteView
+        pprint noteView
     CmdPostpone noteId -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdPostpone noteId
-        yprint $ object ["postponed" .= nv]
+        pprint $ withHeader "postponed:" nv
   where
 
     checkDataDir :: Monad m => m FilePath
@@ -63,7 +60,7 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         Nothing  ->
             fail "Data directory isn't set, run `ff config dataDir --help`"
 
-    runCmdConfig Nothing = yprint cfg
+    runCmdConfig Nothing = printConfig cfg
     runCmdConfig (Just (ConfigDataDir mdir)) = do
         dir <- case mdir of
             Nothing -> pure dataDir
@@ -75,43 +72,16 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
                     , trySaveDataDir $ home </> "Yandex.Disk.localized"
                     , fail "Cant't detect Yandex.Disk directory"
                     ]
-        yprint $ object ["dataDir" .= dir]
+        printConfig dir
       where
         trySaveDataDir baseDir = do
             guard =<< doesDirectoryExist baseDir
             saveDataDir $ baseDir </> "Apps" </> appName
-        saveDataDir dir = do
-            cfgFilePath <- getCfgFilePath
-            createDirectoryIfMissing True $ takeDirectory cfgFilePath
-            encodeFile cfgFilePath cfg{dataDir = Just dir} $> Just dir
+        saveDataDir dir = saveConfig cfg{dataDir = Just dir} $> Just dir
 
-yprint :: (ToJSON a, MonadIO io) => a -> io ()
-yprint = liftIO . BS.putStr . Yaml.encodePretty config
-  where
-    config = Yaml.setConfCompare compare Yaml.defConfig
-
-agendaUI :: Int -> Agenda -> Value
-agendaUI limit Agenda{ending, starting} = array
-    [ sampleUI labelEnding   "ff search --started --ending" ending
-    , sampleUI labelStarting "ff search --starting"         starting
-    , object
-        [ "to see more tasks, run"
-            .= ("ff --limit=" <> tshow (max 0 limit + 10))
-        ]
-    ]
-  where
-    labelEnding   count = tshow count <> " started task(s) ending soon"
-    labelStarting count = tshow count <> " task(s) starting soon"
-
-type Template a = a -> Text
-
-sampleUI :: Template Natural -> Text -> Sample -> Value
-sampleUI labelTemplate cmdToSeeAll Sample{notes, total} = object $
-    labelTemplate count .= notes
-    : [toSeeAllLabel .= cmdToSeeAll | count /= total]
-  where
-    count = genericLength notes
-    toSeeAllLabel = Text.unwords ["to see all", tshow total, "task(s), run"]
-
-tshow :: Show a => a -> Text
-tshow = Text.pack . show
+pprint :: (Pretty a, MonadIO io) => a -> io ()
+pprint a = liftIO $ do
+    width <- Terminal.size >>= \case
+        Nothing -> pure 80
+        Just Terminal.Window{Terminal.width} -> pure width
+    putStrLn . pretty width $ ppr a

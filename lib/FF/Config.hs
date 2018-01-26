@@ -5,10 +5,13 @@ module FF.Config where
 
 import           Control.Exception (throw)
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
-import           Data.Yaml (decodeFileEither)
-import           System.Directory (XdgDirectory (XdgConfig), doesFileExist,
+import qualified Data.ByteString as BS
+import           Data.Yaml (ToJSON, decodeFileEither, encodeFile)
+import qualified Data.Yaml as Yaml
+import           System.Directory (XdgDirectory (XdgConfig),
+                                   createDirectoryIfMissing, doesFileExist,
                                    getXdgDirectory)
-import           System.FilePath (FilePath, (</>))
+import           System.FilePath (FilePath, takeDirectory, (</>))
 
 newtype Config = Config
     { dataDir :: Maybe FilePath
@@ -33,3 +36,12 @@ loadConfig = do
         either throw pure =<< decodeFileEither path
     else
         pure emptyConfig
+
+saveConfig :: Config -> IO ()
+saveConfig cfg = do
+    cfgFilePath <- getCfgFilePath
+    createDirectoryIfMissing True $ takeDirectory cfgFilePath
+    encodeFile cfgFilePath cfg
+
+printConfig :: ToJSON a => a -> IO ()
+printConfig = BS.putStr . Yaml.encode

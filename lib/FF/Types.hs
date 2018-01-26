@@ -12,15 +12,14 @@ module FF.Types where
 import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
 import           CRDT.LWW (LWW (LWW), time, value)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON, ToJSON, Value (Array), camelTo2, object,
-                             parseJSON, toJSON, (.=))
+import           Data.Aeson (FromJSON, ToJSON, Value (Array), camelTo2,
+                             parseJSON, toJSON)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
 import           Data.Aeson.Types (typeMismatch)
 import           Data.Foldable (toList)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
-import qualified Data.Text as Text
 import           Data.Time (Day)
 import           GHC.Exts (fromList)
 import           Numeric.Natural (Natural)
@@ -73,11 +72,6 @@ data NoteView = NoteView
     , end   :: Maybe Day
     }
     deriving (Eq, Show)
-
-instance ToJSON NoteView where
-    toJSON NoteView{..} = object $
-        [Text.pack (show nid) .= text, "start" .= start]
-        ++ ["end" .= e | Just e <- pure end]
 
 data Sample = Sample
     { notes :: [NoteView]
