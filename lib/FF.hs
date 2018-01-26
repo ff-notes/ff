@@ -29,6 +29,9 @@ import           FF.Types (Agenda (..), Note (..), NoteView (..), Sample (..),
 
 getAgenda :: Int -> Storage Agenda
 getAgenda limit = do
+    today <- getUtcToday
+    let isOverdue NoteView{end} = end < Just today
+    let isToday NoteView{end} = end == Just today
     docs <- list
     mnotes <- for docs load
     let activeNotes =
@@ -36,19 +39,30 @@ getAgenda limit = do
             | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <-
                 zip docs mnotes
             ]
-    let (endingNotes, startingNotes) = partition (isJust . end) activeNotes
+    let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
+    let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
+    let (endingTodayNotes, endingSoonNotes) = span isToday endingNotes
     pure Agenda
-        { ending   = sample limit $ sortOn endingOrder endingNotes
+        { overdue     = sample limit overdueNotes
+        , endingToday = sample (limit - length overdueNotes) endingTodayNotes
+        , endingSoon  =
+            sample
+                (limit - length overdueNotes - length endingTodayNotes)
+                endingSoonNotes
         , starting =
-            sample (limit - length endingNotes) $
-            sortOn startingOrder startingNotes
+            sample
+                (limit
+                    - length overdueNotes
+                    - length endingTodayNotes
+                    - length endingSoonNotes)
+                (sortOn onStart startingNotes)
         }
   where
-    endingOrder NoteView{end, nid} =
+    onEnd NoteView{end, nid} =
         ( end -- closest first
         , nid -- no business-logic involved, just for determinism
         )
-    startingOrder NoteView{start, nid} =
+    onStart NoteView{start, nid} =
         ( start -- oldest first
         , nid   -- no business-logic involved, just for determinism
         )

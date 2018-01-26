@@ -83,13 +83,20 @@ emptySample :: Sample
 emptySample = Sample{notes = [], total = 0}
 
 data Agenda = Agenda
-    { ending   :: Sample
-    , starting :: Sample
+    { overdue     :: Sample
+    , endingToday :: Sample
+    , endingSoon  :: Sample
+    , starting    :: Sample
     }
     deriving (Eq, Show)
 
 emptyAgenda :: Agenda
-emptyAgenda = Agenda{ending = emptySample, starting = emptySample}
+emptyAgenda = Agenda
+    { overdue     = emptySample
+    , endingToday = emptySample
+    , endingSoon  = emptySample
+    , starting    = emptySample
+    }
 
 noteView :: DocId Note -> Note -> NoteView
 noteView nid Note{..} = NoteView

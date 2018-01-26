@@ -8,8 +8,7 @@ import           Test.Tasty.HUnit (assertEqual, testCase)
 
 import           FF (getAgenda)
 import           FF.Storage (DocId (DocId), runStorage)
-import           FF.Types (Agenda (..), NoteView (..), Sample (..), emptyAgenda,
-                           emptySample)
+import           FF.Types (Agenda (..), NoteView (..), Sample (..), emptyAgenda)
 
 main :: IO ()
 main =
@@ -20,8 +19,8 @@ main =
                 undefined
                 (getAgenda agendaLimit)
         assertEqual "smoke"
-            Agenda
-                { ending = Sample
+            emptyAgenda
+                { overdue = Sample
                     { notes =
                         [NoteView
                             { nid = DocId "1"
@@ -31,7 +30,6 @@ main =
                             }]
                     , total = 1
                     }
-                , starting = emptySample
                 }
             =<< runStorage
                 "test/data/smoke.in"
