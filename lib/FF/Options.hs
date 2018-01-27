@@ -18,14 +18,15 @@ import           Options.Applicative (auto, command, execParser, flag',
                                       strArgument, subparser, value, (<**>))
 
 import           FF.Storage (DocId (DocId))
-import           FF.Types (Note)
+import           FF.Types (NoteId)
 
 data Cmd
     = CmdAgenda   Limit
     | CmdConfig   (Maybe Config)
-    | CmdDone     (DocId Note)
+    | CmdDone     NoteId
+    | CmdEdit     NoteId
     | CmdNew      New
-    | CmdPostpone (DocId Note)
+    | CmdPostpone NoteId
 
 type Limit = Int
 
@@ -47,6 +48,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         [ command "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
         , command "done"      iCmdDone
+        , command "edit"      iCmdEdit
         , command "new"       iCmdNew
         , command "postpone"  iCmdPostpone
         ]
@@ -55,12 +57,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
                                     \ [default action]"
     iCmdConfig    = i pCmdConfig    "show/edit configuration"
     iCmdDone      = i pCmdDone      "mark task done (archive)"
+    iCmdEdit      = i pCmdEdit      "edit task"
     iCmdNew       = i pCmdNew       "add new task or note"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
 
     pCmdAgenda    =
         CmdAgenda <$> option auto (long "limit" <> short 'l' <> value 10)
     pCmdDone      = CmdDone     . DocId <$> strArgument (metavar "ID")
+    pCmdEdit      = CmdEdit     . DocId <$> strArgument (metavar "ID")
     pCmdPostpone  = CmdPostpone . DocId <$> strArgument (metavar "ID")
     pCmdNew       = CmdNew <$> pNew
     pNew = New

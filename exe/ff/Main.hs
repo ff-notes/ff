@@ -18,7 +18,7 @@ import           System.FilePath (FilePath, (</>))
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF (cmdDone, cmdNew, cmdPostpone, getAgenda)
+import           FF (cmdDone, cmdEdit, cmdNew, cmdPostpone, getAgenda)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import qualified FF.Config as Config
@@ -44,6 +44,10 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdDone noteId
         pprint $ withHeader "archived:" $ UI.noteView nv
+    CmdEdit noteId -> do
+        dir <- checkDataDir
+        nv <- (`runReaderT` dir) $ cmdEdit noteId
+        pprint $ withHeader "edited:" $ UI.noteView nv
     CmdNew new -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdNew new

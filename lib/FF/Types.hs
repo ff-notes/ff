@@ -54,6 +54,8 @@ data Note = Note
     }
     deriving (Eq, Show)
 
+type NoteId = DocId Note
+
 instance Semigroup Note where
     Note status1 text1 start1 end1 <> Note status2 text2 start2 end2 = Note
         (status1 <> status2) (text1 <> text2) (start1 <> start2) (end1 <> end2)
@@ -66,7 +68,7 @@ instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { nid   :: DocId Note
+    { nid   :: NoteId
     , text  :: Text
     , start :: Day
     , end   :: Maybe Day
@@ -98,7 +100,7 @@ emptyAgenda = Agenda
     , starting    = emptySample
     }
 
-noteView :: DocId Note -> Note -> NoteView
+noteView :: NoteId -> Note -> NoteView
 noteView nid Note{..} = NoteView
     { nid   = nid
     , text  = LWW.query noteText

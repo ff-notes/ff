@@ -14,8 +14,10 @@ library:
     - mtl
     - optparse-applicative
     - stm
+    - temporary
     - text
     - time
+    - typed-process
     - yaml
   source-dirs: lib
 

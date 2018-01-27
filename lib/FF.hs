@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -7,6 +8,7 @@ module FF
     , Note
     , getAgenda
     , cmdDone
+    , cmdEdit
     , cmdNew
     , cmdPostpone
     ) where
@@ -18,14 +20,21 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.List (genericLength, partition, sortOn)
 import           Data.Maybe (isJust)
+import           Data.Text (Text)
+import qualified Data.Text as Text
+import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, getCurrentTime, utctDay)
 import           Data.Traversable (for)
+import           System.Exit (ExitCode (..))
+import           System.IO (hClose)
+import           System.IO.Temp (withSystemTempFile)
+import           System.Process.Typed (proc, runProcess)
 
 import           FF.Options (New (New), newEnd, newStart, newText)
 import           FF.Storage (Collection, DocId, Storage, list, load, save,
                              saveNew)
-import           FF.Types (Agenda (..), Note (..), NoteView (..), Sample (..),
-                           Status (Active, Archived), noteView)
+import           FF.Types (Agenda (..), Note (..), NoteId, NoteView (..),
+                           Sample (..), Status (Active, Archived), noteView)
 
 getAgenda :: Int -> Storage Agenda
 getAgenda limit = do
@@ -80,7 +89,7 @@ cmdNew New{newText, newStart, newEnd} = do
     nid <- saveNew note
     pure $ noteView nid note
 
-cmdDone :: DocId Note -> Storage NoteView
+cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = do
     note@Note{noteStatus} <- loadOrFail nid
     noteStatus' <- lift $ LWW.assign Archived noteStatus
@@ -88,7 +97,20 @@ cmdDone nid = do
     save nid note'
     pure $ noteView nid note'
 
-cmdPostpone :: DocId Note -> Storage NoteView
+cmdEdit :: NoteId -> Storage NoteView
+cmdEdit nid = do
+    note@Note{noteText} <- loadOrFail nid
+    mText' <- liftIO $ runExternalEditor $ LWW.query noteText
+    note' <- case mText' of
+        Nothing -> pure note
+        Just text' -> do
+            noteText' <- lift $ LWW.assign text' noteText
+            let note' = note{noteText = noteText'}
+            save nid note'
+            pure note'
+    pure $ noteView nid note'
+
+cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid = do
     note@Note{noteStart} <- loadOrFail nid
     today <- getUtcToday
@@ -112,3 +134,18 @@ getUtcToday = liftIO $ utctDay <$> getCurrentTime
 
 lwwModify :: Clock m => (a -> a) -> LWW a -> m (LWW a)
 lwwModify f x = LWW.assign (f $ LWW.query x) x
+
+-- | Returns 'Nothing' is the text was not changed
+runExternalEditor :: Text -> IO (Maybe Text)
+runExternalEditor oldText =
+    withSystemTempFile "ff.edit" $ \file fileH -> do
+        Text.hPutStr fileH oldText
+        hClose fileH
+        runProcess (proc editor [file]) >>= \case
+            ExitSuccess -> do
+                newText <- Text.strip <$> Text.readFile file
+                pure $ if newText == oldText then Nothing else Just newText
+            ExitFailure{} -> pure Nothing
+
+editor :: FilePath
+editor = "nano"
