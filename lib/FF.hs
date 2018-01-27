@@ -14,6 +14,7 @@ module FF
     , cmdEdit
     , cmdNew
     , cmdPostpone
+    , cmdSearch
     ) where
 
 import           Control.Arrow ((&&&))
@@ -137,6 +138,47 @@ cmdPostpone nid =
         noteStart' <- lwwModify (const start')      noteStart
         noteEnd'   <- lwwModify (fmap (max start')) noteEnd
         pure note{noteStart = noteStart', noteEnd = noteEnd'}
+
+cmdSearch :: Text -> Int -> Storage Agenda
+cmdSearch text limit = do
+    today <- getUtcToday
+    let isOverdue NoteView{end} = end < Just today
+    let isToday NoteView{end} = end == Just today
+    docs <- list
+    mnotes <- for docs load
+    let activeNotes =
+            [ noteView doc note
+            | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <- zip docs mnotes
+            , Text.isInfixOf (Text.toLower text) (Text.toLower . LWW.query $ noteText note)
+            ]
+    let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
+    let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
+    let (endingTodayNotes, endingSoonNotes) = span isToday endingNotes
+    pure Agenda
+        { overdue     = sample limit overdueNotes
+        , endingToday = sample (limit - length overdueNotes) endingTodayNotes
+        , endingSoon  =
+            sample
+                (limit - length overdueNotes - length endingTodayNotes)
+                endingSoonNotes
+        , starting =
+            sample
+                (limit
+                    - length overdueNotes
+                    - length endingTodayNotes
+                    - length endingSoonNotes)
+                (sortOn onStart startingNotes)
+        }
+  where
+    onEnd NoteView{end, nid} =
+        ( end -- closest first
+        , nid -- no business-logic involved, just for determinism
+        )
+    onStart NoteView{start, nid} =
+        ( start -- oldest first
+        , nid   -- no business-logic involved, just for determinism
+        )
+    sample n xs = Sample (take n xs) (genericLength xs)
 
 fromMaybeA :: Applicative m => m a -> Maybe a -> m a
 fromMaybeA m = maybe m pure
