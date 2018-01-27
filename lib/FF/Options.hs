@@ -27,6 +27,7 @@ data Cmd
     | CmdEdit     NoteId
     | CmdNew      New
     | CmdPostpone NoteId
+    | CmdSearch   Text Limit
 
 type Limit = Int
 
@@ -49,6 +50,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "config"    iCmdConfig
         , command "done"      iCmdDone
         , command "edit"      iCmdEdit
+        , command "find"      iCmdSearch
         , command "new"       iCmdNew
         , command "postpone"  iCmdPostpone
         ]
@@ -60,12 +62,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdEdit      = i pCmdEdit      "edit task"
     iCmdNew       = i pCmdNew       "add new task or note"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
+    iCmdSearch    = i pCmdSearch    "searches for the notes with given text"
 
     pCmdAgenda    =
         CmdAgenda <$> option auto (long "limit" <> short 'l' <> value 10)
     pCmdDone      = CmdDone     . DocId <$> strArgument (metavar "ID")
     pCmdEdit      = CmdEdit     . DocId <$> strArgument (metavar "ID")
     pCmdPostpone  = CmdPostpone . DocId <$> strArgument (metavar "ID")
+    pCmdSearch    = CmdSearch <$> strArgument (metavar "TEXT") <*> option auto (long "limit" <> short 'l' <> value 10)
     pCmdNew       = CmdNew <$> pNew
     pNew = New
         <$> strArgument (metavar "TEXT")
