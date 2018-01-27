@@ -6,8 +6,8 @@ module FF.UI where
 import           Data.List (genericLength)
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
-                                            stack, strictText, (<+/>), (</>),
-                                            (<>), (<|>))
+                                            stack, star, strictText, (<+/>),
+                                            (</>), (<>), (<|>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -36,16 +36,16 @@ agenda limit Agenda{overdue, endingToday, endingSoon, starting} = stack
     , "to see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
     ]
   where
-    labelOverdue     = "overdue task(s):"
-    labelEndingToday = "task(s) for today:"
-    labelEndingSoon  = "task(s) ending soon:"
-    labelStarting    = "task(s) starting soon:"
+    labelOverdue     = "overdue:"
+    labelEndingToday = "today:"
+    labelEndingSoon  = "ending soon:"
+    labelStarting    = "starting soon:"
 
 sample :: String -> String -> Sample -> Doc
 sample _     _           Sample{total = 0}    = mempty
 sample label cmdToSeeAll Sample{total, notes} =
     withHeader label . stack $
-        map noteView notes
+        map ((star <>) . indent 1 . noteView) notes
         ++ [toSeeAllLabel .= Pretty.text cmdToSeeAll | count /= total]
   where
     count = genericLength notes
@@ -53,7 +53,7 @@ sample label cmdToSeeAll Sample{total, notes} =
 
 noteView :: NoteView -> Doc
 noteView NoteView{nid, text, start, end} =
-    hang indentation noteText </> indent indentation (fieldsSep fields)
+    noteText </> fieldsSep fields
   where
     noteText = stack . map (sep . map strictText . Text.words) $ Text.lines text
     fields
