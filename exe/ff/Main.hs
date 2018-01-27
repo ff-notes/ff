@@ -18,7 +18,7 @@ import           System.FilePath (FilePath, (</>))
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF (cmdDone, cmdEdit, cmdNew, cmdPostpone, getAgenda)
+import           FF (cmdDone, cmdDelete, cmdEdit, cmdNew, cmdPostpone, getAgenda)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import qualified FF.Config as Config
@@ -34,12 +34,17 @@ main = do
     runLamportClock timeVar $ runCmd cfg cmd
 
 runCmd :: Config.Config -> Cmd -> LamportClock ()
-runCmd cfg@Config.Config{dataDir} cmd = case cmd of
+runCmd cfg@Config.Config{dataDir} cmd =
+    case cmd of
     CmdAgenda limit -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) $ getAgenda limit
         pprint $ UI.agenda limit agenda
     CmdConfig config -> liftIO $ runCmdConfig config
+    CmdDelete noteId -> do
+        dir <- checkDataDir
+        nv <- (`runReaderT` dir) $ cmdDelete noteId
+        pprint $ withHeader "deleted:" $ UI.noteView nv
     CmdDone noteId -> do
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdDone noteId
@@ -56,6 +61,7 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdPostpone noteId
         pprint $ withHeader "postponed:" $ UI.noteView nv
+
   where
 
     checkDataDir :: Monad m => m FilePath
