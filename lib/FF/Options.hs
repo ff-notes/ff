@@ -25,6 +25,7 @@ import           FF.Types (NoteId)
 data Cmd
     = CmdAgenda   Limit
     | CmdConfig   (Maybe Config)
+    | CmdDelete   NoteId
     | CmdDone     NoteId
     | CmdEdit     Edit
     | CmdNew      New
@@ -60,6 +61,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     commands = mconcat
         [ command "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
+        , command "del"       iCmdDelete
         , command "done"      iCmdDone
         , command "edit"      iCmdEdit
         , command "new"       iCmdNew
@@ -69,12 +71,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i pCmdConfig    "show/edit configuration"
+    iCmdDelete    = i pCmdDelete    "removes task"
     iCmdDone      = i pCmdDone      "mark task done (archive)"
     iCmdEdit      = i pCmdEdit      "edit task"
     iCmdNew       = i pCmdNew       "add new task or note"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
 
     pCmdAgenda    = CmdAgenda   <$> limitOption
+    pCmdDelete    = CmdDelete   <$> idArgument
     pCmdDone      = CmdDone     <$> idArgument
     pCmdPostpone  = CmdPostpone <$> idArgument
     pCmdEdit      = CmdEdit     <$> pEdit

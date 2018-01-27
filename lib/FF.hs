@@ -7,6 +7,7 @@ module FF
     ( Agenda
     , Note
     , getAgenda
+    , cmdDelete
     , cmdDone
     , cmdEdit
     , cmdNew
@@ -33,7 +34,8 @@ import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, Storage, list, load, modify,
                              saveNew)
 import           FF.Types (Agenda (..), Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (Active, Archived), noteView)
+                           Sample (..), Status (Active, Archived, Deleted),
+                           noteView)
 
 getAgenda :: Int -> Storage Agenda
 getAgenda limit = do
@@ -88,10 +90,16 @@ cmdNew New{newText, newStart, newEnd} = do
     nid <- saveNew note
     pure $ noteView nid note
 
+cmdDelete :: NoteId -> Storage NoteView
+cmdDelete nid =
+    modifyAndView nid $ \note@Note{noteStatus} -> do
+        noteStatus' <- lwwModify (const Deleted) noteStatus
+        pure note{noteStatus = noteStatus'}
+
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid =
     modifyAndView nid $ \note@Note{noteStatus} -> do
-        noteStatus' <- LWW.assign Archived noteStatus
+        noteStatus' <- lwwModify (const Archived) noteStatus
         pure note{noteStatus = noteStatus'}
 
 cmdEdit :: Edit -> Storage NoteView
