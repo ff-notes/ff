@@ -14,12 +14,11 @@ module FF
     ) where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Trans (lift)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.List (genericLength, partition, sortOn)
-import           Data.Maybe (isJust)
+import           Data.Maybe (fromMaybe, isJust)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -30,8 +29,8 @@ import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 
-import           FF.Options (New (New), newEnd, newStart, newText)
-import           FF.Storage (Collection, DocId, Storage, list, load, save,
+import           FF.Options (Edit (..), New (..))
+import           FF.Storage (Collection, DocId, Storage, list, load, modify,
                              saveNew)
 import           FF.Types (Agenda (..), Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived), noteView)
@@ -80,7 +79,7 @@ getAgenda limit = do
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
     newStart' <- fromMaybeA getUtcToday newStart
-    note <- lift $ do
+    note <- do
         noteStatus  <- LWW.initial Active
         noteText    <- LWW.initial newText
         noteStart   <- LWW.initial newStart'
@@ -90,62 +89,67 @@ cmdNew New{newText, newStart, newEnd} = do
     pure $ noteView nid note
 
 cmdDone :: NoteId -> Storage NoteView
-cmdDone nid = do
-    note@Note{noteStatus} <- loadOrFail nid
-    noteStatus' <- lift $ LWW.assign Archived noteStatus
-    let note' = note{noteStatus = noteStatus'}
-    save nid note'
-    pure $ noteView nid note'
+cmdDone nid =
+    modifyAndView nid $ \note@Note{noteStatus} -> do
+        noteStatus' <- LWW.assign Archived noteStatus
+        pure note{noteStatus = noteStatus'}
 
-cmdEdit :: NoteId -> Storage NoteView
-cmdEdit nid = do
-    note@Note{noteText} <- loadOrFail nid
-    mText' <- liftIO $ runExternalEditor $ LWW.query noteText
-    note' <- case mText' of
-        Nothing -> pure note
-        Just text' -> do
-            noteText' <- lift $ LWW.assign text' noteText
-            let note' = note{noteText = noteText'}
-            save nid note'
-            pure note'
-    pure $ noteView nid note'
+cmdEdit :: Edit -> Storage NoteView
+cmdEdit (Edit nid Nothing Nothing Nothing) =
+    modifyAndView nid $ \note@Note{noteText} -> do
+        text' <- liftIO $ runExternalEditor $ LWW.query noteText
+        noteText' <- lwwModify (const text') noteText
+        pure note{noteText = noteText'}
+cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
+    modifyAndView nid $ \note@Note{noteEnd, noteStart, noteText} -> do
+        noteEnd'   <- lwwModify (`fromMaybe` editEnd)   noteEnd
+        noteStart' <- lwwModify (`fromMaybe` editStart) noteStart
+        noteText'  <- lwwModify (`fromMaybe` editText)  noteText
+        pure note
+            {noteEnd = noteEnd', noteStart = noteStart', noteText = noteText'}
 
 cmdPostpone :: NoteId -> Storage NoteView
-cmdPostpone nid = do
-    note@Note{noteStart} <- loadOrFail nid
-    today <- getUtcToday
-    noteStart' <- lift $
-        lwwModify (\start -> 1 `addDays` max today start) noteStart
-    let note' = note{noteStart = noteStart'} -- TODO Storage.modify
-    save nid note'
-    pure $ noteView nid note'
+cmdPostpone nid =
+    modifyAndView nid $ \note@Note{noteStart} -> do
+        today <- getUtcToday
+        noteStart' <-
+            lwwModify (\start -> 1 `addDays` max today start) noteStart
+        pure note{noteStart = noteStart'}
 
 fromMaybeA :: Applicative m => m a -> Maybe a -> m a
 fromMaybeA m = maybe m pure
 
-loadOrFail :: Collection a => DocId a -> Storage a
-loadOrFail nid = fromMaybeA (fail msg) =<< load nid  -- TODO ExceptT
-  where
-    msg = concat
-        ["Can't load document ", show nid, ". Where did you get this id?"]
+-- | Check the document exists. Return actual version.
+modifyOrFail ::
+    (Collection doc, Eq doc) => DocId doc -> (doc -> Storage doc) -> Storage doc
+modifyOrFail docId f = modify docId $ \case
+    Nothing -> fail $ concat
+        ["Can't load document ", show docId, ". Where did you get this id?"]
+    Just docOld -> do
+        docNew <- f docOld
+        pure (docNew, docNew)
+
+modifyAndView :: NoteId -> (Note -> Storage Note) -> Storage NoteView
+modifyAndView nid f = noteView nid <$> modifyOrFail nid f
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
 
-lwwModify :: Clock m => (a -> a) -> LWW a -> m (LWW a)
-lwwModify f x = LWW.assign (f $ LWW.query x) x
+lwwModify :: (Eq a, Clock m) => (a -> a) -> LWW a -> m (LWW a)
+lwwModify f lww = let
+    x = LWW.query lww
+    y = f x
+    in
+    if x /= y then LWW.assign y lww else pure lww
 
--- | Returns 'Nothing' is the text was not changed
-runExternalEditor :: Text -> IO (Maybe Text)
-runExternalEditor oldText =
+runExternalEditor :: Text -> IO Text
+runExternalEditor textOld =
     withSystemTempFile "ff.edit" $ \file fileH -> do
-        Text.hPutStr fileH oldText
+        Text.hPutStr fileH textOld
         hClose fileH
         runProcess (proc editor [file]) >>= \case
-            ExitSuccess -> do
-                newText <- Text.strip <$> Text.readFile file
-                pure $ if newText == oldText then Nothing else Just newText
-            ExitFailure{} -> pure Nothing
+            ExitSuccess   -> Text.strip <$> Text.readFile file
+            ExitFailure{} -> pure textOld
 
 editor :: FilePath
 editor = "nano"

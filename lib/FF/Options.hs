@@ -5,6 +5,7 @@ module FF.Options
     , Config (..)
     , New (..)
     , DataDir (..)
+    , Edit (..)
     , parseOptions
     ) where
 
@@ -15,7 +16,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, subparser, value, (<**>))
+                                      strArgument, strOption, subparser, value,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
@@ -24,7 +26,7 @@ data Cmd
     = CmdAgenda   Limit
     | CmdConfig   (Maybe Config)
     | CmdDone     NoteId
-    | CmdEdit     NoteId
+    | CmdEdit     Edit
     | CmdNew      New
     | CmdPostpone NoteId
 
@@ -33,6 +35,17 @@ type Limit = Int
 newtype Config = ConfigDataDir (Maybe DataDir)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
+
+data Edit = Edit
+    { editId    :: NoteId
+    , editText  :: Maybe Text
+    , editStart :: Maybe Day
+    , editEnd   :: Maybe (Maybe Day)
+    -- ^ Nothing      -- no option            => no change
+    --   Just Nothing -- option with tobstone => clear field
+    --   Just value   -- option with value    => set field to value
+    }
+    deriving (Show)
 
 data New = New
     { newText   :: Text
@@ -61,16 +74,33 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdNew       = i pCmdNew       "add new task or note"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
 
-    pCmdAgenda    =
-        CmdAgenda <$> option auto (long "limit" <> short 'l' <> value 10)
-    pCmdDone      = CmdDone     . DocId <$> strArgument (metavar "ID")
-    pCmdEdit      = CmdEdit     . DocId <$> strArgument (metavar "ID")
-    pCmdPostpone  = CmdPostpone . DocId <$> strArgument (metavar "ID")
-    pCmdNew       = CmdNew <$> pNew
-    pNew = New
-        <$> strArgument (metavar "TEXT")
-        <*> optional (option auto (long "start" <> short 's' <> metavar "DATE"))
-        <*> optional (option auto (long "end"   <> short 'e' <> metavar "DATE"))
+    pCmdAgenda    = CmdAgenda   <$> limitOption
+    pCmdDone      = CmdDone     <$> idArgument
+    pCmdPostpone  = CmdPostpone <$> idArgument
+    pCmdEdit      = CmdEdit     <$> pEdit
+    pCmdNew       = CmdNew      <$> pNew
+
+    pNew = New <$> textArgument <*> optional startOption <*> optional endOption
+    pEdit = Edit
+        <$> idArgument
+        <*> optional textOption
+        <*> optional startOption
+        <*> optional maybeEndOption
+
+    idArgument   = DocId <$> strArgument (metavar "ID"   <> help "note id")
+    textArgument =           strArgument (metavar "TEXT" <> help "note text")
+
+    endOption   = dateOption  $ long "end"   <> short 'e' <> help "end date"
+    limitOption = option auto $ long "limit" <> short 'l' <> help "limit"
+                                <> value 10
+    startOption = dateOption  $ long "start" <> short 's' <> help "start date"
+    textOption  = strOption   $ long "text"  <> short 't' <> help "note text"
+                                <> metavar "TEXT"
+
+    maybeEndOption  = Just <$> endOption
+                  <|> flag' Nothing (long "end-clear" <> help "clear end date")
+
+    dateOption m = option auto $ metavar "DATE" <> m
 
     pCmdConfig = CmdConfig <$> optional (subparser $ command "dataDir" iDataDir)
       where

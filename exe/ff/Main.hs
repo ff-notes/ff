@@ -44,9 +44,9 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdDone noteId
         pprint $ withHeader "archived:" $ UI.noteView nv
-    CmdEdit noteId -> do
+    CmdEdit edit -> do
         dir <- checkDataDir
-        nv <- (`runReaderT` dir) $ cmdEdit noteId
+        nv <- (`runReaderT` dir) $ cmdEdit edit
         pprint $ withHeader "edited:" $ UI.noteView nv
     CmdNew new -> do
         dir <- checkDataDir
