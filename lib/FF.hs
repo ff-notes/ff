@@ -14,6 +14,7 @@ module FF
     , cmdPostpone
     ) where
 
+import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
@@ -81,6 +82,9 @@ getAgenda limit = do
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
     newStart' <- fromMaybeA getUtcToday newStart
+    case newEnd of
+        Just end -> assertStartBeforeEnd newStart' end
+        _        -> pure ()
     note <- do
         noteStatus  <- LWW.initial Active
         noteText    <- LWW.initial newText
@@ -109,7 +113,21 @@ cmdEdit (Edit nid Nothing Nothing Nothing) =
         noteText' <- lwwModify (const text') noteText
         pure note{noteText = noteText'}
 cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
-    modifyAndView nid $ \note@Note{noteEnd, noteStart, noteText} -> do
+    modifyAndView nid $ \note -> do
+        checkStartEnd note
+        update note
+  where
+    checkStartEnd Note{noteStart = (LWW.query -> noteStart), noteEnd} =
+        case newStartEnd of
+            Just (start, end) -> assertStartBeforeEnd start end
+            Nothing           -> pure ()
+      where
+        newStartEnd = case (editStart, editEnd, LWW.query noteEnd) of
+            (Just start, Nothing        , Just end) -> Just (start    , end)
+            (Nothing   , Just (Just end), _       ) -> Just (noteStart, end)
+            (Just start, Just (Just end), _       ) -> Just (start    , end)
+            _                                       -> Nothing
+    update note@Note{noteEnd, noteStart, noteText} = do
         noteEnd'   <- lwwModify (`fromMaybe` editEnd)   noteEnd
         noteStart' <- lwwModify (`fromMaybe` editStart) noteStart
         noteText'  <- lwwModify (`fromMaybe` editText)  noteText
@@ -161,3 +179,7 @@ runExternalEditor textOld =
 
 editor :: FilePath
 editor = "nano"
+
+assertStartBeforeEnd :: Monad m => Day -> Day -> m ()
+assertStartBeforeEnd start end =
+    unless (start <= end) $ fail "task cannot end before it is started"
