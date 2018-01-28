@@ -136,11 +136,12 @@ cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
 
 cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid =
-    modifyAndView nid $ \note@Note{noteStart} -> do
+    modifyAndView nid $ \note@Note{noteStart, noteEnd} -> do
         today <- getUtcToday
-        noteStart' <-
-            lwwModify (\start -> 1 `addDays` max today start) noteStart
-        pure note{noteStart = noteStart'}
+        let start' = addDays 1 $ max today $ LWW.query noteStart
+        noteStart' <- lwwModify (const start')      noteStart
+        noteEnd'   <- lwwModify (fmap (max start')) noteEnd
+        pure note{noteStart = noteStart', noteEnd = noteEnd'}
 
 fromMaybeA :: Applicative m => m a -> Maybe a -> m a
 fromMaybeA m = maybe m pure
