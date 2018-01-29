@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -19,6 +20,7 @@ import           Control.Arrow ((&&&))
 import           Control.Error ((?:))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.State.Strict (evalState, state)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
@@ -56,23 +58,21 @@ splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
 takeSamples :: Int -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples limit0 ModeMap{..} = ModeMap
-    { overdue  = overdue'
-    , endToday = endToday'
-    , endSoon  = endSoon'
-    , actual   = actual'
-    , starting = starting'
-    }
+takeSamples limit ModeMap{..} = (`evalState` limit) $
+    ModeMap
+    <$> sample end   overdue
+    <*> sample end   endToday
+    <*> sample end   endSoon
+    <*> sample start actual
+    <*> sample start starting
   where
-    -- in sorting by nid no business-logic is involved,
-    -- it's just for determinism
-    (overdue' , limit1) = sample limit0 $ sortOn (end   &&& nid) overdue
-    (endToday', limit2) = sample limit1 $ sortOn (end   &&& nid) endToday
-    (endSoon' , limit3) = sample limit2 $ sortOn (end   &&& nid) endSoon
-    (actual'  , limit4) = sample limit3 $ sortOn (start &&& nid) actual
-    (starting', _     ) = sample limit4 $ sortOn (start &&& nid) starting
-    sample n xs = (Sample (take n xs) (fromIntegral len), fromIntegral n - len)
-      where len = length xs
+    sample key xs = state $ \n ->
+        (Sample (take n xs') (fromIntegral len), n - len)
+      where
+        -- in sorting by nid no business-logic is involved,
+        -- it's just for determinism
+        xs' = sortOn (key &&& nid) xs
+        len = length xs'
 
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
