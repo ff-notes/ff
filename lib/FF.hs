@@ -2,6 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module FF
@@ -14,16 +15,14 @@ module FF
     , cmdPostpone
     ) where
 
+import           Control.Arrow ((&&&))
 import           Control.Error ((?:))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.List (genericLength, partition, sortOn)
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (isJust)
-import           Data.Pair (pattern (:-))
+import           Data.List (genericLength, sortOn)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -37,51 +36,41 @@ import           System.Process.Typed (proc, runProcess)
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, Storage, list, load, modify,
                              saveNew)
-import           FF.Types (Note (..), NoteId, NoteView (..), Sample (..),
-                           Samples, Status (Active, Archived, Deleted),
-                           TaskMode (..), emptySample, noteView)
+import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
+                           Sample (..), Status (Active, Archived, Deleted),
+                           noteView, singletonTaskModeMap)
 
-getSamples :: Int -> Storage Samples
+getSamples :: Int -> Storage (ModeMap Sample)
 getSamples limit = do
     today <- getUtcToday
-    let isOverdue NoteView{end} = end < Just today
-    let isToday NoteView{end} = end == Just today
     docs <- list
     mnotes <- for docs load
     let activeNotes =
             [ noteView doc note
-            | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <-
-                zip docs mnotes
+            | (doc, Just note) <- zip docs mnotes
+            , LWW.query (noteStatus note) == Active
             ]
-    let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
-    let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
-    let (endTodayNotes, endSoonNotes) = span isToday endingNotes
-    pure $
-        Map.filter (/= emptySample) $
-        Map.fromList
-            [ Overdue   :- sample limit overdueNotes
-            , EndToday  :- sample (limit - length overdueNotes) endTodayNotes
-            , EndSoon   :-
-                sample
-                    (limit - length overdueNotes - length endTodayNotes)
-                    endSoonNotes
-            , Starting  :-
-                sample
-                    (limit
-                        - length overdueNotes
-                        - length endTodayNotes
-                        - length endSoonNotes)
-                    (sortOn onStart startingNotes)
-            ]
+    pure $ takeSamples limit $ splitModes today activeNotes
+
+splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
+splitModes = foldMap . singletonTaskModeMap
+
+takeSamples :: Int -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples limit ModeMap{..} = ModeMap
+    { overdue  = overdue'
+    , endToday = endToday'
+    , endSoon  = endSoon'
+    , actual   = actual'
+    , starting = starting'
+    }
   where
-    onEnd NoteView{end, nid} =
-        ( end -- closest first
-        , nid -- no business-logic involved, just for determinism
-        )
-    onStart NoteView{start, nid} =
-        ( start -- oldest first
-        , nid   -- no business-logic involved, just for determinism
-        )
+    -- in sorting by nid no business-logic is involved,
+    -- it's just for determinism
+    overdue'  = sample limit $ sortOn (end &&& nid) overdue
+    endToday' = sample limit $ sortOn (end &&& nid) endToday
+    endSoon'  = sample limit $ sortOn (end &&& nid) endSoon
+    actual'   = sample limit $ sortOn (start &&& nid) actual
+    starting' = sample limit $ sortOn (start &&& nid) starting
     sample n xs = Sample (take n xs) (genericLength xs)
 
 cmdNew :: New -> Storage NoteView

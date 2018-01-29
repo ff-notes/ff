@@ -1,11 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module FF.UI where
 
-import           Control.Error ((?:))
 import           Data.List (genericLength)
-import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
                                             stack, star, strictText, (<+/>),
@@ -13,8 +12,7 @@ import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (NoteView (..), Sample (..), Samples, TaskMode (..),
-                           emptySample)
+import           FF.Types (ModeMap (..), NoteView (..), Sample (..))
 
 type Template a = a -> String
 
@@ -30,22 +28,20 @@ indentation = 4
 pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
-samplesInSections :: Int -> Samples -> Doc
-samplesInSections limit samples = stack
+samplesInSections :: Int -> ModeMap Sample -> Doc
+samplesInSections limit ModeMap{..} = stack
     [ sample labelOverdue  "ff search --overdue"   overdue
     , sample labelEndToday "ff search --today"     endToday
     , sample labelEndSoon  "ff search --soon"      endSoon
+    , sample labelActual   "ff search --actual"    actual
     , sample labelStarting "ff search --starting"  starting
-    , "to see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
+    , "To see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
     ]
   where
-    overdue  = Map.lookup Overdue  samples ?: emptySample
-    endToday = Map.lookup EndToday samples ?: emptySample
-    endSoon  = Map.lookup EndSoon  samples ?: emptySample
-    starting = Map.lookup Starting samples ?: emptySample
     labelOverdue  = "Overdue:"
     labelEndToday = "Due today:"
     labelEndSoon  = "Due soon:"
+    labelActual   = "Actual:"
     labelStarting = "Starting soon:"
 
 sample :: String -> String -> Sample -> Doc
@@ -56,7 +52,7 @@ sample label cmdToSeeAll Sample{total, notes} =
         ++ [toSeeAllLabel .= Pretty.text cmdToSeeAll | count /= total]
   where
     count = genericLength notes
-    toSeeAllLabel = "to see all " <> show total <> " task(s), run:"
+    toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
 
 noteView :: NoteView -> Doc
 noteView NoteView{nid, text, start, end} =
