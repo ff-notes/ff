@@ -22,7 +22,7 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.List (genericLength, sortOn)
+import           Data.List (sortOn)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -56,7 +56,7 @@ splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
 takeSamples :: Int -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples limit ModeMap{..} = ModeMap
+takeSamples limit0 ModeMap{..} = ModeMap
     { overdue  = overdue'
     , endToday = endToday'
     , endSoon  = endSoon'
@@ -66,12 +66,13 @@ takeSamples limit ModeMap{..} = ModeMap
   where
     -- in sorting by nid no business-logic is involved,
     -- it's just for determinism
-    overdue'  = sample limit $ sortOn (end &&& nid) overdue
-    endToday' = sample limit $ sortOn (end &&& nid) endToday
-    endSoon'  = sample limit $ sortOn (end &&& nid) endSoon
-    actual'   = sample limit $ sortOn (start &&& nid) actual
-    starting' = sample limit $ sortOn (start &&& nid) starting
-    sample n xs = Sample (take n xs) (genericLength xs)
+    (overdue' , limit1) = sample limit0 $ sortOn (end   &&& nid) overdue
+    (endToday', limit2) = sample limit1 $ sortOn (end   &&& nid) endToday
+    (endSoon' , limit3) = sample limit2 $ sortOn (end   &&& nid) endSoon
+    (actual'  , limit4) = sample limit3 $ sortOn (start &&& nid) actual
+    (starting', _     ) = sample limit4 $ sortOn (start &&& nid) starting
+    sample n xs = (Sample (take n xs) (fromIntegral len), fromIntegral n - len)
+      where len = length xs
 
 cmdNew :: New -> Storage NoteView
 cmdNew New{newText, newStart, newEnd} = do
