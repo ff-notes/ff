@@ -1,12 +1,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module FF
-    ( Agenda
-    , Note
-    , getAgenda
+    ( Note
+    , getSamples
     , cmdDelete
     , cmdDone
     , cmdEdit
@@ -14,13 +14,16 @@ module FF
     , cmdPostpone
     ) where
 
+import           Control.Error ((?:))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.List (genericLength, partition, sortOn)
-import           Data.Maybe (fromMaybe, isJust)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe (isJust)
+import           Data.Pair (pattern (:-))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -34,12 +37,12 @@ import           System.Process.Typed (proc, runProcess)
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, Storage, list, load, modify,
                              saveNew)
-import           FF.Types (Agenda (..), Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (Active, Archived, Deleted),
-                           noteView)
+import           FF.Types (Note (..), NoteId, NoteView (..), Sample (..),
+                           Samples, Status (Active, Archived, Deleted),
+                           TaskMode (..), emptySample, noteView)
 
-getAgenda :: Int -> Storage Agenda
-getAgenda limit = do
+getSamples :: Int -> Storage Samples
+getSamples limit = do
     today <- getUtcToday
     let isOverdue NoteView{end} = end < Just today
     let isToday NoteView{end} = end == Just today
@@ -52,22 +55,24 @@ getAgenda limit = do
             ]
     let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
     let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
-    let (endingTodayNotes, endingSoonNotes) = span isToday endingNotes
-    pure Agenda
-        { overdue     = sample limit overdueNotes
-        , endingToday = sample (limit - length overdueNotes) endingTodayNotes
-        , endingSoon  =
-            sample
-                (limit - length overdueNotes - length endingTodayNotes)
-                endingSoonNotes
-        , starting =
-            sample
-                (limit
-                    - length overdueNotes
-                    - length endingTodayNotes
-                    - length endingSoonNotes)
-                (sortOn onStart startingNotes)
-        }
+    let (endTodayNotes, endSoonNotes) = span isToday endingNotes
+    pure $
+        Map.filter (/= emptySample) $
+        Map.fromList
+            [ Overdue   :- sample limit overdueNotes
+            , EndToday  :- sample (limit - length overdueNotes) endTodayNotes
+            , EndSoon   :-
+                sample
+                    (limit - length overdueNotes - length endTodayNotes)
+                    endSoonNotes
+            , Starting  :-
+                sample
+                    (limit
+                        - length overdueNotes
+                        - length endTodayNotes
+                        - length endSoonNotes)
+                    (sortOn onStart startingNotes)
+            ]
   where
     onEnd NoteView{end, nid} =
         ( end -- closest first
@@ -128,9 +133,9 @@ cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
             (Just start, Just (Just end), _       ) -> Just (start    , end)
             _                                       -> Nothing
     update note@Note{noteEnd, noteStart, noteText} = do
-        noteEnd'   <- lwwModify (`fromMaybe` editEnd)   noteEnd
-        noteStart' <- lwwModify (`fromMaybe` editStart) noteStart
-        noteText'  <- lwwModify (`fromMaybe` editText)  noteText
+        noteEnd'   <- lwwModify (editEnd   ?:) noteEnd
+        noteStart' <- lwwModify (editStart ?:) noteStart
+        noteText'  <- lwwModify (editText  ?:) noteText
         pure note
             {noteEnd = noteEnd', noteStart = noteStart', noteText = noteText'}
 

@@ -7,8 +7,10 @@ library:
   dependencies:
     - aeson
     - bytestring
+    - containers
     - crdt
     - directory
+    - errors
     - filepath
     - mainland-pretty
     - mtl
@@ -61,6 +63,7 @@ executables:
 tests:
   test:
     dependencies:
+      - containers
       - tasty
       - tasty-hunit
       - time

@@ -19,7 +19,7 @@ import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     getAgenda)
+                     getSamples)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import qualified FF.Config as Config
@@ -38,8 +38,8 @@ runCmd :: Config.Config -> Cmd -> LamportClock ()
 runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdAgenda limit -> do
         dir <- checkDataDir
-        agenda <- (`runReaderT` dir) $ getAgenda limit
-        pprint $ UI.agenda limit agenda
+        agenda <- (`runReaderT` dir) $ getSamples limit
+        pprint $ UI.samplesInSections limit agenda
     CmdConfig config -> liftIO $ runCmdConfig config
     CmdDelete noteId -> do
         dir <- checkDataDir

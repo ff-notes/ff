@@ -3,7 +3,9 @@
 
 module FF.UI where
 
+import           Control.Error ((?:))
 import           Data.List (genericLength)
+import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
                                             stack, star, strictText, (<+/>),
@@ -11,7 +13,8 @@ import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (Agenda (..), NoteView (..), Sample (..))
+import           FF.Types (NoteView (..), Sample (..), Samples, TaskMode (..),
+                           emptySample)
 
 type Template a = a -> String
 
@@ -27,19 +30,23 @@ indentation = 4
 pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
-agenda :: Int -> Agenda -> Doc
-agenda limit Agenda{overdue, endingToday, endingSoon, starting} = stack
-    [ sample labelOverdue     "ff search --overdue"   overdue
-    , sample labelEndingToday "ff search --today"     endingToday
-    , sample labelEndingSoon  "ff search --soon"      endingSoon
-    , sample labelStarting    "ff search --starting"  starting
+samplesInSections :: Int -> Samples -> Doc
+samplesInSections limit samples = stack
+    [ sample labelOverdue  "ff search --overdue"   overdue
+    , sample labelEndToday "ff search --today"     endToday
+    , sample labelEndSoon  "ff search --soon"      endSoon
+    , sample labelStarting "ff search --starting"  starting
     , "to see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
     ]
   where
-    labelOverdue     = "overdue:"
-    labelEndingToday = "today:"
-    labelEndingSoon  = "ending soon:"
-    labelStarting    = "starting soon:"
+    overdue  = Map.lookup Overdue  samples ?: emptySample
+    endToday = Map.lookup EndToday samples ?: emptySample
+    endSoon  = Map.lookup EndSoon  samples ?: emptySample
+    starting = Map.lookup Starting samples ?: emptySample
+    labelOverdue  = "Overdue:"
+    labelEndToday = "Due today:"
+    labelEndSoon  = "Due soon:"
+    labelStarting = "Starting soon:"
 
 sample :: String -> String -> Sample -> Doc
 sample _     _           Sample{total = 0}    = mempty

@@ -17,6 +17,7 @@ import           Data.Aeson (FromJSON, ToJSON, Value (Array), camelTo2,
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
 import           Data.Aeson.Types (typeMismatch)
 import           Data.Foldable (toList)
+import           Data.Map.Strict (Map)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
@@ -84,21 +85,16 @@ data Sample = Sample
 emptySample :: Sample
 emptySample = Sample{notes = [], total = 0}
 
-data Agenda = Agenda
-    { overdue     :: Sample
-    , endingToday :: Sample
-    , endingSoon  :: Sample
-    , starting    :: Sample
-    }
-    deriving (Eq, Show)
+-- | Sub-status of an 'Active' task from the perspective of the user.
+data TaskMode
+    = Actual    -- ^ started, no end
+    | EndSoon   -- ^ started, end in future
+    | EndToday  -- ^ end today
+    | Overdue   -- ^ end in past
+    | Starting  -- ^ starting in future
+    deriving (Eq, Ord, Show)
 
-emptyAgenda :: Agenda
-emptyAgenda = Agenda
-    { overdue     = emptySample
-    , endingToday = emptySample
-    , endingSoon  = emptySample
-    , starting    = emptySample
-    }
+type Samples = Map TaskMode Sample
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note{..} = NoteView
