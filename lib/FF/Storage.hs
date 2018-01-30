@@ -1,6 +1,3 @@
--- TODO(cblp, 2018-01-27) move orphans to the library
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -15,12 +12,10 @@ import           Control.Monad (when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader, ReaderT, ask, asks,
                                        runReaderT)
-import           Control.Monad.Trans (lift)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
-                                    Pid (Pid), Process, advance, getPid,
-                                    getTime, runLamportClock)
+                                    Pid (Pid), getTime, runLamportClock)
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
@@ -31,13 +26,6 @@ import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    listDirectory)
 import           System.FilePath ((</>))
-
-instance Process m => Process (ReaderT r m) where
-    getPid = lift getPid
-
-instance Clock m => Clock (ReaderT r m) where
-    advance = lift . advance
-    getTime = lift getTime
 
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
