@@ -93,7 +93,7 @@ cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid =
     modifyAndView nid $ \note@Note{noteStatus} -> do
         noteStatus' <- lwwModify (const Deleted) noteStatus
-        pure note{noteStatus = noteStatus'}
+        pure note{noteStatus = noteStatus', noteText = ""}
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid =
