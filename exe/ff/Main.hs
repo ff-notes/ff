@@ -64,7 +64,7 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
     CmdSearch text limit -> do
         dir <- checkDataDir
         agenda <- (`runReaderT` dir) $ cmdSearch text limit
-        pprint $ UI.agenda limit agenda
+        pprint $ UI.samplesInSections limit agenda
 
   where
 

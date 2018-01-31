@@ -47,9 +47,9 @@ getSamples :: Int -> Storage (ModeMap Sample)
 getSamples = getSamplesWith Nothing
 
 cmdSearch :: Text -> Int -> Storage (ModeMap Sample)
-cmdSearch substr = getSamplesWith $ Just filter
+cmdSearch substr = getSamplesWith $ Just sFilter
   where
-    filter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+    sFilter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
 getSamplesWith :: Maybe (Text -> Bool) ->Int -> Storage (ModeMap Sample)
 getSamplesWith mFilter limit = do
@@ -60,12 +60,12 @@ getSamplesWith mFilter limit = do
             [ noteView doc note
             | (doc, Just note) <- zip docs mnotes
             , LWW.query (noteStatus note) == Active
-            , filter note
+            , myFilter note
             ]
     pure $ takeSamples limit $ splitModes today activeNotes
   where
-    filter note = case mFilter of
-        Just filter -> filter . LWW.query $ noteText note
+    myFilter note = case mFilter of
+        Just f -> f . LWW.query $ noteText note
         Nothing -> True
 
 
