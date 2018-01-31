@@ -91,9 +91,10 @@ cmdNew New{newText, newStart, newEnd} = do
 
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid =
-    modifyAndView nid $ \note@Note{noteStatus} -> do
+    modifyAndView nid $ \note@Note{noteStatus, noteText} -> do
         noteStatus' <- lwwModify (const Deleted) noteStatus
-        pure note{noteStatus = noteStatus', noteText = ""}
+        noteText' <- LWW.assign Text.empty noteText
+        pure note{noteStatus = noteStatus', noteText = noteText'}
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid =
