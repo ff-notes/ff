@@ -44,7 +44,15 @@ import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
                            noteView, singletonTaskModeMap)
 
 getSamples :: Int -> Storage (ModeMap Sample)
-getSamples limit = do
+getSamples = getSamplesWith Nothing
+
+cmdSearch :: Text -> Int -> Storage (ModeMap Sample)
+cmdSearch substr = getSamplesWith $ Just filter
+  where
+    filter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+
+getSamplesWith :: Maybe (Text -> Bool) ->Int -> Storage (ModeMap Sample)
+getSamplesWith mFilter limit = do
     today <- getUtcToday
     docs <- list
     mnotes <- for docs load
@@ -52,8 +60,14 @@ getSamples limit = do
             [ noteView doc note
             | (doc, Just note) <- zip docs mnotes
             , LWW.query (noteStatus note) == Active
+            , filter note
             ]
     pure $ takeSamples limit $ splitModes today activeNotes
+  where
+    filter note = case mFilter of
+        Just filter -> filter . LWW.query $ noteText note
+        Nothing -> True
+
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
@@ -138,47 +152,6 @@ cmdPostpone nid =
         noteStart' <- lwwModify (const start')      noteStart
         noteEnd'   <- lwwModify (fmap (max start')) noteEnd
         pure note{noteStart = noteStart', noteEnd = noteEnd'}
-
-cmdSearch :: Text -> Int -> Storage Agenda
-cmdSearch text limit = do
-    today <- getUtcToday
-    let isOverdue NoteView{end} = end < Just today
-    let isToday NoteView{end} = end == Just today
-    docs <- list
-    mnotes <- for docs load
-    let activeNotes =
-            [ noteView doc note
-            | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <- zip docs mnotes
-            , Text.isInfixOf (Text.toLower text) (Text.toLower . LWW.query $ noteText note)
-            ]
-    let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
-    let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
-    let (endingTodayNotes, endingSoonNotes) = span isToday endingNotes
-    pure Agenda
-        { overdue     = sample limit overdueNotes
-        , endingToday = sample (limit - length overdueNotes) endingTodayNotes
-        , endingSoon  =
-            sample
-                (limit - length overdueNotes - length endingTodayNotes)
-                endingSoonNotes
-        , starting =
-            sample
-                (limit
-                    - length overdueNotes
-                    - length endingTodayNotes
-                    - length endingSoonNotes)
-                (sortOn onStart startingNotes)
-        }
-  where
-    onEnd NoteView{end, nid} =
-        ( end -- closest first
-        , nid -- no business-logic involved, just for determinism
-        )
-    onStart NoteView{start, nid} =
-        ( start -- oldest first
-        , nid   -- no business-logic involved, just for determinism
-        )
-    sample n xs = Sample (take n xs) (genericLength xs)
 
 fromMaybeA :: Applicative m => m a -> Maybe a -> m a
 fromMaybeA m = maybe m pure

@@ -84,7 +84,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdDelete    = CmdDelete   <$> idArgument
     pCmdDone      = CmdDone     <$> idArgument
     pCmdPostpone  = CmdPostpone <$> idArgument
-    pCmdSearch    = CmdSearch   <$> searchOption
+    pCmdSearch    = CmdSearch   <$> strArgument (metavar "TEXT") <*> limitOption
     pCmdEdit      = CmdEdit     <$> pEdit
     pCmdNew       = CmdNew      <$> pNew
 
@@ -101,7 +101,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     endOption   = dateOption  $ long "end"   <> short 'e' <> help "end date"
     limitOption = option auto $ long "limit" <> short 'l' <> help "limit"
                                 <> value 10
-    searchOption = strArgument (metavar "TEXT") <*> option auto (long "limit" <> short 'l' <> value 10)
     startOption = dateOption  $ long "start" <> short 's' <> help "start date"
     textOption  = strOption   $ long "text"  <> short 't' <> help "note text"
                                 <> metavar "TEXT"
