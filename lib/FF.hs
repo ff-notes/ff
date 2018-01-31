@@ -41,9 +41,9 @@ getAgenda :: Int -> Storage Agenda
 getAgenda = getAgendaWith Nothing
 
 cmdSearch :: Text -> Int -> Storage Agenda
-cmdSearch substr = getAgendaWith $ Just filter
+cmdSearch substr = getAgendaWith $ Just sFilter
   where
-    filter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+    sFilter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
 getAgendaWith :: Maybe (Text -> Bool) -> Int -> Storage Agenda
 getAgendaWith mFilter limit = do
@@ -55,7 +55,7 @@ getAgendaWith mFilter limit = do
     let activeNotes =
             [ noteView doc note
             | (doc, Just note@Note{noteStatus = (LWW.query -> Active)}) <- zip docs mnotes
-            , filter note
+            , myFilter note
             ]
     let (notesWithEnd, startingNotes) = partition (isJust . end) activeNotes
     let (overdueNotes, endingNotes) = span isOverdue $ sortOn onEnd notesWithEnd
@@ -76,8 +76,8 @@ getAgendaWith mFilter limit = do
                 (sortOn onStart startingNotes)
         }
   where
-    filter note = case mFilter of
-        Just filter -> filter . LWW.query $ noteText note
+    myFilter note = case mFilter of
+        Just f -> f . LWW.query $ noteText note
         Nothing -> True
     onEnd NoteView{end, nid} =
         ( end -- closest first
