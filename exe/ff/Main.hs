@@ -19,7 +19,7 @@ import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     getSamples)
+                     cmdSearch, getSamples)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import qualified FF.Config as Config
@@ -61,6 +61,10 @@ runCmd cfg@Config.Config{dataDir} cmd = case cmd of
         dir <- checkDataDir
         nv <- (`runReaderT` dir) $ cmdPostpone noteId
         pprint $ withHeader "postponed:" $ UI.noteView nv
+    CmdSearch text limit -> do
+        dir <- checkDataDir
+        agenda <- (`runReaderT` dir) $ cmdSearch text limit
+        pprint $ UI.samplesInSections limit agenda
 
   where
 
