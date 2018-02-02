@@ -24,12 +24,15 @@ import           Control.Monad.State.Strict (evalState, state)
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
+import           Data.Foldable (asum)
 import           Data.List (sortOn)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, getCurrentTime, utctDay)
 import           Data.Traversable (for)
+import           System.Directory (findExecutable)
+import           System.Environment (getEnv)
 import           System.Exit (ExitCode (..))
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
@@ -165,16 +168,21 @@ lwwModify f lww = let
     if x /= y then LWW.assign y lww else pure lww
 
 runExternalEditor :: Text -> IO Text
-runExternalEditor textOld =
+runExternalEditor textOld = do
+    editor <- asum $
+        assertExecutableFromEnv "EDITOR" :
+        map assertExecutable ["editor", "micro", "nano"]
     withSystemTempFile "ff.edit" $ \file fileH -> do
         Text.hPutStr fileH textOld
         hClose fileH
         runProcess (proc editor [file]) >>= \case
             ExitSuccess   -> Text.strip <$> Text.readFile file
             ExitFailure{} -> pure textOld
-
-editor :: FilePath
-editor = "nano"
+  where
+    assertExecutable prog = do
+        Just _ <- findExecutable prog
+        pure prog
+    assertExecutableFromEnv param = assertExecutable =<< getEnv param
 
 assertStartBeforeEnd :: Monad m => Day -> Day -> m ()
 assertStartBeforeEnd start end =
