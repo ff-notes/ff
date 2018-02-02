@@ -14,6 +14,7 @@ module FF
     , cmdEdit
     , cmdNew
     , cmdPostpone
+    , cmdSearch
     ) where
 
 import           Control.Arrow ((&&&))
@@ -46,7 +47,15 @@ import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
                            noteView, singletonTaskModeMap)
 
 getSamples :: Int -> Storage (ModeMap Sample)
-getSamples limit = do
+getSamples = getSamplesWith Nothing
+
+cmdSearch :: Text -> Int -> Storage (ModeMap Sample)
+cmdSearch substr = getSamplesWith $ Just sFilter
+  where
+    sFilter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+
+getSamplesWith :: Maybe (Text -> Bool) ->Int -> Storage (ModeMap Sample)
+getSamplesWith mFilter limit = do
     today <- getUtcToday
     docs <- list
     mnotes <- for docs load
@@ -54,8 +63,14 @@ getSamples limit = do
             [ noteView doc note
             | (doc, Just note) <- zip docs mnotes
             , LWW.query (noteStatus note) == Active
+            , myFilter note
             ]
     pure $ takeSamples limit $ splitModes today activeNotes
+  where
+    myFilter note = case mFilter of
+        Just f -> f . LWW.query $ noteText note
+        Nothing -> True
+
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
