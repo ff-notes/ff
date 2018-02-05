@@ -6,6 +6,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main where
 
@@ -14,14 +15,17 @@ import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
 import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
-import           Data.Aeson (Value (Number, String), object, parseJSON, toJSON,
-                             (.=))
+import           Data.Aeson (Value (Array, Number, Object, String), object,
+                             parseJSON, toJSON, (.=))
 import           Data.Aeson.Types (parseEither)
+import           Data.Foldable (toList)
+import           Data.HashMap.Strict ((!))
 import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Map.Strict (Map, singleton)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
 import           System.FilePath (splitDirectories)
@@ -43,6 +47,22 @@ data DirItem = Dir Dir | File Value
     deriving (Eq, Show)
 
 type Dir = Map FilePath DirItem
+
+data NDirItem = NDir NDir | NFile Value
+    deriving (Eq, Show)
+
+type NDir = [NDirItem]
+
+nDirSingleton :: NDirItem -> NDirItem
+nDirSingleton item = NDir [item]
+
+stripNames :: Dir -> NDir
+stripNames = map stripNames' . Map.elems
+
+stripNames' :: DirItem -> NDirItem
+stripNames' = \case
+    Dir  dir  -> NDir $ stripNames dir
+    File file -> NFile file
 
 newtype TestM a = TestM (StateT Dir ProcessSim a)
     deriving (Applicative, Clock, Functor, Monad, Process)
@@ -96,9 +116,10 @@ instance MonadStorage TestM where
 
 runTestM :: Monad m => Dir -> TestM a -> m (a, Dir)
 runTestM fs (TestM stateful) =
-    either fail pure . runLamportClockSim . runProcessSim (Pid 42) $ runStateT
-        stateful
-        fs
+    either fail pure
+        . runLamportClockSim
+        . runProcessSim (Pid 314159)
+        $ runStateT stateful fs
 
 main :: IO ()
 main = $defaultMainGenerator
@@ -117,7 +138,7 @@ case_smoke = do
         { overdue = Sample
             { notes = [ NoteView
                             { nid   = DocId "1"
-                            , text  = "hello"
+                            , text  = "helloworld"
                             , start = fromGregorian 22 11 24
                             , end   = Just $ fromGregorian 17 06 19
                             }
@@ -161,28 +182,40 @@ prop_new newText newStart newEnd =
         (nv, fs') <- runTestM Map.empty
             $ cmdNew New {newText , newStart , newEnd } today
         pure $ conjoin
-            [ nv === NoteView
-                { nid   = DocId "5-16"
-                , text  = newText
-                , start = newStart ?: today
-                , end   = newEnd
-                }
-            , fs' === singleton
-                "note"
-                ( Dir
-                $ singleton "5-16"
-                $ Dir
-                $ singleton "6-16"
-                $ File
-                $ object
-                      [ "status" .= ["Active", Number 1, Number 42]
-                      , "text" .= [String newText, Number 2, Number 42]
-                      , "start"
-                          .= [toJSON $ newStart ?: today, Number 3, Number 42]
-                      , "end" .= [toJSON newEnd, Number 4, Number 42]
-                      ]
-                )
+            [ case nv of
+                NoteView { text, start, end } ->
+                    conjoin
+                        [ text === newText
+                        , start === (newStart ?: today)
+                        , end === newEnd
+                        ]
+            , case stripNames fs' of
+                [NDir [NDir [NFile (Object note)]]] -> conjoin
+                    [ case note ! "status" of
+                        Array (toList -> ["Active", _, Number 314159]) -> ok
+                        status -> failProp $ "status = " ++ show status
+                    , case note ! "text" of
+                        Array (toList -> [String text, _, Number 314159])
+                            | not $ Text.null newText -> text === newText
+                        Array (toList -> []) | Text.null newText -> ok
+                        text -> failProp $ "text = " ++ show text
+                    , case note ! "start" of
+                        Array (toList -> [start, _, Number 314159]) ->
+                            start === toJSON (newStart ?: today)
+                        start -> failProp $ "start = " ++ show start
+                    , case note ! "end" of
+                        Array (toList -> [end, _, Number 314159]) ->
+                            end === toJSON newEnd
+                        end -> failProp $ "end = " ++ show end
+                    ]
+                _ -> failProp $ "expected singleton dir " ++ show fs'
             ]
 
 expectJust :: Maybe Property -> Property
 expectJust = fromMaybe . counterexample "got Nothing" $ property False
+
+failProp :: String -> Property
+failProp s = counterexample s $ property False
+
+ok :: Property
+ok = property ()

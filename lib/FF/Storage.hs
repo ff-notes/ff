@@ -78,29 +78,41 @@ runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
 runStorage dataDir var (Storage action) =
     runLamportClock var $ runReaderT action dataDir
 
-listDocuments :: forall doc m. (Collection doc, MonadStorage m) => m [DocId doc]
-listDocuments =
-    map DocId <$> listDirectoryIfExists (collectionName @doc)
+listDocuments
+    :: forall doc m . (Collection doc, MonadStorage m) => m [DocId doc]
+listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
 
-load ::
-    forall doc m. (Collection doc, MonadStorage m) => DocId doc -> m (Maybe doc)
+load
+    :: forall doc m
+     . (Collection doc, MonadStorage m)
+    => DocId doc
+    -> m (Maybe doc)
 load docId = do
-    versions <- listVersions docId
+    versions      <- listVersions docId
     versionValues <- for versions $ readFile docId
     pure $ sconcat <$> nonEmpty versionValues
 
-listVersions ::
-    forall doc m. (Collection doc, MonadStorage m) => DocId doc -> m [Version]
+listVersions
+    :: forall doc m
+     . (Collection doc, MonadStorage m)
+    => DocId doc
+    -> m [Version]
 listVersions (DocId docId) =
     listDirectoryIfExists $ collectionName @doc </> docId
 
-askDocDir ::
-    forall doc m.
-    (Collection doc, MonadReader FilePath m) => DocId doc -> m FilePath
+askDocDir
+    :: forall doc m
+     . (Collection doc, MonadReader FilePath m)
+    => DocId doc
+    -> m FilePath
 askDocDir (DocId docId) = asks (</> collectionName @doc </> docId)
 
-save ::
-    forall doc m. (Collection doc, MonadStorage m) => DocId doc -> doc -> m ()
+save
+    :: forall doc m
+     . (Collection doc, MonadStorage m)
+    => DocId doc
+    -> doc
+    -> m ()
 save docId doc = do
     time <- getTime
     createFile docId time doc
@@ -111,25 +123,29 @@ saveNew doc = do
     save docId doc
     pure docId
 
-showBase36 :: (Integral a, Show a) => a -> String -> String
-showBase36 = showIntAtBase 36 intToDigit36
+showBase36K :: (Integral a, Show a) => a -> String -> String
+showBase36K = showIntAtBase 36 intToDigit36
+
+showBase36 :: (Integral a, Show a) => a -> String
+showBase36 a = showBase36K a ""
 
 intToDigit36 :: Int -> Char
-intToDigit36 i
-    | (i >=  0) && (i <=  9) = chr (ord '0'      + i)
-    | (i >= 10) && (i <= 35) = chr (ord 'a' - 10 + i)
-    | otherwise              = error ("not a digit " ++ show i)
+intToDigit36 i | (i >= 0) && (i <= 9)   = chr (ord '0' + i)
+               | (i >= 10) && (i <= 35) = chr (ord 'a' - 10 + i)
+               | otherwise              = error ("not a digit " ++ show i)
 
 lamportTimeToFileName :: LamportTime -> FilePath
 lamportTimeToFileName (LamportTime time (Pid pid)) =
-    showBase36 time $ '-' : showBase36 pid ""
+    showBase36K time $ '-' : showBase36K pid ""
 
 -- | For user-supplied function input Nothing means non-existent document.
-modify ::
-    (Collection doc, Eq doc, MonadStorage m) =>
-    DocId doc -> (Maybe doc -> m (a, doc)) -> m a
+modify
+    :: (Collection doc, Eq doc, MonadStorage m)
+    => DocId doc
+    -> (Maybe doc -> m (a, doc))
+    -> m a
 modify docId f = do
-    mDocOld <- load docId
+    mDocOld     <- load docId
     (a, docNew) <- f mDocOld
     when (Just docNew /= mDocOld) $ save docId docNew
     pure a

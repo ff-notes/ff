@@ -22,6 +22,8 @@ import           Control.Arrow ((&&&))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
+import           CRDT.Cv.RGA (RgaString)
+import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
@@ -66,13 +68,13 @@ getSamplesWith
     -> Day -- ^ today
     -> m (ModeMap Sample)
 getSamplesWith predicate limit today = do
-    docs <- listDocuments
+    docs   <- listDocuments
     mnotes <- for docs load
     let activeNotes =
             [ noteView doc note
-            | (doc, Just note@Note{noteStatus, noteText}) <- zip docs mnotes
+            | (doc, Just note@Note { noteStatus, noteText }) <- zip docs mnotes
             , LWW.query noteStatus == Active
-            , predicate $ LWW.query noteText
+            , predicate $ rgaToText noteText
             ]
     pure . takeSamples limit $ splitModes today activeNotes
 
@@ -80,16 +82,17 @@ splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
 takeSamples :: Int -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples limit ModeMap{..} = (`evalState` limit) $
-    ModeMap
-    <$> sample end   overdue
-    <*> sample end   endToday
-    <*> sample end   endSoon
-    <*> sample start actual
-    <*> sample start starting
+takeSamples limit ModeMap {..} =
+    (`evalState` limit)
+        $   ModeMap
+        <$> sample end   overdue
+        <*> sample end   endToday
+        <*> sample end   endSoon
+        <*> sample start actual
+        <*> sample start starting
   where
-    sample key xs = state $ \n ->
-        (Sample (take n xs') (fromIntegral len), n - len)
+    sample key xs = state
+        $ \n -> (Sample (take n xs') (fromIntegral len), n - len)
       where
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism
@@ -97,85 +100,88 @@ takeSamples limit ModeMap{..} = (`evalState` limit) $
         len = length xs'
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
-cmdNew New{newText, newStart, newEnd} today = do
+cmdNew New { newText, newStart, newEnd } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
     note <- do
-        noteStatus  <- LWW.initialize Active
-        noteText    <- LWW.initialize newText
-        noteStart   <- LWW.initialize newStart'
-        noteEnd     <- LWW.initialize newEnd
-        pure Note{..}
+        noteStatus <- LWW.initialize Active
+        noteText   <- rgaFromText newText
+        noteStart  <- LWW.initialize newStart'
+        noteEnd    <- LWW.initialize newEnd
+        pure Note {..}
     nid <- saveNew note
     pure $ noteView nid note
 
 cmdDelete :: NoteId -> Storage NoteView
-cmdDelete nid =
-    modifyAndView nid $ \note@Note{..} -> do
-        noteStatus' <- LWW.assign Deleted               noteStatus
-        noteText'   <- LWW.assign Text.empty            noteText
-        noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
-        noteEnd'    <- LWW.assign Nothing               noteEnd
-        pure note
-            { noteStatus = noteStatus'
-            , noteText   = noteText'
-            , noteStart  = noteStart'
-            , noteEnd    = noteEnd'
-            }
+cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
+    noteStatus' <- LWW.assign Deleted noteStatus
+    noteText'   <- rgaEditText Text.empty noteText
+    noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
+    noteEnd'    <- LWW.assign Nothing noteEnd
+    pure note { noteStatus = noteStatus'
+              , noteText   = noteText'
+              , noteStart  = noteStart'
+              , noteEnd    = noteEnd'
+              }
 
 cmdDone :: NoteId -> Storage NoteView
-cmdDone nid =
-    modifyAndView nid $ \note@Note{noteStatus} -> do
-        noteStatus' <- LWW.assign Archived noteStatus
-        pure note{noteStatus = noteStatus'}
+cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
+    noteStatus' <- LWW.assign Archived noteStatus
+    pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
-    modifyAndView nid $ \note@Note{noteText} -> do
-        text' <- liftIO $ runExternalEditor $ LWW.query noteText
-        noteText' <- LWW.assign text' noteText
-        pure note{noteText = noteText'}
-cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
+    modifyAndView nid $ \note@Note { noteText } -> do
+        text'     <- liftIO . runExternalEditor $ rgaToText noteText
+        noteText' <- rgaEditText text' noteText
+        pure note { noteText = noteText' }
+cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
     modifyAndView nid $ \note -> do
         checkStartEnd note
         update note
   where
-    checkStartEnd Note{noteStart = (LWW.query -> noteStart), noteEnd} =
+    checkStartEnd Note { noteStart = (LWW.query -> noteStart), noteEnd } =
         case newStartEnd of
             Just (start, end) -> assertStartBeforeEnd start end
             Nothing           -> pure ()
       where
         newStartEnd = case (editStart, editEnd, LWW.query noteEnd) of
-            (Just start, Nothing        , Just end) -> Just (start    , end)
+            (Just start, Nothing        , Just end) -> Just (start, end)
             (Nothing   , Just (Just end), _       ) -> Just (noteStart, end)
-            (Just start, Just (Just end), _       ) -> Just (start    , end)
-            _                                       -> Nothing
-    update note@Note{noteEnd, noteStart, noteText} = do
-        noteEnd'   <- lwwAssignIfJust editEnd   noteEnd
+            (Just start, Just (Just end), _       ) -> Just (start, end)
+            _ -> Nothing
+    update note@Note { noteEnd, noteStart, noteText } = do
+        noteEnd'   <- lwwAssignIfJust editEnd noteEnd
         noteStart' <- lwwAssignIfJust editStart noteStart
-        noteText'  <- lwwAssignIfJust editText  noteText
-        pure note
-            {noteEnd = noteEnd', noteStart = noteStart', noteText = noteText'}
+        noteText'  <- case editText of
+            Nothing -> pure noteText
+            Just et -> rgaEditText et noteText
+        pure note { noteEnd   = noteEnd'
+                  , noteStart = noteStart'
+                  , noteText  = noteText'
+                  }
 
 lwwAssignIfJust :: Clock m => Maybe a -> LWW a -> m (LWW a)
 lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
-cmdPostpone nid =
-    modifyAndView nid $ \note@Note{noteStart, noteEnd} -> do
-        today <- getUtcToday
-        let start' = addDays 1 $ max today $ LWW.query noteStart
-        noteStart' <- LWW.assign start' noteStart
-        noteEnd'   <- case LWW.query noteEnd of
-            Just end | end < start' -> LWW.assign (Just start') noteEnd
-            _                       -> pure                     noteEnd
-        pure note{noteStart = noteStart', noteEnd = noteEnd'}
+cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
+    today <- getUtcToday
+    let start' = addDays 1 $ max today $ LWW.query noteStart
+    noteStart' <- LWW.assign start' noteStart
+    noteEnd'   <- case LWW.query noteEnd of
+        Just end | end < start' -> LWW.assign (Just start') noteEnd
+        _                       -> pure noteEnd
+    pure note { noteStart = noteStart', noteEnd = noteEnd' }
 
 -- | Check the document exists. Return actual version.
-modifyOrFail ::
-    (Collection doc, Eq doc) => DocId doc -> (doc -> Storage doc) -> Storage doc
+modifyOrFail
+    :: (Collection doc, Eq doc)
+    => DocId doc
+    -> (doc -> Storage doc)
+    -> Storage doc
 modifyOrFail docId f = modify docId $ \case
     Nothing -> fail $ concat
         ["Can't load document ", show docId, ". Where did you get this id?"]
@@ -191,9 +197,9 @@ getUtcToday = liftIO $ utctDay <$> getCurrentTime
 
 runExternalEditor :: Text -> IO Text
 runExternalEditor textOld = do
-    editor <- asum $
-        assertExecutableFromEnv "EDITOR" :
-        map assertExecutable ["editor", "micro", "nano"]
+    editor <- asum $ assertExecutableFromEnv "EDITOR" : map
+        assertExecutable
+        ["editor", "micro", "nano"]
     withSystemTempFile "ff.edit" $ \file fileH -> do
         Text.hPutStr fileH textOld
         hClose fileH
@@ -209,3 +215,12 @@ runExternalEditor textOld = do
 assertStartBeforeEnd :: Monad m => Day -> Day -> m ()
 assertStartBeforeEnd start end =
     unless (start <= end) $ fail "task cannot end before it is started"
+
+rgaEditText :: Clock m => Text -> RgaString -> m RgaString
+rgaEditText = RGA.edit . Text.unpack
+
+rgaFromText :: Clock m => Text -> m RgaString
+rgaFromText = RGA.fromString . Text.unpack
+
+rgaToText :: RgaString -> Text
+rgaToText = Text.pack . RGA.toString

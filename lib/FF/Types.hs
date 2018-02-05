@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,37 +7,21 @@
 
 module FF.Types where
 
-import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
-import           CRDT.LWW (LWW (LWW), time, value)
+import           CRDT.Cv.RGA (RgaString)
+import qualified CRDT.Cv.RGA as RGA
+import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON, ToJSON, Value (Array), camelTo2,
-                             parseJSON, toJSON)
+import           Data.Aeson (camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
-import           Data.Aeson.Types (typeMismatch)
-import           Data.Foldable (toList)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import           Data.Time (Day)
-import           GHC.Exts (fromList)
 import           Numeric.Natural (Natural)
 
+import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
-
-deriveJSON defaultOptions ''Pid
-
-instance FromJSON a => FromJSON (LWW a) where
-    parseJSON (Array a) = case toList a of
-        [valueJ, timeJ, pidJ] -> LWW <$> parseJSON valueJ <*> parseTime
-          where
-            parseTime = LamportTime <$> parseJSON timeJ <*> parseJSON pidJ
-        _ -> fail $ unwords
-            ["expected array of 3 values, got", show $ length a, "values"]
-    parseJSON v = typeMismatch "Array" v
-
-instance ToJSON a => ToJSON (LWW a) where
-    toJSON LWW{value, time = LamportTime time pid} =
-        Array $ fromList [toJSON value, toJSON time, toJSON pid]
 
 data Status = Active | Archived | Deleted
     deriving (Eq, Show)
@@ -48,7 +30,7 @@ deriveJSON defaultOptions ''Status
 
 data Note = Note
     { noteStatus  :: LWW Status
-    , noteText    :: LWW Text
+    , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
     }
@@ -135,11 +117,12 @@ emptySampleMap = ModeMap
     }
 
 singletonModeMap :: (Semigroup a, Monoid a) => TaskMode -> a -> ModeMap a
-singletonModeMap Overdue  a = mempty{overdue  = a}
-singletonModeMap EndToday a = mempty{endToday = a}
-singletonModeMap EndSoon  a = mempty{endSoon  = a}
-singletonModeMap Actual   a = mempty{actual   = a}
-singletonModeMap Starting a = mempty{starting = a}
+singletonModeMap mode a = case mode of
+    Overdue  -> mempty{overdue  = a}
+    EndToday -> mempty{endToday = a}
+    EndSoon  -> mempty{endSoon  = a}
+    Actual   -> mempty{actual   = a}
+    Starting -> mempty{starting = a}
 
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
 singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
@@ -147,7 +130,7 @@ singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note{..} = NoteView
     { nid   = nid
-    , text  = LWW.query noteText
+    , text  = Text.pack $ RGA.toString noteText
     , start = LWW.query noteStart
     , end   = LWW.query noteEnd
     }
