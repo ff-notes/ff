@@ -67,9 +67,10 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
   where
     parser = subparser commands <|> pCmdAgenda
     commands = mconcat
-        [ command "agenda"    iCmdAgenda
+        [ command "add"       iCmdAdd
+        , command "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
-        , command "del"       iCmdDelete
+        , command "delete"    iCmdDelete
         , command "done"      iCmdDone
         , command "edit"      iCmdEdit
         , command "new"       iCmdNew
@@ -77,23 +78,24 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "search"    iCmdSearch
         ]
 
+    iCmdAdd       = i pCmdNew       "add new task or note"
     iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i pCmdConfig    "show/edit configuration"
-    iCmdDelete    = i pCmdDelete    "removes task"
+    iCmdDelete    = i pCmdDelete    "delete a task"
     iCmdDone      = i pCmdDone      "mark task done (archive)"
     iCmdEdit      = i pCmdEdit      "edit task"
-    iCmdNew       = i pCmdNew       "add new task or note"
+    iCmdNew       = i pCmdNew       "synonym for `add`"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
-    iCmdSearch    = i pCmdSearch    "searches for the notes with given text"
+    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
 
     pCmdAgenda    = CmdAction . CmdAgenda   <$> limitOption
     pCmdDelete    = CmdAction . CmdDelete   <$> idArgument
     pCmdDone      = CmdAction . CmdDone     <$> idArgument
-    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch   <$> pSearch
     pCmdEdit      = CmdAction . CmdEdit     <$> pEdit
     pCmdNew       = CmdAction . CmdNew      <$> pNew
+    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch   <$> pSearch
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
