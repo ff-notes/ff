@@ -40,8 +40,8 @@ import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (Collection, DocId, Storage, list, load, modify,
-                             saveNew)
+import           FF.Storage (Collection, DocId, Storage, listDocuments, load,
+                             modify, saveNew)
 import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
@@ -57,7 +57,7 @@ cmdSearch substr = getSamplesWith $ Just sFilter
 getSamplesWith :: Maybe (Text -> Bool) ->Int -> Storage (ModeMap Sample)
 getSamplesWith mFilter limit = do
     today <- getUtcToday
-    docs <- list
+    docs <- listDocuments
     mnotes <- for docs load
     let activeNotes =
             [ noteView doc note

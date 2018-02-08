@@ -2,10 +2,12 @@
 
 module FF.Options
     ( Cmd (..)
+    , CmdAction (..)
     , Config (..)
-    , New (..)
     , DataDir (..)
     , Edit (..)
+    , New (..)
+    , Search (..)
     , parseOptions
     ) where
 
@@ -23,14 +25,17 @@ import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
 
 data Cmd
+    = CmdConfig (Maybe Config)
+    | CmdAction CmdAction
+
+data CmdAction
     = CmdAgenda   Limit
-    | CmdConfig   (Maybe Config)
     | CmdDelete   NoteId
     | CmdDone     NoteId
     | CmdEdit     Edit
     | CmdNew      New
     | CmdPostpone NoteId
-    | CmdSearch   Text Limit
+    | CmdSearch   Search
 
 type Limit = Int
 
@@ -54,6 +59,8 @@ data New = New
     , newStart  :: Maybe Day
     , newEnd    :: Maybe Day
     }
+
+data Search = Search Text Limit
 
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
@@ -80,13 +87,13 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "searches for the notes with given text"
 
-    pCmdAgenda    = CmdAgenda   <$> limitOption
-    pCmdDelete    = CmdDelete   <$> idArgument
-    pCmdDone      = CmdDone     <$> idArgument
-    pCmdPostpone  = CmdPostpone <$> idArgument
-    pCmdSearch    = CmdSearch   <$> strArgument (metavar "TEXT") <*> limitOption
-    pCmdEdit      = CmdEdit     <$> pEdit
-    pCmdNew       = CmdNew      <$> pNew
+    pCmdAgenda    = CmdAction . CmdAgenda   <$> limitOption
+    pCmdDelete    = CmdAction . CmdDelete   <$> idArgument
+    pCmdDone      = CmdAction . CmdDone     <$> idArgument
+    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch   <$> pSearch
+    pCmdEdit      = CmdAction . CmdEdit     <$> pEdit
+    pCmdNew       = CmdAction . CmdNew      <$> pNew
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
@@ -94,6 +101,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> optional textOption
         <*> optional startOption
         <*> optional maybeEndOption
+
+    pSearch = Search <$> strArgument (metavar "TEXT") <*> limitOption
 
     idArgument   = DocId <$> strArgument (metavar "ID"   <> help "note id")
     textArgument =           strArgument (metavar "TEXT" <> help "note text")

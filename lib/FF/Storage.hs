@@ -7,15 +7,17 @@
 
 module FF.Storage where
 
+import           Prelude hiding (readFile)
+
 import           Control.Concurrent.STM (TVar)
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Reader (MonadReader, ReaderT, ask, asks,
-                                       runReaderT)
+import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
-                                    Pid (Pid), getTime, runLamportClock)
+                                    Pid (Pid), Process, getTime,
+                                    runLamportClock)
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
@@ -37,33 +39,69 @@ instance Show (DocId doc) where
     show (DocId path) = path
 
 -- | Environment is the dataDir
-type Storage = ReaderT FilePath LamportClock
+newtype Storage a = Storage (ReaderT FilePath LamportClock a)
+    deriving (Applicative, Clock, Functor, Monad, MonadIO, Process)
+
+type Version = FilePath
 
 -- | Environment is the dataDir
-type MonadStorage m = (Clock m, MonadIO m, MonadReader FilePath m)
+class Clock m => MonadStorage m where
+    listDirectoryIfExists
+        :: FilePath     -- ^ Path relative to data dir
+        -> m [FilePath] -- ^ Paths relative to data dir
+    createFile
+        :: Collection doc
+        => DocId doc
+        -> LamportTime
+        -> doc
+        -> m ()
+    readFile
+        :: Collection doc
+        => DocId doc
+        -> Version
+        -> m doc
+
+instance MonadStorage Storage where
+    listDirectoryIfExists relpath = Storage $ do
+        dir <- asks (</> relpath)
+        liftIO $ do
+            exists <- doesDirectoryExist dir
+            if exists then listDirectory dir else pure []
+
+    createFile docId time doc = Storage $ do
+        docDir <- askDocDir docId
+        let file = docDir </> lamportTimeToFileName time
+        liftIO $ do
+            createDirectoryIfMissing True docDir
+            BSL.writeFile file $ encode doc
+
+    readFile docId version = Storage $ do
+        docDir <- askDocDir docId
+        let file = docDir </> version
+        contents <- liftIO $ BSL.readFile file
+        pure $
+            either (error . ((file ++ ": ") ++)) id $
+            eitherDecode contents
 
 runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
-runStorage dataDir var action = runLamportClock var $ runReaderT action dataDir
+runStorage dataDir var (Storage action) =
+    runLamportClock var $ runReaderT action dataDir
 
-list :: forall doc m. (Collection doc, MonadStorage m) => m [DocId doc]
-list = do
-    dataDir <- ask
-    map DocId
-        <$> liftIO (listDirectoryIfExists $ dataDir </> collectionName @doc)
+listDocuments :: forall doc m. (Collection doc, MonadStorage m) => m [DocId doc]
+listDocuments =
+    map DocId <$> listDirectoryIfExists (collectionName @doc)
 
 load ::
     forall doc m. (Collection doc, MonadStorage m) => DocId doc -> m (Maybe doc)
 load docId = do
-    docDir <- askDocDir docId
-    liftIO $ do
-        versionFiles <- listDirectoryIfExists docDir
-        versions <- for versionFiles $ \version -> do
-            let versionPath = docDir </> version
-            contents <- BSL.readFile versionPath
-            pure $
-                either (error . ((versionPath ++ ": ") ++)) id $
-                eitherDecode contents
-        pure $ sconcat <$> nonEmpty versions
+    versions <- listVersions docId
+    versionValues <- for versions $ readFile docId
+    pure $ sconcat <$> nonEmpty versionValues
+
+listVersions ::
+    forall doc m. (Collection doc, MonadStorage m) => DocId doc -> m [Version]
+listVersions (DocId docId) =
+    listDirectoryIfExists $ collectionName @doc </> docId
 
 askDocDir ::
     forall doc m.
@@ -73,12 +111,8 @@ askDocDir (DocId docId) = asks (</> collectionName @doc </> docId)
 save ::
     forall doc m. (Collection doc, MonadStorage m) => DocId doc -> doc -> m ()
 save docId doc = do
-    docDir <- askDocDir docId
-    version <- getTime
-    let versionFile = docDir </> lamportTimeToFileName version
-    liftIO $ do
-        createDirectoryIfMissing True docDir
-        BSL.writeFile versionFile $ encode doc
+    time <- getTime
+    createFile docId time doc
 
 saveNew :: (Collection doc, MonadStorage m) => doc -> m (DocId doc)
 saveNew doc = do
@@ -98,11 +132,6 @@ intToDigit36 i
 lamportTimeToFileName :: LamportTime -> FilePath
 lamportTimeToFileName (LamportTime time (Pid pid)) =
     showBase36 time $ '-' : showBase36 pid ""
-
-listDirectoryIfExists :: FilePath -> IO [FilePath]
-listDirectoryIfExists dir = do
-    exists <- doesDirectoryExist dir
-    if exists then listDirectory dir else pure []
 
 -- | For user-supplied function input Nothing means non-existent document.
 modify ::
