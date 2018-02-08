@@ -78,13 +78,13 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "search"    iCmdSearch
         ]
 
-    iCmdAdd       = i pCmdNew       "add new task or note"
+    iCmdAdd       = i pCmdNew       "add a new task or note"
     iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i pCmdConfig    "show/edit configuration"
     iCmdDelete    = i pCmdDelete    "delete a task"
-    iCmdDone      = i pCmdDone      "mark task done (archive)"
-    iCmdEdit      = i pCmdEdit      "edit task"
+    iCmdDone      = i pCmdDone      "mark a task done (archive)"
+    iCmdEdit      = i pCmdEdit      "edit a task or a note"
     iCmdNew       = i pCmdNew       "synonym for `add`"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
