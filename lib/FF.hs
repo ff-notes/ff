@@ -28,7 +28,7 @@ import           Data.List (sortOn)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import           Data.Time (Day, addDays, getCurrentTime, utctDay)
+import           Data.Time (Day, addDays, fromGregorian, getCurrentTime, utctDay)
 import           Data.Traversable (for)
 import           System.Exit (ExitCode (..))
 import           System.IO (hClose)
@@ -91,10 +91,19 @@ cmdNew New{newText, newStart, newEnd} = do
 
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid =
-    modifyAndView nid $ \note@Note{noteStatus, noteText} -> do
-        noteStatus' <- lwwModify (const Deleted) noteStatus
-        noteText' <- LWW.assign Text.empty noteText
-        pure note{noteStatus = noteStatus', noteText = noteText'}
+    modifyAndView nid $
+        \note@Note{ noteStatus
+                  , noteText
+                  , noteEnd
+                  , noteStart} -> do
+            noteStatus' <- lwwModify (const Deleted) noteStatus
+            noteText' <- LWW.assign Text.empty noteText
+            noteStart' <- LWW.assign (fromGregorian 0 1 1) noteStart
+            noteEnd' <- LWW.assign Nothing noteEnd
+            pure note{ noteStatus = noteStatus'
+                     , noteText = noteText'
+                     , noteStart = noteStart'
+                     , noteEnd = noteEnd'}
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid =
