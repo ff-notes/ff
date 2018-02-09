@@ -18,7 +18,6 @@ module FF
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Error ((?:))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
@@ -110,20 +109,20 @@ cmdNew New{newText, newStart, newEnd} = do
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid =
     modifyAndView nid $ \note@Note{noteStatus} -> do
-        noteStatus' <- lwwModify (const Deleted) noteStatus
+        noteStatus' <- LWW.assign Deleted noteStatus
         pure note{noteStatus = noteStatus'}
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid =
     modifyAndView nid $ \note@Note{noteStatus} -> do
-        noteStatus' <- lwwModify (const Archived) noteStatus
+        noteStatus' <- LWW.assign Archived noteStatus
         pure note{noteStatus = noteStatus'}
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
     modifyAndView nid $ \note@Note{noteText} -> do
         text' <- liftIO $ runExternalEditor $ LWW.query noteText
-        noteText' <- lwwModify (const text') noteText
+        noteText' <- LWW.assign text' noteText
         pure note{noteText = noteText'}
 cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
     modifyAndView nid $ \note -> do
@@ -141,19 +140,24 @@ cmdEdit Edit{editId = nid, editEnd, editStart, editText} =
             (Just start, Just (Just end), _       ) -> Just (start    , end)
             _                                       -> Nothing
     update note@Note{noteEnd, noteStart, noteText} = do
-        noteEnd'   <- lwwModify (editEnd   ?:) noteEnd
-        noteStart' <- lwwModify (editStart ?:) noteStart
-        noteText'  <- lwwModify (editText  ?:) noteText
+        noteEnd'   <- lwwAssignIfJust editEnd   noteEnd
+        noteStart' <- lwwAssignIfJust editStart noteStart
+        noteText'  <- lwwAssignIfJust editText  noteText
         pure note
             {noteEnd = noteEnd', noteStart = noteStart', noteText = noteText'}
+
+lwwAssignIfJust :: Clock m => Maybe a -> LWW a -> m (LWW a)
+lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid =
     modifyAndView nid $ \note@Note{noteStart, noteEnd} -> do
         today <- getUtcToday
         let start' = addDays 1 $ max today $ LWW.query noteStart
-        noteStart' <- lwwModify (const start')      noteStart
-        noteEnd'   <- lwwModify (fmap (max start')) noteEnd
+        noteStart' <- LWW.assign start' noteStart
+        noteEnd'   <- case LWW.query noteEnd of
+            Just end | end < start' -> LWW.assign (Just start') noteEnd
+            _                       -> pure                     noteEnd
         pure note{noteStart = noteStart', noteEnd = noteEnd'}
 
 fromMaybeA :: Applicative m => m a -> Maybe a -> m a
@@ -174,13 +178,6 @@ modifyAndView nid f = noteView nid <$> modifyOrFail nid f
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
-
-lwwModify :: (Eq a, Clock m) => (a -> a) -> LWW a -> m (LWW a)
-lwwModify f lww = let
-    x = LWW.query lww
-    y = f x
-    in
-    if x /= y then LWW.assign y lww else pure lww
 
 runExternalEditor :: Text -> IO Text
 runExternalEditor textOld = do
