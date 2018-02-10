@@ -9,6 +9,7 @@
 module FF
     ( Note
     , getSamples
+    , getUtcToday
     , cmdDelete
     , cmdDone
     , cmdEdit
@@ -40,37 +41,39 @@ import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (Collection, DocId, Storage, listDocuments, load,
-                             modify, saveNew)
+import           FF.Storage (Collection, DocId, MonadStorage, Storage,
+                             listDocuments, load, modify, saveNew)
 import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
 
-getSamples :: Int -> Storage (ModeMap Sample)
-getSamples = getSamplesWith Nothing
+getSamples
+    :: MonadStorage m
+    => Int -- ^ limit
+    -> Day -- ^ today
+    -> m (ModeMap Sample)
+getSamples = getSamplesWith $ const True
 
-cmdSearch :: Text -> Int -> Storage (ModeMap Sample)
-cmdSearch substr = getSamplesWith $ Just sFilter
-  where
-    sFilter = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+cmdSearch :: Text -> Int -> Day -> Storage (ModeMap Sample)
+cmdSearch substr =
+    getSamplesWith $ Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
-getSamplesWith :: Maybe (Text -> Bool) ->Int -> Storage (ModeMap Sample)
-getSamplesWith mFilter limit = do
-    today <- getUtcToday
+getSamplesWith
+    :: MonadStorage m
+    => (Text -> Bool) -- ^ predicate to filter notes by text
+    -> Int -- ^ limit
+    -> Day -- ^ today
+    -> m (ModeMap Sample)
+getSamplesWith predicate limit today = do
     docs <- listDocuments
     mnotes <- for docs load
     let activeNotes =
             [ noteView doc note
-            | (doc, Just note) <- zip docs mnotes
-            , LWW.query (noteStatus note) == Active
-            , myFilter note
+            | (doc, Just note@Note{noteStatus, noteText}) <- zip docs mnotes
+            , LWW.query noteStatus == Active
+            , predicate $ LWW.query noteText
             ]
-    pure $ takeSamples limit $ splitModes today activeNotes
-  where
-    myFilter note = case mFilter of
-        Just f -> f . LWW.query $ noteText note
-        Nothing -> True
-
+    pure . takeSamples limit $ splitModes today activeNotes
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
@@ -99,10 +102,10 @@ cmdNew New{newText, newStart, newEnd} = do
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
     note <- do
-        noteStatus  <- LWW.initial Active
-        noteText    <- LWW.initial newText
-        noteStart   <- LWW.initial newStart'
-        noteEnd     <- LWW.initial newEnd
+        noteStatus  <- LWW.initialize Active
+        noteText    <- LWW.initialize newText
+        noteStart   <- LWW.initialize newStart'
+        noteEnd     <- LWW.initialize newEnd
         pure Note{..}
     nid <- saveNew note
     pure $ noteView nid note

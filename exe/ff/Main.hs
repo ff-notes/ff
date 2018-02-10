@@ -17,7 +17,7 @@ import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, getSamples)
+                     cmdSearch, getSamples, getUtcToday)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
@@ -66,28 +66,30 @@ checkDataDir Config{dataDir} = case dataDir of
         fail "Data directory isn't set, run `ff config dataDir --help`"
 
 runCmdAction :: CmdAction -> Storage ()
-runCmdAction cmd = case cmd of
-    CmdAgenda limit -> do
-        nvs <- getSamples limit
-        pprint $ UI.samplesInSections limit nvs
-    CmdDelete noteId -> do
-        nv <- cmdDelete noteId
-        pprint $ withHeader "deleted:" $ UI.noteView nv
-    CmdDone noteId -> do
-        nv <- cmdDone noteId
-        pprint $ withHeader "archived:" $ UI.noteView nv
-    CmdEdit edit -> do
-        nv <- cmdEdit edit
-        pprint $ withHeader "edited:" $ UI.noteView nv
-    CmdNew new -> do
-        nv <- cmdNew new
-        pprint $ withHeader "added:" $ UI.noteView nv
-    CmdPostpone noteId -> do
-        nv <- cmdPostpone noteId
-        pprint $ withHeader "postponed:" $ UI.noteView nv
-    CmdSearch (Search text limit) -> do
-        nvs <- cmdSearch text limit
-        pprint $ UI.samplesInSections limit nvs
+runCmdAction cmd = do
+    today <- getUtcToday
+    case cmd of
+        CmdAgenda limit -> do
+            nvs <- getSamples limit today
+            pprint $ UI.samplesInSections limit nvs
+        CmdDelete noteId -> do
+            nv <- cmdDelete noteId
+            pprint $ withHeader "deleted:" $ UI.noteView nv
+        CmdDone noteId -> do
+            nv <- cmdDone noteId
+            pprint $ withHeader "archived:" $ UI.noteView nv
+        CmdEdit edit -> do
+            nv <- cmdEdit edit
+            pprint $ withHeader "edited:" $ UI.noteView nv
+        CmdNew new -> do
+            nv <- cmdNew new
+            pprint $ withHeader "added:" $ UI.noteView nv
+        CmdPostpone noteId -> do
+            nv <- cmdPostpone noteId
+            pprint $ withHeader "postponed:" $ UI.noteView nv
+        CmdSearch (Search text limit) -> do
+            nvs <- cmdSearch text limit today
+            pprint $ UI.samplesInSections limit nvs
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do

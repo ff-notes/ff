@@ -59,7 +59,12 @@ executables:
 tests:
   test:
     dependencies:
-      - tasty
+      - aeson
+      - containers
+      - crdt
+      - filepath
+      - mtl
+      - tasty-th
       - tasty-hunit
       - time
 

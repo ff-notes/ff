@@ -49,17 +49,8 @@ class Clock m => MonadStorage m where
     listDirectoryIfExists
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
-    createFile
-        :: Collection doc
-        => DocId doc
-        -> LamportTime
-        -> doc
-        -> m ()
-    readFile
-        :: Collection doc
-        => DocId doc
-        -> Version
-        -> m doc
+    createFile :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
+    readFile :: Collection doc => DocId doc -> Version -> m doc
 
 instance MonadStorage Storage where
     listDirectoryIfExists relpath = Storage $ do

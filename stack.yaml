@@ -2,7 +2,7 @@ resolver: lts-10.4
 
 extra-deps:
   # ff:
-    - crdt-6.2
+    - ../crdt
 
 # ff-qt -- temporarily disabled
 # extra-deps:
