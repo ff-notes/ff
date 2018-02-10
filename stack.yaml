@@ -1,8 +1,8 @@
-resolver: lts-10.4
+resolver: lts-10.5
 
 extra-deps:
   # ff:
-    - ../crdt
+    - crdt-7.0
 
 # ff-qt -- temporarily disabled
 # extra-deps:
