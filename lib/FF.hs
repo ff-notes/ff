@@ -27,6 +27,7 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (sortOn)
+import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -95,9 +96,9 @@ takeSamples limit ModeMap{..} = (`evalState` limit) $
         xs' = sortOn (key &&& nid) xs
         len = length xs'
 
-cmdNew :: New -> Storage NoteView
-cmdNew New{newText, newStart, newEnd} = do
-    newStart' <- fromMaybeA getUtcToday newStart
+cmdNew :: MonadStorage m => New -> Day -> m NoteView
+cmdNew New{newText, newStart, newEnd} today = do
+    let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
@@ -171,9 +172,6 @@ cmdPostpone nid =
             Just end | end < start' -> LWW.assign (Just start') noteEnd
             _                       -> pure                     noteEnd
         pure note{noteStart = noteStart', noteEnd = noteEnd'}
-
-fromMaybeA :: Applicative m => m a -> Maybe a -> m a
-fromMaybeA m = maybe m pure
 
 -- | Check the document exists. Return actual version.
 modifyOrFail ::

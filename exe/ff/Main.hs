@@ -82,7 +82,7 @@ runCmdAction cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdNew new -> do
-            nv <- cmdNew new
+            nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId
