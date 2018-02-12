@@ -23,43 +23,69 @@ But no guarantees.
 
 ## Usage
 
+### Look what 𝑓𝑓 can do for you
+
+    $ ff --help
+    Usage: ff ([COMMAND] | [-l|--limit ARG])
+      A note taker and task tracker
+
+    Available options:
+      -l,--limit ARG           limit
+      -h,--help                Show this help text
+
+    Available commands:
+      add                      add a new task or note
+      agenda                   show what you can do right now [default action]
+      config                   show/edit configuration
+      delete                   delete a task
+      done                     mark a task done (archive)
+      edit                     edit a task or a note
+      new                      synonym for `add`
+      postpone                 make a task start later
+      search                   search for notes with the given text
+
+### Get started
+
+To save tasks somewhere you must configure 𝑓𝑓's data directory
+
+    ff config dataDir --help
+
+If you use Yandex.Disk, you can say just
+
+    ff config dataDir -y
+
 ### Get some unfinished tasks
 
-```yaml
-$ ff
-457zi9nhn51-12z3opnykw: buy milk
-```
-
-Or, if no tasks
-
     $ ff
-    nothing
+    Actual:
+        * buy milk
+          id 458a1456lrc-12z3opnykw, start 2018-01-10
 
 ### Add new task or note
 
-    $ ff new 'learn Haskell'
+    $ ff add 'learn Haskell'
 
 Now you can find it in your agenda:
 
-```yaml
-$ ff
-457zi9nhn51-12z3opnykw: buy milk
-457zifxyxpz-12z3opnykw: learn Haskell
-```
+    $ ff
+    Actual:
+        * buy milk
+          id 458a1456lrc-12z3opnykw, start 2018-01-10
+        * learn Haskell
+          id 459h2tqxutq-24nuhr86ae, start 2018-01-14
 
 ### Mark task done
 
 Marking done is actually moving to archive.
 
-```yaml
-$ ff done 457zi9nhn51-12z3opnykw
-archived:
-  457zi9nhn51-12z3opnykw: buy milk
-```
+    $ ff done 458a1456lrc-12z3opnykw
+    archived:
+        buy milk
+        id 458a1456lrc-12z3opnykw, start 2018-01-10
 
 Archived tasks don't appear in an agenda:
 
-```yaml
-$ ff
-457zifxyxpz-12z3opnykw: learn Haskell
-```
+    $ ff
+    Actual:
+        * learn Haskell
+          id 459h2tqxutq-24nuhr86ae, start 2018-01-14
