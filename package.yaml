@@ -9,7 +9,6 @@ library:
     - bytestring
     - crdt
     - directory
-    - errors
     - filepath
     - mainland-pretty
     - mtl
