@@ -16,6 +16,7 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
+    , cmdUnarchive
     ) where
 
 import           Control.Arrow ((&&&))
@@ -129,6 +130,11 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Archived noteStatus
+    pure note { noteStatus = noteStatus' }
+
+cmdUnarchive :: NoteId -> Storage NoteView
+cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
+    noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView

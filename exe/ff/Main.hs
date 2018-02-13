@@ -17,7 +17,7 @@ import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, getSamples, getUtcToday)
+                     cmdSearch, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), appName, loadConfig, printConfig,
                             saveConfig)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
@@ -32,18 +32,18 @@ main = do
     cfg <- loadConfig
     cmd <- parseOptions
     case cmd of
-        CmdConfig param -> runCmdConfig cfg param
+        CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
             dataDir <- checkDataDir cfg
             runStorage dataDir timeVar $ runCmdAction action
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
-runCmdConfig cfg@Config{dataDir} = \case
-    Nothing -> printConfig cfg
+runCmdConfig cfg@Config { dataDir } = \case
+    Nothing                           -> printConfig cfg
     Just (Options.ConfigDataDir mdir) -> do
         dir <- case mdir of
-            Nothing -> pure dataDir
+            Nothing                -> pure dataDir
             Just (DataDirJust dir) -> saveDataDir dir
             Just DataDirYandexDisk -> do
                 home <- getHomeDirectory
@@ -57,13 +57,12 @@ runCmdConfig cfg@Config{dataDir} = \case
     trySaveDataDir baseDir = do
         guard =<< doesDirectoryExist baseDir
         saveDataDir $ baseDir </> "Apps" </> appName
-    saveDataDir dir = saveConfig cfg{dataDir = Just dir} $> Just dir
+    saveDataDir dir = saveConfig cfg { dataDir = Just dir } $> Just dir
 
 checkDataDir :: Monad m => Config -> m FilePath
-checkDataDir Config{dataDir} = case dataDir of
+checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
-    Nothing  ->
-        fail "Data directory isn't set, run `ff config dataDir --help`"
+    Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
 runCmdAction :: CmdAction -> Storage ()
 runCmdAction cmd = do
@@ -90,10 +89,13 @@ runCmdAction cmd = do
         CmdSearch (Search text limit) -> do
             nvs <- cmdSearch text limit today
             pprint $ UI.samplesInSections limit nvs
+        CmdUnarchive noteId -> do
+            nv <- cmdUnarchive noteId
+            pprint . withHeader "unarchived:" $ UI.noteView nv
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
     width <- Terminal.size >>= \case
         Nothing -> pure 80
-        Just Terminal.Window{Terminal.width} -> pure width
+        Just Terminal.Window { Terminal.width } -> pure width
     putStrLn . pretty width $ ppr a
