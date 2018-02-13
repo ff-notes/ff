@@ -14,51 +14,85 @@ import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (LamportTime (LamportTime), Pid)
 import           CRDT.LWW (LWW (LWW), time, value)
-import           Data.Aeson (FromJSON, ToJSON, Value (Array), parseJSON, toJSON)
+import           Data.Aeson (FromJSON, ToJSON, Value (Array, Null, String),
+                             parseJSON, toJSON, withArray)
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import           Data.Aeson.Types (Parser, typeMismatch)
 import           Data.Foldable (toList)
+import           Data.Maybe (isNothing)
+import qualified Data.Text as Text
 import           GHC.Exts (fromList)
 
 deriveJSON defaultOptions ''Pid
 
 instance FromJSON a => FromJSON (LWW a) where
-    parseJSON (Array a) = case toList a of
+    parseJSON = withArray "LWW" $ \a -> case toList a of
         [valueJ, timeJ, pidJ] ->
             LWW <$> parseJSON valueJ <*> parseLamportTime timeJ pidJ
         _ -> fail $ unwords
             ["expected array of 3 values, got", show $ length a, "values"]
-    parseJSON v = typeMismatch "Array" v
 
 instance ToJSON a => ToJSON (LWW a) where
     toJSON LWW{value, time = LamportTime time pid} =
-        Array $ fromList [toJSON value, toJSON time, toJSON pid]
+        array [toJSON value, toJSON time, toJSON pid]
 
 instance FromJSON RgaString where
-    parseJSON (Array a) = fmap RGA.unpack . go $ toList a
-      where
-        go = \case
-            [] -> pure []
-            valueJ : timeJ : pidJ : rest -> do
-                vid <- parseLamportTime timeJ pidJ
-                chars <- parseJSON valueJ
-                rest' <- go rest
-                pure $ (vid, unpackChars chars) : rest'
-            _ -> fail $ unwords
-                ["expected array of 3*n values, got", show $ length a, "values"]
-        unpackChars = map $ \case
-            '\0' -> Nothing
-            c    -> Just c
-    parseJSON v = typeMismatch "Array" v
+    parseJSON = rgaParseJson
 
 instance ToJSON RgaString where
-    toJSON rga = Array $ fromList $ do
-        (LamportTime time pid, mchars) <- RGA.pack rga
-        [toJSON $ packChars mchars, toJSON time, toJSON pid]
-      where
-        packChars = map $ \case
-            Nothing -> '\0'
-            Just c  -> c
+    toJSON = rgaToJson
+
+rgaParseJson :: Value -> Parser RgaString
+rgaParseJson = withArray "RGA"
+    $ \a -> fmap RGA.unpack . parseSegments $ toList a
+  where
+
+    parseSegments = \case
+        [] -> pure []
+        arrays@(Array _:_) ->
+            traverse (withList "RGA Segment" parseSegment) arrays
+        value:timeJ:pidJ:rest -> do -- legacy < 0.3
+            vid   <- parseLamportTime timeJ pidJ
+            chars <- parseJSON value
+            rest' <- parseSegments rest
+            pure $ (vid, unpackChars chars) : rest'
+        value:_ -> typeMismatch "Array" value
+
+    parseSegment = \case
+        timeJ:pidJ:value -> do
+            mchars <- case value of
+                [String str]   -> pure $ unpackChars $ Text.unpack str
+                [Null, countJ] -> do -- keep Null for compatibility with future non-character RGA
+                    count <- parseJSON countJ
+                    pure $ replicate count Nothing
+                []  -> fail "expected String or Null followed by Number, got []"
+                v:_ -> typeMismatch "String or Null followed by Number" v
+            time <- parseJSON timeJ
+            pid  <- parseJSON pidJ
+            let vid = LamportTime time pid
+            pure (vid, mchars)
+        _ -> fail "expected Array of 3 elements"
+
+    unpackChars = map $ \case
+        '\0' -> Nothing
+        c    -> Just c
+
+withList :: String -> ([Value] -> Parser a) -> Value -> Parser a
+withList name p = withArray name (p . toList)
+
+rgaToJson :: RgaString -> Value
+rgaToJson rga = array . map segmentToJson $ RGA.pack rga
+  where
+    segmentToJson (LamportTime time pid, mchars) =
+        array $ toJSON time : toJSON pid : if all isNothing mchars
+            then [Null, toJSON $ length mchars]
+            else [toJSON $ packChars mchars]
+    packChars = map $ \case
+        Nothing -> '\0'
+        Just c  -> c
 
 parseLamportTime :: Value -> Value -> Parser LamportTime
 parseLamportTime time pid = LamportTime <$> parseJSON time <*> parseJSON pid
+
+array :: [Value] -> Value
+array = Array . fromList

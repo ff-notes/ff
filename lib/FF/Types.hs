@@ -24,7 +24,7 @@ import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
 
 data Status = Active | Archived | Deleted
-    deriving (Eq, Show)
+    deriving (Bounded, Enum, Eq, Show)
 
 deriveJSON defaultOptions ''Status
 
@@ -64,7 +64,7 @@ data Sample = Sample
     deriving (Eq, Show)
 
 emptySample :: Sample
-emptySample = Sample{notes = [], total = 0}
+emptySample = Sample {notes = [], total = 0}
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
@@ -76,13 +76,12 @@ data TaskMode
     deriving (Eq, Ord, Show)
 
 taskMode :: Day -> NoteView -> TaskMode
-taskMode today NoteView{start, end = Nothing} =
+taskMode today NoteView { start, end = Nothing } =
     if start <= today then Actual else Starting
-taskMode today NoteView{start, end = Just end} =
-    case compare end today of
-        LT -> Overdue
-        EQ -> EndToday
-        GT -> if start <= today then EndSoon else Starting
+taskMode today NoteView { start, end = Just end } = case compare end today of
+    LT -> Overdue
+    EQ -> EndToday
+    GT -> if start <= today then EndSoon else Starting
 
 data ModeMap a = ModeMap
     { overdue  :: a
@@ -118,17 +117,17 @@ emptySampleMap = ModeMap
 
 singletonModeMap :: (Semigroup a, Monoid a) => TaskMode -> a -> ModeMap a
 singletonModeMap mode a = case mode of
-    Overdue  -> mempty{overdue  = a}
-    EndToday -> mempty{endToday = a}
-    EndSoon  -> mempty{endSoon  = a}
-    Actual   -> mempty{actual   = a}
-    Starting -> mempty{starting = a}
+    Overdue  -> mempty { overdue = a }
+    EndToday -> mempty { endToday = a }
+    EndSoon  -> mempty { endSoon = a }
+    Actual   -> mempty { actual = a }
+    Starting -> mempty { starting = a }
 
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
 singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
-noteView nid Note{..} = NoteView
+noteView nid Note {..} = NoteView
     { nid   = nid
     , text  = Text.pack $ RGA.toString noteText
     , start = LWW.query noteStart

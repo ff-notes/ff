@@ -3,6 +3,11 @@ resolver: lts-10.5
 extra-deps:
   # ff:
     - crdt-9.0
+  # ff:test:
+    - git: https://github.com/cblp/crdt.git
+      commit: f07533d  # 9.0 + 1 commit
+      subdirs:
+        - crdt-test
 
 # ff-qt -- temporarily disabled
 # extra-deps:

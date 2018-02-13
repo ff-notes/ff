@@ -8,10 +8,12 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module Main where
+module Main (main) where
 
+import           Control.Arrow (second)
 import           Control.Error ((?:))
 import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
+import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
@@ -29,8 +31,8 @@ import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
 import           System.FilePath (splitDirectories)
-import           Test.QuickCheck (Property, conjoin, counterexample, property,
-                                  (===), (==>))
+import           Test.QuickCheck (Property, Testable, conjoin, counterexample,
+                                  property, (===), (==>))
 import           Test.QuickCheck.Instances ()
 import           Test.Tasty.HUnit (testCase, (@?=))
 import           Test.Tasty.QuickCheck (testProperty)
@@ -40,8 +42,10 @@ import           FF (cmdNew, getSamples)
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
-import           FF.Types (ModeMap (..), NoteView (..), Sample (..),
+import           FF.Types (ModeMap (..), Note (..), NoteView (..), Sample (..),
                            emptySampleMap)
+
+import           ArbitraryOrphans ()
 
 data DirItem = Dir Dir | File Value
     deriving (Eq, Show)
@@ -52,9 +56,6 @@ data NDirItem = NDir NDir | NFile Value
     deriving (Eq, Show)
 
 type NDir = [NDirItem]
-
-nDirSingleton :: NDirItem -> NDirItem
-nDirSingleton item = NDir [item]
 
 stripNames :: Dir -> NDir
 stripNames = map stripNames' . Map.elems
@@ -192,19 +193,21 @@ prop_new newText newStart newEnd =
             , case stripNames fs' of
                 [NDir [NDir [NFile (Object note)]]] -> conjoin
                     [ case note ! "status" of
-                        Array (toList -> ["Active", _, Number 314159]) -> ok
+                        Array (toList -> ["Active", Number _, Number 314159])
+                            -> ok
                         status -> failProp $ "status = " ++ show status
                     , case note ! "text" of
-                        Array (toList -> [String text, _, Number 314159])
-                            | not $ Text.null newText -> text === newText
+                        Array (toList -> [Array (toList -> [Number _, Number 314159, String text])])
+                            | not $ Text.null newText
+                            -> text === newText
                         Array (toList -> []) | Text.null newText -> ok
                         text -> failProp $ "text = " ++ show text
                     , case note ! "start" of
-                        Array (toList -> [start, _, Number 314159]) ->
+                        Array (toList -> [start, Number _, Number 314159]) ->
                             start === toJSON (newStart ?: today)
                         start -> failProp $ "start = " ++ show start
                     , case note ! "end" of
-                        Array (toList -> [end, _, Number 314159]) ->
+                        Array (toList -> [end, Number _, Number 314159]) ->
                             end === toJSON newEnd
                         end -> failProp $ "end = " ++ show end
                     ]
@@ -214,8 +217,28 @@ prop_new newText newStart newEnd =
 expectJust :: Maybe Property -> Property
 expectJust = fromMaybe . counterexample "got Nothing" $ property False
 
+expectRightK :: Testable b => Either String a -> (a -> b) -> Property
+expectRightK e f = case e of
+    Left  l -> counterexample l $ property False
+    Right a -> property $ f a
+
 failProp :: String -> Property
 failProp s = counterexample s $ property False
 
 ok :: Property
 ok = property ()
+
+prop_Note_toJson_fromJson :: Note -> Property
+prop_Note_toJson_fromJson note@Note { noteStatus, noteText, noteStart, noteEnd }
+    = expectRightK (parseEither parseJSON $ toJSON note)
+        $ \Note { noteStatus = noteStatus', noteText = noteText', noteStart = noteStart', noteEnd = noteEnd' } ->
+              conjoin
+                  [ noteStatus === noteStatus'
+                  , normalizeNull (RGA.pack noteText) === RGA.pack noteText'
+                  , noteStart === noteStart'
+                  , noteEnd === noteEnd'
+                  ]
+  where
+    normalizeNull = map . second . map $ \case
+        Just '\0' -> Nothing
+        c         -> c

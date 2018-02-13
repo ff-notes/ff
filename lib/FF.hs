@@ -7,16 +7,16 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module FF
-    ( Note
-    , getSamples
-    , getUtcToday
-    , cmdDelete
+    ( cmdDelete
     , cmdDone
     , cmdEdit
     , cmdNew
     , cmdPostpone
     , cmdSearch
     , cmdUnarchive
+    , getSamples
+    , getUtcToday
+    , newNote
     ) where
 
 import           Control.Arrow ((&&&))
@@ -100,19 +100,22 @@ takeSamples limit ModeMap {..} =
         xs' = sortOn (key &&& nid) xs
         len = length xs'
 
+newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
+newNote status text start end = do
+    noteStatus <- LWW.initialize status
+    noteText   <- rgaFromText text
+    noteStart  <- LWW.initialize start
+    noteEnd    <- LWW.initialize end
+    pure Note {..}
+
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    note <- do
-        noteStatus <- LWW.initialize Active
-        noteText   <- rgaFromText newText
-        noteStart  <- LWW.initialize newStart'
-        noteEnd    <- LWW.initialize newEnd
-        pure Note {..}
-    nid <- saveNew note
+    note <- newNote Active newText newStart' newEnd
+    nid  <- saveNew note
     pure $ noteView nid note
 
 cmdDelete :: NoteId -> Storage NoteView
