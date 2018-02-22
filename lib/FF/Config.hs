@@ -1,26 +1,45 @@
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module FF.Config where
 
 import           Control.Exception (throw)
-import           Data.Aeson.TH (defaultOptions, deriveJSON)
+import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON)
 import qualified Data.ByteString as BS
-import           Data.Yaml (ToJSON, decodeFileEither, encodeFile)
+import           Data.Yaml (FromJSON, ToJSON, decodeFileEither, encodeFile,
+                            withObject, (.!=), (.:?))
 import qualified Data.Yaml as Yaml
 import           System.Directory (XdgDirectory (XdgConfig),
                                    createDirectoryIfMissing, doesFileExist,
                                    getXdgDirectory)
 import           System.FilePath (FilePath, takeDirectory, (</>))
 
-newtype Config = Config
+data Config = Config
     { dataDir :: Maybe FilePath
+    , ui :: ConfigUI
     }
+    deriving (Show)
+
+data ConfigUI = ConfigUI
+    { shuffle :: Bool
+    }
+    deriving (Show)
 
 emptyConfig :: Config
-emptyConfig = Config{dataDir = Nothing}
+emptyConfig = Config {dataDir = Nothing, ui = defaultConfigUI}
 
-deriveJSON defaultOptions ''Config
+defaultConfigUI :: ConfigUI
+defaultConfigUI = ConfigUI {shuffle = False}
+
+instance FromJSON Config where
+    parseJSON = withObject "Config" $ \obj -> do
+        dataDir <- obj .:? "dataDir"
+        ui      <- obj .:? "ui" .!= defaultConfigUI
+        pure Config{..}
+
+deriveJSON   defaultOptions ''ConfigUI
+deriveToJSON defaultOptions ''Config
 
 appName :: String
 appName = "ff"
@@ -30,12 +49,11 @@ getCfgFilePath = getXdgDirectory XdgConfig $ appName </> "config.yaml"
 
 loadConfig :: IO Config
 loadConfig = do
-    path <- getCfgFilePath
+    path   <- getCfgFilePath
     exists <- doesFileExist path
-    if exists then
-        either throw pure =<< decodeFileEither path
-    else
-        pure emptyConfig
+    if exists
+        then either throw pure =<< decodeFileEither path
+        else pure emptyConfig
 
 saveConfig :: Config -> IO ()
 saveConfig cfg = do

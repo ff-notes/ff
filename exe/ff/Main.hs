@@ -18,10 +18,10 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday)
-import           FF.Config (Config (..), appName, loadConfig, printConfig,
-                            saveConfig)
+import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
+                            printConfig, saveConfig)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), parseOptions)
+                             Search (..), Shuffle (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -29,20 +29,20 @@ import qualified FF.UI as UI
 
 main :: IO ()
 main = do
-    cfg <- loadConfig
-    cmd <- parseOptions
+    cfg@Config { ui } <- loadConfig
+    cmd               <- parseOptions
     case cmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
             dataDir <- checkDataDir cfg
-            runStorage dataDir timeVar $ runCmdAction action
+            runStorage dataDir timeVar $ runCmdAction ui action
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
-runCmdConfig cfg@Config { dataDir } = \case
+runCmdConfig cfg@Config { dataDir, ui } = \case
     Nothing                           -> printConfig cfg
-    Just (Options.ConfigDataDir mdir) -> do
-        dir <- case mdir of
+    Just (Options.ConfigDataDir mDir) -> do
+        dir <- case mDir of
             Nothing                -> pure dataDir
             Just (DataDirJust dir) -> saveDataDir dir
             Just DataDirYandexDisk -> do
@@ -53,24 +53,32 @@ runCmdConfig cfg@Config { dataDir } = \case
                     , fail "Cant't detect Yandex.Disk directory"
                     ]
         printConfig dir
+    Just (Options.ConfigUI mShuffle) -> do
+        ui' <- case mShuffle of
+            Nothing      -> pure ui
+            Just Shuffle -> saveShuffle True
+            Just Sort    -> saveShuffle False
+        printConfig ui'
   where
     trySaveDataDir baseDir = do
         guard =<< doesDirectoryExist baseDir
         saveDataDir $ baseDir </> "Apps" </> appName
     saveDataDir dir = saveConfig cfg { dataDir = Just dir } $> Just dir
+    saveShuffle shuffle' = saveConfig cfg { ui = ui' } $> ui'
+        where ui' = ConfigUI {shuffle = shuffle'}
 
 checkDataDir :: Monad m => Config -> m FilePath
 checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
-runCmdAction :: CmdAction -> Storage ()
-runCmdAction cmd = do
+runCmdAction :: ConfigUI -> CmdAction -> Storage ()
+runCmdAction ui cmd = do
     today <- getUtcToday
     case cmd of
         CmdAgenda limit -> do
             nvs <- getSamples limit today
-            pprint $ UI.samplesInSections limit nvs
+            pprint $ UI.samplesInSections ui limit nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
             pprint $ withHeader "deleted:" $ UI.noteView nv
@@ -88,7 +96,7 @@ runCmdAction cmd = do
             pprint $ withHeader "postponed:" $ UI.noteView nv
         CmdSearch (Search text limit) -> do
             nvs <- cmdSearch text limit today
-            pprint $ UI.samplesInSections limit nvs
+            pprint $ UI.samplesInSections ui limit nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv

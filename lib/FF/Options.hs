@@ -8,6 +8,7 @@ module FF.Options
     , Edit (..)
     , New (..)
     , Search (..)
+    , Shuffle (..)
     , parseOptions
     ) where
 
@@ -40,9 +41,11 @@ data CmdAction
 
 type Limit = Int
 
-newtype Config = ConfigDataDir (Maybe DataDir)
+data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
+
+data Shuffle = Shuffle | Sort
 
 data Edit = Edit
     { editId    :: NoteId
@@ -130,8 +133,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    pCmdConfig = CmdConfig
-        <$> optional (subparser $ command "dataDir" iDataDir)
+    pCmdConfig = CmdConfig <$> optional
+        (subparser $ command "dataDir" iDataDir <> command "ui" iUi)
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
@@ -142,5 +145,10 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
                     $  long "yandex-disk"
                     <> short 'y'
                     <> help "detect Yandex.Disk"
+        iUi = i pUi "UI tweaks"
+        pUi = ConfigUI <$> optional
+            ( flag' Shuffle (long "shuffle" <> help "shuffle notes in section")
+            <|> flag' Sort (long "sort" <> help "sort notes in section")
+            )
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
