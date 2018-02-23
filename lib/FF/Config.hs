@@ -21,7 +21,7 @@ data Config = Config
     }
     deriving (Show)
 
-data ConfigUI = ConfigUI
+newtype ConfigUI = ConfigUI
     { shuffle :: Bool
     }
     deriving (Show)

@@ -13,6 +13,8 @@ library:
     - mainland-pretty
     - mtl
     - optparse-applicative
+    - random
+    - random-shuffle
     - stm
     - temporary
     - text

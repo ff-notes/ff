@@ -39,6 +39,7 @@ import           Test.Tasty.QuickCheck (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNew, getSamples)
+import           FF.Config (ConfigUI (..))
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
@@ -127,14 +128,14 @@ main = $defaultMainGenerator
 
 case_not_exist :: IO ()
 case_not_exist = do
-    (agenda, fs') <- runTestM fs $ getSamples agendaLimit today
+    (agenda, fs') <- runTestM fs $ getSamples ui agendaLimit today
     agenda @?= emptySampleMap
     fs' @?= fs
     where fs = Map.empty
 
 case_smoke :: IO ()
 case_smoke = do
-    (agenda, fs') <- runTestM fs123 $ getSamples agendaLimit today
+    (agenda, fs') <- runTestM fs123 $ getSamples ui agendaLimit today
     agenda @?= emptySampleMap
         { overdue = Sample
             { notes = [ NoteView
@@ -242,3 +243,6 @@ prop_Note_toJson_fromJson note@Note { noteStatus, noteText, noteStart, noteEnd }
     normalizeNull = map . second . map $ \case
         Just '\0' -> Nothing
         c         -> c
+
+ui :: ConfigUI
+ui = ConfigUI {shuffle = False}
