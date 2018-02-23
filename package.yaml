@@ -14,7 +14,6 @@ library:
     - mtl
     - optparse-applicative
     - random
-    - random-shuffle
     - stm
     - temporary
     - text

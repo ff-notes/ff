@@ -43,8 +43,7 @@ import           System.Exit (ExitCode (..))
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
-import           System.Random (StdGen, mkStdGen)
-import           System.Random.Shuffle (shuffle')
+import           System.Random (StdGen, mkStdGen, randoms)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
@@ -107,7 +106,7 @@ takeSamples mGen limit ModeMap {..} =
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism
         xs' = case mGen of
-            Just gen -> shuffle' xs len gen
+            Just gen -> map snd . sortOn fst $ zip (randoms gen :: [Int]) xs
             Nothing  -> sortOn (key &&& nid) xs
         len = length xs
 
