@@ -29,12 +29,12 @@ pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
 samplesInSections :: Int -> ModeMap Sample -> Doc
-samplesInSections limit ModeMap{..} = stack
-    [ sample labelOverdue  "ff search --overdue"   overdue
-    , sample labelEndToday "ff search --today"     endToday
-    , sample labelEndSoon  "ff search --soon"      endSoon
-    , sample labelActual   "ff search --actual"    actual
-    , sample labelStarting "ff search --starting"  starting
+samplesInSections limit ModeMap {..} = stack
+    [ sample labelOverdue  "ff search --overdue"  overdue
+    , sample labelEndToday "ff search --today"    endToday
+    , sample labelEndSoon  "ff search --soon"     endSoon
+    , sample labelActual   "ff search --actual"   actual
+    , sample labelStarting "ff search --starting" starting
     , "To see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
     ]
   where
@@ -45,22 +45,25 @@ samplesInSections limit ModeMap{..} = stack
     labelStarting = "Starting soon:"
 
 sample :: String -> String -> Sample -> Doc
-sample _     _           Sample{total = 0}    = mempty
-sample label cmdToSeeAll Sample{total, notes} =
-    withHeader label . stack $
-        map ((star <>) . indent 1 . noteView) notes
-        ++ [toSeeAllLabel .= Pretty.text cmdToSeeAll | count /= total]
+sample _ _ Sample { total = 0 } = mempty
+sample label cmdToSeeAll Sample { total, notes } =
+    withHeader label
+        .  stack
+        $  map ((star <>) . indent 1 . noteView) notes
+        ++ [ toSeeAllLabel .= Pretty.text cmdToSeeAll | count /= total ]
   where
-    count = genericLength notes
+    count         = genericLength notes
     toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
 
 noteView :: NoteView -> Doc
-noteView NoteView{nid, text, start, end} =
-    noteText </> fieldsSep fields
+noteView NoteView { nid, text, start, end } = noteText </> fieldsSep fields
   where
-    noteText = stack . map (sep . map strictText . Text.words) $ Text.lines text
-    fields
-        =   "id" .= pshow nid
-        :   "start" .= pshow start
-        : [ "end" .= pshow e | Just e <- pure end ]
+    noteText =
+        stack . map (sep . map strictText . Text.words) $ Text.lines text
+    fields =
+        "id"
+            .= pshow nid
+            :  "start"
+            .= pshow start
+            :  [ "end" .= pshow e | Just e <- pure end ]
     fieldsSep docs = commasep docs <|> stack docs

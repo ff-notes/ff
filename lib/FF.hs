@@ -35,7 +35,7 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
-                            utctDay)
+                            toModifiedJulianDay, utctDay)
 import           Data.Traversable (for)
 import           System.Directory (findExecutable)
 import           System.Environment (getEnv)
@@ -43,7 +43,9 @@ import           System.Exit (ExitCode (..))
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
+import           System.Random (StdGen, mkStdGen, randoms)
 
+import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, MonadStorage, Storage,
                              listDocuments, load, modify, saveNew)
@@ -53,22 +55,25 @@ import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
 
 getSamples
     :: MonadStorage m
-    => Int -- ^ limit
+    => ConfigUI
+    -> Int -- ^ limit
     -> Day -- ^ today
     -> m (ModeMap Sample)
 getSamples = getSamplesWith $ const True
 
 cmdSearch :: Text -> Int -> Day -> Storage (ModeMap Sample)
-cmdSearch substr =
-    getSamplesWith $ Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+cmdSearch substr = getSamplesWith
+    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
+    ConfigUI {shuffle = False}
 
 getSamplesWith
     :: MonadStorage m
     => (Text -> Bool) -- ^ predicate to filter notes by text
+    -> ConfigUI
     -> Int -- ^ limit
     -> Day -- ^ today
     -> m (ModeMap Sample)
-getSamplesWith predicate limit today = do
+getSamplesWith predicate ConfigUI { shuffle } limit today = do
     docs   <- listDocuments
     mnotes <- for docs load
     let activeNotes =
@@ -77,13 +82,16 @@ getSamplesWith predicate limit today = do
             , LWW.query noteStatus == Active
             , predicate $ rgaToText noteText
             ]
-    pure . takeSamples limit $ splitModes today activeNotes
+    pure . takeSamples mGen limit $ splitModes today activeNotes
+  where
+    mGen | shuffle = Just . mkStdGen . fromIntegral $ toModifiedJulianDay today
+         | otherwise = Nothing
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
-takeSamples :: Int -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples limit ModeMap {..} =
+takeSamples :: Maybe StdGen -> Int -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples mGen limit ModeMap {..} =
     (`evalState` limit)
         $   ModeMap
         <$> sample end   overdue
@@ -97,8 +105,10 @@ takeSamples limit ModeMap {..} =
       where
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism
-        xs' = sortOn (key &&& nid) xs
-        len = length xs'
+        xs' = case mGen of
+            Just gen -> map snd . sortOn fst $ zip (randoms gen :: [Int]) xs
+            Nothing  -> sortOn (key &&& nid) xs
+        len = length xs
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
