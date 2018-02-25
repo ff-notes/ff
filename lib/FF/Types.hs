@@ -4,6 +4,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveFoldable #-}
 
 module FF.Types where
 
@@ -90,7 +92,7 @@ data ModeMap a = ModeMap
     , actual   :: a
     , starting :: a
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Functor, Foldable)
 
 instance Semigroup a => Semigroup (ModeMap a) where
     ModeMap o1 t1 e1 a1 s1 <> ModeMap o2 t2 e2 a2 s2 =
