@@ -20,6 +20,7 @@ import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
+import           Data.List (genericLength)
 import           Numeric.Natural (Natural)
 
 import           FF.CrdtAesonInstances ()
@@ -67,6 +68,10 @@ data Sample = Sample
 
 emptySample :: Sample
 emptySample = Sample {notes = [], total = 0}
+
+-- | Number of notes omitted from the sample.
+omitted :: Sample -> Natural
+omitted Sample { notes, total } = total - genericLength notes
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
