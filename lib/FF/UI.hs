@@ -12,7 +12,7 @@ import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap (..), NoteView (..), Sample (..))
+import           FF.Types (ModeMap (..), NoteView (..), Sample (..), omitted)
 
 type Template a = a -> String
 
@@ -29,13 +29,16 @@ pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
 samplesInSections :: Int -> ModeMap Sample -> Doc
-samplesInSections limit ModeMap {..} = stack
+samplesInSections limit samples@ModeMap {..} = stack $
     [ sample labelOverdue  "ff search --overdue"  overdue
     , sample labelEndToday "ff search --today"    endToday
     , sample labelEndSoon  "ff search --soon"     endSoon
     , sample labelActual   "ff search --actual"   actual
     , sample labelStarting "ff search --starting" starting
-    , "To see more tasks, run:" .= ("ff --limit=" <> show (max 0 limit + 10))
+    ] ++
+    [ (show numOmitted <> " task(s) omitted. To see more tasks, run:")
+      .= ("ff --limit=" <> show (max 0 limit + 10))
+    | numOmitted > 0
     ]
   where
     labelOverdue  = "Overdue:"
@@ -43,6 +46,8 @@ samplesInSections limit ModeMap {..} = stack
     labelEndSoon  = "Due soon:"
     labelActual   = "Actual:"
     labelStarting = "Starting soon:"
+
+    numOmitted = sum $ fmap omitted samples
 
 sample :: String -> String -> Sample -> Doc
 sample _ _ Sample { total = 0 } = mempty
