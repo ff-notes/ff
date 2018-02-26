@@ -22,39 +22,21 @@ library:
     - yaml
   source-dirs: lib
 
-executables:
-  ff:
-    dependencies:
-      - crdt
-      - directory
-      - filepath
-      - mtl
-      - mainland-pretty
-      - stm
-      - terminal-size
+executable:
+  dependencies:
+    - crdt
+    - directory
+    - filepath
+    - mtl
+    - mainland-pretty
+    - stm
+    - terminal-size
 
-      - ff
+    - ff
 
-    main: Main
-    other-modules: []
-    source-dirs: exe/ff
-
-  # ff-qt:  # temporarily disabled
-  #   dependencies:
-  #     - crdt
-  #     - hoppy-runtime
-  #     - qtah
-  #     - stm
-  #     - text
-  #
-  #     - ff
-  #
-  #   ghc-options: -dynamic -optl-pthread
-  #     # -dynamic -- to find libqtah.so automatically
-  #     # -optl-pthread -- Travis can't find pthread
-  #   main: Main
-  #   other-modules: []
-  #   source-dirs: exe/ff-qt
+  main: Main
+  other-modules: []
+  source-dirs: exe/ff
 
 tests:
   test:
