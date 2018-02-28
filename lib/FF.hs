@@ -16,6 +16,8 @@ module FF
     , cmdUnarchive
     , getSamples
     , getUtcToday
+    , loadAllNotes
+    , loadActiveNotes
     , newNote
     ) where
 
@@ -56,33 +58,42 @@ import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
 getSamples
     :: MonadStorage m
     => ConfigUI
-    -> Int -- ^ limit
+    -> Maybe Int -- ^ limit
     -> Day -- ^ today
     -> m (ModeMap Sample)
 getSamples = getSamplesWith $ const True
 
-cmdSearch :: Text -> Int -> Day -> Storage (ModeMap Sample)
+cmdSearch
+    :: Text
+    -> Maybe Int -- ^ limit
+    -> Day -- ^ today
+    -> Storage (ModeMap Sample)
 cmdSearch substr = getSamplesWith
     (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
     ConfigUI {shuffle = False}
+
+loadAllNotes :: MonadStorage m => m [NoteView]
+loadAllNotes = do
+    docs   <- listDocuments
+    mnotes <- for docs load
+    pure [ noteView doc note | (doc, Just note) <- zip docs mnotes ]
+
+loadActiveNotes :: MonadStorage m => m [NoteView]
+loadActiveNotes =
+    filter (\NoteView { status } -> status == Active) <$> loadAllNotes
 
 getSamplesWith
     :: MonadStorage m
     => (Text -> Bool) -- ^ predicate to filter notes by text
     -> ConfigUI
-    -> Int -- ^ limit
+    -> Maybe Int -- ^ limit
     -> Day -- ^ today
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
-    docs   <- listDocuments
-    mnotes <- for docs load
-    let activeNotes =
-            [ noteView doc note
-            | (doc, Just note@Note { noteStatus, noteText }) <- zip docs mnotes
-            , LWW.query noteStatus == Active
-            , predicate $ rgaToText noteText
-            ]
-    pure . takeSamples mGen limit $ splitModes today activeNotes
+    activeNotes <- loadActiveNotes
+    pure . takeSamples mGen limit $ splitModes today $ filter
+        (\NoteView { text } -> predicate text)
+        activeNotes
   where
     mGen | shuffle = Just . mkStdGen . fromIntegral $ toModifiedJulianDay today
          | otherwise = Nothing
@@ -90,7 +101,7 @@ getSamplesWith predicate ConfigUI { shuffle } limit today = do
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
-takeSamples :: Maybe StdGen -> Int -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples :: Maybe StdGen -> Maybe Int -> ModeMap [NoteView] -> ModeMap Sample
 takeSamples mGen limit ModeMap {..} =
     (`evalState` limit)
         $   ModeMap
@@ -100,8 +111,9 @@ takeSamples mGen limit ModeMap {..} =
         <*> sample start actual
         <*> sample start starting
   where
-    sample key xs = state
-        $ \n -> (Sample (take n xs') (fromIntegral len), n - len)
+    sample key xs = state $ \case
+        Just n  -> (Sample (take n xs') (fromIntegral len), Just $ n - len)
+        Nothing -> (Sample xs' (fromIntegral len), Nothing)
       where
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism

@@ -1,11 +1,11 @@
+{-# LANGUAGE DeriveFoldable #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE DeriveFunctor #-}
-{-# LANGUAGE DeriveFoldable #-}
 
 module FF.Types where
 
@@ -15,12 +15,12 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
+import           Data.List (genericLength)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
-import           Data.List (genericLength)
 import           Numeric.Natural (Natural)
 
 import           FF.CrdtAesonInstances ()
@@ -53,10 +53,11 @@ instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { nid   :: NoteId
-    , text  :: Text
-    , start :: Day
-    , end   :: Maybe Day
+    { nid    :: NoteId
+    , status :: Status
+    , text   :: Text
+    , start  :: Day
+    , end    :: Maybe Day
     }
     deriving (Eq, Show)
 
@@ -135,8 +136,9 @@ singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
-    { nid   = nid
-    , text  = Text.pack $ RGA.toString noteText
-    , start = LWW.query noteStart
-    , end   = LWW.query noteEnd
+    { nid    = nid
+    , status = LWW.query noteStatus
+    , text   = Text.pack $ RGA.toString noteText
+    , start  = LWW.query noteStart
+    , end    = LWW.query noteEnd
     }

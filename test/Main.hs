@@ -44,7 +44,7 @@ import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
 import           FF.Types (ModeMap (..), Note (..), NoteView (..), Sample (..),
-                           emptySampleMap)
+                           Status (Active), emptySampleMap)
 
 import           ArbitraryOrphans ()
 
@@ -139,10 +139,11 @@ case_smoke = do
     agenda @?= emptySampleMap
         { overdue = Sample
             { notes = [ NoteView
-                            { nid   = DocId "1"
-                            , text  = "helloworld"
-                            , start = fromGregorian 22 11 24
-                            , end   = Just $ fromGregorian 17 06 19
+                            { nid    = DocId "1"
+                            , status = Active
+                            , text   = "helloworld"
+                            , start  = fromGregorian 22 11 24
+                            , end    = Just $ fromGregorian 17 06 19
                             }
                       ]
             , total = 1
@@ -170,8 +171,8 @@ fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ fromList
       )
     ]
 
-agendaLimit :: Int
-agendaLimit = 10
+agendaLimit :: Maybe Int
+agendaLimit = Just 10
 
 today :: Day
 today = fromGregorian 1018 02 10

@@ -24,14 +24,15 @@ import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
-import           FF (getAgenda)
+import           FF (loadActiveNotes)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
+import           FF.Types (NoteView (NoteView, text))
 
 main :: IO ()
 main = do
-    Config{dataDir = Just dataDir} <- loadConfig
-    timeVar <- newTVarIO =<< getRealLocalTime
+    Config { dataDir = Just dataDir } <- loadConfig
+    timeVar                           <- newTVarIO =<< getRealLocalTime
     withApp $ \_ -> do
         mainWindow <- mkMainWindow dataDir timeVar
         QWidget.show mainWindow
@@ -56,7 +57,7 @@ mkAgendaWidget :: FilePath -> TVar LocalTime -> IO QTreeWidget
 mkAgendaWidget dataDir timeVar = do
     tree <- QTreeWidget.new
     setHeaderHidden tree True
-    notes <- runStorage dataDir timeVar getAgenda
-    for_ notes $ \note ->
-        QTreeWidgetItem.newWithParentTreeAndStrings tree [Text.unpack note]
+    notes <- runStorage dataDir timeVar loadActiveNotes
+    for_ notes $ \NoteView { text } ->
+        QTreeWidgetItem.newWithParentTreeAndStrings tree [Text.unpack text]
     pure tree

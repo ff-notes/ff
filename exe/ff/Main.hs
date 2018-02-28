@@ -77,7 +77,7 @@ runCmdAction ui cmd = do
     today <- getUtcToday
     case cmd of
         CmdAgenda limit -> do
-            nvs <- getSamples ui limit today
+            nvs <- getSamples ui (Just limit) today
             pprint $ UI.samplesInSections limit nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
@@ -95,7 +95,7 @@ runCmdAction ui cmd = do
             nv <- cmdPostpone noteId
             pprint $ withHeader "postponed:" $ UI.noteView nv
         CmdSearch (Search text limit) -> do
-            nvs <- cmdSearch text limit today
+            nvs <- cmdSearch text (Just limit) today
             pprint $ UI.samplesInSections limit nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
