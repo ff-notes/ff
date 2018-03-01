@@ -17,7 +17,7 @@ extra-deps:
     # - qtah-generator-0.4.0
     # - qtah-qt5-0.4.0
     - git: https://gitlab.com/cblp/qtah.git
-      commit: 1a434eb  # 0.4.0 + 2018-03-01
+      commit: 4186530  # 0.4.0 + 2018-03-01
       subdirs:
         - qtah
         - qtah-cpp
