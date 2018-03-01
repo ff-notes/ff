@@ -7,7 +7,7 @@ executable:
   dependencies:
     - crdt
     - hoppy-runtime
-    - qtah-qt5
+    - qtah #-qt5
     - stm
     - text
 
