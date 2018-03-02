@@ -31,7 +31,8 @@ import           Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow,
 import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import           Graphics.UI.Qtah.Widgets.QTabWidget (QTabWidget, addTab)
 import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
-import           Graphics.UI.Qtah.Widgets.QTreeView (QTreeView, setHeaderHidden)
+import           Graphics.UI.Qtah.Widgets.QTreeView (QTreeView, expandAll,
+                                                     setHeaderHidden)
 import qualified Graphics.UI.Qtah.Widgets.QTreeView as QTreeView
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, restoreGeometry,
                                                    saveGeometry, setFocus,
@@ -101,6 +102,7 @@ addTab_ tabs name widget = void $ addTab tabs widget name
 mkAgendaWidget :: FilePath -> TVar LocalTime -> IO QTreeView
 mkAgendaWidget dataDir timeVar = do
     model <- NoteModel.new
+    runStorage dataDir timeVar loadActiveNotes >>= traverse_ (addNote model)
 
     this  <- QTreeView.new
     setAlternatingRowColors this True
@@ -109,7 +111,6 @@ mkAgendaWidget dataDir timeVar = do
     void $ onEvent this $ \(_ :: QShowEvent) -> do
         setFocus this
         pure False
-
-    runStorage dataDir timeVar loadActiveNotes >>= traverse_ (addNote model)
+    expandAll this
 
     pure this
