@@ -1,4 +1,5 @@
 name: ff-qt
+version: '0.2'
 
 dependencies:
   - base

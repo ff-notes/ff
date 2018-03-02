@@ -9,17 +9,23 @@ import           CRDT.LamportClock (LocalTime, getRealLocalTime)
 import           Data.Foldable (for_)
 import qualified Data.Text as Text
 import           Foreign.Hoppy.Runtime (withScopedPtr)
-import           Graphics.UI.Qtah.Core.QCoreApplication (exec)
-import           Graphics.UI.Qtah.Core.QSettings (value)
+import           Graphics.UI.Qtah.Core.QCoreApplication (exec,
+                                                         setApplicationName,
+                                                         setApplicationVersion,
+                                                         setOrganizationDomain,
+                                                         setOrganizationName)
+import           Graphics.UI.Qtah.Core.QSettings (setValue, value)
 import qualified Graphics.UI.Qtah.Core.QSettings as QSettings
 import           Graphics.UI.Qtah.Core.QVariant (toByteArray)
+import qualified Graphics.UI.Qtah.Core.QVariant as QVariant
 import           Graphics.UI.Qtah.Event (onEvent)
+import           Graphics.UI.Qtah.Gui.QCloseEvent (QCloseEvent)
 import           Graphics.UI.Qtah.Gui.QShowEvent (QShowEvent)
 import           Graphics.UI.Qtah.Widgets.QAbstractItemView (setAlternatingRowColors)
 import           Graphics.UI.Qtah.Widgets.QApplication (QApplication)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
 import           Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow,
-                                                       restoreState,
+                                                       restoreState, saveState,
                                                        setCentralWidget)
 import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import           Graphics.UI.Qtah.Widgets.QTabWidget (QTabWidget, addTab)
@@ -29,7 +35,8 @@ import           Graphics.UI.Qtah.Widgets.QTreeWidget (QTreeWidget)
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, restoreGeometry,
-                                                   setFocus, setWindowTitle)
+                                                   saveGeometry, setFocus,
+                                                   setWindowTitle)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs)
 
@@ -42,7 +49,11 @@ main :: IO ()
 main = do
     Config { dataDir = Just dataDir } <- loadConfig
     timeVar                           <- newTVarIO =<< getRealLocalTime
-    withApp $ \_ -> do
+    withApp $ \app -> do
+        setOrganizationDomain app "su.cblp"
+        setOrganizationName   app "ff"
+        setApplicationName    app "ff"
+        setApplicationVersion app "0.2"
         mainWindow <- mkMainWindow dataDir timeVar
         QWidget.show mainWindow
         exec
@@ -58,8 +69,9 @@ mkMainWindow dataDir timeVar = do
         addTab_ tabs "Agenda" =<< mkAgendaWidget dataDir timeVar
         pure tabs
     setWindowTitle this "ff"
+
+    -- https://wiki.qt.io/Saving_Window_Size_State
     void $ onEvent this $ \(_ :: QShowEvent) -> do
-        -- https://wiki.qt.io/Saving_Window_Size_State
         settings <- QSettings.new
         void
             $   value settings "mainWindowGeometry"
@@ -70,6 +82,16 @@ mkMainWindow dataDir timeVar = do
             >>= toByteArray
             >>= restoreState this
         pure False
+    void $ onEvent this $ \(_ :: QCloseEvent) -> do
+        settings <- QSettings.new
+        setValue settings "mainWindowGeometry"
+            =<< QVariant.newWithByteArray
+            =<< saveGeometry this
+        setValue settings "mainWindowState"
+            =<< QVariant.newWithByteArray
+            =<< saveState this
+        pure False
+
     pure this
 
 addTab_ :: QWidgetPtr widget => QTabWidget -> String -> widget -> IO ()
