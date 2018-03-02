@@ -13,6 +13,6 @@ executable:
 
     - ff
 
-  ghc-options: -dynamic
+  ghc-options: -dynamic -optl-pthread
   main: Main
   source-dirs: exe
