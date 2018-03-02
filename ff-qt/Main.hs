@@ -53,7 +53,7 @@ main = do
     Config { dataDir = Just dataDir } <- loadConfig
     timeVar                           <- newTVarIO =<< getRealLocalTime
     withApp $ \app -> do
-        setOrganizationDomain app "su.cblp"
+        setOrganizationDomain app "ff.cblp.su"
         setOrganizationName   app "ff"
         setApplicationName    app "ff"
         setApplicationVersion app $ showVersion version
