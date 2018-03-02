@@ -75,24 +75,24 @@ mkMainWindow dataDir timeVar = do
 
     -- https://wiki.qt.io/Saving_Window_Size_State
     void $ onEvent this $ \(_ :: QShowEvent) -> do
-        settings <- QSettings.new
-        void
-            $   value settings "mainWindowGeometry"
-            >>= toByteArray
-            >>= restoreGeometry this
-        void
-            $   value settings "mainWindowState"
-            >>= toByteArray
-            >>= restoreState this
+        withScopedPtr QSettings.new $ \settings -> do
+            void
+                $   value settings "mainWindowGeometry"
+                >>= toByteArray
+                >>= restoreGeometry this
+            void
+                $   value settings "mainWindowState"
+                >>= toByteArray
+                >>= restoreState this
         pure False
     void $ onEvent this $ \(_ :: QCloseEvent) -> do
-        settings <- QSettings.new
-        setValue settings "mainWindowGeometry"
-            =<< QVariant.newWithByteArray
-            =<< saveGeometry this
-        setValue settings "mainWindowState"
-            =<< QVariant.newWithByteArray
-            =<< saveState this
+        withScopedPtr QSettings.new $ \settings -> do
+            setValue settings "mainWindowGeometry"
+                =<< QVariant.newWithByteArray
+                =<< saveGeometry this
+            setValue settings "mainWindowState"
+                =<< QVariant.newWithByteArray
+                =<< saveState this
         pure False
 
     pure this
