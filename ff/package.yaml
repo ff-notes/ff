@@ -1,0 +1,20 @@
+name: ff
+version: '0.2'
+copyright:
+  2018 Yuriy Syrovetskiy, Nikolay Loginov
+
+executable:
+  main: Main
+  other-modules: []
+
+dependencies:
+  - base
+  - crdt
+  - directory
+  - filepath
+  - mainland-pretty
+  - mtl
+  - stm
+  - terminal-size
+
+  - ff-core

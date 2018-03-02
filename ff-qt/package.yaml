@@ -11,8 +11,7 @@ executable:
     - stm
     - text
 
-    - ff
+    - ff-core
 
   ghc-options: -dynamic -optl-pthread
   main: Main
-  source-dirs: exe

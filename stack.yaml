@@ -1,7 +1,8 @@
 resolver: lts-10.7
 
 packages:
-  - .
+  - ff
+  - ff-core
   - ff-qt
 
 extra-deps:

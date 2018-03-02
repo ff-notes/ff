@@ -13,9 +13,11 @@
 *.hp
 *.o
 *.prof
-/ff.cabal
 cabal-dev
 cabal.project.local
 cabal.sandbox.config
 dist
 dist-*
+ff-core.cabal
+ff-qt.cabal
+ff.cabal

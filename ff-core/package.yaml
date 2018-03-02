@@ -1,5 +1,4 @@
-name: ff
-version: '0.2'
+name: ff-core
 copyright:
   2018 Yuriy Syrovetskiy, Nikolay Loginov
 
@@ -22,22 +21,6 @@ library:
     - yaml
   source-dirs: lib
 
-executable:
-  dependencies:
-    - crdt
-    - directory
-    - filepath
-    - mtl
-    - mainland-pretty
-    - stm
-    - terminal-size
-
-    - ff
-
-  main: Main
-  other-modules: []
-  source-dirs: exe/ff
-
 tests:
   test:
     dependencies:
@@ -57,7 +40,7 @@ tests:
       - time
       - unordered-containers
 
-      - ff
+      - ff-core
 
     main: Main
     source-dirs: test
