@@ -16,3 +16,6 @@ executable:
 
   ghc-options: -dynamic -optl-pthread
   main: Main
+  other-modules:
+    - NoteModel
+    - Paths_ff_qt
