@@ -8,7 +8,9 @@ module NoteModel
     ) where
 
 import qualified Data.Text as Text
-import           Graphics.UI.Qtah.Gui.QStandardItem (QStandardItem)
+import           Graphics.UI.Qtah.Gui.QFont (setBold)
+import qualified Graphics.UI.Qtah.Gui.QFont as QFont
+import           Graphics.UI.Qtah.Gui.QStandardItem (QStandardItem, setFont)
 import qualified Graphics.UI.Qtah.Gui.QStandardItem as QStandardItem
 import           Graphics.UI.Qtah.Gui.QStandardItemModel (QStandardItemModel)
 import qualified Graphics.UI.Qtah.Gui.QStandardItemModel as QStandardItemModel
@@ -25,9 +27,13 @@ data NoteModel = NoteModel
 
 new :: IO NoteModel
 new = do
+    font <- QFont.new
+    setBold font True
+
     super <- QStandardItemModel.new
     let newSection label = do
             item <- QStandardItem.newWithText label
+            setFont                          item  font
             QStandardItemModel.appendRowItem super item
             pure item
     overdue  <- newSection "Overdue"
