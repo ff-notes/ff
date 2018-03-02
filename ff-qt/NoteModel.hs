@@ -1,39 +1,46 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module NoteModel
-    ( NoteModel
+    ( NoteModel (..)
     , addNote
     , new
     ) where
 
 import qualified Data.Text as Text
-import           Foreign.Hoppy.Runtime (CppPtr)
-import           Graphics.UI.Qtah.Core.QAbstractItemModel (QAbstractItemModelConstPtr,
-                                                           QAbstractItemModelPtr)
-import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr)
+import           Graphics.UI.Qtah.Gui.QStandardItem (QStandardItem)
 import qualified Graphics.UI.Qtah.Gui.QStandardItem as QStandardItem
-import           Graphics.UI.Qtah.Gui.QStandardItemModel (QStandardItemModel, QStandardItemModelConstPtr,
-                                                          QStandardItemModelPtr,
-                                                          appendRowItem)
+import           Graphics.UI.Qtah.Gui.QStandardItemModel (QStandardItemModel)
 import qualified Graphics.UI.Qtah.Gui.QStandardItemModel as QStandardItemModel
 
-import           FF.Types (NoteView (NoteView, text))
+import           FF (getUtcToday)
+import           FF.Types (ModeMap (..), NoteView (NoteView, text), modeSelect,
+                           taskMode)
 
-newtype NoteModel = NoteModel QStandardItemModel
-    deriving
-        ( CppPtr
-        , QAbstractItemModelConstPtr
-        , QAbstractItemModelPtr
-        , QObjectConstPtr
-        , QObjectPtr
-        , QStandardItemModelConstPtr
-        , QStandardItemModelPtr
-        )
+-- TODO(cblp, 2018-03-02) QAbstractItemModel? without doubling in QStandardItemModel
+data NoteModel = NoteModel
+    { super        :: QStandardItemModel
+    , modeSections :: ModeMap QStandardItem
+    }
 
 new :: IO NoteModel
-new = NoteModel <$> QStandardItemModel.new
+new = do
+    super <- QStandardItemModel.new
+    let newSection label = do
+            item <- QStandardItem.newWithText label
+            QStandardItemModel.appendRowItem super item
+            pure item
+    overdue  <- newSection "Overdue"
+    endToday <- newSection "Due today"
+    endSoon  <- newSection "Due soon"
+    actual   <- newSection "Actual"
+    starting <- newSection "Starting soon"
+    let modeSections = ModeMap {..}
+    pure NoteModel {..}
 
 addNote :: NoteModel -> NoteView -> IO ()
-addNote model NoteView { text } =
-    appendRowItem model =<< QStandardItem.newWithText (Text.unpack text)
+addNote NoteModel { modeSections } note@NoteView { text } = do
+    today <- getUtcToday
+    item  <- QStandardItem.newWithText $ Text.unpack text
+    let sectionItem = modeSelect modeSections $ taskMode today note
+    QStandardItem.appendRowItem sectionItem item

@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -133,6 +134,14 @@ singletonModeMap mode a = case mode of
 
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
 singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
+
+modeSelect :: ModeMap a -> TaskMode -> a
+modeSelect ModeMap {..} = \case
+    Overdue  -> overdue
+    EndToday -> endToday
+    EndSoon  -> endSoon
+    Actual   -> actual
+    Starting -> starting
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView

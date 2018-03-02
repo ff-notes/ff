@@ -6,7 +6,7 @@ module Main (main) where
 import           Control.Concurrent.STM (TVar, newTVarIO)
 import           Control.Monad (void)
 import           CRDT.LamportClock (LocalTime, getRealLocalTime)
-import           Data.Foldable (for_)
+import           Data.Foldable (traverse_)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec,
@@ -43,7 +43,7 @@ import           FF (loadActiveNotes)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
 
-import           NoteModel (addNote, new)
+import           NoteModel (addNote, new, super)
 import           Paths_ff_qt (version)
 
 main :: IO ()
@@ -105,12 +105,11 @@ mkAgendaWidget dataDir timeVar = do
     this  <- QTreeView.new
     setAlternatingRowColors this True
     setHeaderHidden         this True
-    setModel                this model
+    setModel                this (super model)
     void $ onEvent this $ \(_ :: QShowEvent) -> do
         setFocus this
         pure False
 
-    notes <- runStorage dataDir timeVar loadActiveNotes
-    for_ notes $ addNote model
+    runStorage dataDir timeVar loadActiveNotes >>= traverse_ (addNote model)
 
     pure this
