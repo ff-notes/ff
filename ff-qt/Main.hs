@@ -8,6 +8,7 @@ import           Control.Monad (void)
 import           CRDT.LamportClock (LocalTime, getRealLocalTime)
 import           Data.Foldable (for_)
 import qualified Data.Text as Text
+import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           Graphics.UI.Qtah.Core.QCoreApplication (exec,
                                                          setApplicationName,
@@ -45,6 +46,8 @@ import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
 import           FF.Types (NoteView (NoteView, text))
 
+import           Paths_ff_qt (version)
+
 main :: IO ()
 main = do
     Config { dataDir = Just dataDir } <- loadConfig
@@ -53,7 +56,7 @@ main = do
         setOrganizationDomain app "su.cblp"
         setOrganizationName   app "ff"
         setApplicationName    app "ff"
-        setApplicationVersion app "0.2"
+        setApplicationVersion app $ showVersion version
         mainWindow <- mkMainWindow dataDir timeVar
         QWidget.show mainWindow
         exec
