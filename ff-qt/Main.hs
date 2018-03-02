@@ -3,9 +3,9 @@
 
 module Main (main) where
 
-import           Control.Concurrent.STM (TVar, newTVarIO)
+import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad (void)
-import           CRDT.LamportClock (LocalTime, getRealLocalTime)
+import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (traverse_)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
@@ -44,7 +44,7 @@ import           FF (loadActiveNotes)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
 
-import           NoteModel (addNote, new, super)
+import           NoteModel (NoteModel (super), addNote, new)
 import           Paths_ff_qt (version)
 
 main :: IO ()
@@ -56,19 +56,23 @@ main = do
         setOrganizationName   app "ff"
         setApplicationName    app "ff"
         setApplicationVersion app $ showVersion version
-        mainWindow <- mkMainWindow dataDir timeVar
+
+        model <- NoteModel.new
+        runStorage dataDir timeVar loadActiveNotes >>= traverse_ (addNote model)
+
+        mainWindow <- mkMainWindow model
         QWidget.show mainWindow
         exec
 
 withApp :: (QApplication -> IO a) -> IO a
 withApp = withScopedPtr $ getArgs >>= QApplication.new
 
-mkMainWindow :: FilePath -> TVar LocalTime -> IO QMainWindow
-mkMainWindow dataDir timeVar = do
+mkMainWindow :: NoteModel -> IO QMainWindow
+mkMainWindow model = do
     this <- QMainWindow.new
     setCentralWidget this =<< do
         tabs <- QTabWidget.new
-        addTab_ tabs "Agenda" =<< mkAgendaWidget dataDir timeVar
+        addTab_ tabs "Agenda" =<< mkAgendaWidget model
         pure tabs
     setWindowTitle this "ff"
 
@@ -99,12 +103,9 @@ mkMainWindow dataDir timeVar = do
 addTab_ :: QWidgetPtr widget => QTabWidget -> String -> widget -> IO ()
 addTab_ tabs name widget = void $ addTab tabs widget name
 
-mkAgendaWidget :: FilePath -> TVar LocalTime -> IO QTreeView
-mkAgendaWidget dataDir timeVar = do
-    model <- NoteModel.new
-    runStorage dataDir timeVar loadActiveNotes >>= traverse_ (addNote model)
-
-    this  <- QTreeView.new
+mkAgendaWidget :: NoteModel -> IO QTreeView
+mkAgendaWidget model = do
+    this <- QTreeView.new
     setAlternatingRowColors this True
     setHeaderHidden         this True
     setModel                this (super model)
