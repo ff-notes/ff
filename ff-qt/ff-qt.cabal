@@ -1,0 +1,46 @@
+name:           ff-qt
+version:        0.2
+build-type:     Simple
+cabal-version:  >= 1.10
+
+executable ff-qt
+    default-language: Haskell2010
+    build-depends:
+          base
+        , crdt
+        , hoppy-runtime
+        , qtah
+        , stm
+        , text
+
+        , ff-qt-qtah
+
+        , ff-core
+
+    ghc-options: -dynamic -optl-pthread
+    main-is: Main.hs
+    other-modules:
+        NoteModel
+        Paths_ff_qt
+
+library
+
+library ff-qt-qtah
+    build-depends:
+          qtah
+    reexported-modules:
+          Graphics.UI.Qtah.Core.QCoreApplication      as QCoreApplication
+        , Graphics.UI.Qtah.Core.QSettings             as QSettings
+        , Graphics.UI.Qtah.Core.QVariant              as QVariant
+        , Graphics.UI.Qtah.Event                      as Qtah.Event
+        , Graphics.UI.Qtah.Gui.QCloseEvent            as QCloseEvent
+        , Graphics.UI.Qtah.Gui.QFont                  as QFont
+        , Graphics.UI.Qtah.Gui.QShowEvent             as QShowEvent
+        , Graphics.UI.Qtah.Gui.QStandardItem          as QStandardItem
+        , Graphics.UI.Qtah.Gui.QStandardItemModel     as QStandardItemModel
+        , Graphics.UI.Qtah.Widgets.QAbstractItemView  as QAbstractItemView
+        , Graphics.UI.Qtah.Widgets.QApplication       as QApplication
+        , Graphics.UI.Qtah.Widgets.QMainWindow        as QMainWindow
+        , Graphics.UI.Qtah.Widgets.QTabWidget         as QTabWidget
+        , Graphics.UI.Qtah.Widgets.QTreeView          as QTreeView
+        , Graphics.UI.Qtah.Widgets.QWidget            as QWidget

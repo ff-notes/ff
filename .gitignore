@@ -19,5 +19,4 @@ cabal.sandbox.config
 dist
 dist-*
 ff-core.cabal
-ff-qt.cabal
 ff.cabal

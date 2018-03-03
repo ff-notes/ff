@@ -9,35 +9,22 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (traverse_)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
-import           Graphics.UI.Qtah.Core.QCoreApplication (exec,
-                                                         setApplicationName,
-                                                         setApplicationVersion,
-                                                         setOrganizationDomain,
-                                                         setOrganizationName)
-import           Graphics.UI.Qtah.Core.QSettings (setValue, value)
-import qualified Graphics.UI.Qtah.Core.QSettings as QSettings
-import           Graphics.UI.Qtah.Core.QVariant (toByteArray)
-import qualified Graphics.UI.Qtah.Core.QVariant as QVariant
-import           Graphics.UI.Qtah.Event (onEvent)
-import           Graphics.UI.Qtah.Gui.QCloseEvent (QCloseEvent)
-import           Graphics.UI.Qtah.Gui.QShowEvent (QShowEvent)
-import           Graphics.UI.Qtah.Widgets.QAbstractItemView (setAlternatingRowColors,
-                                                             setModel)
-import           Graphics.UI.Qtah.Widgets.QApplication (QApplication)
-import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
-import           Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow,
-                                                       restoreState, saveState,
-                                                       setCentralWidget)
-import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
-import           Graphics.UI.Qtah.Widgets.QTabWidget (QTabWidget, addTab)
-import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
-import           Graphics.UI.Qtah.Widgets.QTreeView (QTreeView, expandAll,
-                                                     setHeaderHidden)
-import qualified Graphics.UI.Qtah.Widgets.QTreeView as QTreeView
-import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, restoreGeometry,
-                                                   saveGeometry, setFocus,
-                                                   setWindowTitle)
-import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
+import           QAbstractItemView (setAlternatingRowColors, setModel)
+import           QApplication (QApplication, new)
+import           QCloseEvent (QCloseEvent)
+import           QCoreApplication (exec, setApplicationName,
+                                   setApplicationVersion, setOrganizationDomain,
+                                   setOrganizationName)
+import           QMainWindow (QMainWindow, new, restoreState, saveState,
+                              setCentralWidget)
+import           QSettings (new, setValue, value)
+import           QShowEvent (QShowEvent)
+import           QTabWidget (QTabWidget, addTab, new)
+import           Qtah.Event (onEvent)
+import           QTreeView (QTreeView, expandAll, new, setHeaderHidden)
+import           QVariant (newWithByteArray, toByteArray)
+import           QWidget (QWidgetPtr, restoreGeometry, saveGeometry, setFocus,
+                          setWindowTitle, show)
 import           System.Environment (getArgs)
 
 import           FF (loadActiveNotes)

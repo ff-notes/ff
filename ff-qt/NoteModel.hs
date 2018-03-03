@@ -4,16 +4,14 @@
 module NoteModel
     ( NoteModel (..)
     , addNote
-    , new
+    , NoteModel.new
     ) where
 
 import qualified Data.Text as Text
-import           Graphics.UI.Qtah.Gui.QFont (setBold)
-import qualified Graphics.UI.Qtah.Gui.QFont as QFont
-import           Graphics.UI.Qtah.Gui.QStandardItem (QStandardItem, setFont)
-import qualified Graphics.UI.Qtah.Gui.QStandardItem as QStandardItem
-import           Graphics.UI.Qtah.Gui.QStandardItemModel (QStandardItemModel)
-import qualified Graphics.UI.Qtah.Gui.QStandardItemModel as QStandardItemModel
+import           QFont (new, setBold)
+import           QStandardItem (QStandardItem, appendRowItem, newWithText,
+                                setFont)
+import           QStandardItemModel (QStandardItemModel, appendRowItem, new)
 
 import           FF (getUtcToday)
 import           FF.Types (ModeMap (..), NoteView (NoteView, text), modeSelect,
