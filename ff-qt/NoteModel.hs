@@ -10,7 +10,7 @@ module NoteModel
 import qualified Data.Text as Text
 import           QFont (new, setBold)
 import           QStandardItem (QStandardItem, appendRowItem, newWithText,
-                                setFont)
+                                setEditable, setFont)
 import           QStandardItemModel (QStandardItemModel, appendRowItem, new)
 
 import           FF (getUtcToday)
@@ -31,6 +31,7 @@ new = do
     super <- QStandardItemModel.new
     let newSection label = do
             item <- QStandardItem.newWithText label
+            setEditable                      item  False
             setFont                          item  font
             QStandardItemModel.appendRowItem super item
             pure item
