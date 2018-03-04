@@ -24,12 +24,17 @@ executable ff-qt
         Paths_ff_qt
 
 library
+    default-language: Haskell2010
 
 library ff-qt-qtah
     build-depends:
           qtah
+    default-language: Haskell2010
     reexported-modules:
-          Graphics.UI.Qtah.Core.QCoreApplication      as QCoreApplication
+          Graphics.UI.Qtah.Core.QAbstractItemModel    as QAbstractItemModel
+        , Graphics.UI.Qtah.Core.QCoreApplication      as QCoreApplication
+        , Graphics.UI.Qtah.Core.QModelIndex           as QModelIndex
+        , Graphics.UI.Qtah.Core.QObject               as QObject
         , Graphics.UI.Qtah.Core.QSettings             as QSettings
         , Graphics.UI.Qtah.Core.QVariant              as QVariant
         , Graphics.UI.Qtah.Event                      as Qtah.Event

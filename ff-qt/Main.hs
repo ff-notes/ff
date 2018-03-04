@@ -9,7 +9,8 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (traverse_)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
-import           QAbstractItemView (setAlternatingRowColors, setModel)
+import           QAbstractItemView (setAlternatingRowColors, setCurrentIndex,
+                                    setModel)
 import           QApplication (QApplication, new)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
@@ -19,6 +20,8 @@ import           QMainWindow (QMainWindow, new, restoreState, saveState,
                               setCentralWidget)
 import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
+import           QStandardItem (index)
+import           QStandardItemModel (item)
 import           QTabWidget (QTabWidget, addTab, new)
 import           Qtah.Event (onEvent)
 import           QTreeView (QTreeView, expandAll, new, setHeaderHidden)
@@ -98,6 +101,7 @@ mkAgendaWidget model = do
     setModel                this (super model)
     void $ onEvent this $ \(_ :: QShowEvent) -> do
         setFocus this
+        setCurrentIndex this =<< index =<< item (super model) 0
         pure False
     expandAll this
 
