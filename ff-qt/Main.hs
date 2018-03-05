@@ -10,7 +10,7 @@ import           Data.Foldable (traverse_)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QAbstractItemView (setAlternatingRowColors, setCurrentIndex,
-                                    setModel)
+                                    setItemDelegate, setModel)
 import           QApplication (QApplication, new)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
@@ -22,6 +22,7 @@ import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
 import           QStandardItem (index)
 import           QStandardItemModel (item)
+import           QStyledItemDelegate (new)
 import           QTabWidget (QTabWidget, addTab, new)
 import           Qtah.Event (onEvent)
 import           QTreeView (QTreeView, expandAll, new, setHeaderHidden)
@@ -98,7 +99,8 @@ mkAgendaWidget model = do
     this <- QTreeView.new
     setAlternatingRowColors this True
     setHeaderHidden         this True
-    setModel                this (super model)
+    setItemDelegate this =<< QStyledItemDelegate.new
+    setModel this (super model)
     void $ onEvent this $ \(_ :: QShowEvent) -> do
         setFocus this
         setCurrentIndex this =<< index =<< item (super model) 0

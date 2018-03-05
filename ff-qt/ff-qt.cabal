@@ -31,21 +31,22 @@ library ff-qt-qtah
           qtah
     default-language: Haskell2010
     reexported-modules:
-          Graphics.UI.Qtah.Core.QAbstractItemModel    as QAbstractItemModel
-        , Graphics.UI.Qtah.Core.QCoreApplication      as QCoreApplication
-        , Graphics.UI.Qtah.Core.QModelIndex           as QModelIndex
-        , Graphics.UI.Qtah.Core.QObject               as QObject
-        , Graphics.UI.Qtah.Core.QSettings             as QSettings
-        , Graphics.UI.Qtah.Core.QVariant              as QVariant
-        , Graphics.UI.Qtah.Event                      as Qtah.Event
-        , Graphics.UI.Qtah.Gui.QCloseEvent            as QCloseEvent
-        , Graphics.UI.Qtah.Gui.QFont                  as QFont
-        , Graphics.UI.Qtah.Gui.QShowEvent             as QShowEvent
-        , Graphics.UI.Qtah.Gui.QStandardItem          as QStandardItem
-        , Graphics.UI.Qtah.Gui.QStandardItemModel     as QStandardItemModel
-        , Graphics.UI.Qtah.Widgets.QAbstractItemView  as QAbstractItemView
-        , Graphics.UI.Qtah.Widgets.QApplication       as QApplication
-        , Graphics.UI.Qtah.Widgets.QMainWindow        as QMainWindow
-        , Graphics.UI.Qtah.Widgets.QTabWidget         as QTabWidget
-        , Graphics.UI.Qtah.Widgets.QTreeView          as QTreeView
-        , Graphics.UI.Qtah.Widgets.QWidget            as QWidget
+          Graphics.UI.Qtah.Core.QAbstractItemModel      as QAbstractItemModel
+        , Graphics.UI.Qtah.Core.QCoreApplication        as QCoreApplication
+        , Graphics.UI.Qtah.Core.QModelIndex             as QModelIndex
+        , Graphics.UI.Qtah.Core.QObject                 as QObject
+        , Graphics.UI.Qtah.Core.QSettings               as QSettings
+        , Graphics.UI.Qtah.Core.QVariant                as QVariant
+        , Graphics.UI.Qtah.Event                        as Qtah.Event
+        , Graphics.UI.Qtah.Gui.QCloseEvent              as QCloseEvent
+        , Graphics.UI.Qtah.Gui.QFont                    as QFont
+        , Graphics.UI.Qtah.Gui.QShowEvent               as QShowEvent
+        , Graphics.UI.Qtah.Gui.QStandardItem            as QStandardItem
+        , Graphics.UI.Qtah.Gui.QStandardItemModel       as QStandardItemModel
+        , Graphics.UI.Qtah.Widgets.QAbstractItemView    as QAbstractItemView
+        , Graphics.UI.Qtah.Widgets.QApplication         as QApplication
+        , Graphics.UI.Qtah.Widgets.QMainWindow          as QMainWindow
+        , Graphics.UI.Qtah.Widgets.QStyledItemDelegate  as QStyledItemDelegate
+        , Graphics.UI.Qtah.Widgets.QTabWidget           as QTabWidget
+        , Graphics.UI.Qtah.Widgets.QTreeView            as QTreeView
+        , Graphics.UI.Qtah.Widgets.QWidget              as QWidget
