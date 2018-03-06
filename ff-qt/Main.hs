@@ -11,9 +11,10 @@ import           Data.Foldable (traverse_)
 import           Data.FullMap (FullMap (FullMap))
 import qualified Data.FullMap as FullMap
 import qualified Data.Text as Text
-import           Data.Time (toGregorian)
+import           Data.Time (Day, toGregorian)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           QAbstractSpinBox (setReadOnly)
 import           QApplication (QApplication, new)
 import           QBoxLayout (QBoxLayoutPtr, addLayout, addStretch, addWidget,
                              insertWidget)
@@ -23,9 +24,8 @@ import           QCoreApplication (exec, setApplicationName,
                                    setOrganizationName)
 import           QDate (newWithYearMonthDay)
 import           QDateEdit (newWithDate)
-import           QDateTimeEdit (displayFormat, setDisplayFormat)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
-import           QHBoxLayout (new)
+import           QHBoxLayout (QHBoxLayout, new)
 import           QLabel (newWithText)
 import           QLayout (QLayoutConstPtr, count)
 import           QMainWindow (QMainWindow, new, restoreState, saveState,
@@ -38,7 +38,7 @@ import           QToolBox (QToolBox, QToolBoxPtr, addItem, new, setItemText)
 import           QVariant (newWithByteArray, toByteArray)
 import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
-                          setEnabled, setWindowTitle)
+                          setWindowTitle)
 import qualified QWidget
 import           System.Environment (getArgs)
 
@@ -125,7 +125,7 @@ newAgendaWidget (Storage dataDir timeVar) = do
     this <- QToolBox.new
     void $ onEvent this $ \(_ :: QShowEvent) ->
         -- TODO set the first item as current
-        pure False
+                                                pure False
     modeSections <- sequence . FullMap $ newSection this
     runStorage dataDir timeVar loadActiveNotes
         >>= traverse_ (addNote this modeSections)
@@ -134,46 +134,55 @@ newAgendaWidget (Storage dataDir timeVar) = do
 newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
 newSection this section = do
     widget <- QWidget.new
-    _ <- addItem this widget label
-    box <- QVBoxLayout.newWithParent widget
+    _      <- addItem this widget label
+    box    <- QVBoxLayout.newWithParent widget
     addStretch box
     pure box
-  where
-    label = sectionLabel section 0
+    where label = sectionLabel section 0
 
 addNote
-    :: (QToolBoxPtr toolbox, QBoxLayoutPtr layout)
-    => toolbox -> ModeMap layout -> NoteView -> IO ()
+    :: QBoxLayoutPtr layout => QToolBox -> ModeMap layout -> NoteView -> IO ()
 addNote this modeSections note = do
     today <- getUtcToday
-    item <- newNoteWidget note
-    let mode = taskMode today note
+    item  <- newNoteWidget note
+    let mode       = taskMode today note
     let sectionBox = FullMap.lookup mode modeSections
     n <- sectionSize sectionBox
     insertWidget sectionBox n item
-    setItemText
-        this (FullMap.lookup mode sectionIndices) (sectionLabel mode $ n + 1)
+    setItemText this
+                (FullMap.lookup mode sectionIndices)
+                (sectionLabel mode $ n + 1)
+
+newDateWidget :: String -> Day -> IO QHBoxLayout
+newDateWidget label date = do
+    box <- QHBoxLayout.new
+    addWidget box =<< QLabel.newWithText label
+    addWidget box =<< do
+        dateEdit <-
+            QDateEdit.newWithDate
+                =<< QDate.newWithYearMonthDay (fromInteger y) m d
+        setReadOnly dateEdit True
+        pure dateEdit
+    pure box
+    where (y, m, d) = toGregorian date
 
 newNoteWidget :: NoteView -> IO QFrame
-newNoteWidget NoteView{text, start} = do
+newNoteWidget NoteView { text, start, end } = do
     this <- QFrame.new
     setFrameShape this StyledPanel
-    do  box <- QVBoxLayout.newWithParent this
+    do
+        box <- QVBoxLayout.newWithParent this
         addWidget box =<< QLabel.newWithText (Text.unpack text)
         addLayout box =<< do
             fieldsBox <- QHBoxLayout.new
-            addWidget fieldsBox =<< do
-                dateEdit <- QDateEdit.newWithDate
-                    =<< QDate.newWithYearMonthDay
-                            (fromInteger startYear) startMonth startDay
-                format <- displayFormat dateEdit
-                setDisplayFormat dateEdit $ "'Start:' " ++ format
-                setEnabled dateEdit False
-                pure dateEdit
+            addLayout fieldsBox =<< newDateWidget "Start:" start
+            case end of
+                Just endDate ->
+                    addLayout fieldsBox =<< newDateWidget "Deadline:" endDate
+                Nothing -> pure ()
+            addStretch fieldsBox
             pure fieldsBox
     pure this
-  where
-    (startYear, startMonth, startDay) = toGregorian start
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int
