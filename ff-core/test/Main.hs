@@ -43,8 +43,9 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
-import           FF.Types (ModeMap (..), Note (..), NoteView (..), Sample (..),
-                           Status (Active), emptySampleMap)
+import           FF.Types (Note (..), NoteView (..), Sample (..),
+                           Status (Active), TaskMode (Overdue), emptySampleMap,
+                           singletonSampleMap)
 
 import           ArbitraryOrphans ()
 
@@ -136,19 +137,20 @@ case_not_exist = do
 case_smoke :: IO ()
 case_smoke = do
     (agenda, fs') <- runTestM fs123 $ getSamples ui agendaLimit today
-    agenda @?= emptySampleMap
-        { overdue = Sample
-            { notes = [ NoteView
-                            { nid    = DocId "1"
-                            , status = Active
-                            , text   = "helloworld"
-                            , start  = fromGregorian 22 11 24
-                            , end    = Just $ fromGregorian 17 06 19
-                            }
-                      ]
-            , total = 1
-            }
-        }
+    agenda @?=
+        singletonSampleMap
+            Overdue
+            Sample
+                { notes = [ NoteView
+                                { nid    = DocId "1"
+                                , status = Active
+                                , text   = "helloworld"
+                                , start  = fromGregorian 22 11 24
+                                , end    = Just $ fromGregorian 17 06 19
+                                }
+                          ]
+                , total = 1
+                }
     fs' @?= fs123
 
 fs123 :: Dir

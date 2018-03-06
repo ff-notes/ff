@@ -1,9 +1,10 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module FF.UI where
 
+import qualified Data.FullMap as FullMap
 import           Data.List (genericLength)
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
@@ -12,7 +13,8 @@ import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap (..), NoteView (..), Sample (..), omitted)
+import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
+                           omitted)
 
 type Template a = a -> String
 
@@ -29,36 +31,45 @@ pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
 samplesInSections :: Int -> ModeMap Sample -> Doc
-samplesInSections limit samples@ModeMap {..} = stack $
-    [ sample labelOverdue  "ff search --overdue"  overdue
-    , sample labelEndToday "ff search --today"    endToday
-    , sample labelEndSoon  "ff search --soon"     endSoon
-    , sample labelActual   "ff search --actual"   actual
-    , sample labelStarting "ff search --starting" starting
+samplesInSections limit samples = stack $
+    [ sample samples Overdue
+    , sample samples EndToday
+    , sample samples EndSoon
+    , sample samples Actual
+    , sample samples Starting
     ] ++
     [ (show numOmitted <> " task(s) omitted. To see more tasks, run:")
       .= ("ff --limit=" <> show (max 0 limit + 10))
     | numOmitted > 0
     ]
   where
-    labelOverdue  = "Overdue:"
-    labelEndToday = "Due today:"
-    labelEndSoon  = "Due soon:"
-    labelActual   = "Actual:"
-    labelStarting = "Starting soon:"
-
     numOmitted = sum $ fmap omitted samples
 
-sample :: String -> String -> Sample -> Doc
-sample _ _ Sample { total = 0 } = mempty
-sample label cmdToSeeAll Sample { total, notes } =
-    withHeader label
-        .  stack
-        $  map ((star <>) . indent 1 . noteView) notes
-        ++ [ toSeeAllLabel .= Pretty.text cmdToSeeAll | count /= total ]
+sample :: ModeMap Sample -> TaskMode -> Doc
+sample samples mode = sample' $ FullMap.lookup mode samples
   where
-    count         = genericLength notes
-    toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
+    sample' Sample{ total = 0 } = mempty
+    sample' Sample{ total, notes } =
+        withHeader (labels mode) . stack $
+            map ((star <>) . indent 1 . noteView) notes
+            ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
+                | count /= total
+                ]
+      where
+        toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
+        count         = genericLength notes
+    labels = \case
+        Overdue  -> "Overdue:"
+        EndToday -> "Due today:"
+        EndSoon  -> "Due soon:"
+        Actual   -> "Actual:"
+        Starting -> "Starting soon:"
+    cmdToSeeAll = \case
+        Overdue  -> "ff search --overdue"
+        EndToday -> "ff search --today"
+        EndSoon  -> "ff search --soon"
+        Actual   -> "ff search --actual"
+        Starting -> "ff search --starting"
 
 noteView :: NoteView -> Doc
 noteView NoteView { nid, text, start, end } = noteText </> fieldsSep fields

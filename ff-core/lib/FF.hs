@@ -31,6 +31,8 @@ import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
+import           Data.FullMap (FullMap (FullMap))
+import qualified Data.FullMap as FullMap
 import           Data.List (sortOn)
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
@@ -51,9 +53,9 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, MonadStorage, Storage,
                              listDocuments, load, modify, saveNew)
-import           FF.Types (ModeMap (..), Note (..), NoteId, NoteView (..),
+import           FF.Types (ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           noteView, singletonTaskModeMap)
+                           TaskMode (..), noteView, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -102,19 +104,25 @@ splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
 takeSamples :: Maybe StdGen -> Maybe Int -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples mGen limit ModeMap {..} =
-    (`evalState` limit)
-        $   ModeMap
-        <$> sample end   overdue
-        <*> sample end   endToday
-        <*> sample end   endSoon
-        <*> sample start actual
-        <*> sample start starting
+takeSamples mGen limit modes =
+    (`evalState` limit) $ do
+        overdue  <- sample end   Overdue
+        endToday <- sample end   EndToday
+        endSoon  <- sample end   EndSoon
+        actual   <- sample start Actual
+        starting <- sample start Starting
+        pure . FullMap $ \case
+            Overdue  -> overdue
+            EndToday -> endToday
+            EndSoon  -> endSoon
+            Actual   -> actual
+            Starting -> starting
   where
-    sample key xs = state $ \case
+    sample key mode = state $ \case
         Just n  -> (Sample (take n xs') (fromIntegral len), Just $ n - len)
         Nothing -> (Sample xs' (fromIntegral len), Nothing)
       where
+        xs = FullMap.lookup mode modes
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism
         xs' = case mGen of

@@ -1,5 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Main (main) where
@@ -8,6 +8,8 @@ import           Control.Concurrent.STM (TVar, newTVarIO)
 import           Control.Monad (void)
 import           CRDT.LamportClock (LocalTime, getRealLocalTime)
 import           Data.Foldable (traverse_)
+import           Data.FullMap (FullMap (FullMap))
+import qualified Data.FullMap as FullMap
 import qualified Data.Text as Text
 import           Data.Time (toGregorian)
 import           Data.Version (showVersion)
@@ -40,8 +42,7 @@ import           System.Environment (getArgs)
 import           FF (getUtcToday, loadActiveNotes)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
-import           FF.Types (ModeMap (..), NoteView (..), TaskMode (..),
-                           modeSelect, taskMode)
+import           FF.Types (ModeMap, NoteView (..), TaskMode (..), taskMode)
 
 import           Paths_ff_qt (version)
 
@@ -102,25 +103,19 @@ addTab_ :: QWidgetPtr widget => QTabWidget -> String -> widget -> IO ()
 addTab_ tabs name widget = void $ addTab tabs widget name
 
 sectionLabels :: ModeMap String
-sectionLabels = ModeMap
-    { overdue  = "Overdue"
-    , endToday = "Due today"
-    , endSoon  = "Due soon"
-    , actual   = "Actual"
-    , starting = "Starting soon"
-    }
+sectionLabels = FullMap $ \case
+    Overdue  -> "Overdue"
+    EndToday -> "Due today"
+    EndSoon  -> "Due soon"
+    Actual   -> "Actual"
+    Starting -> "Starting soon"
 
 sectionIndices :: ModeMap Int
-sectionIndices = ModeMap
-    { overdue  = 0
-    , endToday = 1
-    , endSoon  = 2
-    , actual   = 3
-    , starting = 4
-    }
+sectionIndices = FullMap fromEnum
 
 sectionLabel :: TaskMode -> Int -> String
-sectionLabel mode n = concat [modeSelect sectionLabels mode, " (", show n, ")"]
+sectionLabel mode n =
+    concat [FullMap.lookup mode sectionLabels, " (", show n, ")"]
 
 newAgendaWidget :: Storage -> IO QToolBox
 newAgendaWidget (Storage dataDir timeVar) = do
@@ -128,17 +123,9 @@ newAgendaWidget (Storage dataDir timeVar) = do
     void $ onEvent this $ \(_ :: QShowEvent) ->
         -- TODO set the first item as current
         pure False
-
-    overdue  <- newSection this Overdue
-    endToday <- newSection this EndToday
-    endSoon  <- newSection this EndSoon
-    actual   <- newSection this Actual
-    starting <- newSection this Starting
-    let modeSections = ModeMap{..}
-
+    modeSections <- sequence . FullMap $ newSection this
     runStorage dataDir timeVar loadActiveNotes
         >>= traverse_ (addNote this modeSections)
-
     pure this
 
 newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
@@ -158,11 +145,11 @@ addNote this modeSections note = do
     today <- getUtcToday
     item <- newNoteWidget note
     let mode = taskMode today note
-    let sectionBox = modeSelect modeSections mode
+    let sectionBox = FullMap.lookup mode modeSections
     n <- sectionSize sectionBox
     insertWidget sectionBox n item
     setItemText
-        this (modeSelect sectionIndices mode) (sectionLabel mode $ n + 1)
+        this (FullMap.lookup mode sectionIndices) (sectionLabel mode $ n + 1)
 
 newNoteWidget :: NoteView -> IO QFrame
 newNoteWidget NoteView{text, start} = do

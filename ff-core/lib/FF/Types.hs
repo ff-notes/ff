@@ -16,6 +16,8 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
+import           Data.FullMap (FullMap (FullMap))
+import qualified Data.FullMap as FullMap
 import           Data.List (genericLength)
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
@@ -82,7 +84,10 @@ data TaskMode
     | EndSoon   -- ^ started, end in future
     | Actual    -- ^ started, no end
     | Starting  -- ^ starting in future
-    deriving (Eq, Ord, Show)
+    deriving (Bounded, Enum, Eq, Ord, Show)
+
+taskModes :: [TaskMode]
+taskModes = [minBound..]
 
 taskMode :: Day -> NoteView -> TaskMode
 taskMode today NoteView { start, end = Nothing } =
@@ -92,57 +97,17 @@ taskMode today NoteView { start, end = Just end } = case compare end today of
     EQ -> EndToday
     GT -> if start <= today then EndSoon else Starting
 
--- TODO implement as (TaskMode -> a)
-data ModeMap a = ModeMap
-    { overdue  :: a
-    , endToday :: a
-    , endSoon  :: a
-    , actual   :: a
-    , starting :: a
-    }
-    deriving (Eq, Show, Functor, Foldable)
-
-instance Semigroup a => Semigroup (ModeMap a) where
-    ModeMap o1 t1 e1 a1 s1 <> ModeMap o2 t2 e2 a2 s2 =
-        ModeMap (o1 <> o2) (t1 <> t2) (e1 <> e2) (a1 <> a2) (s1 <> s2)
-
-instance (Semigroup a, Monoid a) => Monoid (ModeMap a) where
-    mempty = ModeMap
-        { overdue  = mempty
-        , endToday = mempty
-        , endSoon  = mempty
-        , actual   = mempty
-        , starting = mempty
-        }
-    mappend = (<>)
+type ModeMap = FullMap TaskMode
 
 emptySampleMap :: ModeMap Sample
-emptySampleMap = ModeMap
-    { overdue  = emptySample
-    , endToday = emptySample
-    , endSoon  = emptySample
-    , actual   = emptySample
-    , starting = emptySample
-    }
+emptySampleMap = FullMap $ const emptySample
 
-singletonModeMap :: (Semigroup a, Monoid a) => TaskMode -> a -> ModeMap a
-singletonModeMap mode a = case mode of
-    Overdue  -> mempty { overdue = a }
-    EndToday -> mempty { endToday = a }
-    EndSoon  -> mempty { endSoon = a }
-    Actual   -> mempty { actual = a }
-    Starting -> mempty { starting = a }
+singletonSampleMap :: TaskMode -> Sample -> ModeMap Sample
+singletonSampleMap mode sample = FullMap.singleton mode sample emptySample
 
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
-singletonTaskModeMap today note = singletonModeMap (taskMode today note) [note]
-
-modeSelect :: ModeMap a -> TaskMode -> a
-modeSelect ModeMap {..} = \case
-    Overdue  -> overdue
-    EndToday -> endToday
-    EndSoon  -> endSoon
-    Actual   -> actual
-    Starting -> starting
+singletonTaskModeMap today note =
+    FullMap.singleton (taskMode today note) [note] mempty
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
