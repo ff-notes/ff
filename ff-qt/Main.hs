@@ -35,7 +35,7 @@ import           QToolBox (QToolBox, QToolBoxPtr, addItem, new, setItemText)
 import           QVariant (newWithByteArray, toByteArray)
 import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
-                          setWindowTitle)
+                          setEnabled, setWindowTitle)
 import qualified QWidget
 import           System.Environment (getArgs)
 
@@ -157,10 +157,12 @@ newNoteWidget NoteView{text, start} = do
     setFrameShape this StyledPanel
     do  box <- QVBoxLayout.newWithParent this
         addWidget box =<< QLabel.newWithText (Text.unpack text)
-        addWidget box
-            =<< QDateEdit.newWithDate
-            =<< QDate.newWithYearMonthDay
-                    (fromInteger startYear) startMonth startDay
+        addWidget box =<< do
+            dateEdit <- QDateEdit.newWithDate
+                =<< QDate.newWithYearMonthDay
+                        (fromInteger startYear) startMonth startDay
+            setEnabled dateEdit False
+            pure dateEdit
     pure this
   where
     (startYear, startMonth, startDay) = toGregorian start
