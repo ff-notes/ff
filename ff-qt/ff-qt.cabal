@@ -46,6 +46,7 @@ library ff-qt-qtah
         , Graphics.UI.Qtah.Widgets.QApplication         as QApplication
         , Graphics.UI.Qtah.Widgets.QBoxLayout           as QBoxLayout
         , Graphics.UI.Qtah.Widgets.QLabel               as QLabel
+        , Graphics.UI.Qtah.Widgets.QLayout              as QLayout
         , Graphics.UI.Qtah.Widgets.QMainWindow          as QMainWindow
         , Graphics.UI.Qtah.Widgets.QStyledItemDelegate  as QStyledItemDelegate
         , Graphics.UI.Qtah.Widgets.QTabWidget           as QTabWidget

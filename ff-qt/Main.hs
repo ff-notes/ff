@@ -12,12 +12,13 @@ import qualified Data.Text as Text
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QApplication (QApplication, new)
-import           QBoxLayout (addWidget)
+import           QBoxLayout (addStretch, insertWidget)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
                                    setApplicationVersion, setOrganizationDomain,
                                    setOrganizationName)
 import           QLabel (QLabel, newWithText)
+import           QLayout (QLayoutConstPtr, count)
 import           QMainWindow (QMainWindow, new, restoreState, saveState,
                               setCentralWidget)
 import           QSettings (new, setValue, value)
@@ -105,7 +106,9 @@ newAgendaWidget (Storage dataDir timeVar) = do
     let newSection label = do
             section <- QWidget.new
             _ <- addItem this section label
-            QVBoxLayout.newWithParent section
+            box <- QVBoxLayout.newWithParent section
+            addStretch box
+            pure box
 
     overdue  <- newSection "Overdue"
     endToday <- newSection "Due today"
@@ -117,8 +120,9 @@ newAgendaWidget (Storage dataDir timeVar) = do
     let addNote note@NoteView{text} = do
             today <- getUtcToday
             item <- newNoteWidgetWithText $ Text.unpack text
-            let sectionItem = modeSelect modeSections $ taskMode today note
-            addWidget sectionItem item
+            let section = modeSelect modeSections $ taskMode today note
+            n <- noteSectionCount section
+            insertWidget section n item
 
     runStorage dataDir timeVar loadActiveNotes >>= traverse_ addNote
 
@@ -126,3 +130,7 @@ newAgendaWidget (Storage dataDir timeVar) = do
 
 newNoteWidgetWithText :: String -> IO QLabel
 newNoteWidgetWithText = QLabel.newWithText
+
+-- Because last item is always a stretch.
+noteSectionCount :: QLayoutConstPtr layout => layout -> IO Int
+noteSectionCount layout = pred <$> count layout
