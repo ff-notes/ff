@@ -9,14 +9,17 @@ import           Control.Monad (void)
 import           CRDT.LamportClock (LocalTime, getRealLocalTime)
 import           Data.Foldable (traverse_)
 import qualified Data.Text as Text
+import           Data.Time (toGregorian)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QApplication (QApplication, new)
-import           QBoxLayout (addStretch, addWidget, insertWidget)
+import           QBoxLayout (QBoxLayoutPtr, addStretch, addWidget, insertWidget)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
                                    setApplicationVersion, setOrganizationDomain,
                                    setOrganizationName)
+import           QDate (newWithYearMonthDay)
+import           QDateEdit (newWithDate)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
 import           QLabel (newWithText)
 import           QLayout (QLayoutConstPtr, count)
@@ -26,9 +29,9 @@ import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
 import           QTabWidget (QTabWidget, addTab, new)
 import           Qtah.Event (onEvent)
-import           QToolBox (QToolBox, addItem, new, setItemText)
+import           QToolBox (QToolBox, QToolBoxPtr, addItem, new, setItemText)
 import           QVariant (newWithByteArray, toByteArray)
-import           QVBoxLayout (newWithParent)
+import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
                           setWindowTitle)
 import qualified QWidget
@@ -37,8 +40,8 @@ import           System.Environment (getArgs)
 import           FF (getUtcToday, loadActiveNotes)
 import           FF.Config (Config (Config, dataDir), loadConfig)
 import           FF.Storage (runStorage)
-import           FF.Types (ModeMap (..), NoteView (NoteView, text),
-                           TaskMode (..), modeSelect, taskMode)
+import           FF.Types (ModeMap (..), NoteView (..), TaskMode (..),
+                           modeSelect, taskMode)
 
 import           Paths_ff_qt (version)
 
@@ -126,45 +129,54 @@ newAgendaWidget (Storage dataDir timeVar) = do
         -- TODO set the first item as current
         pure False
 
-    let newSection section = do
-            widget <- QWidget.new
-            _ <- addItem this widget label
-            box <- QVBoxLayout.newWithParent widget
-            addStretch box
-            pure box
-          where
-            label = sectionLabel section 0
-
-    overdue  <- newSection Overdue
-    endToday <- newSection EndToday
-    endSoon  <- newSection EndSoon
-    actual   <- newSection Actual
-    starting <- newSection Starting
+    overdue  <- newSection this Overdue
+    endToday <- newSection this EndToday
+    endSoon  <- newSection this EndSoon
+    actual   <- newSection this Actual
+    starting <- newSection this Starting
     let modeSections = ModeMap{..}
 
-    let addNote note@NoteView{text} = do
-            today <- getUtcToday
-            item <- newNoteWidgetWithText $ Text.unpack text
-            let mode = taskMode today note
-            let sectionBox = modeSelect modeSections mode
-            n <- sectionSize sectionBox
-            insertWidget sectionBox n item
-            setItemText
-                this
-                (modeSelect sectionIndices mode)
-                (sectionLabel mode $ n + 1)
-
-    runStorage dataDir timeVar loadActiveNotes >>= traverse_ addNote
+    runStorage dataDir timeVar loadActiveNotes
+        >>= traverse_ (addNote this modeSections)
 
     pure this
 
-newNoteWidgetWithText :: String -> IO QFrame
-newNoteWidgetWithText text = do
+newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
+newSection this section = do
+    widget <- QWidget.new
+    _ <- addItem this widget label
+    box <- QVBoxLayout.newWithParent widget
+    addStretch box
+    pure box
+  where
+    label = sectionLabel section 0
+
+addNote
+    :: (QToolBoxPtr toolbox, QBoxLayoutPtr layout)
+    => toolbox -> ModeMap layout -> NoteView -> IO ()
+addNote this modeSections note = do
+    today <- getUtcToday
+    item <- newNoteWidget note
+    let mode = taskMode today note
+    let sectionBox = modeSelect modeSections mode
+    n <- sectionSize sectionBox
+    insertWidget sectionBox n item
+    setItemText
+        this (modeSelect sectionIndices mode) (sectionLabel mode $ n + 1)
+
+newNoteWidget :: NoteView -> IO QFrame
+newNoteWidget NoteView{text, start} = do
     this <- QFrame.new
     setFrameShape this StyledPanel
-    box <- QVBoxLayout.newWithParent this
-    addWidget box =<< QLabel.newWithText text
+    do  box <- QVBoxLayout.newWithParent this
+        addWidget box =<< QLabel.newWithText (Text.unpack text)
+        addWidget box
+            =<< QDateEdit.newWithDate
+            =<< QDate.newWithYearMonthDay
+                    (fromInteger startYear) startMonth startDay
     pure this
+  where
+    (startYear, startMonth, startDay) = toGregorian start
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int

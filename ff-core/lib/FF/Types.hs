@@ -92,6 +92,7 @@ taskMode today NoteView { start, end = Just end } = case compare end today of
     EQ -> EndToday
     GT -> if start <= today then EndSoon else Starting
 
+-- TODO implement as (TaskMode -> a)
 data ModeMap a = ModeMap
     { overdue  :: a
     , endToday :: a
