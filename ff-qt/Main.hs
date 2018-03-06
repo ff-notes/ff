@@ -12,12 +12,13 @@ import qualified Data.Text as Text
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QApplication (QApplication, new)
-import           QBoxLayout (addStretch, insertWidget)
+import           QBoxLayout (addStretch, addWidget, insertWidget)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
                                    setApplicationVersion, setOrganizationDomain,
                                    setOrganizationName)
-import           QLabel (QLabel, newWithText)
+import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
+import           QLabel (newWithText)
 import           QLayout (QLayoutConstPtr, count)
 import           QMainWindow (QMainWindow, new, restoreState, saveState,
                               setCentralWidget)
@@ -157,8 +158,13 @@ newAgendaWidget (Storage dataDir timeVar) = do
 
     pure this
 
-newNoteWidgetWithText :: String -> IO QLabel
-newNoteWidgetWithText = QLabel.newWithText
+newNoteWidgetWithText :: String -> IO QFrame
+newNoteWidgetWithText text = do
+    this <- QFrame.new
+    setFrameShape this StyledPanel
+    box <- QVBoxLayout.newWithParent this
+    addWidget box =<< QLabel.newWithText text
+    pure this
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int
