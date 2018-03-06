@@ -15,14 +15,17 @@ import           Data.Time (toGregorian)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QApplication (QApplication, new)
-import           QBoxLayout (QBoxLayoutPtr, addStretch, addWidget, insertWidget)
+import           QBoxLayout (QBoxLayoutPtr, addLayout, addStretch, addWidget,
+                             insertWidget)
 import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
                                    setApplicationVersion, setOrganizationDomain,
                                    setOrganizationName)
 import           QDate (newWithYearMonthDay)
 import           QDateEdit (newWithDate)
+import           QDateTimeEdit (displayFormat, setDisplayFormat)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
+import           QHBoxLayout (new)
 import           QLabel (newWithText)
 import           QLayout (QLayoutConstPtr, count)
 import           QMainWindow (QMainWindow, new, restoreState, saveState,
@@ -157,12 +160,17 @@ newNoteWidget NoteView{text, start} = do
     setFrameShape this StyledPanel
     do  box <- QVBoxLayout.newWithParent this
         addWidget box =<< QLabel.newWithText (Text.unpack text)
-        addWidget box =<< do
-            dateEdit <- QDateEdit.newWithDate
-                =<< QDate.newWithYearMonthDay
-                        (fromInteger startYear) startMonth startDay
-            setEnabled dateEdit False
-            pure dateEdit
+        addLayout box =<< do
+            fieldsBox <- QHBoxLayout.new
+            addWidget fieldsBox =<< do
+                dateEdit <- QDateEdit.newWithDate
+                    =<< QDate.newWithYearMonthDay
+                            (fromInteger startYear) startMonth startDay
+                format <- displayFormat dateEdit
+                setDisplayFormat dateEdit $ "'Start:' " ++ format
+                setEnabled dateEdit False
+                pure dateEdit
+            pure fieldsBox
     pure this
   where
     (startYear, startMonth, startDay) = toGregorian start

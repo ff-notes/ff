@@ -50,6 +50,7 @@ library ff-qt-qtah
         , Graphics.UI.Qtah.Widgets.QDateEdit            as QDateEdit
         , Graphics.UI.Qtah.Widgets.QDateTimeEdit        as QDateTimeEdit
         , Graphics.UI.Qtah.Widgets.QFrame               as QFrame
+        , Graphics.UI.Qtah.Widgets.QHBoxLayout          as QHBoxLayout
         , Graphics.UI.Qtah.Widgets.QLabel               as QLabel
         , Graphics.UI.Qtah.Widgets.QLayout              as QLayout
         , Graphics.UI.Qtah.Widgets.QMainWindow          as QMainWindow
