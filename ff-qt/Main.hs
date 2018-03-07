@@ -24,6 +24,7 @@ import           QCoreApplication (exec, setApplicationName,
                                    setOrganizationName)
 import           QDate (newWithYearMonthDay)
 import           QDateEdit (newWithDate)
+import           QDateTimeEdit (setCalendarPopup)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
 import           QHBoxLayout (QHBoxLayout, new)
 import           QLabel (newWithText)
@@ -161,7 +162,8 @@ newDateWidget label date = do
         dateEdit <-
             QDateEdit.newWithDate
                 =<< QDate.newWithYearMonthDay (fromInteger y) m d
-        setReadOnly dateEdit True
+        setCalendarPopup dateEdit True
+        setReadOnly      dateEdit True
         pure dateEdit
     pure box
     where (y, m, d) = toGregorian date
