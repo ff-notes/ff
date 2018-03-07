@@ -5,7 +5,7 @@
 module Main (main) where
 
 import           Control.Concurrent.STM (TVar, newTVarIO)
-import           Control.Monad (void)
+import           Control.Monad.Extra (void, whenJust, (<=<))
 import           CRDT.LamportClock (LocalTime, getRealLocalTime)
 import           Data.Foldable (traverse_)
 import           Data.FullMap (FullMap (FullMap))
@@ -178,10 +178,7 @@ newNoteWidget NoteView { text, start, end } = do
         addLayout box =<< do
             fieldsBox <- QHBoxLayout.new
             addLayout fieldsBox =<< newDateWidget "Start:" start
-            case end of
-                Just endDate ->
-                    addLayout fieldsBox =<< newDateWidget "Deadline:" endDate
-                Nothing -> pure ()
+            whenJust end $ addLayout fieldsBox <=< newDateWidget "Deadline:"
             addStretch fieldsBox
             pure fieldsBox
     pure this

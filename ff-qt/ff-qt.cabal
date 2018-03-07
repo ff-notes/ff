@@ -8,8 +8,8 @@ executable ff-qt
     build-depends:
           base
         , crdt
+        , extra
         , hoppy-runtime
-        , qtah
         , stm
         , text
         , time
