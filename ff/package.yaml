@@ -13,7 +13,6 @@ dependencies:
   - directory
   - filepath
   - mainland-pretty
-  - mtl
   - stm
   - terminal-size
 
