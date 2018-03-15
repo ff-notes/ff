@@ -38,6 +38,9 @@ matrix:
         - $STACK build hlint
       script:
         - $STACK exec -- hlint .
+    - compiler: haddock
+      script:
+        - $STACK haddock --no-haddock-deps
   allow_failures:
     - compiler: weeder
       install:
