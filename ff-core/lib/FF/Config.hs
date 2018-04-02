@@ -8,7 +8,7 @@ import           Control.Exception (throw)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON)
 import qualified Data.ByteString as BS
 import           Data.Yaml (FromJSON, ToJSON, decodeFileEither, encodeFile,
-                            withObject, (.!=), (.:?))
+                            withObject, (.!=), (.:), (.:?))
 import qualified Data.Yaml as Yaml
 import           System.Directory (XdgDirectory (XdgConfig),
                                    createDirectoryIfMissing, doesFileExist,
@@ -17,6 +17,7 @@ import           System.FilePath (FilePath, takeDirectory, (</>))
 
 data Config = Config
     { dataDir :: Maybe FilePath
+    , isVcs :: Bool
     , ui :: ConfigUI
     }
     deriving (Show)
@@ -27,7 +28,10 @@ newtype ConfigUI = ConfigUI
     deriving (Show)
 
 emptyConfig :: Config
-emptyConfig = Config {dataDir = Nothing, ui = defaultConfigUI}
+emptyConfig = Config
+    { dataDir = Nothing
+    , ui = defaultConfigUI
+    , isVcs = False}
 
 defaultConfigUI :: ConfigUI
 defaultConfigUI = ConfigUI {shuffle = False}
@@ -35,6 +39,7 @@ defaultConfigUI = ConfigUI {shuffle = False}
 instance FromJSON Config where
     parseJSON = withObject "Config" $ \obj -> do
         dataDir <- obj .:? "dataDir"
+        isVcs   <- obj .:  "isVcs"
         ui      <- obj .:? "ui" .!= defaultConfigUI
         pure Config{..}
 

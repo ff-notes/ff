@@ -23,7 +23,7 @@ import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              Search (..), Shuffle (..), parseOptions)
 import qualified FF.Options as Options
-import           FF.Storage (Storage, runStorage)
+import           FF.Storage (Storage, StorageEnv(..), runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
@@ -35,16 +35,17 @@ main = do
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
-            dataDir <- checkDataDir cfg
-            runStorage dataDir timeVar $ runCmdAction ui action
+            env <- checkDataDir cfg
+            runStorage env timeVar $ runCmdAction ui action
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
     Nothing                           -> printConfig cfg
     Just (Options.ConfigDataDir mDir) -> do
         dir <- case mDir of
-            Nothing                -> pure dataDir
-            Just (DataDirJust dir) -> saveDataDir dir
+            Nothing -> pure dataDir
+            Just (DataDirJust dir isVcs) -> do
+                saveDataDir dir isVcs
             Just DataDirYandexDisk -> do
                 home <- getHomeDirectory
                 asum
@@ -62,14 +63,16 @@ runCmdConfig cfg@Config { dataDir, ui } = \case
   where
     trySaveDataDir baseDir = do
         guard =<< doesDirectoryExist baseDir
-        saveDataDir $ baseDir </> "Apps" </> appName
-    saveDataDir dir = saveConfig cfg { dataDir = Just dir } $> Just dir
+        saveDataDir (baseDir </> "Apps" </> appName) False
+    saveDataDir dir isVcs =
+        saveConfig cfg { dataDir = Just dir, isVcs = isVcs } $> Just dir
     saveShuffle shuffle' = saveConfig cfg { ui = ui' } $> ui'
         where ui' = ConfigUI {shuffle = shuffle'}
 
-checkDataDir :: Monad m => Config -> m FilePath
-checkDataDir Config { dataDir } = case dataDir of
-    Just dir -> pure dir
+checkDataDir :: Monad m => Config -> m StorageEnv
+checkDataDir Config { dataDir, isVcs } = case dataDir of
+    Just dir ->
+        pure $ StorageEnv dir isVcs
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
 runCmdAction :: ConfigUI -> CmdAction -> Storage ()

@@ -16,7 +16,7 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (auto, command, execParser, flag',
+import           Options.Applicative (auto, command, execParser, flag, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
                                       strArgument, strOption, subparser, value,
@@ -43,7 +43,7 @@ type Limit = Int
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
-data DataDir = DataDirJust FilePath | DataDirYandexDisk
+data DataDir = DataDirJust FilePath Bool | DataDirYandexDisk
 
 data Shuffle = Shuffle | Sort
 
@@ -139,7 +139,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
-            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
+            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path") <*> pVcsFlag
+            pVcsFlag = flag False True (long "vcs")
             pYandexDisk =
                 flag' DataDirYandexDisk
                     $  long "yandex-disk"

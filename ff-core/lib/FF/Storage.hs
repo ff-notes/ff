@@ -12,7 +12,7 @@ import           Prelude hiding (readFile)
 import           Control.Concurrent.STM (TVar)
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
+import           Control.Monad.Reader (MonadReader, ReaderT, ask, asks, runReaderT)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
@@ -29,6 +29,8 @@ import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    listDirectory)
 import           System.FilePath ((</>))
 
+import           System.Process (callProcess)
+
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
 
@@ -38,8 +40,10 @@ newtype DocId doc = DocId FilePath
 instance Show (DocId doc) where
     show (DocId path) = path
 
+data StorageEnv = StorageEnv FilePath Bool
+
 -- | Environment is the dataDir
-newtype Storage a = Storage (ReaderT FilePath LamportClock a)
+newtype Storage a = Storage (ReaderT StorageEnv LamportClock a)
     deriving (Applicative, Clock, Functor, Monad, MonadIO, Process)
 
 type Version = FilePath
@@ -54,7 +58,7 @@ class Clock m => MonadStorage m where
 
 instance MonadStorage Storage where
     listDirectoryIfExists relpath = Storage $ do
-        dir <- asks (</> relpath)
+        dir <- asks (\(StorageEnv p _) -> p </> relpath)
         liftIO $ do
             exists <- doesDirectoryExist dir
             if exists then listDirectory dir else pure []
@@ -62,9 +66,12 @@ instance MonadStorage Storage where
     createFile docId time doc = Storage $ do
         docDir <- askDocDir docId
         let file = docDir </> lamportTimeToFileName time
+        StorageEnv _ isVcs <- ask
         liftIO $ do
             createDirectoryIfMissing True docDir
             BSL.writeFile file $ encode doc
+            if isVcs then callProcess "git" ["add", docDir]
+            else pure ()
 
     readFile docId version = Storage $ do
         docDir <- askDocDir docId
@@ -74,9 +81,13 @@ instance MonadStorage Storage where
             either (error . ((file ++ ": ") ++)) id $
             eitherDecode contents
 
-runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
-runStorage dataDir var (Storage action) =
-    runLamportClock var $ runReaderT action dataDir
+runStorage :: StorageEnv
+           -> TVar LocalTime
+           -> Storage a
+           -> IO a
+runStorage env var (Storage action) =
+    runLamportClock var $
+        runReaderT action env
 
 listDocuments
     :: forall doc m . (Collection doc, MonadStorage m) => m [DocId doc]
@@ -102,10 +113,11 @@ listVersions (DocId docId) =
 
 askDocDir
     :: forall doc m
-     . (Collection doc, MonadReader FilePath m)
+     . (Collection doc, MonadReader StorageEnv m)
     => DocId doc
     -> m FilePath
-askDocDir (DocId docId) = asks (</> collectionName @doc </> docId)
+askDocDir (DocId docId) =
+    asks (\(StorageEnv p _) -> p </> collectionName @doc </> docId)
 
 save
     :: forall doc m
