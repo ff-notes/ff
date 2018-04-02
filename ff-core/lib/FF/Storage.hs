@@ -19,6 +19,7 @@ import           CRDT.LamportClock (Clock, LamportClock,
                                     Pid (Pid), Process, getTime,
                                     runLamportClock)
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
+import           Data.Aeson.Encode.Pretty (encodePretty)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.List.NonEmpty (nonEmpty)
@@ -69,9 +70,11 @@ instance MonadStorage Storage where
         StorageEnv _ isVcs <- ask
         liftIO $ do
             createDirectoryIfMissing True docDir
-            BSL.writeFile file $ encode doc
-            if isVcs then callProcess "git" ["add", docDir]
-            else pure ()
+            if isVcs then do
+                BSL.writeFile file $ encodePretty doc
+                callProcess "git" ["add", docDir]
+            else
+                BSL.writeFile file $ encode doc
 
     readFile docId version = Storage $ do
         docDir <- askDocDir docId

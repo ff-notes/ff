@@ -5,6 +5,7 @@ copyright:
 library:
   dependencies:
     - aeson
+    - aeson-pretty
     - bytestring
     - crdt
     - directory
