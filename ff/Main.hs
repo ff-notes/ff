@@ -12,7 +12,7 @@ import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getHomeDirectory)
-import           System.FilePath (FilePath, (</>))
+import           System.FilePath ((</>))
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
