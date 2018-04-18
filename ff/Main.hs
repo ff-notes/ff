@@ -38,7 +38,6 @@ main = do
             timeVar <- newTVarIO =<< getRealLocalTime
             currentDir <- getCurrentDirectory
             isVcs <- isDirVcs currentDir
-            putStrLn $ show isVcs
             dataDir <-
                 if isVcs then
                     pure ".ff"
