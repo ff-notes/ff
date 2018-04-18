@@ -11,8 +11,9 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, getHomeDirectory)
-import           System.FilePath (FilePath, (</>))
+import           System.Directory ( doesDirectoryExist, getCurrentDirectory
+                                  , getHomeDirectory)
+import           System.FilePath (FilePath, (</>), normalise, splitDirectories)
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -35,8 +36,24 @@ main = do
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
-            dataDir <- checkDataDir cfg
+            currentDir <- getCurrentDirectory
+            isVcs <- isDirVcs currentDir
+            putStrLn $ show isVcs
+            dataDir <-
+                if isVcs then
+                    pure ".ff"
+                else
+                    checkDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
+
+isDirVcs :: FilePath -> IO Bool
+isDirVcs fp =
+    recSearch $ parents fp
+  where
+    parents = reverse . scanl1 (</>) . splitDirectories . normalise
+    recSearch [] = pure False
+    recSearch (dir:dirs) = do
+        (||) <$> (doesDirectoryExist (dir </> ".git")) <*> recSearch dirs
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
