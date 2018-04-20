@@ -45,7 +45,7 @@ getDataDir fp dirFromCfg =
     recSearch $ parents fp
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    recSearch ([]) = pure dirFromCfg
+    recSearch [] = pure dirFromCfg
     recSearch (dir:dirs) = do
         isDirVcs <- doesDirectoryExist (dir </> ".git")
         if isDirVcs then
