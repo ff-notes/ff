@@ -37,22 +37,21 @@ main = do
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
             currentDir <- getCurrentDirectory
-            isVcs <- isDirVcs currentDir
-            dataDir <-
-                if isVcs then
-                    pure ".ff"
-                else
-                    checkDataDir cfg
+            dataDir <- getDataDir currentDir =<< checkDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
 
-isDirVcs :: FilePath -> IO Bool
-isDirVcs fp =
+getDataDir :: FilePath -> FilePath -> IO FilePath
+getDataDir fp dirFromCfg =
     recSearch $ parents fp
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    recSearch [] = pure False
+    recSearch ([]) = pure dirFromCfg
     recSearch (dir:dirs) = do
-        (||) <$> (doesDirectoryExist (dir </> ".git")) <*> recSearch dirs
+        isDirVcs <- doesDirectoryExist (dir </> ".git")
+        if isDirVcs then
+            pure $ dir </> ".git"
+        else
+            recSearch dirs
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
