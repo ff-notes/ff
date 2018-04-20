@@ -45,7 +45,7 @@ data Note = Note
 
 instance Eq Note where
     (==) (Note a b c d) (Note a' b' c' d') =
-        foldr (&&) True [ a == a'
+        foldr and True [ a == a'
                         , normalizeNull (RGA.pack b) == normalizeNull (RGA.pack b')
                         , c == c'
                         , d == d']
