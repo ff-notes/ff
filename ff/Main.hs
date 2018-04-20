@@ -49,7 +49,7 @@ getDataDir fp dirFromCfg =
     recSearch (dir:dirs) = do
         isDirVcs <- doesDirectoryExist (dir </> ".git")
         if isDirVcs then
-            pure $ dir </> ".git"
+            pure $ dir </> ".ff"
         else
             recSearch dirs
 
