@@ -9,12 +9,14 @@ library:
     - containers
     - crdt
     - directory
+    - errors
     - filepath
     - github
     - mainland-pretty
     - mtl
     - optparse-applicative
     - random
+    - safe-exceptions
     - stm
     - temporary
     - text

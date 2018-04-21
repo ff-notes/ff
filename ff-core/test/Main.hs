@@ -108,18 +108,35 @@ instance MonadStorage TestM where
             subdir :| (name2:rest) ->
                 Dir $ Map.singleton subdir $ make (name2 :| rest)
 
-    readFile :: forall doc. Collection doc => DocId doc -> Version -> TestM doc
-    readFile (DocId docId) version = TestM $ do
+    readFileEither
+        :: forall doc
+        . Collection doc => DocId doc -> Version -> TestM (Either String doc)
+    readFileEither (DocId docId) version = TestM $ do
         fs <- get
         go fs [collectionName @doc, docId, version]
       where
-        decode = either fail pure . parseEither parseJSON
         go dir = \case
             []        -> fail "is directory"
             name:rest -> case Map.lookup name dir of
                 Nothing             -> fail "does not exist"
                 Just (Dir subdir)   -> go subdir rest
-                Just (File content) -> decode content
+                Just (File content) -> pure $ parseEither parseJSON content
+
+    removeFileIfExists
+        :: forall doc.
+        Collection doc => DocId doc -> Version -> TestM ()
+    removeFileIfExists (DocId docId) version =
+        TestM $ modify $ go $ collectionName @doc :| [docId, version]
+      where
+        go path base = case path of
+            file :| [] -> case Map.lookup file base of
+                Nothing     -> base
+                Just File{} -> Map.delete file base
+                Just Dir{}  -> error "is directory"
+            subdir :| (name2:rest) -> case Map.lookup subdir base of
+                Nothing        -> base
+                Just File{}    -> error "is file"
+                Just (Dir dir) -> go (name2 :| rest) dir
 
 runTestM :: Monad m => Dir -> TestM a -> m (a, Dir)
 runTestM fs (TestM stateful) =
