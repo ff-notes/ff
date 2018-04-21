@@ -19,12 +19,12 @@ data Config = Config
     { dataDir :: Maybe FilePath
     , ui :: ConfigUI
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 newtype ConfigUI = ConfigUI
     { shuffle :: Bool
     }
-    deriving (Show)
+    deriving (Eq, Show)
 
 emptyConfig :: Config
 emptyConfig = Config {dataDir = Nothing, ui = defaultConfigUI}

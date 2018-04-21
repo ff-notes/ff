@@ -33,6 +33,7 @@ tests:
       - mtl
       - QuickCheck
       - quickcheck-instances
+      - tasty
       - tasty-hunit
       - tasty-quickcheck
       - tasty-th

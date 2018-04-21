@@ -10,6 +10,7 @@
 
 module FF.Types where
 
+import           Control.Arrow (second)
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LWW (LWW)
@@ -40,7 +41,19 @@ data Note = Note
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
     }
-    deriving (Eq, Show)
+    deriving (Show)
+
+instance Eq Note where
+    (==) (Note a b c d) (Note a' b' c' d') =
+        and [ a == a'
+            , normalizeNull (RGA.pack b) == normalizeNull (RGA.pack b')
+            , c == c'
+            , d == d'
+            ]
+      where
+        normalizeNull = map . second . map $ \case
+            Just '\0' -> Nothing
+            char      -> char
 
 type NoteId = DocId Note
 

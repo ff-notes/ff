@@ -10,44 +10,52 @@
 
 module Main (main) where
 
-import           Control.Arrow (second)
-import           Control.Error ((?:))
-import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
-import qualified CRDT.Cv.RGA as RGA
-import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
+import           Control.Error                ((?:))
+import           Control.Monad.State.Strict   (StateT, get, modify, runStateT)
+import           CRDT.LamportClock            (Clock, LamportTime, Pid (Pid),
+                                               Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
-import           Data.Aeson (Value (Array, Number, Object, String), object,
-                             parseJSON, toJSON, (.=))
-import           Data.Aeson.Types (parseEither)
-import           Data.Foldable (toList)
-import           Data.HashMap.Strict ((!))
-import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
-import           Data.Text (Text)
-import qualified Data.Text as Text
-import           Data.Time (Day, fromGregorian)
-import           GHC.Exts (fromList)
-import           System.FilePath (splitDirectories)
-import           Test.QuickCheck (Property, Testable, conjoin, counterexample,
-                                  property, (===), (==>))
-import           Test.QuickCheck.Instances ()
-import           Test.Tasty.HUnit (testCase, (@?=))
-import           Test.Tasty.QuickCheck (testProperty)
-import           Test.Tasty.TH (defaultMainGenerator)
+import           Data.Aeson                   (FromJSON, ToJSON, Value (Array, Number, Object, String),
+                                               object, parseJSON,
+                                               toJSON, (.=))
+import           Data.Aeson.Types             (Parser, parseEither)
+import           Data.Foldable                (toList)
+import           Data.HashMap.Strict          ((!))
+import           Data.List.NonEmpty           (NonEmpty ((:|)))
+import           Data.Map.Strict              (Map)
+import qualified Data.Map.Strict              as Map
+import           Data.Maybe                   (fromMaybe)
+import           Data.Monoid                  ((<>))
+import           Data.Text                    (Text)
+import qualified Data.Text                    as Text
+import           Data.Time                    (Day, fromGregorian)
+import           Data.Typeable                (Proxy(..), Typeable, typeRep)
+import           GHC.Exts                     (fromList)
+import           System.FilePath              (splitDirectories)
+import           Test.QuickCheck              (Arbitrary, Property,
+                                               conjoin, counterexample,
+                                               property, (===), (==>))
+import           Test.QuickCheck.Instances    ()
+import           Test.Tasty                   (TestTree, testGroup)
+import           Test.Tasty.HUnit             (testCase, (@?=))
+import           Test.Tasty.QuickCheck        (testProperty)
+import           Test.Tasty.TH                (defaultMainGenerator)
 
-import           FF (cmdNew, getSamples)
-import           FF.Config (ConfigUI (..))
-import           FF.Options (New (..))
-import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
-                             Version, collectionName, lamportTimeToFileName)
-import           FF.Types (Note (..), NoteView (..), Sample (..),
-                           Status (Active), TaskMode (Overdue), emptySampleMap,
-                           singletonSampleMap)
+import           FF                           (cmdNew, getSamples)
+import           FF.Config                    (Config, ConfigUI (..))
+import           FF.Options                   (New (..))
+import           FF.Storage                   (Collection, DocId (DocId),
+                                               MonadStorage (..), Version,
+                                               collectionName,
+                                               lamportTimeToFileName)
+import           FF.Types                     (Note (..), NoteView (..),
+                                               Sample (..), Status (Active),
+                                               TaskMode (Overdue),
+                                               emptySampleMap,
+                                               singletonSampleMap)
 
-import           ArbitraryOrphans ()
+import           ArbitraryOrphans             ()
 
 data DirItem = Dir Dir | File Value
     deriving (Eq, Show)
@@ -221,31 +229,32 @@ prop_new newText newStart newEnd =
 expectJust :: Maybe Property -> Property
 expectJust = fromMaybe . counterexample "got Nothing" $ property False
 
-expectRightK :: Testable b => Either String a -> (a -> b) -> Property
-expectRightK e f = case e of
-    Left  l -> counterexample l $ property False
-    Right a -> property $ f a
-
 failProp :: String -> Property
 failProp s = counterexample s $ property False
 
 ok :: Property
 ok = property ()
 
-prop_Note_toJson_fromJson :: Note -> Property
-prop_Note_toJson_fromJson note@Note { noteStatus, noteText, noteStart, noteEnd }
-    = expectRightK (parseEither parseJSON $ toJSON note)
-        $ \Note { noteStatus = noteStatus', noteText = noteText', noteStart = noteStart', noteEnd = noteEnd' } ->
-              conjoin
-                  [ noteStatus === noteStatus'
-                  , normalizeNull (RGA.pack noteText) === RGA.pack noteText'
-                  , noteStart === noteStart'
-                  , noteEnd === noteEnd'
-                  ]
-  where
-    normalizeNull = map . second . map $ \case
-        Just '\0' -> Nothing
-        c         -> c
-
 ui :: ConfigUI
 ui = ConfigUI {shuffle = False}
+
+pjsonRoundtrip :: forall a . (Show a, Eq a, FromJSON a, ToJSON a) => a -> Property
+pjsonRoundtrip j =
+    let res = parseEither (parseJSON :: Value -> Parser a) $ toJSON j in
+    case res of
+        Left l -> counterexample l $ property False
+        Right j' -> j === j'
+
+jsonRoundtrip
+    :: forall a . (Show a, Eq a, FromJSON a, ToJSON a, Typeable a, Arbitrary a)
+    => Proxy a
+    -> TestTree
+jsonRoundtrip proxy = testProperty msg (pjsonRoundtrip :: a -> Property)
+  where
+    msg = "JSON roundtrip " <> show typ
+    typ = typeRep proxy
+
+test_JSON_Tests :: [TestTree]
+test_JSON_Tests =
+    [ jsonRoundtrip (Proxy :: Proxy Config)
+    , jsonRoundtrip (Proxy :: Proxy Note)]
