@@ -10,6 +10,7 @@ module FF.Storage where
 import           Prelude hiding (readFile)
 
 import           Control.Concurrent.STM (TVar)
+import           Control.Exception (catch, throwIO)
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
@@ -21,13 +22,15 @@ import           CRDT.LamportClock (Clock, LamportClock,
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
+import           Data.Foldable (for_)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
 import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                                   listDirectory)
+                                   listDirectory, removeFile)
 import           System.FilePath ((</>))
+import           System.IO.Error (isDoesNotExistError)
 
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
@@ -51,6 +54,7 @@ class Clock m => MonadStorage m where
         -> m [FilePath] -- ^ Paths relative to data dir
     createFile :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
     readFile :: Collection doc => DocId doc -> Version -> m doc
+    removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
 
 instance MonadStorage Storage where
     listDirectoryIfExists relpath = Storage $ do
@@ -73,6 +77,13 @@ instance MonadStorage Storage where
         pure $
             either (error . ((file ++ ": ") ++)) id $
             eitherDecode contents
+
+    removeFileIfExists docId version = Storage $ do
+        docDir <- askDocDir docId
+        let file = docDir </> version
+        liftIO $ removeFile file `catch` (\e ->
+            if isDoesNotExistError e then return ()
+            else throwIO e)
 
 runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
 runStorage dataDir var (Storage action) =
@@ -145,7 +156,11 @@ modify
     -> (Maybe doc -> m (a, doc))
     -> m a
 modify docId f = do
-    mDocOld     <- load docId
+    versions      <- listVersions docId
+    versionValues <- for versions $ readFile docId
+    let mDocOld = sconcat <$> nonEmpty versionValues
     (a, docNew) <- f mDocOld
-    when (Just docNew /= mDocOld) $ save docId docNew
+    when (Just docNew /= mDocOld) $ do
+        save docId docNew
+        for_ versions (removeFileIfExists docId)
     pure a
