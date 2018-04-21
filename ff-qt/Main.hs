@@ -22,7 +22,7 @@ import           QCloseEvent (QCloseEvent)
 import           QCoreApplication (exec, setApplicationName,
                                    setApplicationVersion, setOrganizationDomain,
                                    setOrganizationName)
-import           QDate (newWithYearMonthDay)
+import           QDate (newWithYmd)
 import           QDateEdit (newWithDate)
 import           QDateTimeEdit (setCalendarPopup)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
@@ -57,11 +57,11 @@ main = do
     Config { dataDir = Just dataDir } <- loadConfig
     timeVar                           <- newTVarIO =<< getRealLocalTime
     let storage = Storage dataDir timeVar
-    withApp $ \app -> do
-        setOrganizationDomain app "ff.cblp.su"
-        setOrganizationName   app "ff"
-        setApplicationName    app "ff"
-        setApplicationVersion app $ showVersion version
+    withApp $ \_ -> do
+        setOrganizationDomain   "ff.cblp.su"
+        setOrganizationName     "ff"
+        setApplicationName      "ff"
+        setApplicationVersion $ showVersion version
 
         mainWindow <- newMainWindow storage
         QWidget.show mainWindow
@@ -161,7 +161,7 @@ newDateWidget label date = do
     addWidget box =<< do
         dateEdit <-
             QDateEdit.newWithDate
-                =<< QDate.newWithYearMonthDay (fromInteger y) m d
+                =<< QDate.newWithYmd (fromInteger y) m d
         setCalendarPopup dateEdit True
         setReadOnly      dateEdit True
         pure dateEdit
