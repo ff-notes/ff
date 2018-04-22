@@ -10,7 +10,6 @@
 
 module Main (main) where
 
-import           Control.Arrow (second)
 import           Control.Error ((?:))
 import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
 import qualified CRDT.Cv.RGA as RGA
@@ -31,8 +30,9 @@ import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
 import           System.FilePath (splitDirectories)
-import           Test.QuickCheck (Property, Testable, conjoin, counterexample,
-                                  property, (===), (==>))
+import           Test.QuickCheck (Arbitrary, Property, Testable, arbitrary,
+                                  conjoin, counterexample, property, (===),
+                                  (==>))
 import           Test.QuickCheck.Instances ()
 import           Test.Tasty.HUnit (testCase, (@?=))
 import           Test.Tasty.QuickCheck (testProperty)
@@ -179,8 +179,8 @@ agendaLimit = Just 10
 today :: Day
 today = fromGregorian 1018 02 10
 
-prop_new :: Text -> Maybe Day -> Maybe Day -> Property
-prop_new newText newStart newEnd =
+prop_new :: NoNul -> Maybe Day -> Maybe Day -> Property
+prop_new (NoNul newText) newStart newEnd =
     newStart <= newEnd && Just today <= newEnd ==> expectJust test
   where
     test = do
@@ -238,14 +238,16 @@ prop_Note_toJson_fromJson note@Note { noteStatus, noteText, noteStart, noteEnd }
         $ \Note { noteStatus = noteStatus', noteText = noteText', noteStart = noteStart', noteEnd = noteEnd' } ->
               conjoin
                   [ noteStatus === noteStatus'
-                  , normalizeNull (RGA.pack noteText) === RGA.pack noteText'
+                  , RGA.pack noteText === RGA.pack noteText'
                   , noteStart === noteStart'
                   , noteEnd === noteEnd'
                   ]
-  where
-    normalizeNull = map . second . map $ \case
-        Just '\0' -> Nothing
-        c         -> c
 
 ui :: ConfigUI
 ui = ConfigUI {shuffle = False}
+
+newtype NoNul = NoNul Text
+    deriving Show
+
+instance Arbitrary NoNul where
+    arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary

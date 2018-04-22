@@ -18,8 +18,8 @@ import           Data.Aeson (FromJSON, ToJSON, Value (Array, Null, String),
                              parseJSON, toJSON, withArray)
 import           Data.Aeson.TH (defaultOptions, deriveJSON)
 import           Data.Aeson.Types (Parser, typeMismatch)
+import           Data.Empty (empty, isEmpty)
 import           Data.Foldable (toList)
-import           Data.Maybe (isNothing)
 import qualified Data.Text as Text
 import           GHC.Exts (fromList)
 
@@ -55,16 +55,16 @@ rgaParseJson = withArray "RGA"
             vid   <- parseLamportTime timeJ pidJ
             chars <- parseJSON value
             rest' <- parseSegments rest
-            pure $ (vid, unpackChars chars) : rest'
+            pure $ (vid, chars) : rest'
         value:_ -> typeMismatch "Array" value
 
     parseSegment = \case
         timeJ:pidJ:value -> do
             mchars <- case value of
-                [String str]   -> pure $ unpackChars $ Text.unpack str
+                [String str]   -> pure $ Text.unpack str
                 [Null, countJ] -> do -- keep Null for compatibility with future non-character RGA
                     count <- parseJSON countJ
-                    pure $ replicate count Nothing
+                    pure $ replicate count empty
                 []  -> fail "expected String or Null followed by Number, got []"
                 v:_ -> typeMismatch "String or Null followed by Number" v
             time <- parseJSON timeJ
@@ -73,23 +73,16 @@ rgaParseJson = withArray "RGA"
             pure (vid, mchars)
         _ -> fail "expected Array of 3 elements"
 
-    unpackChars = map $ \case
-        '\0' -> Nothing
-        c    -> Just c
-
 withList :: String -> ([Value] -> Parser a) -> Value -> Parser a
 withList name p = withArray name (p . toList)
 
 rgaToJson :: RgaString -> Value
 rgaToJson rga = array . map segmentToJson $ RGA.pack rga
   where
-    segmentToJson (LamportTime time pid, mchars) =
-        array $ toJSON time : toJSON pid : if all isNothing mchars
-            then [Null, toJSON $ length mchars]
-            else [toJSON $ packChars mchars]
-    packChars = map $ \case
-        Nothing -> '\0'
-        Just c  -> c
+    segmentToJson (LamportTime time pid, chars) =
+        array $ toJSON time : toJSON pid : if all isEmpty chars
+            then [Null, toJSON $ length chars]
+            else [toJSON chars]
 
 parseLamportTime :: Value -> Value -> Parser LamportTime
 parseLamportTime time pid = LamportTime <$> parseJSON time <*> parseJSON pid

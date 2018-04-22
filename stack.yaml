@@ -7,10 +7,10 @@ packages:
 
 extra-deps:
   # ff:
-    - crdt-9.3
+    - crdt-10.0
   # ff:test:
     - git: https://github.com/cblp/crdt.git
-      commit: v9.3
+      commit: 'v10.0'
       subdirs:
         - crdt-test
   # ff-qt:
