@@ -4,7 +4,7 @@ A distributed note taker and task manager.
 
 ## What's the big deal?
 
-1.  𝑓𝑓 synchronizes via any file sync application, like Yandex.Disk,
+1.  𝑓𝑓 synchronizes via any file sync application, like git, Yandex.Disk,
     Dropbox, or Google Drive.
 2.  𝑓𝑓 is available offline and synchronizes without conflicts thanks to
     [CRDT](https://github.com/cblp/crdt).
@@ -15,6 +15,12 @@ Works on all my computers and synchronizes between them successfully.
 𝑓𝑓's own issues are tracked in 𝑓𝑓 since the first day of development.
 Please feel free to test it in your environment.
 But no guarantees.
+
+## Project-based task management
+
+𝑓𝑓 detects if it is run inside a **git** repository and saves notes in it.
+Other VCS will be supported in future.
+Feel free to open a ticket if you want to extend support.
 
 ## Install
 
@@ -43,16 +49,31 @@ But no guarantees.
       new                      synonym for `add`
       postpone                 make a task start later
       search                   search for notes with the given text
+      unarchive                restore the note from archive
 
 ### Get started
 
-To save tasks somewhere you must configure 𝑓𝑓's data directory
+#### Personal
+
+To save personal notes and tasks somewhere you must configure 𝑓𝑓's data
+directory
 
     ff config dataDir --help
 
 If you use Yandex.Disk, you can say just
 
     ff config dataDir -y
+
+#### Project-based
+
+To work with a project's tasks, just run 𝑓𝑓 inside a VCS repository.
+
+    $ ls
+    .git
+    $ ff add ...
+    $ ls
+    .ff .git
+    $ git add .ff
 
 ### Get some unfinished tasks
 
