@@ -24,6 +24,8 @@ import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
+import           Data.Either (isLeft, rights)
+import           Data.Maybe (fromJust)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
@@ -105,19 +107,15 @@ load
     :: forall doc m
      . (Collection doc, MonadStorage m)
     => DocId doc
-    -> m (Maybe doc, [Version])
+    -> m (Maybe (doc, [Version]))
 load docId = do
     (versions, versionValues) <- HT.until condition $ do
         v <- listVersions docId
         values <- for v $ readFileEither docId
         pure (v, values)
-    pure (sconcat <$> nonEmpty (map (\ (Right a) -> a) versionValues), versions)
+    pure $ (\x -> (x, versions)) <$> (sconcat <$> (nonEmpty $ rights versionValues))
   where
-    condition (_, values) =
-        any (\case
-                 Left _ -> True
-                 Right _ -> False)
-            values
+    condition (_, values) = any isLeft values
 
 listVersions
     :: forall doc m
@@ -172,9 +170,10 @@ modify
     -> (Maybe doc -> m (a, doc))
     -> m a
 modify docId f = do
-    (mDocOld, versions) <- load docId
+    res <- load docId
+    let mDocOld = fst <$> res
     (a, docNew) <- f mDocOld
     when (Just docNew /= mDocOld) $ do
         save docId docNew
-        for_ versions (removeFileIfExists docId)
+        for_ (fromJust $ snd <$> res)(removeFileIfExists docId)
     pure a
