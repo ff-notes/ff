@@ -4,16 +4,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE LambdaCase #-}
 
 module FF.Storage where
 
-import           Prelude hiding (readFile)
 
 import           Control.Concurrent.STM (TVar)
 import           Control.Exception (catch, throwIO)
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
+import qualified Control.Monad.HT as HT
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
@@ -54,6 +55,7 @@ class Clock m => MonadStorage m where
         -> m [FilePath] -- ^ Paths relative to data dir
     createFile :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
     readFile :: Collection doc => DocId doc -> Version -> m doc
+    readFileEither :: Collection doc => DocId doc -> Version -> m (Either String doc)
     removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
 
 instance MonadStorage Storage where
@@ -69,6 +71,12 @@ instance MonadStorage Storage where
         liftIO $ do
             createDirectoryIfMissing True docDir
             BSL.writeFile file $ encode doc
+
+    readFileEither docId version = Storage $ do
+        docDir <- askDocDir docId
+        let file = docDir </> version
+        contents <- liftIO $ BSL.readFile file
+        pure $ eitherDecode contents
 
     readFile docId version = Storage $ do
         docDir <- askDocDir docId
@@ -97,11 +105,19 @@ load
     :: forall doc m
      . (Collection doc, MonadStorage m)
     => DocId doc
-    -> m (Maybe doc)
+    -> m (Maybe doc, [Version])
 load docId = do
-    versions      <- listVersions docId
-    versionValues <- for versions $ readFile docId
-    pure $ sconcat <$> nonEmpty versionValues
+    (versions, versionValues) <- HT.until condition $ do
+        v <- listVersions docId
+        values <- for v $ readFileEither docId
+        pure (v, values)
+    pure (sconcat <$> nonEmpty (map (\(Right a) -> a)) versionValues, versions)
+  where
+    condition (_, values) =
+        any (\case
+                 Left _ -> True
+                 Right _ -> False)
+            values
 
 listVersions
     :: forall doc m
@@ -156,9 +172,7 @@ modify
     -> (Maybe doc -> m (a, doc))
     -> m a
 modify docId f = do
-    versions      <- listVersions docId
-    versionValues <- for versions $ readFile docId
-    let mDocOld = sconcat <$> nonEmpty versionValues
+    (mDocOld, versions) <- load docId
     (a, docNew) <- f mDocOld
     when (Just docNew /= mDocOld) $ do
         save docId docNew
