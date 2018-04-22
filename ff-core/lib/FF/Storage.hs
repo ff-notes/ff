@@ -111,7 +111,7 @@ load docId = do
         v <- listVersions docId
         values <- for v $ readFileEither docId
         pure (v, values)
-    pure (sconcat <$> nonEmpty (map (\(Right a) -> a)) versionValues, versions)
+    pure (sconcat <$> nonEmpty (map (\ (Right a) -> a) versionValues), versions)
   where
     condition (_, values) =
         any (\case
