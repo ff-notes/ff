@@ -24,8 +24,9 @@ Feel free to open a ticket if you want to extend support.
 
 ## Install
 
-    $ git clone https://github.com/cblp/ff.git
-    $ stack install
+    $ git clone https://github.com/ff-notes/ff.git
+    $ cd ff
+    $ stack install ff
 
 ## Usage
 
