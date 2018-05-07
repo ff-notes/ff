@@ -1,7 +1,7 @@
 # Changelog
 
 ## [Unreleased] - 2018-04-23
-### Changed
+### Fixid
     Fix install instruction
 
 ## [0.3] - 2018-04-22
@@ -19,6 +19,11 @@
     Add some little UI tweaks
     Add some sugar
 
+### Fixid
+    Fix CI script placement
+    Fix organizationDomain
+    Fix yaml syntax
+
 ### Changed
     Auto-expand sections on start
     Decouple widgets from model
@@ -26,9 +31,6 @@
     Disable section editing
     displayed when there some tasks were hidden due to limit.
     Extract NoteModel
-    Fix CI script placement
-    Fix organizationDomain
-    Fix yaml syntax
     Make ModeMap Functor and Foldable
     Make sections bold
     More compact format to store zeroes in RGA
@@ -98,6 +100,18 @@
     ff-gui: Add agenda list, yet empty
     ff-qt: Add agenda notes
 
+### Fixid
+    Fix comma
+    Fix note-id pairing
+    Fix Qt version
+    Fix syntax
+    Fix tests
+    Fix typo
+    Fix wording
+    Fix wording about setting data dir
+    Fix wording in readme
+    Fix wording on stability
+    
 ### Changed
     Be humble
     Calculate collection name from type
@@ -113,16 +127,6 @@
     features: Fix ul margins
     features: Make feature DSL even more concise
     ff-edit: Select editor automagically
-    Fix comma
-    Fix note-id pairing
-    Fix Qt version
-    Fix syntax
-    Fix tests
-    Fix typo
-    Fix wording
-    Fix wording about setting data dir
-    Fix wording in readme
-    Fix wording on stability
     Get empty listing if directory does not exist
     Hide unneeded features
     Implemented `postpone`
