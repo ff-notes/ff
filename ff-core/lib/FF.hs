@@ -78,9 +78,9 @@ loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
     docs   <- listDocuments
     mnotes <- for docs $ \doc -> do
-        (Just (x, _)) <- load doc
-        pure x
-    pure [ noteView doc note | (doc, note) <- zip docs mnotes ]
+        mdoc <- load doc
+        pure $ fmap fst mdoc
+    pure [ noteView noteId note | (noteId, Just note) <- zip docs mnotes]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =

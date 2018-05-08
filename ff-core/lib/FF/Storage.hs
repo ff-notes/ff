@@ -4,7 +4,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE LambdaCase #-}
 
 module FF.Storage where
 
@@ -24,7 +23,7 @@ import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
-import           Data.Either (isLeft, rights)
+import           Data.Either (isRight, rights)
 import           Data.Maybe (fromJust)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
@@ -113,9 +112,10 @@ load docId = do
         v <- listVersions docId
         values <- for v $ readFileEither docId
         pure (v, values)
-    pure $ (\x -> (x, versions)) <$> (sconcat <$> (nonEmpty $ rights versionValues))
+    let vv = sconcat <$> nonEmpty (rights versionValues)
+    pure $ (\x -> (x, versions)) <$> vv
   where
-    condition (_, values) = any isLeft values
+    condition (_, values) = all isRight values
 
 listVersions
     :: forall doc m
@@ -175,5 +175,5 @@ modify docId f = do
     (a, docNew) <- f mDocOld
     when (Just docNew /= mDocOld) $ do
         save docId docNew
-        for_ (fromJust $ snd <$> res)(removeFileIfExists docId)
+        for_ (fromJust $ snd <$> res) (removeFileIfExists docId)
     pure a
