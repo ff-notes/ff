@@ -24,7 +24,6 @@ import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
 import           Data.Either (isRight, rights)
-import           Data.Maybe (fromJust)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
@@ -171,9 +170,12 @@ modify
     -> m a
 modify docId f = do
     res <- load docId
-    let mDocOld = fst <$> res
-    (a, docNew) <- f mDocOld
-    when (Just docNew /= mDocOld) $ do
-        save docId docNew
-        for_ (fromJust $ snd <$> res) (removeFileIfExists docId)
-    pure a
+    case res of
+        Just (docOld, versions) -> do
+            (a, docNew) <- f $ Just docOld
+            when (docNew /= docOld) $ do
+                for_ versions (removeFileIfExists docId)
+                save docId docNew
+            pure a
+        Nothing ->
+            fst <$> f Nothing
