@@ -88,7 +88,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Add lwwModify
 - Add more features
 - Add multiline notes feature
-- Add Nikolay Loginov to 
+- Add Nikolay Loginov to
 - Add realistic note ids
 - Add start and end dates to notes
 - Add Storage
@@ -115,7 +115,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Fix wording about setting data dir
 - Fix wording in readme
 - Fix wording on stability
-    
+
 ### Changed
 - Be humble
 - Calculate collection name from type
@@ -170,23 +170,15 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Remove content on deletion
 - Remove redundant `errors` dependency
 - Remove redundant parts
-    
+
 ## [0.1] - 2018-01-05
 ### Added
-- Add `done` command
-- Add CRDT
-- Add exe
-- Add liveness
-- Add New command
-- Add notes on the big deal and stability
-- Add readme
+- Executable `ff`
+  - Subcommand `agenda`
+  - Subcommand `done`
+  - Subcommand `new`
 
-### Other
-- Compact LWW
-- Describe `done` in readme
-- Generalize loadDocument to CvRDT
-- Implement agenda in exe
-- Style
-- Switch to Hackage crdt
-- Use ﬀ symbol in header
-- Use the same id for note and first version
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.3...HEAD
+[0.3]: https://github.com/ff-notes/ff/compare/v0.2...v0.3
+[0.2]: https://github.com/ff-notes/ff/compare/0.1...v0.2
+[0.1]: https://github.com/ff-notes/ff/tree/0.1
