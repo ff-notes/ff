@@ -6,66 +6,22 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 
 ## [Unreleased]
 ### Fixed
-- Fix install instruction
+- Fix install instruction in README
 
 ## [0.3] - 2018-04-22
 ### Added
-- Add `unarchive`
-- Add box around note
-- Add calendar for date edits
-- Add date-edit labels and deadline date-edit
-- Add dates to tasks
-- Add empty delegate
-- Add FullMap
-- Add label into the start field
-- Add note counters
-- Add Qt5 to Travis
-- Add some little UI tweaks
-- Add some sugar
-
-### Fixed
-- Fix CI script placement
-- Fix organizationDomain
-- Fix yaml syntax
+- Subcommand `unarchive`
+- "N task(s) omitted" message
+- Shuffle/Sort notes
+- Use code repository as a note storage
 
 ### Changed
-- Auto-expand sections on start
-- Decouple widgets from model
-- Disable date editing temporarily
-- Disable section editing
-- displayed when there some tasks were hidden due to limit.
-- Extract NoteModel
-- Make ModeMap Functor and Foldable
-- Make sections bold
 - More compact format to store zeroes in RGA
-- Move tasks from personal ff to the project repo
-- Optimize imports
-- Push items to top
-- Reorganize packages
-- Restore Qt GUI
-- samplesInSections: Add "N task(s) omitted" message
-- Save and restore window position
-- Set first view item current
-- Set proper version in Qt
-- Shuffle/Sort notes
-- simplify executable configuration
-- Split notes in sections
-- Style
-- This patch also makes "To see more tasks" message conditional: it's only
-- Try add pthread
-- Update lts to LTS-11.5
-- Update Qtah to upstream 0.4.0 + 2018-04-09
-- Update to crdt-10.0: use RGA without Maybe
-- Use code repository as a note storage
-- Use qtah with fixed QAction ctor
-- Use qtah with fixed QAction ctor 2
-- Use qtah with fixed QAction ctor 3
-- Use qtah with fixed QWindow.requestUpdate
-- Use QToolBox
-- Use scoped ptr for controllable finalization
+- Make "To see more tasks" message conditional:
+  it's only displayed when there some tasks were hidden due to limit
 
-### Removed
-- Remove redundant dependency
+### Other
+- Move ff-related tasks from cblp's personal ff to the project repo
 
 ## [0.2] - 2018-02-12
 ### Added
