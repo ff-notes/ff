@@ -36,22 +36,25 @@ main = do
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
-            currentDir <- getCurrentDirectory
-            dataDir <- getDataDir currentDir =<< checkDataDir cfg
+            dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
 
-getDataDir :: FilePath -> FilePath -> IO FilePath
-getDataDir fp dirFromCfg =
-    recSearch $ parents fp
+getDataDir :: Config -> IO FilePath
+getDataDir cfg = do
+    cur <- getCurrentDirectory
+    mDataDirFromVcs <- findVcs $ parents cur
+    case mDataDirFromVcs of
+        Just dataDir -> pure dataDir
+        Nothing      -> checkDataDir cfg
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    recSearch [] = pure dirFromCfg
-    recSearch (dir:dirs) = do
+    findVcs []         = pure Nothing
+    findVcs (dir:dirs) = do
         isDirVcs <- doesDirectoryExist (dir </> ".git")
         if isDirVcs then
-            pure $ dir </> ".ff"
+            pure . Just $ dir </> ".ff"
         else
-            recSearch dirs
+            findVcs dirs
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case

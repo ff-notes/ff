@@ -7,6 +7,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 ## [Unreleased]
 ### Fixed
 - Fix install instruction in README
+- Fix fail when VCS-based dataDir exists and global doesn't
 
 ## [0.3] - 2018-04-22
 ### Added
