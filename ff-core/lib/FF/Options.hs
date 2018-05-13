@@ -19,8 +19,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, value,
-                                      (<**>))
+                                      strArgument, strOption, subparser, switch,
+                                      value, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
@@ -38,8 +38,11 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
+    | CmdVersion    Version
 
 type Limit = Int
+
+newtype Version = Version Bool
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
@@ -81,6 +84,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
+        , command "version"   iCmdVersion
         ]
 
     iCmdAdd    = i pCmdNew "add a new task or note"
@@ -96,6 +100,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone "make a task start later"
     iCmdSearch    = i pCmdSearch "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
+    iCmdVersion   = i pCmdVersion "show current version"
 
     pCmdAgenda    = CmdAction . CmdAgenda <$> limitOption
     pCmdDelete    = CmdAction . CmdDelete <$> idArgument
@@ -105,6 +110,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
+    pCmdVersion   = CmdAction . CmdVersion <$> sVersion
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit =
@@ -150,5 +156,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             ( flag' Shuffle (long "shuffle" <> help "shuffle notes in section")
             <|> flag' Sort (long "sort" <> help "sort notes in section")
             )
+
+    sVersion = Version <$> switch ( long "version" <> short 'v' <> help "version" )
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
