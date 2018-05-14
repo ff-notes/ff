@@ -11,9 +11,9 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory ( doesDirectoryExist, getCurrentDirectory
-                                  , getHomeDirectory)
-import           System.FilePath (FilePath, (</>), normalise, splitDirectories)
+import           System.Directory (doesDirectoryExist, getCurrentDirectory,
+                                   getHomeDirectory)
+import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -121,7 +121,5 @@ runCmdAction ui cmd = do
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
-    width <- Terminal.size >>= \case
-        Nothing -> pure 80
-        Just Terminal.Window { Terminal.width } -> pure width
+    width <- maybe 80 Terminal.width <$> Terminal.size
     putStrLn . pretty width $ ppr a
