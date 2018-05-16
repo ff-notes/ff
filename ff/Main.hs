@@ -5,7 +5,7 @@
 module Main where
 
 import           Control.Concurrent.STM (newTVarIO)
-import           Control.Monad (guard, liftM, when)
+import           Control.Monad (guard)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
