@@ -5,7 +5,7 @@
 module Main where
 
 import           Control.Concurrent.STM (newTVarIO)
-import           Control.Monad (guard)
+import           Control.Monad (guard, liftM, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
@@ -27,6 +27,9 @@ import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
+
+import           Data.Version (showVersion)
+import           Paths_ff (version)
 
 main :: IO ()
 main = do
@@ -118,6 +121,8 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
+        CmdVersion -> pprint $ "Version " ++ showVersion version
+
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do

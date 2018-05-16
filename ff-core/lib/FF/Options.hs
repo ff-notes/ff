@@ -38,11 +38,9 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
-    | CmdVersion    Version
+    | CmdVersion
 
 type Limit = Int
-
-newtype Version = Version Bool
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
@@ -110,7 +108,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdVersion   = CmdAction . CmdVersion <$> sVersion
+    pCmdVersion   = pure $ CmdAction CmdVersion
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit =
@@ -156,7 +154,5 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             ( flag' Shuffle (long "shuffle" <> help "shuffle notes in section")
             <|> flag' Sort (long "sort" <> help "sort notes in section")
             )
-
-    sVersion = Version <$> switch ( long "version" <> short 'v' <> help "version" )
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
