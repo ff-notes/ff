@@ -83,36 +83,33 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "unarchive" iCmdUnarchive
         ]
 
-    iCmdAdd    = i pCmdNew "add a new task or note"
-    iCmdAgenda = i
-        pCmdAgenda
-        "show what you can do right now\
+    iCmdAdd       = i pCmdNew       "add a new task or note"
+    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i pCmdConfig "show/edit configuration"
-    iCmdDelete    = i pCmdDelete "delete a task"
-    iCmdDone      = i pCmdDone "mark a task done (archive)"
-    iCmdEdit      = i pCmdEdit "edit a task or a note"
-    iCmdNew       = i pCmdNew "synonym for `add`"
-    iCmdPostpone  = i pCmdPostpone "make a task start later"
-    iCmdSearch    = i pCmdSearch "search for notes with the given text"
+    iCmdConfig    = i pCmdConfig    "show/edit configuration"
+    iCmdDelete    = i pCmdDelete    "delete a task"
+    iCmdDone      = i pCmdDone      "mark a task done (archive)"
+    iCmdEdit      = i pCmdEdit      "edit a task or a note"
+    iCmdNew       = i pCmdNew       "synonym for `add`"
+    iCmdPostpone  = i pCmdPostpone  "make a task start later"
+    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
 
-    pCmdAgenda    = CmdAction . CmdAgenda <$> limitOption
-    pCmdDelete    = CmdAction . CmdDelete <$> idArgument
-    pCmdDone      = CmdAction . CmdDone <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit <$> pEdit
-    pCmdNew       = CmdAction . CmdNew <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch <$> pSearch
+    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
+    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
+    pCmdDone      = CmdAction . CmdDone      <$> idArgument
+    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
+    pCmdNew       = CmdAction . CmdNew       <$> pNew
+    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
-    pEdit =
-        Edit
-            <$> idArgument
-            <*> optional textOption
-            <*> optional startOption
-            <*> optional maybeEndOption
+    pEdit = Edit
+        <$> idArgument
+        <*> optional textOption
+        <*> optional startOption
+        <*> optional maybeEndOption
 
     pSearch      = Search <$> strArgument (metavar "TEXT") <*> limitOption
 
@@ -120,35 +117,33 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     textArgument = strArgument (metavar "TEXT" <> help "note text")
 
     endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
-    limitOption =
-        option auto $ long "limit" <> short 'l' <> help "limit" <> value 10
-    startOption = dateOption $ long "start" <> short 's' <> help "start date"
-    textOption =
-        strOption $ long "text" <> short 't' <> help "note text" <> metavar
-            "TEXT"
+    limitOption  = option auto $
+                   long "limit" <> short 'l' <> help "limit" <> value 10
+    startOption  = dateOption $ long "start" <> short 's' <> help "start date"
+    textOption   = strOption $
+                   long "text" <> short 't' <> help "note text" <>
+                   metavar "TEXT"
 
-    maybeEndOption = Just <$> endOption <|> flag'
-        Nothing
-        (long "end-clear" <> help "clear end date")
+    maybeEndOption =
+        Just <$> endOption <|>
+        flag' Nothing (long "end-clear" <> help "clear end date")
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    pCmdConfig = CmdConfig <$> optional
-        (subparser $ command "dataDir" iDataDir <> command "ui" iUi)
+    pCmdConfig = CmdConfig <$>
+        optional (subparser $ command "dataDir" iDataDir <> command "ui" iUi)
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
             pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
-            pYandexDisk =
-                flag' DataDirYandexDisk
-                    $  long "yandex-disk"
-                    <> short 'y'
-                    <> help "detect Yandex.Disk"
+            pYandexDisk = flag' DataDirYandexDisk $
+                long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk"
         iUi = i pUi "UI tweaks"
-        pUi = ConfigUI <$> optional
-            ( flag' Shuffle (long "shuffle" <> help "shuffle notes in section")
-            <|> flag' Sort (long "sort" <> help "sort notes in section")
-            )
+        pUi = fmap ConfigUI . optional $
+            flag'
+                Shuffle
+                (long "shuffle" <> help "shuffle notes in section") <|>
+            flag' Sort (long "sort" <> help "sort notes in section")
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
