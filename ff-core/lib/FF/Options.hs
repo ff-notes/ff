@@ -58,9 +58,9 @@ data Edit = Edit
     , editText  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
-    -- ^ Nothing      -- no option            => no change
-    --   Just Nothing -- option with tobstone => clear field
-    --   Just value   -- option with value    => set field to value
+    -- ^ Nothing      -- no option             => no change
+    --   Just Nothing -- option with tombstone => clear field
+    --   Just value   -- option with value     => set field to value
     }
     deriving (Show)
 
