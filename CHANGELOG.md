@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- Subcommand `version`
 ### Fixed
 - Fix install instruction in README
 - Fix fail when VCS-based dataDir exists and global doesn't
