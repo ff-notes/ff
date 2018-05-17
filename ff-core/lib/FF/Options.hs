@@ -38,7 +38,7 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
-    | CmdVersion    Version
+    | CmdVersion
 
 type Limit = Int
 
@@ -110,7 +110,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdVersion   = CmdAction . CmdVersion <$> sVersion
+    pCmdVersion   = pure $ CmdAction CmdVersion
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit =

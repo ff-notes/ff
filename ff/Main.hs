@@ -28,6 +28,9 @@ import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
+import           Data.Version (showVersion)
+import           Paths_ff (version)
+
 main :: IO ()
 main = do
     cfg@Config { ui } <- loadConfig
@@ -36,22 +39,25 @@ main = do
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
-            currentDir <- getCurrentDirectory
-            dataDir <- getDataDir currentDir =<< checkDataDir cfg
+            dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
 
-getDataDir :: FilePath -> FilePath -> IO FilePath
-getDataDir fp dirFromCfg =
-    recSearch $ parents fp
+getDataDir :: Config -> IO FilePath
+getDataDir cfg = do
+    cur <- getCurrentDirectory
+    mDataDirFromVcs <- findVcs $ parents cur
+    case mDataDirFromVcs of
+        Just dataDir -> pure dataDir
+        Nothing      -> checkDataDir cfg
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    recSearch [] = pure dirFromCfg
-    recSearch (dir:dirs) = do
+    findVcs []         = pure Nothing
+    findVcs (dir:dirs) = do
         isDirVcs <- doesDirectoryExist (dir </> ".git")
         if isDirVcs then
-            pure $ dir </> ".ff"
+            pure . Just $ dir </> ".ff"
         else
-            recSearch dirs
+            findVcs dirs
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
@@ -115,6 +121,8 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
+        CmdVersion -> pprint $ "Version " ++ showVersion version
+
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
