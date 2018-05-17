@@ -101,15 +101,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdVersion   = i pCmdVersion   "show current version"
+    iCmdVersion   = i pCmdVersion "show current version"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
-    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
-    pCmdDone      = CmdAction . CmdDone      <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdNew       = CmdAction . CmdNew       <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
+    pCmdAgenda    = CmdAction . CmdAgenda <$> limitOption
+    pCmdDelete    = CmdAction . CmdDelete <$> idArgument
+    pCmdDone      = CmdAction . CmdDone <$> idArgument
+    pCmdEdit      = CmdAction . CmdEdit <$> pEdit
+    pCmdNew       = CmdAction . CmdNew <$> pNew
+    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
     pCmdVersion   = pure $ CmdAction CmdVersion
 
