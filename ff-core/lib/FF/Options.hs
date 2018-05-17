@@ -19,8 +19,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, switch,
-                                      value, (<**>))
+                                      strArgument, strOption, subparser, value,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
