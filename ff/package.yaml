@@ -5,7 +5,7 @@ copyright:
 
 executable:
   main: Main
-  other-modules: []
+  other-modules: Paths_ff
 
 dependencies:
   - base

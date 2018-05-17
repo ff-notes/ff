@@ -43,6 +43,7 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
+    | CmdVersion
 
 type Limit = Int
 
@@ -86,6 +87,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
+        , command "version"   iCmdVersion
         ]
 
     iCmdAdd       = i pCmdNew       "add a new task or note"
@@ -99,6 +101,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
+    iCmdVersion   = i pCmdVersion "show current version"
 
     pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
@@ -108,6 +111,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
+    pCmdVersion   = pure $ CmdAction CmdVersion
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit

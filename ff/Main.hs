@@ -28,6 +28,9 @@ import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
+import           Data.Version (showVersion)
+import           Paths_ff (version)
+
 main :: IO ()
 main = do
     cfg@Config { ui } <- loadConfig
@@ -118,6 +121,8 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
+        CmdVersion -> pprint $ "Version " ++ showVersion version
+
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
