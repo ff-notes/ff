@@ -6,7 +6,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 
 ## [Unreleased]
 ### Added
-- Add option `-v, --version`
+- Option `-v, --version`
 ### Fixed
 - Fix install instruction in README
 - Fix fail when VCS-based dataDir exists and global doesn't
