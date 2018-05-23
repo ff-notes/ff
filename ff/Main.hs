@@ -125,6 +125,7 @@ runCmdAction ui cmd = do
 
 runCmdOption :: Cmd -> IO ()
 runCmdOption CmdOption = pprint $ "Version " ++ showVersion version
+runCmdOption _ = return ()
 
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
