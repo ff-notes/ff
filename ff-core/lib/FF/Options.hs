@@ -23,8 +23,8 @@ import           Data.Time (Day)
 import           Options.Applicative (Mod, auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, value,
-                                      (<**>))
+                                      strArgument, strOption, subparser, switch,
+                                      value, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
@@ -33,6 +33,7 @@ import           GHC.Exts (IsList, Item, fromList, toList)
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
+    | CmdOption Bool
 
 data CmdAction
     = CmdAgenda     Limit
@@ -43,7 +44,6 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
-    | CmdVersion
 
 type Limit = Int
 
@@ -75,7 +75,7 @@ data Search = Search Text Limit
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = subparser commands <|> pCmdAgenda
+    parser   = subparser commands <|> pCmdAgenda <|> pCmdOption -- Parser Cmd -- subparser :: Mod CommandFields a -> Parser a
     commands = mconcat
         [ command "add"       iCmdAdd
         , command "agenda"    iCmdAgenda
@@ -87,10 +87,9 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
-        , command "version"   iCmdVersion
         ]
 
-    iCmdAdd       = i pCmdNew       "add a new task or note"
+    iCmdAdd       = i pCmdNew       "add a new task or note" -- ParserInfo Cmd
     iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i pCmdConfig    "show/edit configuration"
@@ -101,9 +100,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdVersion   = i pCmdVersion   "show current version"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
+    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption -- Parser Cmd
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
     pCmdDone      = CmdAction . CmdDone      <$> idArgument
     pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
@@ -111,9 +109,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdVersion   = pure $ CmdAction CmdVersion
 
-    pNew = New <$> textArgument <*> optional startOption <*> optional endOption
+    pNew = New <$> textArgument <*> optional startOption <*> optional endOption -- Parser New
     pEdit = Edit
         <$> idArgument
         <*> optional textOption
@@ -153,6 +150,11 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             flag' Sort [long "sort", help "sort notes in section"]
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
+
+    pCmdOption = CmdOption <$> switch
+        ( long "version"
+        <> short 'v'
+        <> help "Current ff-note version" ) -- Parser Cmd
 
 instance IsList (Mod f a) where
     type Item (Mod f a) = Mod f a
