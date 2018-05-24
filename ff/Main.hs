@@ -41,6 +41,7 @@ main = do
             timeVar <- newTVarIO =<< getRealLocalTime
             dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
+        CmdOption -> runCmdOption
 
 getDataDir :: Config -> IO FilePath
 getDataDir cfg = do
@@ -121,7 +122,9 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
-        CmdVersion -> pprint $ "Version " ++ showVersion version
+
+runCmdOption :: IO ()
+runCmdOption = pprint $ "Version " ++ showVersion version
 
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
