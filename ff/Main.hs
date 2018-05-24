@@ -126,7 +126,6 @@ runCmdAction ui cmd = do
 runCmdOption :: IO ()
 runCmdOption = pprint $ "Version " ++ showVersion version
 
-
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size

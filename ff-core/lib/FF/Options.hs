@@ -149,10 +149,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             flag' Shuffle [long "shuffle", help "shuffle notes in section"] <|>
             flag' Sort [long "sort", help "sort notes in section"]
 
-    pCmdOption = flag' CmdOption
-        ( long "version"
-        <> short 'v'
-        <> help "Current ff-note version" )
+    pCmdOption = flag'
+        CmdOption [long "version", short 'V', help "Current ff-note version"]
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 
