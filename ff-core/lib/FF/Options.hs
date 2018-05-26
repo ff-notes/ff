@@ -33,6 +33,7 @@ import           GHC.Exts (IsList, Item, fromList, toList)
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
+    | CmdOption
 
 data CmdAction
     = CmdAgenda     Limit
@@ -43,7 +44,6 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
-    | CmdVersion
 
 type Limit = Int
 
@@ -58,9 +58,9 @@ data Edit = Edit
     , editText  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
-    -- ^ Nothing      -- no option            => no change
-    --   Just Nothing -- option with tobstone => clear field
-    --   Just value   -- option with value    => set field to value
+    -- ^ Nothing      -- no option             => no change
+    --   Just Nothing -- option with tombstone => clear field
+    --   Just value   -- option with value     => set field to value
     }
     deriving (Show)
 
@@ -75,7 +75,7 @@ data Search = Search Text Limit
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = subparser commands <|> pCmdAgenda
+    parser   = subparser commands <|> pCmdAgenda <|> pCmdOption
     commands = mconcat
         [ command "add"       iCmdAdd
         , command "agenda"    iCmdAgenda
@@ -87,7 +87,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
-        , command "version"   iCmdVersion
         ]
 
     iCmdAdd       = i pCmdNew       "add a new task or note"
@@ -101,17 +100,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdVersion   = i pCmdVersion "show current version"
 
-    pCmdAgenda    = CmdAction . CmdAgenda <$> limitOption
-    pCmdDelete    = CmdAction . CmdDelete <$> idArgument
-    pCmdDone      = CmdAction . CmdDone <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit <$> pEdit
-    pCmdNew       = CmdAction . CmdNew <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch <$> pSearch
+    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
+    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
+    pCmdDone      = CmdAction . CmdDone      <$> idArgument
+    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
+    pCmdNew       = CmdAction . CmdNew       <$> pNew
+    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdVersion   = pure $ CmdAction CmdVersion
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
@@ -152,7 +149,11 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             flag' Shuffle [long "shuffle", help "shuffle notes in section"] <|>
             flag' Sort [long "sort", help "sort notes in section"]
 
+    pCmdOption = flag'
+        CmdOption [long "version", short 'V', help "Current ff-note version"]
+
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
+
 
 instance IsList (Mod f a) where
     type Item (Mod f a) = Mod f a
