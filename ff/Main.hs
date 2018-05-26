@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Main where
 
@@ -29,6 +30,7 @@ import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
 import           Data.Version (showVersion)
+import           Development.GitRev (gitHash)
 import           Paths_ff (version)
 
 main :: IO ()
@@ -124,7 +126,9 @@ runCmdAction ui cmd = do
             pprint . withHeader "unarchived:" $ UI.noteView nv
 
 runCmdOption :: IO ()
-runCmdOption = pprint $ "Version " ++ showVersion version
+runCmdOption =  do
+    pprint $ "Version: " ++ showVersion version
+    pprint $ "Hash: " ++ $(gitHash)
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
