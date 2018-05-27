@@ -12,9 +12,9 @@ dependencies:
   - crdt
   - directory
   - filepath
+  - gitrev
   - mainland-pretty
   - stm
   - terminal-size
-  - gitrev
 
   - ff-core

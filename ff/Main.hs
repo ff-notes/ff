@@ -126,9 +126,9 @@ runCmdAction ui cmd = do
             pprint . withHeader "unarchived:" $ UI.noteView nv
 
 runCmdOption :: IO ()
-runCmdOption =  do
-    pprint $ "Version: " ++ showVersion version
-    pprint $ "Hash: " ++ $(gitHash)
+runCmdOption = do
+    print $ "Version: " ++ showVersion version
+    print $ "Git revision: " ++ $(gitHash)
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
