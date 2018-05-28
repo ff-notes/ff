@@ -128,11 +128,10 @@ runCmdAction ui cmd = do
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdOption :: IO ()
-runCmdOption = putStrLn $ concat
-    [ "Version ", showVersion version
-    , ", Git revision ", $gitHash
-    -- TODO , " (", show ?, " commits)"
-    ]
+runCmdOption = do
+    putStrLn $ "Version: " ++ showVersion version
+    putStrLn $ "Git revision: " ++ $(gitHash)
+    putStrLn $ "Dirty: " ++ show $(gitDirty)
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
