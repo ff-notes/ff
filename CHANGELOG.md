@@ -6,7 +6,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 
 ## [Unreleased]
 ### Added
-- Option `-V`, `--version` with gitHash and gitDirty
+- Option `-V`, `--version` showing version number, git revision and dirtiness
 ### Fixed
 - Fix install instruction in README
 - Fix fail when VCS-based dataDir exists and global doesn't
