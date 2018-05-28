@@ -127,9 +127,9 @@ runCmdAction ui cmd = do
 
 runCmdOption :: IO ()
 runCmdOption = do
-    print $ "Version: " ++ showVersion version
-    print $ "Git revision: " ++ $(gitHash)
-    print $ "Dirty: " ++ show $(gitDirty)
+    pprint $ "Version: " ++ showVersion version
+    pprint $ "Git revision: " ++ $(gitHash)
+    pprint $ "Dirty: " ++ show $(gitDirty)
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
