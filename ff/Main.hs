@@ -30,11 +30,7 @@ import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
 import           Data.Version (showVersion)
-<<<<<<< HEAD
-import           Development.GitRev (gitDirty, gitHash)
-=======
 import           Development.GitRev (gitHash)
->>>>>>> Add git revision to version command output (#24)
 import           Paths_ff (version)
 
 main :: IO ()
@@ -132,9 +128,11 @@ runCmdAction ui cmd = do
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdOption :: IO ()
-runCmdOption = do
-    print $ "Version: " ++ showVersion version
-    print $ "Git revision: " ++ $(gitHash)
+runCmdOption = putStrLn $ concat
+    [ "Version ", showVersion version
+    , ", Git revision ", $gitHash
+    -- TODO , " (", show ?, " commits)"
+    ]
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
