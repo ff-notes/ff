@@ -125,11 +125,14 @@ runCmdAction ui cmd = do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
 
+-- Template taken from stack:
+-- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdOption :: IO ()
-runCmdOption = do
-    putStrLn $ "Version: " ++ showVersion version
-    putStrLn $ "Git revision: " ++ $(gitHash)
-    putStrLn $ "Dirty: " ++ show $(gitDirty)
+runCmdOption = putStrLn $ concat
+    [ "Version ", showVersion version,
+    ", Git revision ", $(gitHash),
+    if $(gitDirty) then ", dirty" else ""
+    ]
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
