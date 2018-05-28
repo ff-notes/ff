@@ -30,7 +30,7 @@ import           FF.UI (withHeader)
 import qualified FF.UI as UI
 
 import           Data.Version (showVersion)
-import           Development.GitRev (gitHash)
+import           Development.GitRev (gitDirty, gitHash)
 import           Paths_ff (version)
 
 main :: IO ()
@@ -127,8 +127,9 @@ runCmdAction ui cmd = do
 
 runCmdOption :: IO ()
 runCmdOption = do
-    putStrLn $ "Version: " ++ showVersion version
-    putStrLn $ "Git revision: " ++ $(gitHash)
+    print $ "Version: " ++ showVersion version
+    print $ "Git revision: " ++ $(gitHash)
+    print $ "Dirty: " ++ show $(gitDirty)
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
