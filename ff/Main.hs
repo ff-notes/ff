@@ -52,7 +52,6 @@ main = do
             dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
         CmdOption -> runCmdOption
-        CmdGithubIssue -> runCmdGithubIssues
 
 getDataDir :: Config -> IO FilePath
 getDataDir cfg = do
@@ -133,10 +132,10 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
-        -- CmdGithubIssue -> runCmdGithubIssues
+        CmdGithubIssue list -> liftIO runCmdGithubIssue
 
-runCmdGithubIssues :: IO ()
-runCmdGithubIssues = do
+runCmdGithubIssue :: IO ()
+runCmdGithubIssue = do
     possibleIssues <- GEI.issuesForRepo "ff-notes" "ff" GDO.optionsNoMilestone
     case possibleIssues of
             (Left error) -> pprint $ "Error: " ++ show error
