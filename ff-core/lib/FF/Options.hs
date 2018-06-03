@@ -44,7 +44,7 @@ data CmdAction
     | CmdPostpone      NoteId
     | CmdSearch        Search
     | CmdUnarchive     NoteId
-    | CmdGithubIssue   List
+    | CmdGithub        List
 
 data List = List
 
@@ -90,7 +90,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
-        , command "github"    iCmdGithubIssue
+        , command "github"    iCmdGithub
         ]
 
     iCmdAdd         = i pCmdNew         "add a new task or note"
@@ -104,17 +104,17 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone    = i pCmdPostpone    "make a task start later"
     iCmdSearch      = i pCmdSearch      "search for notes with the given text"
     iCmdUnarchive   = i pCmdUnarchive   "restore the note from archive"
-    iCmdGithubIssue = i pCmdGithubIssue "list issues from github"
+    iCmdGithub      = i pCmdGithub      "list issues from github"
 
-    pCmdAgenda      = CmdAction . CmdAgenda         <$> limitOption
-    pCmdDelete      = CmdAction . CmdDelete         <$> idArgument
-    pCmdDone        = CmdAction . CmdDone           <$> idArgument
-    pCmdEdit        = CmdAction . CmdEdit           <$> pEdit
-    pCmdNew         = CmdAction . CmdNew            <$> pNew
-    pCmdPostpone    = CmdAction . CmdPostpone       <$> idArgument
-    pCmdSearch      = CmdAction . CmdSearch         <$> pSearch
-    pCmdUnarchive   = CmdAction . CmdUnarchive      <$> idArgument
-    pCmdGithubIssue = CmdAction . CmdGithubIssue    <$> list
+    pCmdAgenda      = CmdAction . CmdAgenda     <$> limitOption
+    pCmdDelete      = CmdAction . CmdDelete     <$> idArgument
+    pCmdDone        = CmdAction . CmdDone       <$> idArgument
+    pCmdEdit        = CmdAction . CmdEdit       <$> pEdit
+    pCmdNew         = CmdAction . CmdNew        <$> pNew
+    pCmdPostpone    = CmdAction . CmdPostpone   <$> idArgument
+    pCmdSearch      = CmdAction . CmdSearch     <$> pSearch
+    pCmdUnarchive   = CmdAction . CmdUnarchive  <$> idArgument
+    pCmdGithub      = CmdAction . CmdGithub     <$> list
 
     list = flag' List [long "list", short 'L', help "list github issues"]
 
