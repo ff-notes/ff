@@ -33,6 +33,14 @@ import           Data.Version (showVersion)
 import           Development.GitRev (gitDirty, gitHash)
 import           Paths_ff (version)
 
+import           Data.List (intercalate)
+import qualified Data.Vector as DV (map, toList)
+import qualified GitHub.Data.Issues as GDI (issueCreatedAt, issueId, issueTitle,
+                                            issueUrl)
+import qualified GitHub.Data.Options as GDO (optionsNoMilestone)
+import qualified GitHub.Endpoints.Issues as GEI (issuesForRepo)
+import qualified GitHub.Endpoints.Repos as GER (Issue)
+
 main :: IO ()
 main = do
     cfg@Config { ui } <- loadConfig
@@ -44,6 +52,7 @@ main = do
             dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
         CmdOption -> runCmdOption
+        CmdGithubIssue -> runCmdGithubIssues
 
 getDataDir :: Config -> IO FilePath
 getDataDir cfg = do
@@ -124,6 +133,27 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
+        -- CmdGithubIssue -> runCmdGithubIssues
+
+runCmdGithubIssues :: IO ()
+runCmdGithubIssues = do
+    possibleIssues <- GEI.issuesForRepo "ff-notes" "ff" GDO.optionsNoMilestone
+    case possibleIssues of
+            (Left error) -> pprint $ "Error: " ++ show error
+            (Right issues) ->
+                pprint $ intercalate "\n\n" $ DV.toList $ DV.map formatIssue issues
+
+formatIssue :: GER.Issue -> String
+formatIssue issue =
+    "     * ff: " ++
+    show (GDI.issueTitle issue) ++
+    "\n       " ++
+    "start " ++
+    take 10 (show (GDI.issueCreatedAt issue)) ++
+    "\n       " ++
+    show (GDI.issueId issue) ++
+    "\n       " ++
+    show (GDI.issueUrl issue)
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

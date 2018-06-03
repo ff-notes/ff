@@ -34,16 +34,20 @@ data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
     | CmdOption
+    | CmdGithubIssue
 
 data CmdAction
-    = CmdAgenda     Limit
-    | CmdDelete     NoteId
-    | CmdDone       NoteId
-    | CmdEdit       Edit
-    | CmdNew        New
-    | CmdPostpone   NoteId
-    | CmdSearch     Search
-    | CmdUnarchive  NoteId
+    = CmdAgenda        Limit
+    | CmdDelete        NoteId
+    | CmdDone          NoteId
+    | CmdEdit          Edit
+    | CmdNew           New
+    | CmdPostpone      NoteId
+    | CmdSearch        Search
+    | CmdUnarchive     NoteId
+    -- | CmdGithubIssue
+
+-- data List = List
 
 type Limit = Int
 
@@ -75,7 +79,7 @@ data Search = Search Text Limit
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = subparser commands <|> pCmdAgenda <|> pCmdOption
+    parser   = subparser commands <|> pCmdAgenda <|> pCmdOption <|> pCmdGithubIssue
     commands = mconcat
         [ command "add"       iCmdAdd
         , command "agenda"    iCmdAgenda
@@ -87,28 +91,34 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
+        -- , command "github"    iCmdGithubIssue
         ]
 
-    iCmdAdd       = i pCmdNew       "add a new task or note"
-    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
+    iCmdAdd         = i pCmdNew       "add a new task or note"
+    iCmdAgenda      = i pCmdAgenda    "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i pCmdConfig    "show/edit configuration"
-    iCmdDelete    = i pCmdDelete    "delete a task"
-    iCmdDone      = i pCmdDone      "mark a task done (archive)"
-    iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdNew       = i pCmdNew       "synonym for `add`"
-    iCmdPostpone  = i pCmdPostpone  "make a task start later"
-    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
-    iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
+    iCmdConfig      = i pCmdConfig    "show/edit configuration"
+    iCmdDelete      = i pCmdDelete    "delete a task"
+    iCmdDone        = i pCmdDone      "mark a task done (archive)"
+    iCmdEdit        = i pCmdEdit      "edit a task or a note"
+    iCmdNew         = i pCmdNew       "synonym for `add`"
+    iCmdPostpone    = i pCmdPostpone  "make a task start later"
+    iCmdSearch      = i pCmdSearch    "search for notes with the given text"
+    iCmdUnarchive   = i pCmdUnarchive "restore the note from archive"
+    -- iCmdGithubIssue = i pCmdGithubIssue "list issues from github"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
-    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
-    pCmdDone      = CmdAction . CmdDone      <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdNew       = CmdAction . CmdNew       <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
-    pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
+    pCmdAgenda      = CmdAction . CmdAgenda         <$> limitOption
+    pCmdDelete      = CmdAction . CmdDelete         <$> idArgument
+    pCmdDone        = CmdAction . CmdDone           <$> idArgument
+    pCmdEdit        = CmdAction . CmdEdit           <$> pEdit
+    pCmdNew         = CmdAction . CmdNew            <$> pNew
+    pCmdPostpone    = CmdAction . CmdPostpone       <$> idArgument
+    pCmdSearch      = CmdAction . CmdSearch         <$> pSearch
+    pCmdUnarchive   = CmdAction . CmdUnarchive      <$> idArgument
+    -- pCmdGithubIssue = pure $ CmdAction CmdGithubIssue
+
+    -- list = flag' List [long "list", help "list github issues"]
+    pCmdGithubIssue = flag' CmdGithubIssue [long "github", help "list github issues"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
