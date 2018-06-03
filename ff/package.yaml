@@ -16,5 +16,7 @@ dependencies:
   - mainland-pretty
   - stm
   - terminal-size
+  - github
+  - vector
 
   - ff-core
