@@ -131,9 +131,9 @@ runCmdAction ui cmd = do
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdOption :: IO ()
 runCmdOption = putStrLn $ concat
-    [ "Version ", showVersion version,
-    ", Git revision ", $(gitHash),
-    if $(gitDirty) then ", dirty" else ""
+    [ "Version ", showVersion version
+    , ", Git revision ", $(gitHash)
+    , if $(gitDirty) then ", dirty" else ""
     ]
 
 pprint :: (Pretty a, MonadIO io) => a -> io ()
