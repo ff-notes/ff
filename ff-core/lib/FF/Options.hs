@@ -36,17 +36,17 @@ data Cmd
     | CmdOption
 
 data CmdAction
-    = CmdAgenda        Limit
-    | CmdDelete        NoteId
-    | CmdDone          NoteId
-    | CmdEdit          Edit
-    | CmdNew           New
-    | CmdPostpone      NoteId
-    | CmdSearch        Search
-    | CmdUnarchive     NoteId
-    | CmdGithub        List
+    = CmdAgenda     Limit
+    | CmdDelete     NoteId
+    | CmdDone       NoteId
+    | CmdEdit       Edit
+    | CmdNew        New
+    | CmdPostpone   NoteId
+    | CmdSearch     Search
+    | CmdUnarchive  NoteId
+    | CmdGithub     CmdGithub
 
-data List = List
+data CmdGithub = List | Diff
 
 type Limit = Int
 
@@ -93,28 +93,28 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "github"    iCmdGithub
         ]
 
-    iCmdAdd         = i pCmdNew         "add a new task or note"
-    iCmdAgenda      = i pCmdAgenda      "show what you can do right now\
-                                        \ [default action]"
-    iCmdConfig      = i pCmdConfig      "show/edit configuration"
-    iCmdDelete      = i pCmdDelete      "delete a task"
-    iCmdDone        = i pCmdDone        "mark a task done (archive)"
-    iCmdEdit        = i pCmdEdit        "edit a task or a note"
-    iCmdNew         = i pCmdNew         "synonym for `add`"
-    iCmdPostpone    = i pCmdPostpone    "make a task start later"
-    iCmdSearch      = i pCmdSearch      "search for notes with the given text"
-    iCmdUnarchive   = i pCmdUnarchive   "restore the note from archive"
-    iCmdGithub      = i pCmdGithub      "list issues from github"
+    iCmdAdd       = i pCmdNew       "add a new task or note"
+    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
+                                    \ [default action]"
+    iCmdConfig    = i pCmdConfig    "show/edit configuration"
+    iCmdDelete    = i pCmdDelete    "delete a task"
+    iCmdDone      = i pCmdDone      "mark a task done (archive)"
+    iCmdEdit      = i pCmdEdit      "edit a task or a note"
+    iCmdNew       = i pCmdNew       "synonym for `add`"
+    iCmdPostpone  = i pCmdPostpone  "make a task start later"
+    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
+    iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
+    iCmdGithub    = i pCmdGithub    "list issues from github"
 
-    pCmdAgenda      = CmdAction . CmdAgenda     <$> limitOption
-    pCmdDelete      = CmdAction . CmdDelete     <$> idArgument
-    pCmdDone        = CmdAction . CmdDone       <$> idArgument
-    pCmdEdit        = CmdAction . CmdEdit       <$> pEdit
-    pCmdNew         = CmdAction . CmdNew        <$> pNew
-    pCmdPostpone    = CmdAction . CmdPostpone   <$> idArgument
-    pCmdSearch      = CmdAction . CmdSearch     <$> pSearch
-    pCmdUnarchive   = CmdAction . CmdUnarchive  <$> idArgument
-    pCmdGithub      = CmdAction . CmdGithub     <$> list
+    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
+    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
+    pCmdDone      = CmdAction . CmdDone      <$> idArgument
+    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
+    pCmdNew       = CmdAction . CmdNew       <$> pNew
+    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
+    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
+    pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
+    pCmdGithub    = CmdAction . CmdGithub    <$> list
 
     list = flag' List [long "list", short 'L', help "list github issues"]
 
