@@ -44,6 +44,9 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
+    | CmdGithub     CmdGithub
+
+data CmdGithub = List
 
 type Limit = Int
 
@@ -87,6 +90,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
         , command "unarchive" iCmdUnarchive
+        , command "github"    iCmdGithub
         ]
 
     iCmdAdd       = i pCmdNew       "add a new task or note"
@@ -100,6 +104,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
+    iCmdGithub    = i pCmdGithub    "list issues from github"
 
     pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
@@ -109,6 +114,9 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
+    pCmdGithub    = CmdAction . CmdGithub    <$> list
+
+    list = flag' List [long "list", short 'L', help "list github issues"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit

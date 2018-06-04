@@ -22,6 +22,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
+import           FF.Github (runCmdGithub)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              Search (..), Shuffle (..), parseOptions)
 import qualified FF.Options as Options
@@ -124,6 +125,7 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
+        CmdGithub _ -> liftIO runCmdGithub
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
