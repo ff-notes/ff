@@ -5,7 +5,6 @@ module FF.Github
     ) where
 
 import           Data.List (intercalate)
-import           Data.Vector (map, toList)
 import qualified Data.Vector as Vector
 import           GitHub.Data.Issues (issueCreatedAt, issueId, issueTitle,
                                      issueUrl)
