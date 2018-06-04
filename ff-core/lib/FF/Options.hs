@@ -46,7 +46,7 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdGithub     CmdGithub
 
-data CmdGithub = List | Diff
+data CmdGithub = List
 
 type Limit = Int
 
