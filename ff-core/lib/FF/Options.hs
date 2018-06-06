@@ -30,6 +30,10 @@ import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
 import           GHC.Exts (IsList, Item, fromList, toList)
 
+import           GitHub.Data.Definitions (Owner)
+import           GitHub.Data.Name (Name)
+import           GitHub.Data.Repos (Repo)
+
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
@@ -47,6 +51,10 @@ data CmdAction
     | CmdUnarchive  NoteId
 
 data CmdGithub = List
+    { owner :: Name Owner
+    , repo  :: Name Repo
+    -- , limit :: Limit
+    }
 
 type Limit = Int
 
@@ -116,7 +124,16 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
 
-    list = flag' List [long "list", short 'L', help "list github issues"]
+    -- list = flag' List [long "list", short 'L', help "list github issues"]
+    list     = subparser ( command "list" iCmdList)
+    iCmdList = i pCmdList "list issues of user repo"
+    pCmdList = List
+        <$> pOwner
+        <*> pRepo
+        -- <*> limitOption
+
+    pOwner = strArgument [metavar "owner", help "Owner of repo"] --, value "ff-notes"]
+    pRepo  = strArgument [metavar "repo", help "Name of repo"] --, value "ff"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
