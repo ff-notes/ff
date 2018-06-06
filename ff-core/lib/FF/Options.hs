@@ -1,12 +1,14 @@
 {-# OPTIONS -Wno-orphans #-}
 
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module FF.Options
     ( Cmd (..)
     , CmdAction (..)
+    , CmdGithub (..)
     , Config (..)
     , DataDir (..)
     , Edit (..)
@@ -50,7 +52,7 @@ data CmdAction
     | CmdSearch     Search
     | CmdUnarchive  NoteId
 
-data CmdGithub = List
+data CmdGithub = ListG
     { owner :: Name Owner
     , repo  :: Name Repo
     -- , limit :: Limit
@@ -124,16 +126,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
 
-    -- list = flag' List [long "list", short 'L', help "list github issues"]
     list     = subparser ( command "list" iCmdList)
     iCmdList = i pCmdList "list issues of user repo"
-    pCmdList = List
+    pCmdList = ListG
         <$> pOwner
         <*> pRepo
         -- <*> limitOption
 
-    pOwner = strArgument [metavar "owner", help "Owner of repo"] --, value "ff-notes"]
-    pRepo  = strArgument [metavar "repo", help "Name of repo"] --, value "ff"]
+    pOwner = strArgument [metavar "Name Owner", help "Owner of repo", value "ff-notes"]
+    pRepo  = strArgument [metavar "Name Repo", help "Name of repo", value "ff"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
