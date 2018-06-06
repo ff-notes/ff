@@ -5,11 +5,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+- Subcommand `github` to synchronize issues with GitHub
 
 ## [0.4] - 2018-06-06
 ### Added
 - Option `-V`, `--version` showing version number, git revision and dirtiness
-- Subcommand `github` to synchronize issues with GitHub
 ### Fixed
 - Fix install instruction in README
 - Fix fail when VCS-based dataDir exists and global doesn't
