@@ -12,13 +12,13 @@ module Main (main) where
 
 import           Control.Error ((?:))
 import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
-import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
-import           Data.Aeson (Value (Array, Number, Object, String), object,
+import           Data.Aeson (FromJSON, ToJSON,
+                             Value (Array, Number, Object, String), object,
                              parseJSON, toJSON, (.=))
-import           Data.Aeson.Types (parseEither)
+import           Data.Aeson.Types (Parser, parseEither)
 import           Data.Foldable (toList)
 import           Data.HashMap.Strict ((!))
 import           Data.List.NonEmpty (NonEmpty ((:|)))
@@ -30,16 +30,16 @@ import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
 import           System.FilePath (splitDirectories)
-import           Test.QuickCheck (Arbitrary, Property, Testable, arbitrary,
-                                  conjoin, counterexample, property, (===),
-                                  (==>))
+import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
+                                  counterexample, property, (===), (==>))
 import           Test.QuickCheck.Instances ()
+import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.HUnit (testCase, (@?=))
 import           Test.Tasty.QuickCheck (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNew, getSamples)
-import           FF.Config (ConfigUI (..))
+import           FF.Config (Config, ConfigUI (..))
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
@@ -221,27 +221,25 @@ prop_new (NoNul newText) newStart newEnd =
 expectJust :: Maybe Property -> Property
 expectJust = fromMaybe . counterexample "got Nothing" $ property False
 
-expectRightK :: Testable b => Either String a -> (a -> b) -> Property
-expectRightK e f = case e of
-    Left  l -> counterexample l $ property False
-    Right a -> property $ f a
-
 failProp :: String -> Property
 failProp s = counterexample s $ property False
 
 ok :: Property
 ok = property ()
 
-prop_Note_toJson_fromJson :: Note -> Property
-prop_Note_toJson_fromJson note@Note { noteStatus, noteText, noteStart, noteEnd }
-    = expectRightK (parseEither parseJSON $ toJSON note)
-        $ \Note { noteStatus = noteStatus', noteText = noteText', noteStart = noteStart', noteEnd = noteEnd' } ->
-              conjoin
-                  [ noteStatus === noteStatus'
-                  , RGA.pack noteText === RGA.pack noteText'
-                  , noteStart === noteStart'
-                  , noteEnd === noteEnd'
-                  ]
+jsonRoundtrip
+    :: forall a . (Show a, Eq a, FromJSON a, ToJSON a) => a -> Property
+jsonRoundtrip j =
+    let res = parseEither (parseJSON :: Value -> Parser a) $ toJSON j in
+    case res of
+        Left l -> counterexample l $ property False
+        Right j' -> j === j'
+
+test_JSON_Tests :: [TestTree]
+test_JSON_Tests =
+    [ testProperty "Config" $ jsonRoundtrip @Config
+    , testProperty "Note"   $ jsonRoundtrip @Note
+    ]
 
 ui :: ConfigUI
 ui = ConfigUI {shuffle = False}
