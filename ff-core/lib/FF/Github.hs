@@ -16,7 +16,6 @@ import           System.IO (hPrint, stderr)
 
 runCmdGithub :: Name Owner -> Name Repo -> IO ()
 runCmdGithub own rep = do
--- runCmdGithub = do
     possibleIssues <- issuesForRepo own rep optionsNoMilestone
     case possibleIssues of
         Left err ->
