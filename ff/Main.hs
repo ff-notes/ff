@@ -114,7 +114,7 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub (ListG owner repo) -> liftIO $ runCmdGithub owner repo
+        CmdGithub GithubList { owner, repo } -> liftIO $ runCmdGithub owner repo
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv

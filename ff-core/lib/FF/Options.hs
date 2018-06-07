@@ -52,10 +52,10 @@ data CmdAction
     | CmdSearch     Search
     | CmdUnarchive  NoteId
 
-data CmdGithub = ListG
+data CmdGithub = GithubList
     { owner :: Name Owner
     , repo  :: Name Repo
-    -- , limit :: Limit
+    -- , limit :: Limit -- to implement after noteview
     }
 
 type Limit = Int
@@ -126,15 +126,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
 
-    list     = subparser ( command "list" iCmdList)
-    iCmdList = i pCmdList "list issues of user repo"
-    pCmdList = ListG
+    list     = subparser (command "list" iCmdList)
+    iCmdList = i pCmdList "list issues of user repository"
+    pCmdList = GithubList
         <$> pOwner
         <*> pRepo
-        -- <*> limitOption
+        -- <*> limitOption -- to implement after noteview
 
-    pOwner = strArgument [metavar "Name Owner", help "Owner of repo", value "ff-notes"]
-    pRepo  = strArgument [metavar "Name Repo", help "Name of repo", value "ff"]
+    pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
+    pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit

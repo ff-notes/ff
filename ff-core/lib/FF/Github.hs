@@ -15,8 +15,8 @@ import           GitHub.Endpoints.Issues (issuesForRepo)
 import           System.IO (hPrint, stderr)
 
 runCmdGithub :: Name Owner -> Name Repo -> IO ()
-runCmdGithub own rep = do
-    possibleIssues <- issuesForRepo own rep optionsNoMilestone
+runCmdGithub owner repo = do
+    possibleIssues <- issuesForRepo owner repo optionsNoMilestone
     case possibleIssues of
         Left err ->
             hPrint stderr err
