@@ -34,6 +34,10 @@ import           GitHub.Data.Definitions (Owner)
 import           GitHub.Data.Name (Name)
 import           GitHub.Data.Repos (Repo)
 
+import           GitHub.Data.Definitions (Owner)
+import           GitHub.Data.Name (Name)
+import           GitHub.Data.Repos (Repo)
+
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
@@ -49,7 +53,6 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
-    | CmdGithub     CmdGithub
 
 data CmdGithub = GithubList
     { owner :: Name Owner
