@@ -1,12 +1,14 @@
 {-# OPTIONS -Wno-orphans #-}
 
 {-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module FF.Options
     ( Cmd (..)
     , CmdAction (..)
+    , CmdGithub (..)
     , Config (..)
     , DataDir (..)
     , Edit (..)
@@ -30,6 +32,10 @@ import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
 import           GHC.Exts (IsList, Item, fromList, toList)
 
+import           GitHub.Data.Definitions (Owner)
+import           GitHub.Data.Name (Name)
+import           GitHub.Data.Repos (Repo)
+
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
@@ -46,7 +52,11 @@ data CmdAction
     | CmdSearch     Search
     | CmdUnarchive  NoteId
 
-data CmdGithub = List
+data CmdGithub = GithubList
+    { owner :: Name Owner
+    , repo  :: Name Repo
+    -- , limit :: Limit -- to implement after noteview
+    }
 
 type Limit = Int
 
@@ -116,7 +126,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
 
-    list = flag' List [long "list", short 'L', help "list github issues"]
+    list     = subparser (command "list" iCmdList)
+    iCmdList = i pCmdList "list issues of user repository"
+    pCmdList = GithubList
+        <$> pOwner
+        <*> pRepo
+        -- <*> limitOption -- to implement after noteview
+
+    pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
+    pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit

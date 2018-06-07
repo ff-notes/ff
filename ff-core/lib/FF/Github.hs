@@ -8,12 +8,15 @@ import           Data.Foldable (toList)
 import           Data.List (intercalate)
 import           GitHub (Issue, issueCreatedAt, issueId, issueTitle, issueUrl,
                          optionsNoMilestone)
+import           GitHub.Data.Definitions (Owner)
+import           GitHub.Data.Name (Name)
+import           GitHub.Data.Repos (Repo)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 import           System.IO (hPrint, stderr)
 
-runCmdGithub :: IO ()
-runCmdGithub = do
-    possibleIssues <- issuesForRepo "ff-notes" "ff" optionsNoMilestone
+runCmdGithub :: Name Owner -> Name Repo -> IO ()
+runCmdGithub owner repo = do
+    possibleIssues <- issuesForRepo owner repo optionsNoMilestone
     case possibleIssues of
         Left err ->
             hPrint stderr err

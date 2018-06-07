@@ -23,8 +23,9 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (runCmdGithub)
-import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), Shuffle (..), parseOptions)
+import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
+                             DataDir (..), Search (..), Shuffle (..),
+                             parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -113,7 +114,7 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub _ -> liftIO runCmdGithub
+        CmdGithub GithubList { owner, repo } -> liftIO $ runCmdGithub owner repo
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
