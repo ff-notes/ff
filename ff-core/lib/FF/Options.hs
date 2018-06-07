@@ -53,7 +53,11 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdGithub     CmdGithub
 
-data CmdGithub = List
+data CmdGithub = GithubList
+    { owner :: Name Owner
+    , repo  :: Name Repo
+    -- , limit :: Limit -- to implement after noteview
+    }
 
 data CmdGithub = GithubList
     { owner :: Name Owner
@@ -132,7 +136,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
     pCmdGithub    = CmdAction . CmdGithub    <$> list
 
-    list = flag' List [long "list", short 'L', help "list github issues"]
+    list     = subparser (command "list" iCmdList)
+    iCmdList = i pCmdList "list issues of user repository"
+    pCmdList = GithubList
+        <$> pOwner
+        <*> pRepo
+        -- <*> limitOption -- to implement after noteview
+
+    pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
+    pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues of user repository"

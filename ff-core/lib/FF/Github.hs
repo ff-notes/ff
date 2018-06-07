@@ -5,17 +5,18 @@ module FF.Github
     ) where
 
 import           Data.List (intercalate)
-import qualified Data.Vector as Vector
-import           GitHub.Data.Issues (issueCreatedAt, issueId, issueTitle,
-                                     issueUrl)
-import           GitHub.Data.Options (optionsNoMilestone)
+import           GitHub (Issue, issueCreatedAt, issueId, issueTitle, issueUrl,
+                         optionsNoMilestone)
+import           GitHub.Data.Definitions (Owner)
+import           GitHub.Data.Name (Name)
+import           GitHub.Data.Repos (Repo)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 import           GitHub.Endpoints.Repos (Issue)
 import           System.IO (hPrint, stderr)
 
-runCmdGithub :: IO ()
-runCmdGithub = do
-    possibleIssues <- issuesForRepo "ff-notes" "ff" optionsNoMilestone
+runCmdGithub :: Name Owner -> Name Repo -> IO ()
+runCmdGithub owner repo = do
+    possibleIssues <- issuesForRepo owner repo optionsNoMilestone
     case possibleIssues of
         (Left errorGit) ->
             hPrint stderr errorGit
