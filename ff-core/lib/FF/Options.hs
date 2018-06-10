@@ -118,7 +118,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdDelete    = i pCmdDelete    "delete a task"
     iCmdDone      = i pCmdDone      "mark a task done (archive)"
     iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdGithub    = i pCmdGithub    "list issues from github"
+    iCmdGithub    = i pCmdGithub    "synchronize with GitHub issues"
     iCmdNew       = i pCmdNew       "synonym for `add`"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
@@ -137,14 +137,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdGithub    = CmdAction . CmdGithub    <$> list
 
     list     = subparser (command "list" iCmdList)
-    iCmdList = i pCmdList "list issues of user repository"
+    iCmdList = i pCmdList "list issues from a repository"
     pCmdList = GithubList
         <$> pOwner
         <*> pRepo
         -- <*> limitOption -- to implement after noteview
 
-    pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
-    pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
+    pOwner = strArgument
+        [metavar "OWNER", help "Owner or organizations of the repository"]
+    pRepo  = strArgument [metavar "REPO", help "Name of the repository"]
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues of user repository"
