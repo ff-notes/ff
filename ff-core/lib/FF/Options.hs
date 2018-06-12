@@ -62,7 +62,7 @@ data CmdGithub = GithubList
 data CmdGithub = GithubList
     { owner :: Name Owner
     , repo  :: Name Repo
-    -- , limit :: Limit -- to implement after noteview
+    , limit :: Limit -- to implement after noteview
     }
 
 type Limit = Int
@@ -151,7 +151,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdList = GithubList
         <$> pOwner
         <*> pRepo
-        -- <*> limitOption -- to implement after noteview
+        <*> limitOption -- to implement after noteview
 
     pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
     pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
