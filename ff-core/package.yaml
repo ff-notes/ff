@@ -16,6 +16,7 @@ library:
     - random
     - stm
     - temporary
+    - terminal-size
     - text
     - time
     - typed-process
