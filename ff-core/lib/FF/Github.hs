@@ -6,7 +6,7 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.Time (Day, UTCTime (..))
-import           FF.Storage (DocId)
+import           FF.Storage (DocId (..))
 import           FF.Types (NoteId, NoteView (..), Sample (..), Status (..),
                            TaskMode (..), singletonSampleMap)
 import           FF.UI (samplesInSections)
