@@ -18,6 +18,7 @@ import           GitHub (Issue (..), IssueState (..), issueClosedAt,
 import           GitHub.Data.Definitions (Error (..), Owner)
 import           GitHub.Data.Id
 import           GitHub.Data.Name (Name)
+import           GitHub.Data.Options (stateOpen)
 import           GitHub.Data.Repos (Repo)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 import qualified System.Console.Terminal.Size as Terminal
@@ -27,7 +28,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 runCmdGithub :: Name Owner -> Name Repo -> Int -> IO ()
 runCmdGithub owner repo limit = do
-    possibleIssues <- issuesForRepo owner repo optionsNoMilestone
+    possibleIssues <- issuesForRepo owner repo stateOpen
     case possibleIssues of
         Left err ->
             hPrint stderr err
@@ -35,11 +36,8 @@ runCmdGithub owner repo limit = do
             let nv = map toNoteView (toList issues)
             pprint $ toDoc limit nv
 
-toSample :: [NoteView] -> Sample
-toSample nw = Sample nw (genericLength nw)
-
 toDoc :: Int -> [NoteView] -> Doc
-toDoc limit nv = samplesInSections limit $ singletonSampleMap Actual (toSample nv) -- Правильно ли указан TaskMode, а если нет, то как его указать? Лимит игнорируется, выводится сразу все задачи почему-то.
+toDoc limit nv = samplesInSections limit $ singletonSampleMap Actual (Sample (take limit nv) (genericLength nv)) -- Правильно ли указан TaskMode, а если нет, то как его указать?
 
 toNoteView :: Issue -> NoteView
 toNoteView issue = NoteView
