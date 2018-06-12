@@ -11,8 +11,7 @@ import           FF.Types (NoteId, NoteView (..), Sample (..), Status (..),
                            TaskMode (..), singletonSampleMap)
 import           FF.UI (samplesInSections)
 import           GitHub (Issue (..), IssueState (..), issueClosedAt,
-                         issueCreatedAt, issueId, issueState, issueTitle,
-                         optionsNoMilestone)
+                         issueCreatedAt, issueId, issueState, issueTitle)
 import           GitHub.Data.Definitions (Owner)
 import           GitHub.Data.Id
 import           GitHub.Data.Name (Name)
