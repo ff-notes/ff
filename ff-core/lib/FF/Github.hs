@@ -1,21 +1,19 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module FF.Github
     ( runCmdGithub
     ) where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Foldable (toList)
-import           Data.List (genericLength, intercalate)
-import           Data.Time (Day, UTCTime (..), getCurrentTime)
-import           FF.Storage (DocId (..))
-import           FF.Types (NoteId (..), NoteView (..), Sample (..), Status (..),
-                           TaskMode (..), singletonSampleMap, taskMode)
-import           FF.UI (noteView, samplesInSections)
+import           Data.List (genericLength)
+import           Data.Time (Day, UTCTime (..))
+import           FF.Storage (DocId)
+import           FF.Types (NoteId, NoteView (..), Sample (..), Status (..),
+                           TaskMode (..), singletonSampleMap)
+import           FF.UI (samplesInSections)
 import           GitHub (Issue (..), IssueState (..), issueClosedAt,
                          issueCreatedAt, issueId, issueState, issueTitle,
-                         issueUrl, optionsNoMilestone)
-import           GitHub.Data.Definitions (Error (..), Owner)
+                         optionsNoMilestone)
+import           GitHub.Data.Definitions (Owner)
 import           GitHub.Data.Id
 import           GitHub.Data.Name (Name)
 import           GitHub.Data.Options (stateOpen)
