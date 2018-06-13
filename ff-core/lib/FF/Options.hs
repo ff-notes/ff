@@ -39,7 +39,7 @@ import           GitHub.Data.Repos (Repo)
 data Cmd
     = CmdConfig (Maybe Config)
     | CmdAction CmdAction
-    | CmdOption
+    | CmdVersion
 
 data CmdAction
     = CmdAgenda     Limit
@@ -88,7 +88,7 @@ data Search = Search Text Limit
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = subparser commands <|> pCmdAgenda <|> pCmdOption
+    parser   = pCmdVersion <|> subparser commands <|> pCmdAgenda
     commands = mconcat
         [ command "add"       iCmdAdd
         , command "agenda"    iCmdAgenda
@@ -110,7 +110,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdDelete    = i pCmdDelete    "delete a task"
     iCmdDone      = i pCmdDone      "mark a task done (archive)"
     iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdGithub    = i pCmdGithub    "synchronize with GitHub issues"
+    iCmdGithub    = i pCmdGithub    "synchronize issues with GitHub"
     iCmdNew       = i pCmdNew       "synonym for `add`"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
@@ -134,8 +134,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         -- <*> limitOption -- to implement after noteview
 
     pOwner = strArgument
-        [metavar "OWNER", help "Owner or organizations of the repository"]
-    pRepo  = strArgument [metavar "REPO", help "Name of the repository"]
+        [metavar "OWNER", help "Repository owner (user or organization)"]
+    pRepo  = strArgument [metavar "REPO", help "Repository name"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
@@ -176,8 +176,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             flag' Shuffle [long "shuffle", help "shuffle notes in section"] <|>
             flag' Sort [long "sort", help "sort notes in section"]
 
-    pCmdOption = flag'
-        CmdOption [long "version", short 'V', help "Current ff-note version"]
+    pCmdVersion = flag'
+        CmdVersion [long "version", short 'V', help "Current ff-note version"]
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 

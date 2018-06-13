@@ -45,7 +45,7 @@ main = do
             timeVar <- newTVarIO =<< getRealLocalTime
             dataDir <- getDataDir cfg
             runStorage dataDir timeVar $ runCmdAction ui action
-        CmdOption -> runCmdOption
+        CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
 getDataDir cfg = do
@@ -130,8 +130,8 @@ runCmdAction ui cmd = do
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
-runCmdOption :: IO ()
-runCmdOption = putStrLn $ concat
+runCmdVersion :: IO ()
+runCmdVersion = putStrLn $ concat
     [ "Version ", showVersion version
     , ", Git revision ", $(gitHash)
     , if $(gitDirty) then ", dirty" else ""
