@@ -149,8 +149,9 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> pRepo
         <*> limitOption
 
-    pOwner = strArgument [metavar "Name Owner", help "Owner of repository"]
-    pRepo  = strArgument [metavar "Name Repo", help "Name of repository"]
+    pOwner = strArgument
+        [metavar "OWNER", help "Repository owner (user or organization)"]
+    pRepo  = strArgument [metavar "REPO", help "Repository name"]
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
