@@ -50,6 +50,7 @@ toNoteView Issue{..} = NoteView
   where
     maybeUrl = case issueHtmlUrl of
         Just (URL.URL url) -> "\nurl " <> url
+        _                  -> ""
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
