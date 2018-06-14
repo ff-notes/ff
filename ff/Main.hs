@@ -15,6 +15,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
+import           System.IO (hPrint, stderr)
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -114,7 +115,11 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub GithubList { owner, repo } -> liftIO $ runCmdGithub owner repo
+        CmdGithub GithubList { owner, repo, limit } -> liftIO $ do
+            possibleIssues <- runCmdGithub owner repo limit
+            case possibleIssues of
+                Left err     -> hPrint stderr err
+                Right sample -> pprint $ UI.samplesInSections limit sample
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
