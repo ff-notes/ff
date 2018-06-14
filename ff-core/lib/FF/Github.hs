@@ -29,12 +29,13 @@ import           GitHub.Endpoints.Issues (issuesForRepo)
 
 runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit =
-    fmap (sampleMap limit) <$> issuesForRepo owner repo stateOpen
+    fmap sampleMap <$> issuesForRepo owner repo stateOpen
   where
-    sampleMap limit' issues = singletonSampleMap Actual sample
+    sampleMap issues = singletonSampleMap Actual sample
       where
-        sample = Sample (take limit' nv) (genericLength nv)
+        sample = Sample (take limit nv) (genericLength nv)
         nv = map toNoteView (toList issues)
+
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
