@@ -2,7 +2,11 @@
 set -eux -o pipefail
 
 ghc_warnings=(
-    -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+    -Wall
+    -Wcompat
+    -Wincomplete-record-updates
+    -Wincomplete-uni-patterns
+    -Wredundant-constraints
 )
 ghc_options=(${ghc_warnings[*]} -Werror)
 
