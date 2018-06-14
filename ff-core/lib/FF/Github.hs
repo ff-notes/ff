@@ -24,7 +24,6 @@ import           GitHub.Data.Repos (Repo)
 import           GitHub.Data.URL (getUrl)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 import           GitHub.Internal.Prelude (Vector, pack, (<>))
-import           Text.PrettyPrint.Mainland (Doc)
 
 runCmdGithub :: Name Owner -> Name Repo -> IO (Either Error (Vector Issue))
 runCmdGithub owner repo = issuesForRepo owner repo stateOpen
