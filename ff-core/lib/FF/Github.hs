@@ -5,7 +5,6 @@
 
 module FF.Github
     ( runCmdGithub
-    , toSampleMap
     ) where
 
 import           Data.Foldable (toList)
@@ -26,12 +25,13 @@ import           GitHub.Data.Id
 import           GitHub.Data.Name (Name)
 import           GitHub.Data.Options (stateOpen)
 import           GitHub.Data.Repos (Repo)
--- import           GitHub.Data.URL (URL)
 import qualified GitHub.Data.URL as URL
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
-runCmdGithub :: Name Owner -> Name Repo -> IO (Either Error (Vector Issue))
-runCmdGithub owner repo = issuesForRepo owner repo stateOpen
+runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
+runCmdGithub owner repo limit = do
+    possibleIssues <- issuesForRepo owner repo stateOpen
+    return $ fmap (toSampleMap limit) possibleIssues
 
 toSampleMap :: Int -> Vector Issue -> ModeMap Sample
 toSampleMap limit issues = singletonSampleMap Actual sample

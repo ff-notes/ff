@@ -23,7 +23,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdGithub, toSampleMap)
+import           FF.Github (runCmdGithub)
 import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
                              DataDir (..), Search (..), Shuffle (..),
                              parseOptions)
@@ -116,11 +116,10 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { owner, repo, limit } -> liftIO $ do
-            possibleIssues <- runCmdGithub owner repo
+            possibleIssues <- runCmdGithub owner repo limit
             case possibleIssues of
                 Left err     -> hPrint stderr err
-                Right issues ->
-                    pprint $ UI.samplesInSections limit $ toSampleMap limit issues
+                Right sample -> pprint $ UI.samplesInSections limit sample
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
