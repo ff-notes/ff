@@ -15,6 +15,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
+import           System.IO (hPrint, stderr)
 import           Text.PrettyPrint.Mainland (pretty)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -22,7 +23,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdGithub)
+import           FF.Github (runCmdGithub, toDoc)
 import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
                              DataDir (..), Search (..), Shuffle (..),
                              parseOptions)
@@ -114,7 +115,11 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub GithubList { owner, repo, limit } -> liftIO $ runCmdGithub owner repo limit
+        CmdGithub GithubList { owner, repo, limit } -> do
+            possibleIssues <- liftIO $ runCmdGithub owner repo limit
+            case possibleIssues of
+                Left err -> liftIO $ hPrint stderr err
+                Right issues -> liftIO $ pprint $ toDoc limit issues
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
