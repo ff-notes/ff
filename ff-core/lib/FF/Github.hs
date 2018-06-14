@@ -16,15 +16,10 @@ import           FF.Storage (DocId (..))
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..), TaskMode (..), singletonSampleMap)
 
-import           GitHub (Issue (..), IssueState (..), Milestone (..),
-                         issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle)
-import           GitHub.Data.Definitions (Error (..), Owner)
-import           GitHub.Data.Id
-import           GitHub.Data.Name (Name)
-import           GitHub.Data.Options (stateOpen)
-import           GitHub.Data.Repos (Repo)
-import qualified GitHub.Data.URL as URL
+import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
+                         Name, Owner, Repo, URL (..), issueCreatedAt,
+                         issueHtmlUrl, issueId, issueMilestone, issueState,
+                         issueTitle, stateOpen, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
 runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
@@ -47,14 +42,14 @@ toNoteView Issue{..} = NoteView
     }
   where
     maybeUrl = case issueHtmlUrl of
-        Just (URL.URL url) -> "\nurl " <> url
-        _                  -> ""
+        Just (URL url) -> "\nurl " <> url
+        Nothing        -> ""
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
 
 toNoteId :: Id Issue -> NoteId
-toNoteId (Id n) = DocId $ show n
+toNoteId = DocId . show . untagId
 
 toStatus :: IssueState -> Status
 toStatus = \case
