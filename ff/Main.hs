@@ -23,7 +23,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdGithub, toDoc)
+import           FF.Github (runCmdGithub, toSampleMap)
 import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
                              DataDir (..), Search (..), Shuffle (..),
                              parseOptions)
@@ -118,9 +118,9 @@ runCmdAction ui cmd = do
         CmdGithub GithubList { owner, repo, limit } -> liftIO $ do
             possibleIssues <- runCmdGithub owner repo
             case possibleIssues of
-                Left err -> hPrint stderr err
+                Left err     -> hPrint stderr err
                 Right issues ->
-                    pprint $ UI.samplesInSections limit $ toDoc limit issues
+                    pprint $ UI.samplesInSections limit $ toSampleMap limit issues
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
