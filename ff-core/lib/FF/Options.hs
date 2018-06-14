@@ -57,12 +57,6 @@ data CmdGithub = GithubList
     , limit :: Limit
     }
 
-data CmdGithub = GithubList
-    { owner :: Name Owner
-    , repo  :: Name Repo
-    , limit :: Limit
-    }
-
 type Limit = Int
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
