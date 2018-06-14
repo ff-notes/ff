@@ -22,7 +22,8 @@ import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          issueTitle, stateOpen, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
-runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
+runCmdGithub
+    :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit =
     fmap sampleMap <$> issuesForRepo owner repo stateOpen
   where
