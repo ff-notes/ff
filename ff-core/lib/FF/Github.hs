@@ -29,9 +29,8 @@ import qualified GitHub.Data.URL as URL
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
 runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
-runCmdGithub owner repo limit = do
-    possibleIssues <- issuesForRepo owner repo stateOpen
-    return $ fmap (toSampleMap limit) possibleIssues
+runCmdGithub owner repo limit =
+    fmap (toSampleMap limit) <$> issuesForRepo owner repo stateOpen
 
 toSampleMap :: Int -> Vector Issue -> ModeMap Sample
 toSampleMap limit issues = singletonSampleMap Actual sample
