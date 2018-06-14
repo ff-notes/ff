@@ -6,13 +6,11 @@ module FF.Github
     , toDoc
     ) where
 
-import           Control.Monad (join)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
-import           Data.Text (concat, pack)
+import           Data.Text ()
 import qualified Data.Text as Text
-import           Data.Time (Day, UTCTime (..))
+import           Data.Time (UTCTime (..))
 import           FF.Storage (DocId (..))
 import           FF.Types (NoteId, NoteView (..), Sample (..), Status (..),
                            TaskMode (..), singletonSampleMap)
@@ -27,12 +25,11 @@ import           GitHub.Data.Options (stateOpen)
 import           GitHub.Data.Repos (Repo)
 import           GitHub.Data.URL (getUrl)
 import           GitHub.Endpoints.Issues (issuesForRepo)
-import           GitHub.Internal.Prelude (Vector (..))
-import           Text.PrettyPrint.Mainland (Doc, pretty)
-import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
+import           GitHub.Internal.Prelude (Vector)
+import           Text.PrettyPrint.Mainland (Doc)
 
-runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (Vector Issue))
-runCmdGithub owner repo limit = issuesForRepo owner repo stateOpen
+runCmdGithub :: Name Owner -> Name Repo -> IO (Either Error (Vector Issue))
+runCmdGithub owner repo = issuesForRepo owner repo stateOpen
 
 toDoc :: Int -> Vector Issue -> Doc
 toDoc limit issues = samplesInSections limit $ singletonSampleMap Actual (Sample (take limit nv) (genericLength nv)) where
@@ -44,7 +41,7 @@ toNoteView Issue{..} = NoteView
     , status = toStatus issueState
     , text   = Text.concat [issueTitle, Text.pack "\nurl ", getUrl issueUrl]
     , start  = utctDay issueCreatedAt
-    , end    = fmap utctDay (join $ milestoneDueOn <$> issueMilestone)
+    , end    = fmap utctDay (milestoneDueOn =<< issueMilestone)
     }
 
 toNoteId :: Id Issue -> NoteId
