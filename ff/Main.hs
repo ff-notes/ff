@@ -116,7 +116,7 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { owner, repo, limit } -> do
-            possibleIssues <- liftIO $ runCmdGithub owner repo limit
+            possibleIssues <- liftIO $ runCmdGithub owner repo
             case possibleIssues of
                 Left err -> liftIO $ hPrint stderr err
                 Right issues -> liftIO $ pprint $ toDoc limit issues
