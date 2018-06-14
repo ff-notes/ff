@@ -1,7 +1,9 @@
 #!/bin/bash
 set -eux -o pipefail
 
-ghc_warnings=(-Wall -Wincomplete-record-updates -Wincomplete-uni-patterns)
+ghc_warnings=(
+    -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns
+)
 ghc_options=(${ghc_warnings[*]} -Werror)
 
 ${STACK:-stack} test --ghc-options="${ghc_options[*]}"
