@@ -11,7 +11,6 @@ import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.Semigroup ((<>))
 import           Data.Time (UTCTime (..))
-import           Data.Vector (Vector)
 
 import           FF.Storage (DocId (..))
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
@@ -30,13 +29,12 @@ import           GitHub.Endpoints.Issues (issuesForRepo)
 
 runCmdGithub :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit =
-    fmap (toSampleMap limit) <$> issuesForRepo owner repo stateOpen
-
-toSampleMap :: Int -> Vector Issue -> ModeMap Sample
-toSampleMap limit issues = singletonSampleMap Actual sample
+    fmap (sampleMap limit) <$> issuesForRepo owner repo stateOpen
   where
-    nv     = map toNoteView (toList issues)
-    sample = Sample (take limit nv) (genericLength nv)
+    sampleMap limit' issues = singletonSampleMap Actual sample
+      where
+        sample = Sample (take limit' nv) (genericLength nv)
+        nv = map toNoteView (toList issues)
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
