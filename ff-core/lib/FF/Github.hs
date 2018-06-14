@@ -35,9 +35,9 @@ runCmdGithub owner repo = issuesForRepo owner repo stateOpen
 
 toSampleMap :: Int -> Vector Issue -> ModeMap Sample
 toSampleMap limit issues = singletonSampleMap Actual sample
-    where
-        nv     = map toNoteView (toList issues)
-        sample = Sample (take limit nv) (genericLength nv)
+  where
+    nv     = map toNoteView (toList issues)
+    sample = Sample (take limit nv) (genericLength nv)
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
