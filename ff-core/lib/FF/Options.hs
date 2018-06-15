@@ -136,17 +136,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         metavar "OWNER" <> help "Repository owner (user or organization)"
     pRepo  = strArgument $ metavar "REPO" <> help "Repository name"
 
-    list     = subparser (command "list" iCmdList)
-    iCmdList = i pCmdList "list issues of user repository"
-    pCmdList = GithubList
-        <$> pOwner
-        <*> pRepo
-        <*> limitOption
-
-    pOwner = strArgument
-        [metavar "OWNER", help "Repository owner (user or organization)"]
-    pRepo  = strArgument [metavar "REPO", help "Repository name"]
-
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
         <$> idArgument
