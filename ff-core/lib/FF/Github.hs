@@ -27,10 +27,10 @@ runCmdGithub
 runCmdGithub owner repo limit today =
     fmap sampleMap <$> issuesForRepo owner repo stateOpen
   where
-    sampleMap issues = head $ flip singletonSampleMap sample <$> tm -- Taskmode -> Sample -> ModeMap Sample
+    sampleMap issues = head $ flip singletonSampleMap sample <$> tm
       where
-        sample = Sample (take limit nv) (genericLength nv) -- [NoteView] -> Sample
-        nv = map toNoteView (toList issues) -- Vector Issue -> [NoteView]
+        sample = Sample (take limit nv) (genericLength nv)
+        nv = map toNoteView (toList issues)
         tm = taskMode today <$> nv
 
 toNoteView :: Issue -> NoteView
