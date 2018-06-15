@@ -1,6 +1,5 @@
 {-# OPTIONS -Wno-orphans #-}
 
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -22,7 +21,7 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Mod, auto, command, execParser, flag',
+import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
                                       strArgument, strOption, subparser, value,
@@ -30,7 +29,6 @@ import           Options.Applicative (Mod, auto, command, execParser, flag',
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (NoteId)
-import           GHC.Exts (IsList, Item, fromList, toList)
 
 import           GitHub.Data.Definitions (Owner)
 import           GitHub.Data.Name (Name)
@@ -138,14 +136,11 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList
-        <$> pOwner
-        <*> pRepo
-        <*> limitOption
+    pCmdList = GithubList <$> pOwner <*> pRepo <*> limitOption
 
-    pOwner = strArgument
-        [metavar "OWNER", help "Repository owner (user or organization)"]
-    pRepo  = strArgument [metavar "REPO", help "Repository name"]
+    pOwner = strArgument $
+        metavar "OWNER" <> help "Repository owner (user or organization)"
+    pRepo  = strArgument $ metavar "REPO" <> help "Repository name"
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues of user repository"
@@ -166,43 +161,41 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     pSearch      = Search <$> strArgument (metavar "TEXT") <*> limitOption
 
-    idArgument   = DocId <$> strArgument [metavar "ID", help "note id"]
-    textArgument = strArgument [metavar "TEXT", help "note text"]
+    idArgument   = DocId <$> strArgument (metavar "ID" <> help "note id")
+    textArgument = strArgument $ metavar "TEXT" <> help "note text"
 
-    endOption    = dateOption [long "end", short 'e', help "end date"]
-    limitOption  = option auto [long "limit", short 'l', help "limit", value 10]
-    startOption  = dateOption [long "start", short 's', help "start date"]
-    textOption   = strOption
-                   [long "text", short 't', help "note text", metavar "TEXT"]
+    endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
+    limitOption  = option auto $
+        long "limit" <> short 'l' <> help "limit" <> value 10
+    startOption  = dateOption $ long "start" <> short 's' <> help "start date"
+    textOption   = strOption $
+        long "text" <> short 't' <> help "note text" <> metavar "TEXT"
 
     maybeEndOption =
         Just <$> endOption <|>
-        flag' Nothing [long "end-clear", help "clear end date"]
+        flag' Nothing (long "end-clear" <> help "clear end date")
 
-    dateOption m = option auto [metavar "DATE", m]
+    dateOption m = option auto $ metavar "DATE" <> m
 
     pCmdConfig = fmap CmdConfig . optional $
-        subparser [command "dataDir" iDataDir, command "ui" iUi]
+        subparser $ command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
-            pJust = DataDirJust <$> strArgument [metavar "DIR", help "path"]
+            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
             pYandexDisk = flag'
                 DataDirYandexDisk
-                [long "yandex-disk", short 'y', help "detect Yandex.Disk"]
+                (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
         iUi = i pUi "UI tweaks"
         pUi = fmap ConfigUI . optional $
-            flag' Shuffle [long "shuffle", help "shuffle notes in section"] <|>
-            flag' Sort [long "sort", help "sort notes in section"]
+            flag'
+                Shuffle
+                (long "shuffle" <> help "shuffle notes in section") <|>
+            flag' Sort (long "sort" <> help "sort notes in section")
 
     pCmdVersion = flag'
-        CmdVersion [long "version", short 'V', help "Current ff-note version"]
+        CmdVersion
+        (long "version" <> short 'V' <> help "Current ff-note version")
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
-
-
-instance IsList (Mod f a) where
-    type Item (Mod f a) = Mod f a
-    fromList = mconcat
-    toList = pure
