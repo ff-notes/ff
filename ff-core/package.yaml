@@ -6,6 +6,7 @@ library:
   dependencies:
     - aeson
     - bytestring
+    - containers
     - crdt
     - directory
     - filepath

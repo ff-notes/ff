@@ -30,10 +30,10 @@ import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
+import           Data.Bifunctor (first)
 import           Data.Foldable (asum)
-import           Data.FullMap (FullMap (FullMap))
-import qualified Data.FullMap as FullMap
 import           Data.List (sortOn)
+import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -111,24 +111,28 @@ takeSamples mGen limit modes =
         endSoon  <- sample end   EndSoon
         actual   <- sample start Actual
         starting <- sample start Starting
-        pure . FullMap $ \case
-            Overdue  -> overdue
-            EndToday -> endToday
-            EndSoon  -> endSoon
-            Actual   -> actual
-            Starting -> starting
+        pure $ mconcat
+            [ overdue
+            , endToday
+            , endSoon
+            , actual
+            , starting
+            ]
   where
-    sample key mode = state $ \case
-        Just n  -> (Sample (take n xs') (fromIntegral len), Just $ n - len)
-        Nothing -> (Sample xs' (fromIntegral len), Nothing)
+    sample key mode = state $ first mk . \case
+        Just n  -> (take n xs', Just $ n - len)
+        Nothing -> (       xs', Nothing       )
       where
-        xs = FullMap.lookup mode modes
+        xs = fromMaybe [] $ Map.lookup mode modes
         -- in sorting by nid no business-logic is involved,
         -- it's just for determinism
         xs' = case mGen of
             Just gen -> map snd . sortOn fst $ zip (randoms gen :: [Int]) xs
             Nothing  -> sortOn (key &&& nid) xs
         len = length xs
+        mk ys = case len of
+            0 -> Map.empty
+            _ -> Map.singleton mode $ Sample ys $ fromIntegral len
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
