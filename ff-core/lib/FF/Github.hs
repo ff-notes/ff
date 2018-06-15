@@ -14,8 +14,7 @@ import           Data.Time (Day, UTCTime (..))
 
 import           FF.Storage (DocId (..))
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), TaskMode (..), singletonSampleMap,
-                           taskMode)
+                           Status (..), singletonSampleMap, taskMode)
 
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          Name, Owner, Repo, URL (..), issueCreatedAt,
