@@ -4,8 +4,9 @@
 
 module FF.UI where
 
-import qualified Data.FullMap as FullMap
 import           Data.List (genericLength)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
                                             stack, star, strictText, (<+/>),
@@ -14,7 +15,7 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           omitted)
+                           emptySample, omitted)
 
 type Template a = a -> String
 
@@ -46,7 +47,7 @@ samplesInSections limit samples = stack $
     numOmitted = sum $ fmap omitted samples
 
 sample :: ModeMap Sample -> TaskMode -> Doc
-sample samples mode = sample' $ FullMap.lookup mode samples
+sample samples mode = sample' $ fromMaybe emptySample $ Map.lookup mode samples
   where
     sample' Sample{ total = 0 } = mempty
     sample' Sample{ total, notes } =

@@ -16,9 +16,9 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
-import           Data.FullMap (FullMap (FullMap))
-import qualified Data.FullMap as FullMap
 import           Data.List (genericLength)
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
@@ -97,17 +97,16 @@ taskMode today NoteView { start, end = Just end } = case compare end today of
     EQ -> EndToday
     GT -> if start <= today then EndSoon else Starting
 
-type ModeMap = FullMap TaskMode
+type ModeMap = Map TaskMode
 
 emptySampleMap :: ModeMap Sample
-emptySampleMap = FullMap $ const emptySample
+emptySampleMap = Map.empty
 
 singletonSampleMap :: TaskMode -> Sample -> ModeMap Sample
-singletonSampleMap mode sample = FullMap.singleton mode sample emptySample
+singletonSampleMap = Map.singleton
 
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
-singletonTaskModeMap today note =
-    FullMap.singleton (taskMode today note) [note] mempty
+singletonTaskModeMap today note = Map.singleton (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
