@@ -10,7 +10,13 @@ module FF.Github
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.Semigroup ((<>))
-import           Data.Time (UTCTime (..))
+import           Data.Time (Day, UTCTime (..))
+
+import           FF.Storage (DocId (..))
+import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+                           Status (..), TaskMode (..), singletonSampleMap,
+                           taskMode)
+
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          Name, Owner, Repo, URL (..), issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
@@ -22,15 +28,15 @@ import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..), TaskMode (..), singletonSampleMap)
 
 runCmdGithub
-    :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
-runCmdGithub owner repo limit =
+    :: Name Owner -> Name Repo -> Int -> Day -> IO (Either Error (ModeMap Sample))
+runCmdGithub owner repo limit today =
     fmap sampleMap <$> issuesForRepo owner repo stateOpen
   where
-    sampleMap issues = singletonSampleMap Actual sample
+    sampleMap issues = head $ flip singletonSampleMap sample <$> tm -- Taskmode -> Sample -> ModeMap Sample
       where
-        sample = Sample (take limit nv) (genericLength nv)
-        nv = map toNoteView (toList issues)
-
+        sample = Sample (take limit nv) (genericLength nv) -- [NoteView] -> Sample
+        nv = map toNoteView (toList issues) -- Vector Issue -> [NoteView]
+        tm = taskMode today <$> nv
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
