@@ -9,6 +9,7 @@ module FF.Github
 
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
+import           Data.List.Extra (groupSort)
 import           Data.Semigroup ((<>))
 import           Data.Time (Day, UTCTime (..))
 
@@ -19,7 +20,7 @@ import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          Name, Owner, Repo, URL (..), issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
-                         issueTitle, stateOpen, untagId)
+                         issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
 import           FF.Storage (DocId (..))
@@ -27,15 +28,21 @@ import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..), TaskMode (..), singletonSampleMap)
 
 runCmdGithub
-    :: Name Owner -> Name Repo -> Int -> Day -> IO (Either Error (ModeMap Sample))
+    :: Name Owner
+    -> Name Repo
+    -> Int
+    -> Day
+    -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit today =
-    fmap sampleMap <$> issuesForRepo owner repo stateOpen
+    fmap (sampleMaps limit today) <$> issuesForRepo owner repo mempty
+
+sampleMaps :: Foldable t => Int -> Day -> t Issue -> ModeMap Sample
+sampleMaps limit today issues = mconcat
+  $ (\(mode, notes) -> singletonSampleMap mode (Sample notes total)) <$> groups
   where
-    sampleMap issues = head $ flip singletonSampleMap sample <$> tm
-      where
-        sample = Sample (take limit nv) (genericLength nv)
-        nv = map toNoteView (toList issues)
-        tm = taskMode today <$> nv
+    groups = groupSort [x | nv <- take limit nvs, let x = (taskMode today nv, nv)]
+    nvs = map toNoteView (toList issues)
+    total = genericLength nvs
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
