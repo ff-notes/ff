@@ -21,7 +21,7 @@ import           GitHub.Endpoints.Issues (issuesForRepo)
 
 import           FF.Storage (DocId (..))
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), TaskMode (..), singletonSampleMap)
+                           Status (..), singletonSampleMap, taskMode)
 
 runCmdGithub
     :: Name Owner
