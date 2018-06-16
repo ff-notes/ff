@@ -13,10 +13,6 @@ import           Data.List.Extra (groupSort)
 import           Data.Semigroup ((<>))
 import           Data.Time (Day, UTCTime (..))
 
-import           FF.Storage (DocId (..))
-import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), singletonSampleMap, taskMode)
-
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          Name, Owner, Repo, URL (..), issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
