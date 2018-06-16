@@ -11,16 +11,15 @@ import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.Semigroup ((<>))
 import           Data.Time (UTCTime (..))
-
-import           FF.Storage (DocId (..))
-import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), TaskMode (..), singletonSampleMap)
-
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          Name, Owner, Repo, URL (..), issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
                          issueTitle, stateOpen, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
+
+import           FF.Storage (DocId (..))
+import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+                           Status (..), TaskMode (..), singletonSampleMap)
 
 runCmdGithub
     :: Name Owner -> Name Repo -> Int -> IO (Either Error (ModeMap Sample))
