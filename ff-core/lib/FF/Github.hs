@@ -1,12 +1,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module FF.Github
     ( runCmdGithub
     ) where
 
+import           Control.Arrow (second)
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.List.Extra (groupSort)
@@ -34,12 +36,17 @@ runCmdGithub owner repo limit today =
 
 sampleMaps :: Foldable t => Int -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues = mconcat
-    [ sm | (mode, notes) <- groups
-    , let sm = singletonSampleMap mode (Sample (take limit notes) (genericLength notes))
+    [ singletonSampleMap modeL (Sample notesL (genericLength notes))
+    | (_, notes) <- groups
+    | (modeL, notesL) <- taker limit groups
     ]
   where
     nvs = map toNoteView (toList issues)
-    groups = groupSort [x | nv <- nvs, let x = (taskMode today nv, nv)]
+    groups = groupSort [(taskMode today nv, nv) | nv <- nvs]
+    taker _ [] = []
+    taker lim (g:gs) = second (take lim) g : taker (if lim <= len then 0 else lim - len) gs
+      where
+        len = genericLength . snd $ g
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
