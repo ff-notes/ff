@@ -41,7 +41,6 @@ import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
                             toModifiedJulianDay, utctDay)
 import           Data.Traversable (for)
-import           Numeric.Natural (Natural)
 import           System.Directory (findExecutable)
 import           System.Environment (getEnv)
 import           System.Exit (ExitCode (..))
@@ -54,22 +53,22 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, MonadStorage, Storage,
                              listDocuments, load, modify, saveNew)
-import           FF.Types (ModeMap, Note (..), NoteId, NoteView (..),
+import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            TaskMode (..), noteView, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
     => ConfigUI
-    -> Maybe Natural  -- ^ limit
-    -> Day            -- ^ today
+    -> Maybe Limit
+    -> Day  -- ^ today
     -> m (ModeMap Sample)
 getSamples = getSamplesWith $ const True
 
 cmdSearch
     :: Text
-    -> Maybe Natural  -- ^ limit
-    -> Day            -- ^ today
+    -> Maybe Limit
+    -> Day  -- ^ today
     -> Storage (ModeMap Sample)
 cmdSearch substr = getSamplesWith
     (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
@@ -89,7 +88,7 @@ getSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
-    -> Maybe Natural   -- ^ limit
+    -> Maybe Limit
     -> Day             -- ^ today
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
@@ -105,10 +104,7 @@ splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
 takeSamples
-    :: Maybe StdGen
-    -> Maybe Natural  -- ^ limit
-    -> ModeMap [NoteView]
-    -> ModeMap Sample
+    :: Maybe StdGen -> Maybe Limit -> ModeMap [NoteView] -> ModeMap Sample
 takeSamples mGen limit modes =
     (`evalState` limit) $ do
         overdue  <- sample end   Overdue

@@ -18,22 +18,21 @@ import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          issueHtmlUrl, issueId, issueMilestone, issueState,
                          issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
-import           Numeric.Natural (Natural)
 
 import           FF.Storage (DocId (..))
-import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..), taskMode)
 
 runCmdGithub
     :: Name Owner
     -> Name Repo
-    -> Natural  -- ^ limit
+    -> Limit
     -> Day      -- ^ today
     -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit today =
     fmap (sampleMaps limit today) <$> issuesForRepo owner repo mempty
 
-sampleMaps :: Foldable t => Natural -> Day -> t Issue -> ModeMap Sample
+sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues = Map.fromList $ takeFromMany limit groups
   where
     nvs = map toNoteView (toList issues)

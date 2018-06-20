@@ -116,3 +116,5 @@ noteView nid Note {..} = NoteView
     , start  = LWW.query noteStart
     , end    = LWW.query noteEnd
     }
+
+type Limit = Natural

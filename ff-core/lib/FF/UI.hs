@@ -8,15 +8,14 @@ import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
-import           Numeric.Natural (Natural)
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
                                             stack, star, strictText, (<+/>),
                                             (</>), (<>), (<|>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           emptySample, omitted)
+import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
+                           TaskMode (..), emptySample, omitted)
 
 type Template a = a -> String
 
@@ -32,10 +31,7 @@ indentation = 4
 pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
-samplesInSections
-    :: Natural -- ^ limit
-    -> ModeMap Sample
-    -> Doc
+samplesInSections :: Limit -> ModeMap Sample -> Doc
 samplesInSections limit samples = stack $
     [ sample samples Overdue
     , sample samples EndToday
