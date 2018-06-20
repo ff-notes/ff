@@ -7,6 +7,7 @@ language: generic
 # Caching so the next build will be fast too.
 cache:
   directories:
+    - $HOME/.local/bin
     - $HOME/.stack
 
 # Ensure necessary system libraries are present
@@ -19,8 +20,10 @@ before_install:
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
-  - travis_retry curl -L https://www.stackage.org/stack/linux-x86_64
-    | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack'
+  - >
+    [ -x ~/.local/bin/stack ]
+    || (travis_retry curl -L https://www.stackage.org/stack/linux-x86_64
+    | tar xz --wildcards --strip-components=1 -C ~/.local/bin '*/stack')
   - export STACK="stack --no-terminal --install-ghc"
 
 matrix:
