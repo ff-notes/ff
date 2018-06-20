@@ -33,7 +33,9 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
+import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
+import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -110,7 +112,7 @@ shuffleItems gen = (`evalState` gen) . traverse shuf
         pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
-splitModes = foldMap . singletonTaskModeMap
+splitModes today = Map.unionsWith (<>) . fmap (singletonTaskModeMap today)
 
 takeSamples :: Maybe Limit -> ModeMap [NoteView] -> ModeMap Sample
 takeSamples Nothing = fmap mkSample
