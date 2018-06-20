@@ -29,6 +29,7 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
+import           Numeric.Natural (Natural)
 import           System.FilePath (splitDirectories)
 import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
                                   counterexample, property, (===), (==>))
@@ -173,7 +174,7 @@ fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ fromList
       )
     ]
 
-agendaLimit :: Maybe Int
+agendaLimit :: Maybe Natural
 agendaLimit = Just 10
 
 today :: Day
