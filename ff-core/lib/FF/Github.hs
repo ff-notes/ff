@@ -42,7 +42,7 @@ sampleMaps limit today issues = fromList (takeFromMany limit groups)
     takeFromMany lim ((mode, notes):gs) = (mode, Sample (take lim notes) (genericLength notes))
                             : takeFromMany (if lim <= len then 0 else lim - len) gs
       where
-        len = genericLength notes
+        len = length notes
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
