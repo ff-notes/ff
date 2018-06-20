@@ -21,10 +21,7 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           GitHub.Data.Definitions (Owner)
-import           GitHub.Data.Name (Name)
-import           GitHub.Data.Repos (Repo)
-import           Numeric.Natural (Natural)
+import           GitHub (Name, Owner, Repo)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
@@ -32,7 +29,7 @@ import           Options.Applicative (auto, command, execParser, flag',
                                       (<**>))
 
 import           FF.Storage (DocId (DocId))
-import           FF.Types (NoteId)
+import           FF.Types (Limit, NoteId)
 
 data Cmd
     = CmdConfig (Maybe Config)
@@ -55,8 +52,6 @@ data CmdGithub = GithubList
     , repo  :: Name Repo
     , limit :: Limit
     }
-
-type Limit = Natural
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 

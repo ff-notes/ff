@@ -29,7 +29,6 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian)
 import           GHC.Exts (fromList)
-import           Numeric.Natural (Natural)
 import           System.FilePath (splitDirectories)
 import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
                                   counterexample, property, (===), (==>))
@@ -44,7 +43,7 @@ import           FF.Config (Config, ConfigUI (..))
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
-import           FF.Types (Note (..), NoteView (..), Sample (..),
+import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
                            Status (Active), TaskMode (Overdue), emptySampleMap,
                            singletonSampleMap)
 
@@ -174,7 +173,7 @@ fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ fromList
       )
     ]
 
-agendaLimit :: Maybe Natural
+agendaLimit :: Maybe Limit
 agendaLimit = Just 10
 
 today :: Day
