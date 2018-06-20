@@ -39,10 +39,10 @@ sampleMaps limit today issues = fromList (takeFromMany limit groups)
     nvs = map toNoteView (toList issues)
     groups = groupSort [(taskMode today nv, nv) | nv <- nvs]
     takeFromMany _ [] = []
-    takeFromMany lim ((mode, notes):gs) = (mode, Sample (take lim notes) (genericLength notes))
+    takeFromMany lim ((mode, notes):gs) = (mode, Sample (take lim notes) (fromIntegral len))
                             : takeFromMany (if lim <= len then 0 else lim - len) gs
       where
-        len = length notes
+        len = genericLength notes
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
