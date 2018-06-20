@@ -14,7 +14,6 @@ addons:
   apt:
     packages:
       - libgmp-dev
-      - qt5-default
 
 before_install:
   # Download and unpack the stack executable
