@@ -32,7 +32,7 @@ import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Bifunctor (first)
 import           Data.Foldable (asum)
-import           Data.List (sortOn)
+import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
@@ -41,6 +41,7 @@ import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
                             toModifiedJulianDay, utctDay)
 import           Data.Traversable (for)
+import           Numeric.Natural (Natural)
 import           System.Directory (findExecutable)
 import           System.Environment (getEnv)
 import           System.Exit (ExitCode (..))
@@ -60,15 +61,15 @@ import           FF.Types (ModeMap, Note (..), NoteId, NoteView (..),
 getSamples
     :: MonadStorage m
     => ConfigUI
-    -> Maybe Int -- ^ limit
-    -> Day -- ^ today
+    -> Maybe Natural  -- ^ limit
+    -> Day            -- ^ today
     -> m (ModeMap Sample)
 getSamples = getSamplesWith $ const True
 
 cmdSearch
     :: Text
-    -> Maybe Int -- ^ limit
-    -> Day -- ^ today
+    -> Maybe Natural  -- ^ limit
+    -> Day            -- ^ today
     -> Storage (ModeMap Sample)
 cmdSearch substr = getSamplesWith
     (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
@@ -86,10 +87,10 @@ loadActiveNotes =
 
 getSamplesWith
     :: MonadStorage m
-    => (Text -> Bool) -- ^ predicate to filter notes by text
+    => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
-    -> Maybe Int -- ^ limit
-    -> Day -- ^ today
+    -> Maybe Natural   -- ^ limit
+    -> Day             -- ^ today
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
@@ -103,7 +104,11 @@ getSamplesWith predicate ConfigUI { shuffle } limit today = do
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
-takeSamples :: Maybe StdGen -> Maybe Int -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples
+    :: Maybe StdGen
+    -> Maybe Natural  -- ^ limit
+    -> ModeMap [NoteView]
+    -> ModeMap Sample
 takeSamples mGen limit modes =
     (`evalState` limit) $ do
         overdue  <- sample end   Overdue
@@ -120,8 +125,8 @@ takeSamples mGen limit modes =
             ]
   where
     sample key mode = state $ first mk . \case
-        Just n  -> (take n xs', Just $ n - len)
-        Nothing -> (       xs', Nothing       )
+        Just n  -> (take (fromIntegral n) xs', Just $ n - len)
+        Nothing -> (                      xs', Nothing       )
       where
         xs = fromMaybe [] $ Map.lookup mode modes
         -- in sorting by nid no business-logic is involved,
@@ -129,10 +134,10 @@ takeSamples mGen limit modes =
         xs' = case mGen of
             Just gen -> map snd . sortOn fst $ zip (randoms gen :: [Int]) xs
             Nothing  -> sortOn (key &&& nid) xs
-        len = length xs
+        len = genericLength xs
         mk ys = case len of
             0 -> Map.empty
-            _ -> Map.singleton mode $ Sample ys $ fromIntegral len
+            _ -> Map.singleton mode $ Sample ys len
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
