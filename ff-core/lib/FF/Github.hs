@@ -10,6 +10,7 @@ module FF.Github
 import           Data.Foldable (toList)
 import           Data.List (genericLength)
 import           Data.List.Extra (groupSort)
+import           Data.Map.Strict (fromList)
 import           Data.Semigroup ((<>))
 import           Data.Time (Day, UTCTime (..))
 
@@ -21,7 +22,7 @@ import           GitHub.Endpoints.Issues (issuesForRepo)
 
 import           FF.Storage (DocId (..))
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), singletonSampleMap, taskMode)
+                           Status (..), taskMode)
 
 runCmdGithub
     :: Name Owner
@@ -33,15 +34,12 @@ runCmdGithub owner repo limit today =
     fmap (sampleMaps limit today) <$> issuesForRepo owner repo mempty
 
 sampleMaps :: Foldable t => Int -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues = mconcat
-    [ singletonSampleMap mode sample
-    | (mode, sample) <- takeFromMany limit groups
-    ]
+sampleMaps limit today issues = fromList (takeFromMany limit groups)
   where
     nvs = map toNoteView (toList issues)
     groups = groupSort [(taskMode today nv, nv) | nv <- nvs]
     takeFromMany _ [] = []
-    takeFromMany lim (g:gs) = (\(m, ns) -> (m, Sample (take lim ns) (genericLength ns))) g
+    takeFromMany lim (g:gs) = (\(mode, notes) -> (mode, Sample (take lim notes) (genericLength notes))) g
                             : takeFromMany (if lim <= len then 0 else lim - len) gs
       where
         len = genericLength . snd $ g
