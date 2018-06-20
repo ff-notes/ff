@@ -19,9 +19,10 @@ module FF
     , loadAllNotes
     , loadActiveNotes
     , newNote
+    , splitModes
+    , takeSamples
     ) where
 
-import           Control.Arrow ((&&&))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
@@ -30,10 +31,8 @@ import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Bifunctor (first)
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
-import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -47,7 +46,7 @@ import           System.Exit (ExitCode (..))
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
-import           System.Random (StdGen, mkStdGen, randoms)
+import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
@@ -55,7 +54,7 @@ import           FF.Storage (Collection, DocId, MonadStorage, Storage,
                              listDocuments, load, modify, saveNew)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           TaskMode (..), noteView, singletonTaskModeMap)
+                           noteView, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -93,47 +92,39 @@ getSamplesWith
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
-    pure . takeSamples mGen limit $ splitModes today $ filter
-        (\NoteView { text } -> predicate text)
-        activeNotes
+    -- in sorting by nid no business-logic is involved,
+    -- it's just for determinism
+    pure .
+        takeSamples limit .
+        (if shuffle then shuffleItems gen else fmap (sortOn nid)) .
+        splitModes today $
+        filter (predicate . text) activeNotes
   where
-    mGen | shuffle = Just . mkStdGen . fromIntegral $ toModifiedJulianDay today
-         | otherwise = Nothing
+    gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+
+shuffleItems :: Traversable t => StdGen -> t [b] -> t [b]
+shuffleItems gen = (`evalState` gen) . traverse shuf
+  where
+    shuf xs = do
+        g <- state split
+        pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
 
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes = foldMap . singletonTaskModeMap
 
-takeSamples
-    :: Maybe StdGen -> Maybe Limit -> ModeMap [NoteView] -> ModeMap Sample
-takeSamples mGen limit modes =
-    (`evalState` limit) $ do
-        overdue  <- sample end   Overdue
-        endToday <- sample end   EndToday
-        endSoon  <- sample end   EndSoon
-        actual   <- sample start Actual
-        starting <- sample start Starting
-        pure $ mconcat
-            [ overdue
-            , endToday
-            , endSoon
-            , actual
-            , starting
-            ]
+takeSamples :: Maybe Limit -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples Nothing = fmap mkSample
   where
-    sample key mode = state $ first mk . \case
-        Just n  -> (take (fromIntegral n) xs', Just $ n - len)
-        Nothing -> (                      xs', Nothing       )
+    mkSample ys = Sample ys $ genericLength ys
+takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
+  where
+    takeSample xs =
+        state $ \n -> (Sample (take (fromIntegral n) xs) len, n `natSub` len)
       where
-        xs = fromMaybe [] $ Map.lookup mode modes
-        -- in sorting by nid no business-logic is involved,
-        -- it's just for determinism
-        xs' = case mGen of
-            Just gen -> map snd . sortOn fst $ zip (randoms gen :: [Int]) xs
-            Nothing  -> sortOn (key &&& nid) xs
         len = genericLength xs
-        mk ys = case len of
-            0 -> Map.empty
-            _ -> Map.singleton mode $ Sample ys len
+    natSub a b
+        | a <= b    = 0
+        | otherwise = a - b
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do

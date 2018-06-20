@@ -8,9 +8,6 @@ module FF.Github
     ) where
 
 import           Data.Foldable (toList)
-import           Data.List (genericLength)
-import           Data.List.Extra (groupSort)
-import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Time (Day, UTCTime (..))
 import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
@@ -19,33 +16,23 @@ import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
                          issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepo)
 
+import           FF (splitModes, takeSamples)
 import           FF.Storage (DocId (..))
 import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..), taskMode)
+                           Status (..))
 
 runCmdGithub
     :: Name Owner
     -> Name Repo
     -> Limit
-    -> Day      -- ^ today
+    -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit today =
     fmap (sampleMaps limit today) <$> issuesForRepo owner repo mempty
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues = Map.fromList $ takeFromMany limit groups
-  where
-    nvs = map toNoteView (toList issues)
-    groups = groupSort [(taskMode today nv, nv) | nv <- nvs]
-    takeFromMany _   []                   = []
-    takeFromMany lim ((mode, notes) : gs) =
-        (mode, Sample (take (fromIntegral lim) notes) len)
-        : takeFromMany (lim `natSub` len) gs
-      where
-        len = genericLength notes
-        natSub a b
-            | a <= b    = 0
-            | otherwise = a - b
+sampleMaps limit today issues =
+    takeSamples (Just limit) . splitModes today . map toNoteView $ toList issues
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
