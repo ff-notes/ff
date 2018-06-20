@@ -34,14 +34,14 @@ runCmdGithub owner repo limit today =
 
 sampleMaps :: Foldable t => Int -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues = mconcat
-    [ singletonSampleMap mode (Sample notesLimit notesLength)
-    | (mode, notesLimit, notesLength) <- takeFromMany limit groups
+    [ singletonSampleMap mode sample
+    | (mode, sample) <- takeFromMany limit groups
     ]
   where
     nvs = map toNoteView (toList issues)
     groups = groupSort [(taskMode today nv, nv) | nv <- nvs]
     takeFromMany _ [] = []
-    takeFromMany lim (g:gs) = (\(m, ns) -> (m, take lim ns, genericLength ns)) g
+    takeFromMany lim (g:gs) = (\(m, ns) -> (m, Sample (take lim ns) (genericLength ns))) g
                             : takeFromMany (if lim <= len then 0 else lim - len) gs
       where
         len = genericLength . snd $ g
