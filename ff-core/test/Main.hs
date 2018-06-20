@@ -139,7 +139,7 @@ case_smoke = do
     (agenda, fs') <- runTestM fs123 $ getSamples ui agendaLimit today
     agenda @?=
         singletonSampleMap
-            Overdue
+            (Overdue 365478)
             Sample
                 { notes = [ NoteView
                                 { nid    = DocId "1"

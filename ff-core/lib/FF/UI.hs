@@ -6,7 +6,6 @@ module FF.UI where
 
 import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
                                             stack, star, strictText, (<+/>),
@@ -15,7 +14,7 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
-                           TaskMode (..), emptySample, omitted)
+                           TaskMode (..), omitted)
 
 type Template a = a -> String
 
@@ -31,14 +30,9 @@ indentation = 4
 pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
-samplesInSections :: Limit -> ModeMap Sample -> Doc
-samplesInSections limit samples = stack $
-    [ sample samples Overdue
-    , sample samples EndToday
-    , sample samples EndSoon
-    , sample samples Actual
-    , sample samples Starting
-    ] ++
+prettySamplesBySections :: Limit -> ModeMap Sample -> Doc
+prettySamplesBySections limit samples = stack $
+    [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
     [ (show numOmitted <> " task(s) omitted. To see more tasks, run:")
       .= ("ff --limit=" <> show (max 0 limit + 10))
     | numOmitted > 0
@@ -46,11 +40,10 @@ samplesInSections limit samples = stack $
   where
     numOmitted = sum $ fmap omitted samples
 
-sample :: ModeMap Sample -> TaskMode -> Doc
-sample samples mode = sample' $ fromMaybe emptySample $ Map.lookup mode samples
-  where
-    sample' Sample{ total = 0 } = mempty
-    sample' Sample{ total, notes } =
+prettySample :: TaskMode -> Sample -> Doc
+prettySample mode = \case
+    Sample{total = 0} -> mempty
+    Sample{total, notes} ->
         withHeader (labels mode) . stack $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
@@ -59,18 +52,25 @@ sample samples mode = sample' $ fromMaybe emptySample $ Map.lookup mode samples
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
         count         = genericLength notes
+  where
     labels = \case
-        Overdue  -> "Overdue:"
+        Overdue n -> case n of
+            1 -> "1 day overdue:"
+            _ -> show n <> " days overdue:"
         EndToday -> "Due today:"
-        EndSoon  -> "Due soon:"
-        Actual   -> "Actual:"
-        Starting -> "Starting soon:"
+        EndSoon n -> case n of
+            1 -> "Due tomorrow:"
+            _ -> "Due in " <> show n <> " days:"
+        Actual -> "Actual:"
+        Starting n -> case n of
+            1 -> "Starting tomorrow:"
+            _ -> "Starting in " <> show n <> " days:"
     cmdToSeeAll = \case
-        Overdue  -> "ff search --overdue"
-        EndToday -> "ff search --today"
-        EndSoon  -> "ff search --soon"
-        Actual   -> "ff search --actual"
-        Starting -> "ff search --starting"
+        Overdue _  -> "ff search --overdue"
+        EndToday   -> "ff search --today"
+        EndSoon _  -> "ff search --soon"
+        Actual     -> "ff search --actual"
+        Starting _ -> "ff search --starting"
 
 noteView :: NoteView -> Doc
 noteView NoteView { nid, text, start, end } = noteText </> fieldsSep fields

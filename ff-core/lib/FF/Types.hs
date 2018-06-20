@@ -23,7 +23,7 @@ import           Data.Semigroup (Semigroup, (<>))
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Time (Day)
+import           Data.Time (Day, diffDays)
 import           Numeric.Natural (Natural)
 
 import           FF.CrdtAesonInstances ()
@@ -79,23 +79,40 @@ omitted Sample { notes, total } = total - genericLength notes
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
-    = Overdue   -- ^ end in past
-    | EndToday  -- ^ end today
-    | EndSoon   -- ^ started, end in future
-    | Actual    -- ^ started, no end
-    | Starting  -- ^ starting in future
-    deriving (Bounded, Enum, Eq, Ord, Show)
+    = Overdue Natural   -- ^ end in past, with days
+    | EndToday          -- ^ end today
+    | EndSoon Natural   -- ^ started, end in future, with days
+    | Actual            -- ^ started, no end
+    | Starting Natural  -- ^ starting in future, with days
+    deriving (Eq, Show)
 
-taskModes :: [TaskMode]
-taskModes = [minBound..]
+taskModeOrder :: TaskMode -> Int
+taskModeOrder = \case
+    Overdue _  -> 0
+    EndToday   -> 1
+    EndSoon _  -> 2
+    Actual     -> 3
+    Starting _ -> 4
+
+instance Ord TaskMode where
+    Overdue n <= Overdue m = n >= m
+    m1        <= m2        = taskModeOrder m1 <= taskModeOrder m2
 
 taskMode :: Day -> NoteView -> TaskMode
-taskMode today NoteView { start, end = Nothing } =
-    if start <= today then Actual else Starting
-taskMode today NoteView { start, end = Just end } = case compare end today of
-    LT -> Overdue
-    EQ -> EndToday
-    GT -> if start <= today then EndSoon else Starting
+taskMode today NoteView{start, end} = case end of
+    Nothing
+        | start <= today -> Actual
+        | otherwise      -> starting start today
+    Just e -> case compare e today of
+        LT -> overdue today e
+        EQ -> EndToday
+        GT  | start <= today -> endSoon  e today
+            | otherwise      -> starting start today
+  where
+    overdue  = helper Overdue
+    endSoon  = helper EndSoon
+    starting = helper Starting
+    helper m x y = m . fromIntegral $ diffDays x y
 
 type ModeMap = Map TaskMode
 

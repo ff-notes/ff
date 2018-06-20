@@ -105,7 +105,7 @@ runCmdAction ui cmd = do
     case cmd of
         CmdAgenda limit -> do
             nvs <- getSamples ui (Just limit) today
-            pprint $ UI.samplesInSections limit nvs
+            pprint $ UI.prettySamplesBySections limit nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
             pprint $ withHeader "deleted:" $ UI.noteView nv
@@ -119,7 +119,7 @@ runCmdAction ui cmd = do
             possibleIssues <- runCmdGithub owner repo limit today
             case possibleIssues of
                 Left err     -> hPrint stderr err
-                Right sample -> pprint $ UI.samplesInSections limit sample
+                Right sample -> pprint $ UI.prettySamplesBySections limit sample
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -128,7 +128,7 @@ runCmdAction ui cmd = do
             pprint $ withHeader "postponed:" $ UI.noteView nv
         CmdSearch (Search text limit) -> do
             nvs <- cmdSearch text (Just limit) today
-            pprint $ UI.samplesInSections limit nvs
+            pprint $ UI.prettySamplesBySections limit nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
