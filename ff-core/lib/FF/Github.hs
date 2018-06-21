@@ -29,8 +29,9 @@ runCmdGithub
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit today =
-    fmap (sampleMaps limit today) <$> executeRequest' (issuesForRepoR owner repo mempty fetching)
+    fmap (sampleMaps limit today) <$> executeRequest' issues
   where
+    issues = issuesForRepoR owner repo mempty fetching
     fetching = FetchAtLeast $ ceiling ((fromIntegral limit / 30 )::Double)
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
