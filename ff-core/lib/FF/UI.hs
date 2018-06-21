@@ -4,12 +4,12 @@
 
 module FF.UI where
 
-import           Data.List (genericLength)
+import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
-import           Text.PrettyPrint.Mainland (Doc, commasep, hang, indent, sep,
-                                            stack, star, strictText, (<+/>),
-                                            (</>), (<>), (<|>))
+import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
+                                            strictText, (<+/>), (</>), (<>),
+                                            (<|>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -83,4 +83,4 @@ noteView NoteView { nid, text, start, end } = noteText </> fieldsSep fields
             :  "start"
             .= pshow start
             :  [ "end" .= pshow e | Just e <- pure end ]
-    fieldsSep docs = commasep docs <|> stack docs
+    fieldsSep docs = sep (intersperse "|" docs) <|> stack docs
