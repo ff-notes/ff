@@ -10,11 +10,12 @@ module FF.Github
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (Error, Id, Issue (..), IssueState (..), Milestone (..),
-                         Name, Owner, Repo, URL (..), issueCreatedAt,
+import           GitHub (Error, FetchCount (..), Id, Issue (..),
+                         IssueState (..), Milestone (..), Name, Owner, Repo,
+                         URL (..), executeRequest', issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
                          issueTitle, untagId)
-import           GitHub.Endpoints.Issues (issuesForRepo)
+import           GitHub.Endpoints.Issues (issuesForRepoR)
 
 import           FF (splitModes, takeSamples)
 import           FF.Storage (DocId (..))
@@ -28,7 +29,9 @@ runCmdGithub
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
 runCmdGithub owner repo limit today =
-    fmap (sampleMaps limit today) <$> issuesForRepo owner repo mempty
+    fmap (sampleMaps limit today) <$> executeRequest' (issuesForRepoR owner repo mempty fetching)
+  where
+    fetching = FetchAtLeast $ ceiling ((fromIntegral limit / 30 )::Double)
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues =
