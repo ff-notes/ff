@@ -23,6 +23,7 @@ module FF
     , takeSamples
     ) where
 
+import           Control.Arrow ((&&&))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
@@ -98,7 +99,7 @@ getSamplesWith predicate ConfigUI { shuffle } limit today = do
     -- it's just for determinism
     pure .
         takeSamples limit .
-        (if shuffle then shuffleItems gen else fmap (sortOn nid)) .
+        (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
         filter (predicate . text) activeNotes
   where
