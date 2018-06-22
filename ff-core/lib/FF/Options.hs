@@ -144,7 +144,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption  = option auto $
-        long "limit" <> short 'l' <> help "limit" <> value 10
+        long "limit" <> short 'l' <> help "Number of issues" <> value 10
     startOption  = dateOption $ long "start" <> short 's' <> help "start date"
     textOption   = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
