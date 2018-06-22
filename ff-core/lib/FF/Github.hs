@@ -35,11 +35,12 @@ runCmdGithub owner repo limit today =
     fetching = FetchAtLeast $ fromIntegral limit
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues = takeSamples (Just limit)
-                              . splitModes today
-                              . map toNoteView
-                              $ take (fromIntegral limit)
-                              $ toList issues
+sampleMaps limit today issues =
+    takeSamples (Just limit)
+    . splitModes today
+    . map toNoteView
+    $ take (fromIntegral limit)
+    $ toList issues
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
