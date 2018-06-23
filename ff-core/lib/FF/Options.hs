@@ -120,7 +120,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdGithub    = CmdAction . CmdGithub    <$> list
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues from a repository"
