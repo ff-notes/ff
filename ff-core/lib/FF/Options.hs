@@ -109,7 +109,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdGithub    = i pCmdGithub    "list issues from github"
 
     pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
