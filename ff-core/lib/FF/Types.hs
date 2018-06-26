@@ -116,12 +116,6 @@ taskMode today NoteView{start, end} = case end of
 
 type ModeMap = Map TaskMode
 
-emptySampleMap :: ModeMap Sample
-emptySampleMap = Map.empty
-
-singletonSampleMap :: TaskMode -> Sample -> ModeMap Sample
-singletonSampleMap = Map.singleton
-
 singletonTaskModeMap :: Day -> NoteView -> ModeMap [NoteView]
 singletonTaskModeMap today note = Map.singleton (taskMode today note) [note]
 

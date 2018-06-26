@@ -25,10 +25,10 @@ import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
+import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..), fromGregorian)
-import           GHC.Exts (fromList)
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
@@ -49,8 +49,7 @@ import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
-                           Status (Active), TaskMode (Overdue), emptySampleMap,
-                           singletonSampleMap)
+                           Status (Active), TaskMode (Overdue))
 
 import           ArbitraryOrphans ()
 
@@ -135,7 +134,7 @@ main = $defaultMainGenerator
 case_not_exist :: IO ()
 case_not_exist = do
     (agenda, fs') <- runTestM fs $ getSamples ui agendaLimit today
-    agenda @?= emptySampleMap
+    agenda @?= Map.empty
     fs' @?= fs
     where fs = Map.empty
 
@@ -143,39 +142,38 @@ case_smoke :: IO ()
 case_smoke = do
     (agenda, fs') <- runTestM fs123 $ getSamples ui agendaLimit today
     agenda @?=
-        singletonSampleMap
+        Map.singleton
             (Overdue 365478)
             Sample
-                { notes = [ NoteView
-                                { nid    = DocId "1"
-                                , status = Active
-                                , text   = "helloworld"
-                                , start  = fromGregorian 22 11 24
-                                , end    = Just $ fromGregorian 17 06 19
-                                }
-                          ]
+                { notes = pure $ NoteView
+                    { nid    = DocId "1"
+                    , status = Active
+                    , text   = "helloworld"
+                    , start  = fromGregorian 22 11 24
+                    , end    = Just $ fromGregorian 17 06 19
+                    }
                 , total = 1
                 }
     fs' @?= fs123
 
 fs123 :: Dir
-fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ fromList
-    [ ( "2"
-      , File $ object
-          [ "end" .= ["17-06-19", Number 20, Number 21]
-          , "start" .= ["22-11-24", Number 25, Number 26]
-          , "status" .= ["Active", Number 29, Number 30]
-          , "text" .= ["hello", Number 6, Number 7]
-          ]
-      )
-    , ( "3"
-      , File $ object
-          [ "end" .= ["12-01-14", Number 15, Number 16]
-          , "start" .= ["9-10-11", Number 7, Number 8]
-          , "status" .= ["Active", Number 27, Number 28]
-          , "text" .= ["world", Number 4, Number 5]
-          ]
-      )
+fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ Map.fromList
+    [   ( "2"
+        , File $ object
+            [ "end"    .= ["17-06-19", Number 20, Number 21]
+            , "start"  .= ["22-11-24", Number 25, Number 26]
+            , "status" .= ["Active",   Number 29, Number 30]
+            , "text"   .= ["hello",    Number  6, Number  7]
+            ]
+        )
+    ,   ( "3"
+        , File $ object
+            [ "end"    .= ["12-01-14", Number 15, Number 16]
+            , "start"  .= ["9-10-11",  Number  7, Number  8]
+            , "status" .= ["Active",   Number 27, Number 28]
+            , "text"   .= ["world",    Number  4, Number  5]
+            ]
+        )
     ]
 
 agendaLimit :: Maybe Limit
@@ -206,7 +204,9 @@ prop_new (NoNul newText) newStart newEnd =
                             -> ok
                         status -> failProp $ "status = " ++ show status
                     , case note ! "text" of
-                        Array (toList -> [Array (toList -> [Number _, Number 314159, String text])])
+                        Array (toList ->
+                                [Array (toList ->
+                                    [Number _, Number 314159, String text])])
                             | not $ Text.null newText
                             -> text === newText
                         Array (toList -> []) | Text.null newText -> ok
@@ -256,18 +256,22 @@ instance Arbitrary NoNul where
     arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary
 
 case_repo :: IO ()
-case_repo = do
-    let output = sampleMaps limit todayForIssues issues
-    output @?= ideal
-      where
-        ideal = fromList
-            [ ( Overdue 10
-              , Sample  { notes = [NoteView { nid = DocId "334520780"
-                                            , status = Active
-                                            , text = "import issues (GitHub -> ff)\nurl https://github.com/ff-notes/ff/issues/60"
-                                            , start = fromGregorian 2018 06 21
-                                            , end = Just (fromGregorian 2018 06 15)}]
-                        , total = 1})]
+case_repo = sampleMaps limit todayForIssues issues @?= ideal
+  where
+    ideal = Map.singleton
+        (Overdue 10)
+        Sample
+            { notes = pure $ NoteView
+                { nid = DocId "334520780"
+                , status = Active
+                , text =
+                    "import issues (GitHub -> ff)\n\
+                    \url https://github.com/ff-notes/ff/issues/60"
+                , start = fromGregorian 2018 06 21
+                , end = Just $ fromGregorian 2018 06 15
+                }
+            , total = 1
+            }
 
 todayForIssues :: Day
 todayForIssues = fromGregorian 2018 06 25
@@ -276,43 +280,45 @@ limit :: Limit
 limit = 1
 
 issues :: [Issue]
-issues = [Issue
-  { issueClosedAt = Nothing
-  , issueUpdatedAt = UTCTime (fromGregorian 2018 06 21) (14*3600+30*60+41)
-  , issueEventsUrl = URL "https://api.github.com/repos/ff-notes/ff/issues/60/events"
-  , issueHtmlUrl = Just (URL "https://github.com/ff-notes/ff/issues/60")
-  , issueClosedBy = Nothing
-  , issueLabels = mempty
-  , issueNumber = 60
-  , issueAssignees = mempty
-  , issueUser = SimpleUser  { simpleUserId = Id 63495
-                            , simpleUserLogin = N "cblp"
-                            , simpleUserAvatarUrl = URL "https://avatars0.githubusercontent.com/u/63495?v=4"
-                            , simpleUserUrl = URL "https://api.github.com/users/cblp"
-                            }
-  , issueTitle = "import issues (GitHub -> ff)"
-  , issuePullRequest = Nothing
-  , issueUrl = URL "https://api.github.com/repos/ff-notes/ff/issues/60"
-  , issueCreatedAt = UTCTime (fromGregorian 2018 06 21) (14*3600+30*60)
-  , issueBody = Just ""
-  , issueState = StateOpen
-  , issueId = Id 334520780
-  , issueComments = 0
-  , issueMilestone = Just Milestone
-      { milestoneCreator = SimpleUser
-          { simpleUserId =Id 63495
-          , simpleUserLogin = N "cblp"
-          , simpleUserAvatarUrl = URL "https://avatars0.githubusercontent.com/u/63495?v=4"
-          , simpleUserUrl = URL "https://api.github.com/users/cblp"
-          }
-      , milestoneDueOn = Just (UTCTime (fromGregorian 2018 06 15) (7*3600))
-      , milestoneOpenIssues = 5
-      , milestoneNumber = Id 1
-      , milestoneClosedIssues = 0
-      , milestoneDescription = Just ""
-      , milestoneTitle = "GitHub sync"
-      , milestoneUrl = URL "https://api.github.com/repos/ff-notes/ff/milestones/1"
-      , milestoneCreatedAt = UTCTime (fromGregorian 2018 06 16) (9*3600+15*60+35)
-      , milestoneState = "open"
-      }
-  }]
+issues = pure $ Issue
+    { issueClosedAt = Nothing
+    , issueUpdatedAt =
+        UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60 + 41)
+    , issueEventsUrl = api "issues/60/events"
+    , issueHtmlUrl = Just $ URL "https://github.com/ff-notes/ff/issues/60"
+    , issueClosedBy = Nothing
+    , issueLabels = mempty
+    , issueNumber = 60
+    , issueAssignees = mempty
+    , issueUser = cblp
+    , issueTitle = "import issues (GitHub -> ff)"
+    , issuePullRequest = Nothing
+    , issueUrl = api "issues/60"
+    , issueCreatedAt = UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60)
+    , issueBody = Just ""
+    , issueState = StateOpen
+    , issueId = Id 334520780
+    , issueComments = 0
+    , issueMilestone = Just Milestone
+        { milestoneCreator = cblp
+        , milestoneDueOn = Just $ UTCTime (fromGregorian 2018 06 15) (7 * 3600)
+        , milestoneOpenIssues = 5
+        , milestoneNumber = Id 1
+        , milestoneClosedIssues = 0
+        , milestoneDescription = Just ""
+        , milestoneTitle = "GitHub sync"
+        , milestoneUrl = api "milestones/1"
+        , milestoneCreatedAt =
+            UTCTime (fromGregorian 2018 06 16) (9 * 3600 + 15 * 60 + 35)
+        , milestoneState = "open"
+        }
+    }
+  where
+    api x = URL $ "https://api.github.com/repos/ff-notes/ff/" <> x
+    cblp = SimpleUser
+        { simpleUserId = Id 63495
+        , simpleUserLogin = N "cblp"
+        , simpleUserAvatarUrl =
+            URL "https://avatars0.githubusercontent.com/u/63495?v=4"
+        , simpleUserUrl = URL "https://api.github.com/users/cblp"
+        }
