@@ -5,6 +5,7 @@
 
 module FF.Github
     ( runCmdGithub
+    , sampleMaps
     ) where
 
 import           Data.Foldable (toList)
