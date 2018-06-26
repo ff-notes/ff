@@ -257,14 +257,14 @@ instance Arbitrary NoNul where
 
 case_repo :: IO ()
 case_repo = do
-    let output = sampleMaps limit today issues
+    let output = sampleMaps limit todayForIssues issues
     output @?= ideal
       where
         ideal = fromList
             [ ( Overdue 10
               , Sample  { notes = [NoteView { nid = DocId "334520780"
                                             , status = Active
-                                            , text = "import issues (GitHub -> ff)\nurl            https://github.com/ff-notes/ff/issues/60"
+                                            , text = "import issues (GitHub -> ff)\nurl https://github.com/ff-notes/ff/issues/60"
                                             , start = fromGregorian 2018 06 21
                                             , end = Just (fromGregorian 2018 06 15)}]
                         , total = 1})]
@@ -275,7 +275,7 @@ todayForIssues = fromGregorian 2018 06 25
 limit :: Limit
 limit = 1
 
--- issues :: Issue
+issues :: [Issue]
 issues = [Issue
   { issueClosedAt = Nothing
   , issueUpdatedAt = UTCTime (fromGregorian 2018 06 21) (14*3600+30*60+41)
