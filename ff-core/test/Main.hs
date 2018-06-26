@@ -27,8 +27,12 @@ import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Time (Day, fromGregorian)
+import           Data.Time (Day, UTCTime (..), fromGregorian)
 import           GHC.Exts (fromList)
+import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
+import           GitHub.Data.Definitions (SimpleUser (..))
+import           GitHub.Data.Id (Id (..))
+import           GitHub.Data.Name (Name (..))
 import           System.FilePath (splitDirectories)
 import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
                                   counterexample, property, (===), (==>))
@@ -40,6 +44,7 @@ import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNew, getSamples)
 import           FF.Config (Config, ConfigUI (..))
+import           FF.Github (sampleMaps)
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
@@ -249,3 +254,65 @@ newtype NoNul = NoNul Text
 
 instance Arbitrary NoNul where
     arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary
+
+case_repo :: IO ()
+case_repo = do
+    let output = sampleMaps limit today issues
+    output @?= ideal
+      where
+        ideal = fromList
+            [ ( Overdue 10
+              , Sample  { notes = [NoteView { nid = DocId "334520780"
+                                            , status = Active
+                                            , text = "import issues (GitHub -> ff)\nurl            https://github.com/ff-notes/ff/issues/60"
+                                            , start = fromGregorian 2018 06 21
+                                            , end = Just (fromGregorian 2018 06 15)}]
+                        , total = 1})]
+
+todayForIssues :: Day
+todayForIssues = fromGregorian 2018 06 25
+
+limit :: Limit
+limit = 1
+
+-- issues :: Issue
+issues = [Issue
+  { issueClosedAt = Nothing
+  , issueUpdatedAt = UTCTime (fromGregorian 2018 06 21) (14*3600+30*60+41)
+  , issueEventsUrl = URL "https://api.github.com/repos/ff-notes/ff/issues/60/events"
+  , issueHtmlUrl = Just (URL "https://github.com/ff-notes/ff/issues/60")
+  , issueClosedBy = Nothing
+  , issueLabels = mempty
+  , issueNumber = 60
+  , issueAssignees = mempty
+  , issueUser = SimpleUser  { simpleUserId = Id 63495
+                            , simpleUserLogin = N "cblp"
+                            , simpleUserAvatarUrl = URL "https://avatars0.githubusercontent.com/u/63495?v=4"
+                            , simpleUserUrl = URL "https://api.github.com/users/cblp"
+                            }
+  , issueTitle = "import issues (GitHub -> ff)"
+  , issuePullRequest = Nothing
+  , issueUrl = URL "https://api.github.com/repos/ff-notes/ff/issues/60"
+  , issueCreatedAt = UTCTime (fromGregorian 2018 06 21) (14*3600+30*60)
+  , issueBody = Just ""
+  , issueState = StateOpen
+  , issueId = Id 334520780
+  , issueComments = 0
+  , issueMilestone = Just Milestone
+      { milestoneCreator = SimpleUser
+          { simpleUserId =Id 63495
+          , simpleUserLogin = N "cblp"
+          , simpleUserAvatarUrl = URL "https://avatars0.githubusercontent.com/u/63495?v=4"
+          , simpleUserUrl = URL "https://api.github.com/users/cblp"
+          }
+      , milestoneDueOn = Just (UTCTime (fromGregorian 2018 06 15) (7*3600))
+      , milestoneOpenIssues = 5
+      , milestoneNumber = Id 1
+      , milestoneClosedIssues = 0
+      , milestoneDescription = Just ""
+      , milestoneTitle = "GitHub sync"
+      , milestoneUrl = URL "https://api.github.com/repos/ff-notes/ff/milestones/1"
+      , milestoneCreatedAt = UTCTime (fromGregorian 2018 06 16) (9*3600+15*60+35)
+      , milestoneState = "open"
+      }
+  }]
