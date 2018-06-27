@@ -34,7 +34,6 @@ runCmdGithub address limit today = case address of
     Just a -> do
         let owner = head . splitOneOf "/" $ a
         let repo = last . splitOneOf "/" $ a
-        let fetching = FetchAtLeast $ fromIntegral limit
         let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
         fmap (sampleMaps limit today) <$> executeRequest' issues
     Nothing -> do
@@ -42,9 +41,10 @@ runCmdGithub address limit today = case address of
         let remote = (splitOneOf "/" . drop 19 . take (length xs - 5)) xs
         let owner = head remote
         let repo = last remote
-        let fetching = FetchAtLeast $ fromIntegral limit
         let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
         fmap (sampleMaps limit today) <$> executeRequest' issues
+  where
+    fetching = FetchAtLeast $ fromIntegral limit
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues =
