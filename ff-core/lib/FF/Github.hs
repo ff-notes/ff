@@ -9,6 +9,7 @@ module FF.Github
     ) where
 
 import           Data.Foldable (toList)
+import           Data.List (find)
 import           Data.List.Split (splitOneOf)
 import           Data.Semigroup ((<>))
 import           Data.String (fromString)
@@ -32,10 +33,14 @@ runCmdGithub
     -> IO (Either Error (ModeMap Sample))
 runCmdGithub address limit today = do
     address' <- case address of
-      Just a -> return a
-      Nothing -> do
-        url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-        return $ drop 19 . take (length url - 5) $ url
+        Just a -> if find (=='/') a == Just '/'
+            then pure a
+            else do
+              putStrLn "\nThere is no slash ('/') between OWNER and REPO.\nPlease, check correction of input.\nRight format is --repo=OWNER/REPO\n"
+              pure a
+        Nothing -> do
+            url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            pure $ drop 19 . take (length url - 5) $ url
     let owner = fromString . head . splitOneOf "/" $ address'
     let repo = fromString . last . splitOneOf "/" $ address'
     let fetching = FetchAtLeast $ fromIntegral limit
