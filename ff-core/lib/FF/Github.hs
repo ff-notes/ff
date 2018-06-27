@@ -9,14 +9,16 @@ module FF.Github
     ) where
 
 import           Data.Foldable (toList)
+import           Data.List.Split (splitOneOf)
 import           Data.Semigroup ((<>))
+import           Data.String (fromString)
 import           Data.Time (Day, UTCTime (..))
 import           GitHub (Error, FetchCount (..), Id, Issue (..),
-                         IssueState (..), Milestone (..), Name, Owner, Repo,
-                         URL (..), executeRequest', issueCreatedAt,
-                         issueHtmlUrl, issueId, issueMilestone, issueState,
-                         issueTitle, untagId)
+                         IssueState (..), Milestone (..), URL (..),
+                         executeRequest', issueCreatedAt, issueHtmlUrl, issueId,
+                         issueMilestone, issueState, issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
+import           System.Process (readCreateProcess, shell)
 
 import           FF (splitModes, takeSamples)
 import           FF.Storage (DocId (..))
@@ -24,16 +26,25 @@ import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..))
 
 runCmdGithub
-    :: Name Owner
-    -> Name Repo
+    :: Maybe String
     -> Limit
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
-runCmdGithub owner repo limit today =
-    fmap (sampleMaps limit today) <$> executeRequest' issues
-  where
-    issues = issuesForRepoR owner repo mempty fetching
-    fetching = FetchAtLeast $ fromIntegral limit
+runCmdGithub address limit today = case address of
+    Just a -> do
+        let owner = head . splitOneOf "/" $ a
+        let repo = last . splitOneOf "/" $ a
+        let fetching = FetchAtLeast $ fromIntegral limit
+        let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
+        fmap (sampleMaps limit today) <$> executeRequest' issues
+    Nothing -> do
+        xs <- readCreateProcess (shell "git remote get-url --push origin") ""
+        let remote = (splitOneOf "/" . drop 19 . take (length xs - 5)) xs
+        let owner = head remote
+        let repo = last remote
+        let fetching = FetchAtLeast $ fromIntegral limit
+        let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
+        fmap (sampleMaps limit today) <$> executeRequest' issues
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues =

@@ -14,7 +14,9 @@ library:
     - mainland-pretty
     - mtl
     - optparse-applicative
+    - process
     - random
+    - split
     - stm
     - temporary
     - text
