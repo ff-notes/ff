@@ -18,7 +18,7 @@ import           GitHub (Error, FetchCount (..), Id, Issue (..),
                          executeRequest', issueCreatedAt, issueHtmlUrl, issueId,
                          issueMilestone, issueState, issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
-import           System.Process (readCreateProcess, shell)
+import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
 import           FF.Storage (DocId (..))
@@ -30,21 +30,17 @@ runCmdGithub
     -> Limit
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
-runCmdGithub address limit today = case address of
-    Just a -> do
-        let owner = head . splitOneOf "/" $ a
-        let repo = last . splitOneOf "/" $ a
-        let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
-        fmap (sampleMaps limit today) <$> executeRequest' issues
-    Nothing -> do
-        xs <- readCreateProcess (shell "git remote get-url --push origin") ""
-        let remote = (splitOneOf "/" . drop 19 . take (length xs - 5)) xs
-        let owner = head remote
-        let repo = last remote
-        let issues = issuesForRepoR (fromString owner) (fromString repo) mempty fetching
-        fmap (sampleMaps limit today) <$> executeRequest' issues
-  where
-    fetching = FetchAtLeast $ fromIntegral limit
+runCmdGithub address limit today = do
+    address' <- case address of
+      Just a -> return a
+      Nothing -> do
+        url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+        return $ drop 19 . take (length url - 5) $ url
+    let owner = fromString . head . splitOneOf "/" $ address'
+    let repo = fromString . last . splitOneOf "/" $ address'
+    let fetching = FetchAtLeast $ fromIntegral limit
+    let issues = issuesForRepoR owner repo mempty fetching
+    fmap (sampleMaps limit today) <$> executeRequest' issues
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues =
