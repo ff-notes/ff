@@ -36,8 +36,8 @@ runCmdGithub address limit today = do
         Just a -> if find (=='/') a == Just '/'
             then pure a
             else do
-              putStrLn "\nThere is no slash ('/') between OWNER and REPO.\nPlease, check correction of input.\nRight format is --repo=OWNER/REPO\n"
-              pure a
+                putStrLn "\nThere is no slash ('/') between OWNER and REPO.\nPlease, check correction of  input.\nRight format is --repo=OWNER/REPO\n"
+                pure a
         Nothing -> do
             url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
             pure $ drop 19 . take (length url - 5) $ url
