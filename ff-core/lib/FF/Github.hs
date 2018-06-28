@@ -15,8 +15,8 @@ import           Data.Semigroup ((<>))
 import           Data.String (fromString)
 import           Data.Time (Day, UTCTime (..))
 import           GitHub (Error, FetchCount (..), Id, Issue (..),
-                         IssueState (..), Milestone (..), Name (..), Owner (..),
-                         Repo (..), URL (..), executeRequest', issueCreatedAt,
+                         IssueState (..), Milestone (..), Name, Owner, Repo,
+                         URL (..), executeRequest', issueCreatedAt,
                          issueHtmlUrl, issueId, issueMilestone, issueState,
                          issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
