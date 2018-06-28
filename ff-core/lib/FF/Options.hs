@@ -25,8 +25,7 @@ import           GitHub (Name, Owner, Repo)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, value,
-                                      (<**>))
+                                      strArgument, strOption, subparser, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -37,7 +36,7 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     Limit
+    = CmdAgenda     (Maybe Limit)
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
@@ -50,7 +49,7 @@ data CmdAction
 data CmdGithub = GithubList
     { owner :: Name Owner
     , repo  :: Name Repo
-    , limit :: Limit
+    , limit :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -76,7 +75,7 @@ data New = New
     , newEnd    :: Maybe Day
     }
 
-data Search = Search Text Limit
+data Search = Search Text (Maybe Limit)
 
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
@@ -109,7 +108,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
     iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> limitOption
+    pCmdAgenda    = CmdAction . CmdAgenda    <$> optional limitOption
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
     pCmdDone      = CmdAction . CmdDone      <$> idArgument
     pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
@@ -121,7 +120,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList <$> pOwner <*> pRepo <*> limitOption
+    pCmdList = GithubList <$> pOwner <*> pRepo <*> optional limitOption
 
     pOwner = strArgument $
         metavar "OWNER" <> help "Repository owner (user or organization)"
@@ -134,14 +133,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> optional startOption
         <*> optional maybeEndOption
 
-    pSearch      = Search <$> strArgument (metavar "TEXT") <*> limitOption
+    pSearch      = Search   <$> strArgument (metavar "TEXT")
+                            <*> optional limitOption
 
     idArgument   = DocId <$> strArgument (metavar "ID" <> help "note id")
     textArgument = strArgument $ metavar "TEXT" <> help "note text"
 
     endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption  = option auto $
-        long "limit" <> short 'l' <> help "Number of issues" <> value 10
+        long "limit" <> short 'l' <> help "Number of issues"
     startOption  = dateOption $ long "start" <> short 's' <> help "start date"
     textOption   = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"

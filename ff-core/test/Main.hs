@@ -276,8 +276,8 @@ case_repo = sampleMaps limit todayForIssues issues @?= ideal
 todayForIssues :: Day
 todayForIssues = fromGregorian 2018 06 25
 
-limit :: Limit
-limit = 1
+limit :: Maybe Limit
+limit = Just 1
 
 issues :: [Issue]
 issues = pure $ Issue

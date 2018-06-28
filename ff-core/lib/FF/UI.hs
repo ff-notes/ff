@@ -13,8 +13,8 @@ import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
-                           TaskMode (..), omitted)
+import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
+                           omitted)
 
 type Template a = a -> String
 
@@ -30,13 +30,10 @@ indentation = 4
 pshow :: Show a => a -> Doc
 pshow = Pretty.text . show
 
-prettySamplesBySections :: Limit -> ModeMap Sample -> Doc
-prettySamplesBySections limit samples = stack $
+prettySamplesBySections :: ModeMap Sample -> Doc
+prettySamplesBySections samples = stack $
     [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
-    [ (show numOmitted <> " task(s) omitted. To see more tasks, run:")
-      .= ("ff --limit=" <> show (max 0 limit + 10))
-    | numOmitted > 0
-    ]
+    [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 

@@ -26,21 +26,21 @@ import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
 runCmdGithub
     :: Name Owner
     -> Name Repo
-    -> Limit
+    -> Maybe Limit
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
-runCmdGithub owner repo limit today =
-    fmap (sampleMaps limit today) <$> executeRequest' issues
+runCmdGithub owner repo mlimit today =
+    fmap (sampleMaps mlimit today) <$> executeRequest' issues
   where
     issues = issuesForRepoR owner repo mempty fetching
-    fetching = FetchAtLeast $ fromIntegral limit
+    fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
 
-sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues =
-    takeSamples (Just limit)
+sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMaps mlimit today issues =
+    takeSamples mlimit
     . splitModes today
     . map toNoteView
-    $ take (fromIntegral limit)
+    . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
 toNoteView :: Issue -> NoteView
