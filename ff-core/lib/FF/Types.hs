@@ -95,8 +95,10 @@ taskModeOrder = \case
     Starting _ -> 4
 
 instance Ord TaskMode where
-    Overdue n <= Overdue m = n >= m
-    m1        <= m2        = taskModeOrder m1 <= taskModeOrder m2
+    Overdue  n <= Overdue  m = n >= m
+    EndSoon  n <= EndSoon  m = n <= m
+    Starting n <= Starting m = n <= m
+    m1         <= m2         = taskModeOrder m1 <= taskModeOrder m2
 
 taskMode :: Day -> NoteView -> TaskMode
 taskMode today NoteView{start, end} = case end of
