@@ -79,8 +79,10 @@ cmdSearch substr = getSamplesWith
 loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
     docs   <- listDocuments
-    mnotes <- for docs load
-    pure [ noteView doc note | (doc, Just note) <- zip docs mnotes ]
+    mnotes <- for docs $ \doc -> do
+        mdoc <- load doc
+        pure $ fmap fst mdoc
+    pure [ noteView noteId note | (noteId, Just note) <- zip docs mnotes]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =

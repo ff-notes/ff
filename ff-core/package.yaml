@@ -15,11 +15,13 @@ library:
     - mtl
     - optparse-applicative
     - random
+    - safe-exceptions
     - stm
     - temporary
     - text
     - time
     - typed-process
+    - utility-ht
     - yaml
   source-dirs: lib
 
