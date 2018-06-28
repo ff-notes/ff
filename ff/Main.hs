@@ -12,6 +12,7 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import           Data.Text.Lazy (toStrict)
+import qualified Data.Text.Lazy as Text
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
@@ -147,4 +148,4 @@ runCmdVersion = putStrLn $ concat
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
-    printOrPage . toStrict . prettyLazyText width $ ppr a
+    printOrPage . toStrict . (`Text.snoc` '\n') . prettyLazyText width $ ppr a
