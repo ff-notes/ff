@@ -53,8 +53,8 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (Collection, DocId, MonadStorage, Storage,
-                             listDocuments, load, modify, saveNew)
+import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
+                             Storage, listDocuments, load, modify, saveNew)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
@@ -80,7 +80,10 @@ loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
     docs   <- listDocuments
     mnotes <- for docs load
-    pure [ noteView doc note | (doc, Just note) <- zip docs mnotes ]
+    pure
+        [ noteView noteId value
+        | (noteId, Just Document{value}) <- zip docs mnotes
+        ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =

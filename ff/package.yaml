@@ -14,7 +14,9 @@ dependencies:
   - filepath
   - gitrev
   - mainland-pretty
+  - pager
   - stm
   - terminal-size
+  - text
 
   - ff-core

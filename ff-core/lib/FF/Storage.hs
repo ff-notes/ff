@@ -2,15 +2,17 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Storage where
 
-import           Prelude hiding (readFile)
-
 import           Control.Concurrent.STM (TVar)
-import           Control.Monad (when)
+import           Control.Error (ExceptT (..), runExceptT)
+import           Control.Exception (catch, throwIO)
+import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
 import           CRDT.Cv (CvRDT)
@@ -21,13 +23,15 @@ import           CRDT.LamportClock (Clock, LamportClock,
 import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
+import           Data.Foldable (for_)
 import           Data.List.NonEmpty (nonEmpty)
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
 import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                                   listDirectory)
+                                   listDirectory, removeFile)
 import           System.FilePath ((</>))
+import           System.IO.Error (isDoesNotExistError)
 
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: FilePath
@@ -44,13 +48,20 @@ newtype Storage a = Storage (ReaderT FilePath LamportClock a)
 
 type Version = FilePath
 
+data Document a = Document
+    { value    :: a
+    , versions :: [Version]
+    }
+
 -- | Environment is the dataDir
 class Clock m => MonadStorage m where
     listDirectoryIfExists
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
     createFile :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
-    readFile :: Collection doc => DocId doc -> Version -> m doc
+    readFileEither
+        :: Collection doc => DocId doc -> Version -> m (Either String doc)
+    removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
 
 instance MonadStorage Storage where
     listDirectoryIfExists relpath = Storage $ do
@@ -66,13 +77,19 @@ instance MonadStorage Storage where
             createDirectoryIfMissing True docDir
             BSL.writeFile file $ encode doc
 
-    readFile docId version = Storage $ do
+    readFileEither docId version = Storage $ do
         docDir <- askDocDir docId
         let file = docDir </> version
         contents <- liftIO $ BSL.readFile file
-        pure $
-            either (error . ((file ++ ": ") ++)) id $
-            eitherDecode contents
+        pure $ eitherDecode contents
+
+    removeFileIfExists docId version = Storage $ do
+        docDir <- askDocDir docId
+        let file = docDir </> version
+        liftIO $
+            removeFile file
+            `catch` \e ->
+                unless (isDoesNotExistError e) $ throwIO e
 
 runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
 runStorage dataDir var (Storage action) =
@@ -83,14 +100,20 @@ listDocuments
 listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
 
 load
-    :: forall doc m
-     . (Collection doc, MonadStorage m)
-    => DocId doc
-    -> m (Maybe doc)
+    :: forall a m
+     . (Collection a, MonadStorage m)
+    => DocId a
+    -> m (Maybe (Document a))
 load docId = do
-    versions      <- listVersions docId
-    versionValues <- for versions $ readFile docId
-    pure $ sconcat <$> nonEmpty versionValues
+    (versions, values) <- loadAnyway
+    pure $ (\v -> Document{value = v, versions}) . sconcat <$> nonEmpty values
+  where
+    loadAnyway = do
+        versions <- listVersions docId
+        eValues <- runExceptT $ for versions $ ExceptT . readFileEither docId
+        case eValues of
+            Right values -> pure (versions, values)
+            Left _       -> loadAnyway
 
 listVersions
     :: forall doc m
@@ -144,8 +167,15 @@ modify
     => DocId doc
     -> (Maybe doc -> m (a, doc))
     -> m a
-modify docId f = do
-    mDocOld     <- load docId
-    (a, docNew) <- f mDocOld
-    when (Just docNew /= mDocOld) $ save docId docNew
-    pure a
+modify docId f =
+    load docId >>= \case
+        Just Document{value = docOld, versions} -> do
+            (a, docNew) <- f $ Just docOld
+            when (docNew /= docOld) $ do
+                for_ versions (removeFileIfExists docId)
+                save docId docNew
+            pure a
+        Nothing -> do
+            (a, docNew) <- f Nothing
+            save docId docNew
+            pure a

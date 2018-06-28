@@ -10,12 +10,8 @@ module FF.Github
     ) where
 
 import           Data.Foldable (toList)
--- import           Data.List (find)
--- import           Data.List.Split (splitOneOf)
-import           Data.Semigroup ((<>))
--- import           Data.String (fromString)
--- import           Data.Text (Text, breakOn, head, last)
 import           Data.Maybe (fromJust, isNothing)
+import           Data.Semigroup ((<>))
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
 import           GitHub (Error, FetchCount (..), Id, Issue (..),
@@ -59,12 +55,12 @@ checkError text | isNothing text = Right Nothing
                           ]
                       else Right text
 
-sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues =
-    takeSamples (Just limit)
+sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMaps mlimit today issues =
+    takeSamples mlimit
     . splitModes today
     . map toNoteView
-    $ take (fromIntegral limit)
+    . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
 toNoteView :: Issue -> NoteView

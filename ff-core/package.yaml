@@ -9,6 +9,7 @@ library:
     - containers
     - crdt
     - directory
+    - errors
     - filepath
     - github
     - mainland-pretty
@@ -16,7 +17,7 @@ library:
     - optparse-applicative
     - process
     - random
-    - split
+    - safe-exceptions
     - stm
     - temporary
     - text

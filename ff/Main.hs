@@ -11,12 +11,14 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
+import           Data.Text.Lazy (toStrict)
+import qualified Data.Text.Lazy as Text
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPrint, stderr)
-import           Text.PrettyPrint.Mainland (pretty)
+import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
@@ -31,6 +33,7 @@ import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
+import           System.Pager (printOrPage)
 
 import           Data.Version (showVersion)
 import           Development.GitRev (gitDirty, gitHash)
@@ -103,9 +106,9 @@ runCmdAction :: ConfigUI -> CmdAction -> Storage ()
 runCmdAction ui cmd = do
     today <- getUtcToday
     case cmd of
-        CmdAgenda limit -> do
-            nvs <- getSamples ui (Just limit) today
-            pprint $ UI.prettySamplesBySections limit nvs
+        CmdAgenda mlimit -> do
+            nvs <- getSamples ui mlimit today
+            pprint $ UI.prettySamplesBySections nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
             pprint $ withHeader "deleted:" $ UI.noteView nv
@@ -130,9 +133,9 @@ runCmdAction ui cmd = do
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId
             pprint $ withHeader "postponed:" $ UI.noteView nv
-        CmdSearch (Search text limit) -> do
-            nvs <- cmdSearch text (Just limit) today
-            pprint $ UI.prettySamplesBySections limit nvs
+        CmdSearch (Search text mlimit) -> do
+            nvs <- cmdSearch text mlimit today
+            pprint $ UI.prettySamplesBySections nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
@@ -149,4 +152,4 @@ runCmdVersion = putStrLn $ concat
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
-    putStrLn . pretty width $ ppr a
+    printOrPage . toStrict . (`Text.snoc` '\n') . prettyLazyText width $ ppr a
