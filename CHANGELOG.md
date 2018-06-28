@@ -10,6 +10,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Use pipe as the metadata delimiter to simplify mouse selection
 - Unlimited note listing by default
 - Use pager for output
+- Delete merged version files
 
 ## [0.4] - 2018-06-06
 ### Added
