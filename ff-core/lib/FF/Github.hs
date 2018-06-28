@@ -15,9 +15,10 @@ import           Data.Semigroup ((<>))
 import           Data.String (fromString)
 import           Data.Time (Day, UTCTime (..))
 import           GitHub (Error, FetchCount (..), Id, Issue (..),
-                         IssueState (..), Milestone (..), URL (..),
-                         executeRequest', issueCreatedAt, issueHtmlUrl, issueId,
-                         issueMilestone, issueState, issueTitle, untagId)
+                         IssueState (..), Milestone (..), Name (..), Owner (..),
+                         Repo (..), URL (..), executeRequest', issueCreatedAt,
+                         issueHtmlUrl, issueId, issueMilestone, issueState,
+                         issueTitle, untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
@@ -44,11 +45,17 @@ runCmdGithub address limit today = do
         Nothing -> do
             url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
             pure $ drop 19 . take (length url - 5) $ url
-    let owner = fromString . head . splitOneOf "/" $ address'
-    let repo = fromString . last . splitOneOf "/" $ address'
+    let owner = head . splitOneOf "/" $ address'
+    let repo = last . splitOneOf "/" $ address'
     let fetching = FetchAtLeast $ fromIntegral limit
-    let issues = issuesForRepoR owner repo mempty fetching
+    let issues = issuesForRepoR (mkOwner owner) (mkRepo repo) mempty fetching
     fmap (sampleMaps limit today) <$> executeRequest' issues
+
+mkOwner :: String -> Name Owner
+mkOwner = fromString
+
+mkRepo :: String -> Name Repo
+mkRepo  = fromString
 
 sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps limit today issues =
