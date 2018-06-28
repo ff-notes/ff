@@ -47,7 +47,7 @@ data CmdAction
     | CmdUnarchive  NoteId
 
 data CmdGithub = GithubList
-    { address  :: Maybe String
+    { address  :: Maybe Text
     , limit :: Limit
     }
 
