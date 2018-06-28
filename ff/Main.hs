@@ -11,12 +11,13 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
+import           Data.Text.Lazy (toStrict)
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPrint, stderr)
-import           Text.PrettyPrint.Mainland (pretty)
+import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
@@ -31,6 +32,7 @@ import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
+import           System.Pager (printOrPage)
 
 import           Data.Version (showVersion)
 import           Development.GitRev (gitDirty, gitHash)
@@ -145,4 +147,4 @@ runCmdVersion = putStrLn $ concat
 pprint :: (Pretty a, MonadIO io) => a -> io ()
 pprint a = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
-    putStrLn . pretty width $ ppr a
+    printOrPage . toStrict . prettyLazyText width $ ppr a
