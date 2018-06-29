@@ -121,12 +121,12 @@ runCmdAction ui cmd = do
         CmdGithub GithubList { address, limit } -> liftIO $ do
             address' <- pure $ checkError address
             case address' of
-                Left err -> pprint err
-                Right a -> do
-                    possibleIssues <- runCmdGithub a limit today
+                Left err -> hPrint stderr err
+                Right address'' -> do
+                    possibleIssues <- runCmdGithub address'' limit today
                     case possibleIssues of
                         Left err     -> hPrint stderr err
-                        Right sample -> pprint $ UI.prettySamplesBySections limit sample
+                        Right sample -> pprint $ UI.prettySamplesBySections sample
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv

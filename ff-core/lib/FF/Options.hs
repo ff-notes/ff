@@ -47,7 +47,7 @@ data CmdAction
 
 data CmdGithub = GithubList
     { address  :: Maybe Text
-    , limit :: Limit
+    , limit    :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -118,7 +118,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList <$> optional pRepo <*> limitOption
+    pCmdList = GithubList <$> optional pRepo <*> optional limitOption
 
     pRepo  = strOption $
       long "repo" <> short 'r' <> metavar "USER/REPO" <> help "User or organization/repository"

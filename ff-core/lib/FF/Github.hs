@@ -29,10 +29,10 @@ import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
 
 runCmdGithub
     :: Maybe Text.Text
-    -> Limit
+    -> Maybe Limit
     -> Day  -- ^ today
     -> IO (Either Error (ModeMap Sample))
-runCmdGithub address limit today = do
+runCmdGithub address mlimit today = do
     address' <- case address of
         Just a -> pure a
         Nothing -> do
@@ -40,18 +40,18 @@ runCmdGithub address limit today = do
             pure $ Text.drop 19 . Text.dropEnd 5 $ Text.pack url
     let [owner, repo] = Text.splitOn "/" address'
     -- let repo = Text.drop 1 . Text.splitOn "/" $ address'
-    let fetching = FetchAtLeast $ fromIntegral limit
+    let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
     let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
-    fmap (sampleMaps limit today) <$> executeRequest' issues
+    fmap (sampleMaps mlimit today) <$> executeRequest' issues
 
 checkError :: Maybe Text.Text -> Either Text.Text (Maybe Text.Text)
 checkError text | isNothing text = Right Nothing
                 | otherwise = if (/=Just 2) (length <$> (Text.splitOn "/" <$> text))
                       then Left $ Text.concat
-                          ["\nSomething is wrong with "
+                          ["Something is wrong with <"
                           , fromJust text
-                          ,"\nPlease, check correction of input."
-                          ,"\nRight format is --repo=OWNER/REPO\n"
+                          ,">. Please, check correction of input. "
+                          ,"Right format is --repo=OWNER/REPO"
                           ]
                       else Right text
 
