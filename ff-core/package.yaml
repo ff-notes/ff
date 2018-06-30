@@ -17,7 +17,6 @@ library:
     - optparse-applicative
     - process
     - random
-    - safe-exceptions
     - stm
     - temporary
     - text

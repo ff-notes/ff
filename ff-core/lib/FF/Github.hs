@@ -8,6 +8,7 @@ module FF.Github
     , sampleMaps
     ) where
 
+import           Control.Monad (join)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
@@ -33,28 +34,33 @@ runCmdGithub
     -> IO (Either Text (ModeMap Sample))
 runCmdGithub address mlimit today = do
     address' <- case address of
-        Just a -> if all ((> 0) . Text.length) (Text.splitOn "/" a)
-          then pure $ Right a
-          else pure $ Left $ Text.concat
-              ["Something is wrong with "
-              , a
-              ,". Please, check correction of input. "
-              ,"Right format is OWNER/REPO"
-              ]
-        Nothing -> Right . Text.drop 19 . Text.dropEnd 5 . Text.pack <$>
-                      readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+        Just a -> pure $ if all (not . Text.null) (splitter a)
+            then Right (splitter a)
+            else Left $ Text.concat
+                ["Something is wrong with "
+                , a
+                ,". Please, check correctness of input. "
+                ,"Right format is OWNER/REPO"
+                ]
+        Nothing -> do
+            packed <- Text.pack <$> readProcess "git" ["remote", "get-url", "origin"] ""
+            case join $ Text.stripSuffix ".git"
+                <$> Text.stripPrefix "https://github.com/" packed of
+                Nothing -> pure $ Left "Sorry, only github repositary expected."
+                Just b  -> pure $ Right $ splitter b
     case address' of
         Left err    -> pure $ Left err
         Right input -> do
-            let ownerepo = Text.splitOn "/" input
-            let owner = mkOwnerName $ head ownerepo
-            let repo  = mkRepoName $ last ownerepo
+            let owner = mkOwnerName $ head input
+            let repo  = mkRepoName $ last input
             let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
             let issues = issuesForRepoR owner repo mempty fetching
             result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
             case result of
                 Left err -> pure $ Left $ Text.pack $ show err
                 Right sm -> pure $ Right sm
+  where
+    splitter = Text.splitOn "/"
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
