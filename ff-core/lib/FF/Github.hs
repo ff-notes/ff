@@ -52,8 +52,8 @@ runCmdGithub address mlimit today = do
             let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
             result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
             case result of
-                Left err -> pure $ Left (Text.pack $ show err)
-                Right sm  -> pure $ Right sm
+                Left err -> pure $ Left $ Text.pack $ show err
+                Right sm -> pure $ Right sm
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
