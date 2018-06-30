@@ -6,19 +6,18 @@
 module FF.Github
     ( runCmdGithub
     , sampleMaps
-    , checkError
     ) where
 
 import           Data.Foldable (toList)
-import           Data.Maybe (fromJust, isNothing)
 import           Data.Semigroup ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (Error, FetchCount (..), Id, Issue (..),
-                         IssueState (..), Milestone (..), URL (..),
-                         executeRequest', issueCreatedAt, issueHtmlUrl, issueId,
-                         issueMilestone, issueState, issueTitle, mkOwnerName,
-                         mkRepoName, untagId)
+import           GitHub (FetchCount (..), Id, Issue (..), IssueState (..),
+                         Milestone (..), URL (..), executeRequest',
+                         issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
+                         issueState, issueTitle, mkOwnerName, mkRepoName,
+                         untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
@@ -28,32 +27,33 @@ import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..))
 
 runCmdGithub
-    :: Maybe Text.Text
+    :: Maybe Text
     -> Maybe Limit
     -> Day  -- ^ today
-    -> IO (Either Error (ModeMap Sample))
+    -> IO (Either Text (ModeMap Sample))
 runCmdGithub address mlimit today = do
     address' <- case address of
-        Just a -> pure a
+        Just a -> if all ((> 0) . Text.length) (Text.splitOn "/" a)
+          then pure $ Right a
+          else pure $ Left $ Text.concat
+              ["Something is wrong with "
+              , a
+              ,". Please, check correction of input. "
+              ,"Right format is OWNER/REPO"
+              ]
         Nothing -> do
             url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-            pure $ Text.drop 19 . Text.dropEnd 5 $ Text.pack url
-    let [owner, repo] = Text.splitOn "/" address'
-    -- let repo = Text.drop 1 . Text.splitOn "/" $ address'
-    let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
-    let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
-    fmap (sampleMaps mlimit today) <$> executeRequest' issues
-
-checkError :: Maybe Text.Text -> Either Text.Text (Maybe Text.Text)
-checkError text | isNothing text = Right Nothing
-                | otherwise = if (/=Just 2) (length <$> (Text.splitOn "/" <$> text))
-                      then Left $ Text.concat
-                          ["Something is wrong with <"
-                          , fromJust text
-                          ,">. Please, check correction of input. "
-                          ,"Right format is --repo=OWNER/REPO"
-                          ]
-                      else Right text
+            pure $ Right $ Text.drop 19 . Text.dropEnd 5 $ Text.pack url
+    case address' of
+        Left err    -> pure $ Left err
+        Right input -> do
+            let [owner, repo] = Text.splitOn "/" input
+            let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
+            let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
+            result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
+            case result of
+                Left err -> pure $ Left (Text.pack $ show err)
+                Right sm  -> pure $ Right sm
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
