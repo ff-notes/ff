@@ -41,15 +41,16 @@ runCmdGithub address mlimit today = do
               ,". Please, check correction of input. "
               ,"Right format is OWNER/REPO"
               ]
-        Nothing -> do
-            url <- readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-            pure $ Right $ Text.drop 19 . Text.dropEnd 5 $ Text.pack url
+        Nothing -> Right . Text.drop 19 . Text.dropEnd 5 . Text.pack <$>
+                      readProcess "git" ["remote", "get-url", "--push", "origin"] ""
     case address' of
         Left err    -> pure $ Left err
         Right input -> do
-            let [owner, repo] = Text.splitOn "/" input
+            let ownerepo = Text.splitOn "/" input
+            let owner = mkOwnerName $ head ownerepo
+            let repo  = mkRepoName $ last ownerepo
             let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
-            let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
+            let issues = issuesForRepoR owner repo mempty fetching
             result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
             case result of
                 Left err -> pure $ Left $ Text.pack $ show err
