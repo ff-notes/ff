@@ -35,8 +35,8 @@ runCmdGithub
 runCmdGithub address mlimit today = do
     address' <- case address of
         Just a -> pure $ if Text.length (Text.filter (=='/') a) == 1
-                                      && Text.head a /= '/'
-                                      && Text.last a /= '/'
+                         && Text.take 1 a /= "/"
+                         && Text.takeEnd 1 a /= "/"
             then Right (splitter a)
             else Left $ Text.concat
                 ["Something is wrong with "
