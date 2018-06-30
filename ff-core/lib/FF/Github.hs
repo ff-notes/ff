@@ -34,7 +34,7 @@ runCmdGithub
     -> IO (Either Text (ModeMap Sample))
 runCmdGithub address mlimit today = do
     address' <- case address of
-        Just a -> pure $ if all (not . Text.null) (splitter a)
+        Just a -> pure $ if all (not . Text.null) (splitter a) && length (splitter a) == 2
             then Right (splitter a)
             else Left $ Text.concat
                 ["Something is wrong with "
