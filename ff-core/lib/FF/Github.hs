@@ -8,7 +8,6 @@ module FF.Github
     , sampleMaps
     ) where
 
-import           Control.Monad (join)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
@@ -44,8 +43,8 @@ runCmdGithub address mlimit today = do
                 ]
         Nothing -> do
             packed <- Text.pack <$> readProcess "git" ["remote", "get-url", "origin"] ""
-            case join $ Text.stripSuffix ".git"
-                <$> Text.stripPrefix "https://github.com/" packed of
+            case Text.stripSuffix ".git"
+                =<< Text.stripPrefix "https://github.com/" packed of
                 Nothing -> pure $ Left "Sorry, only github repositary expected."
                 Just b  -> pure $ Right $ splitter b
     case address' of
