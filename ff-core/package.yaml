@@ -15,8 +15,8 @@ library:
     - mainland-pretty
     - mtl
     - optparse-applicative
+    - process
     - random
-    - safe-exceptions
     - stm
     - temporary
     - text

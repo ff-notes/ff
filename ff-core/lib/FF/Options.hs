@@ -21,7 +21,6 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           GitHub (Name, Owner, Repo)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
@@ -47,9 +46,8 @@ data CmdAction
     | CmdUnarchive  NoteId
 
 data CmdGithub = GithubList
-    { owner :: Name Owner
-    , repo  :: Name Repo
-    , limit :: Maybe Limit
+    { address  :: Maybe Text
+    , limit    :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -120,11 +118,10 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
 
     list     = subparser (command "list" iCmdList)
     iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList <$> pOwner <*> pRepo <*> optional limitOption
+    pCmdList = GithubList <$> optional pRepo <*> optional limitOption
 
-    pOwner = strArgument $
-        metavar "OWNER" <> help "Repository owner (user or organization)"
-    pRepo  = strArgument $ metavar "REPO" <> help "Repository name"
+    pRepo  = strOption $
+      long "repo" <> short 'r' <> metavar "USER/REPO" <> help "User or organization/repository"
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
