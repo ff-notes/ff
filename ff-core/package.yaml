@@ -9,11 +9,13 @@ library:
     - containers
     - crdt
     - directory
+    - errors
     - filepath
     - github
     - mainland-pretty
     - mtl
     - optparse-applicative
+    - process
     - random
     - stm
     - temporary

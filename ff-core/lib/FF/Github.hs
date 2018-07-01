@@ -8,15 +8,19 @@ module FF.Github
     , sampleMaps
     ) where
 
+import           Control.Arrow ((&&&))
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
+import           Data.Text (Text)
+import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (Error, FetchCount (..), Id, Issue (..),
-                         IssueState (..), Milestone (..), Name, Owner, Repo,
-                         URL (..), executeRequest', issueCreatedAt,
-                         issueHtmlUrl, issueId, issueMilestone, issueState,
-                         issueTitle, untagId)
+import           GitHub (FetchCount (..), Id, Issue (..), IssueState (..),
+                         Milestone (..), URL (..), executeRequest',
+                         issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
+                         issueState, issueTitle, mkOwnerName, mkRepoName,
+                         untagId)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
+import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
 import           FF.Storage (DocId (..))
@@ -24,23 +28,45 @@ import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..))
 
 runCmdGithub
-    :: Name Owner
-    -> Name Repo
-    -> Limit
+    :: Maybe Text
+    -> Maybe Limit
     -> Day  -- ^ today
-    -> IO (Either Error (ModeMap Sample))
-runCmdGithub owner repo limit today =
-    fmap (sampleMaps limit today) <$> executeRequest' issues
-  where
-    issues = issuesForRepoR owner repo mempty fetching
-    fetching = FetchAtLeast $ fromIntegral limit
+    -> IO (Either Text (ModeMap Sample))
+runCmdGithub address mlimit today = do
+    address' <- case address of
+        Just a -> pure $ if Text.length (Text.filter (=='/') a) == 1
+                         && not ("/" `Text.isPrefixOf` a)
+                         && not ("/" `Text.isSuffixOf` a)
+            then Right a
+            else Left $ Text.concat
+                ["Something is wrong with "
+                , a
+                ,". Please, check correctness of input. "
+                ,"Right format is OWNER/REPO"
+                ]
+        Nothing -> do
+            packed <- Text.pack <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            case Text.stripSuffix ".git\n"
+                =<< Text.stripPrefix "https://github.com/" packed of
+                Nothing -> pure $ Left "Sorry, only github repository expected."
+                Just b  -> pure $ Right b
+    case address' of
+        Left err -> pure $ Left err
+        Right input -> do
+            let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ input
+            let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
+            let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
+            result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
+            case result of
+                Left err -> pure $ Left $ Text.pack $ show err
+                Right sm -> pure $ Right sm
 
-sampleMaps :: Foldable t => Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps limit today issues =
-    takeSamples (Just limit)
+sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMaps mlimit today issues =
+    takeSamples mlimit
     . splitModes today
     . map toNoteView
-    $ take (fromIntegral limit)
+    . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
 toNoteView :: Issue -> NoteView
