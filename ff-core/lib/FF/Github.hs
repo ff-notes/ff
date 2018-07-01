@@ -8,6 +8,7 @@ module FF.Github
     , sampleMaps
     ) where
 
+import           Control.Arrow ((&&&))
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
@@ -33,10 +34,16 @@ runCmdGithub
     -> IO (Either Text (ModeMap Sample))
 runCmdGithub address mlimit today = do
     address' <- case address of
-        Just a -> case splitR a of
-                      [x, y] | not (Text.null x) && not (Text.null y) -> pure $ Right a
-                             | otherwise -> wrong a
-                      _ -> wrong a
+        Just a -> pure $ if Text.length (Text.filter (=='/') a) == 1
+                         && not ("/" `Text.isPrefixOf` a)
+                         && not ("/" `Text.isSuffixOf` a)
+            then Right a
+            else Left $ Text.concat
+                ["Something is wrong with "
+                , a
+                ,". Please, check correctness of input. "
+                ,"Right format is OWNER/REPO"
+                ]
         Nothing -> do
             packed <- Text.pack <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
             case Text.stripSuffix ".git\n"
@@ -45,22 +52,14 @@ runCmdGithub address mlimit today = do
                 Just b  -> pure $ Right b
     case address' of
         Left err -> pure $ Left err
-        Right ownerepo -> do
-            let (owner, repo) = (\[x,y] -> (x,y)) . splitR $ ownerepo
+        Right input -> do
+            let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ input
             let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
             let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
             result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
             case result of
                 Left err -> pure $ Left $ Text.pack $ show err
                 Right sm -> pure $ Right sm
-  where
-    splitR = Text.split (=='/')
-    wrong a = pure $ Left $ Text.concat
-        ["Something is wrong with "
-        , a
-        ,". Please, check correctness of input. "
-        ,"Right format is OWNER/REPO"
-        ]
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
