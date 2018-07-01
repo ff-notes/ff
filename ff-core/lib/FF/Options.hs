@@ -121,7 +121,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdList = GithubList <$> optional pRepo <*> optional limitOption
 
     pRepo  = strOption $
-      long "repo" <> short 'r' <> metavar "USER/REPO" <> help "User or organization/repository"
+        long "repo" <> short 'r' <> metavar "USER/REPO" <>
+        help "User or organization/repository"
 
     pNew = New <$> textArgument <*> optional startOption <*> optional endOption
     pEdit = Edit
