@@ -46,12 +46,12 @@ runCmdGithub address mlimit today = do
                           ,"Right format is OWNER/REPO"
                           ]
         Nothing -> do
-            packed <- ExceptT $ Right . Text.pack
+            packed <- liftIO $ Text.pack
                 <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
             case Text.stripSuffix ".git\n"
                 =<< Text.stripPrefix "https://github.com/" packed of
-                Nothing -> throwError "Sorry, only github repository expected."
                 Just b  -> pure b
+                Nothing -> throwError "Sorry, only github repository expected."
     let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ address'
     let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
     let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
