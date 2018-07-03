@@ -9,7 +9,7 @@ module FF.Github
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Error.Util (failWith, hoistEither)
+import           Control.Error (failWith)
 import           Control.Monad (unless)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
@@ -57,9 +57,9 @@ runCmdGithub mAddress mlimit today = do
             failWith "Sorry, only github repository expected." mGithub
     let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ address
     let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
-    let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
-    response <- withExceptT (Text.pack . show) (ExceptT $ executeRequest' issues)
-    hoistEither . pure $ sampleMaps mlimit today response
+    let request = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
+    response <- withExceptT (Text.pack . show) (ExceptT $ executeRequest' request)
+    pure $ sampleMaps mlimit today response
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
