@@ -38,7 +38,7 @@ runCmdGithub address mlimit today = do
         Just a -> if Text.length (Text.filter (=='/') a) == 1
                   && not ("/" `Text.isPrefixOf` a)
                   && not ("/" `Text.isSuffixOf` a)
-                      then ExceptT . pure . Right $ a
+                      then pure a
                       else throwError $ Text.concat
                           ["Something is wrong with "
                           , a
@@ -51,14 +51,14 @@ runCmdGithub address mlimit today = do
             case Text.stripSuffix ".git\n"
                 =<< Text.stripPrefix "https://github.com/" packed of
                 Nothing -> throwError "Sorry, only github repository expected."
-                Just b  -> ExceptT (pure $ Right b)
+                Just b  -> pure b
     let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ address'
     let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
     let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
     result <- liftIO $ fmap (sampleMaps mlimit today) <$> executeRequest' issues
     case result of
         Left err -> throwError $ Text.pack $ show err
-        Right sm -> ExceptT . pure $ Right sm
+        Right sm -> pure sm
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
