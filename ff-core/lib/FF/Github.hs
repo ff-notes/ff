@@ -8,9 +8,7 @@ module FF.Github
     , sampleMaps
     ) where
 
-import           Control.Arrow ((&&&))
 import           Control.Error (failWith)
-import           Control.Monad (unless)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
@@ -38,27 +36,25 @@ runCmdGithub
     -> ExceptT Text IO (ModeMap Sample)
 runCmdGithub mAddress mlimit today = do
     address <- case mAddress of
-        Just address -> do
-            unless (Text.length (Text.filter (=='/') address) == 1
-                && not ("/" `Text.isPrefixOf` address)
-                && not ("/" `Text.isSuffixOf` address))
-                (throwError $ Text.concat
-                    [ "Something is wrong with "
-                    , address
-                    , ". Please, check correctness of input. "
-                    , "Right format is OWNER/REPO"
-                    ])
-            pure address
+        Just address -> pure address
         Nothing -> do
-            packed <- liftIO $ Text.pack
-                <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-            let mGithub = Text.stripSuffix ".git\n"
-                    =<< Text.stripPrefix "https://github.com/" packed
-            failWith "Sorry, only github repository expected." mGithub
-    let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ address
-    let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
-    let request = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
-    response <- withExceptT (Text.pack . show) (ExceptT $ executeRequest' request)
+            packed <- liftIO $ Text.pack <$>
+                readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            failWith "Sorry, only github repository expected." $
+                Text.stripPrefix "https://github.com/" packed
+                >>= Text.stripSuffix ".git\n"
+    (owner, repo) <- case Text.splitOn "/" address of
+        [owner, repo] | not $ Text.null owner, not $ Text.null repo ->
+            pure (owner, repo)
+        _ -> throwError $
+            "Something is wrong with " <> address <>
+            ". Please, check correctness of input. Right format is OWNER/REPO"
+    response <- withExceptT (Text.pack . show) $ ExceptT $
+        executeRequest' $ issuesForRepoR
+            (mkOwnerName owner)
+            (mkRepoName repo)
+            mempty
+            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure $ sampleMaps mlimit today response
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
