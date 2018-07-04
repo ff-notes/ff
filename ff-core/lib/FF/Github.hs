@@ -9,6 +9,10 @@ module FF.Github
     ) where
 
 import           Control.Arrow ((&&&))
+import           Control.Error (failWith)
+import           Control.Monad (unless)
+import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
+                                       withExceptT)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
@@ -31,35 +35,31 @@ runCmdGithub
     :: Maybe Text
     -> Maybe Limit
     -> Day  -- ^ today
-    -> IO (Either Text (ModeMap Sample))
-runCmdGithub address mlimit today = do
-    address' <- case address of
-        Just a -> pure $ if Text.length (Text.filter (=='/') a) == 1
-                         && not ("/" `Text.isPrefixOf` a)
-                         && not ("/" `Text.isSuffixOf` a)
-            then Right a
-            else Left $ Text.concat
-                ["Something is wrong with "
-                , a
-                ,". Please, check correctness of input. "
-                ,"Right format is OWNER/REPO"
-                ]
+    -> ExceptT Text IO (ModeMap Sample)
+runCmdGithub mAddress mlimit today = do
+    address <- case mAddress of
+        Just address -> do
+            unless (Text.length (Text.filter (=='/') address) == 1
+                && not ("/" `Text.isPrefixOf` address)
+                && not ("/" `Text.isSuffixOf` address))
+                (throwError $ Text.concat
+                    [ "Something is wrong with "
+                    , address
+                    , ". Please, check correctness of input. "
+                    , "Right format is OWNER/REPO"
+                    ])
+            pure address
         Nothing -> do
-            packed <- Text.pack <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-            case Text.stripSuffix ".git\n"
-                =<< Text.stripPrefix "https://github.com/" packed of
-                Nothing -> pure $ Left "Sorry, only github repository expected."
-                Just b  -> pure $ Right b
-    case address' of
-        Left err -> pure $ Left err
-        Right input -> do
-            let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ input
-            let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
-            let issues = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
-            result <- fmap (sampleMaps mlimit today) <$> executeRequest' issues
-            case result of
-                Left err -> pure $ Left $ Text.pack $ show err
-                Right sm -> pure $ Right sm
+            packed <- liftIO $ Text.pack
+                <$> readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            let mGithub = Text.stripSuffix ".git\n"
+                    =<< Text.stripPrefix "https://github.com/" packed
+            failWith "Sorry, only github repository expected." mGithub
+    let (owner, repo) = Text.takeWhile (/='/') &&& Text.takeWhileEnd (/='/') $ address
+    let fetching = maybe FetchAll (FetchAtLeast . fromIntegral) mlimit
+    let request = issuesForRepoR (mkOwnerName owner) (mkRepoName repo) mempty fetching
+    response <- withExceptT (Text.pack . show) (ExceptT $ executeRequest' request)
+    pure $ sampleMaps mlimit today response
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =

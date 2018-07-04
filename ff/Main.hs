@@ -7,6 +7,7 @@ module Main where
 
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad (guard)
+import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Foldable (asum)
@@ -120,7 +121,7 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { address, limit } -> liftIO $ do
-            possibleIssues <- runCmdGithub address limit today
+            possibleIssues <- runExceptT $ runCmdGithub address limit today
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
