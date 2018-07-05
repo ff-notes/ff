@@ -8,6 +8,7 @@ executable:
   other-modules: Paths_ff
 
 dependencies:
+  - async
   - base
   - crdt
   - directory

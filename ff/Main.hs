@@ -5,8 +5,10 @@
 
 module Main where
 
+import           Control.Concurrent (threadDelay)
+import           Control.Concurrent.Async (async, race_, wait)
 import           Control.Concurrent.STM (newTVarIO)
-import           Control.Monad (guard)
+import           Control.Monad (forever, guard)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
@@ -121,10 +123,15 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { address, limit } -> liftIO $ do
-            possibleIssues <- runExceptT $ runCmdGithub address limit today
-            case possibleIssues of
-                Left err      -> hPutStrLn stderr err
-                Right samples -> pprint $ UI.prettySamplesBySections samples
+            putStr "fetching"
+            race_ (forever $ putStr "." >> threadDelay 500000) github
+          where
+            github = do
+                pos <- async $ runExceptT $ runCmdGithub address limit today
+                possibleIssues <- wait pos
+                case possibleIssues of
+                    Left err      -> hPutStrLn stderr err
+                    Right samples -> pprint $ UI.prettySamplesBySections samples
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
