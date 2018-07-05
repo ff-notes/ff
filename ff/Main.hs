@@ -6,12 +6,13 @@
 module Main where
 
 import           Control.Concurrent (threadDelay)
-import           Control.Concurrent.Async (async, waitAnyCancel)
+import           Control.Concurrent.Async (race)
 import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad (forever, guard)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
+import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import           Data.Text.IO (hPutStrLn)
@@ -124,9 +125,9 @@ runCmdAction ui cmd = do
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { address, limit } -> liftIO $ do
             putStr "fetching"
-            dots <- async (forever (putStr "." >> threadDelay 500000))
-            response <- async $ runExceptT $ runCmdGithub address limit today
-            (_, possibleIssues) <- waitAnyCancel [dots, response]
+            possibleIssues <- fromEither <$> race
+                (runExceptT $ runCmdGithub address limit today)
+                (forever $ putChar '.' >> threadDelay 500000)
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples

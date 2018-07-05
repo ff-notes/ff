@@ -12,6 +12,7 @@ dependencies:
   - base
   - crdt
   - directory
+  - extra
   - filepath
   - gitrev
   - mainland-pretty
