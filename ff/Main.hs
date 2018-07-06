@@ -22,7 +22,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
-import           System.IO (stderr)
+import           System.IO (hPutChar, hPutStr, stderr)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -124,10 +124,11 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { address, limit } -> liftIO $ do
-            putStr "fetching"
+            hPutStr stderr "fetching"
             possibleIssues <- fromEither <$> race
                 (runExceptT $ runCmdGithub address limit today)
-                (forever $ putChar '.' >> threadDelay 500000)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+            hPutStrLn stderr ""
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
