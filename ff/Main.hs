@@ -5,11 +5,14 @@
 
 module Main where
 
+import           Control.Concurrent (threadDelay)
+import           Control.Concurrent.Async (race)
 import           Control.Concurrent.STM (newTVarIO)
-import           Control.Monad (guard)
+import           Control.Monad (forever, guard)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           CRDT.LamportClock (getRealLocalTime)
+import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
 import           Data.Text.IO (hPutStrLn)
@@ -19,7 +22,7 @@ import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
-import           System.IO (stderr)
+import           System.IO (hPutChar, hPutStr, stderr)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -121,7 +124,11 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdGithub GithubList { address, limit } -> liftIO $ do
-            possibleIssues <- runExceptT $ runCmdGithub address limit today
+            hPutStr stderr "fetching"
+            possibleIssues <- fromEither <$> race
+                (runExceptT $ runCmdGithub address limit today)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+            hPutStrLn stderr ""
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
