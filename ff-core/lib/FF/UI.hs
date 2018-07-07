@@ -13,7 +13,7 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           omitted)
+                           Tracked (..), omitted)
 
 type Template a = a -> String
 

@@ -61,6 +61,7 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
+                          --  Tracked (..), noteView, singletonTaskModeMap)
 
 
 serveHttpPort :: Int
@@ -139,13 +140,40 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
+-- newTrack
+--     :: Clock m
+--     => NoteView
+--     -> m Note
+-- newTrack NoteView { status, text, start, end, extId, source} = do
+--     noteStatus <- LWW.initialize status
+--     noteText   <- rgaFromText text
+--     noteStart  <- LWW.initialize start
+--     noteEnd    <- LWW.initialize end
+--     noteTrack  <- LWW.initialize $ pure $ Tracked
+--         (fromMaybe "" extId)
+--         (fromMaybe "" source)
+--     pure Note {..}
+
+-- cmdTrack :: MonadStorage m => NoteView -> m NoteView
+-- cmdTrack noteList = do
+--     note <- newTrack noteList
+--     nid  <- saveNew note
+--     pure $ noteView nid note
+
+newNote
+    :: Clock m
+    => Status
+    -> Text
+    -> Day
+    -> Maybe Day
+    -> m Note
 newNote status text start end = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
     noteStart  <- LWW.initialize start
     noteEnd    <- LWW.initialize end
-    pure Note{noteTracked = Nothing, ..}
+    noteTrack  <- LWW.initialize Nothing
+    pure Note {..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do
@@ -163,10 +191,12 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
     noteEnd'    <- LWW.assign Nothing noteEnd
+    -- tracked'    <- LWW.assign Nothing tracked
     pure note { noteStatus = noteStatus'
               , noteText   = noteText'
               , noteStart  = noteStart'
               , noteEnd    = noteEnd'
+              -- , tracked    = tracked'
               }
 
 cmdDone :: NoteId -> Storage NoteView
