@@ -131,7 +131,13 @@ runCmdAction ui cmd = do
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
-        CmdGithub (GithubTrack _)-> liftIO $ hPutStrLn stderr "Issues copied to local base"
+        CmdTrack (TrackCopy address) -> do
+            nvs <- liftIO $ runExceptT $ trackCopy address
+            case nvs of
+              Left err   -> liftIO $ hPutStrLn stderr err
+              Right nvs' -> do
+                  cmdTrack nvs'
+                  liftIO $ putStrLn "Issues copied to local base"
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv

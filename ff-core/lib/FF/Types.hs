@@ -51,21 +51,21 @@ data Tracked = Tracked
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 data Note = Note
-    { noteStatus  :: LWW Status
-    , noteText    :: RgaString
-    , noteStart   :: LWW Day
-    , noteEnd     :: LWW (Maybe Day)
-    , noteTracked :: Maybe (Max Tracked)
+    { noteStatus :: LWW Status
+    , noteText   :: RgaString
+    , noteStart  :: LWW Day
+    , noteEnd    :: LWW (Maybe Day)
+    , noteTrack  :: Maybe (Max Tracked)
     }
     deriving (Eq, Generic, Show)
 
 data Tracked = Tracked
-    { noteExtId  :: Text
-    , noteSource :: Text
+    { trackedExtId  :: Text
+    , trackedSource :: Text
     }
-    deriving (Eq, Show)
+    deriving (Eq, Show, Ord)
 
-deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 4, omitNothingFields = True} ''Tracked
+deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 type NoteId = DocId Note
 
@@ -74,9 +74,6 @@ instance Semigroup Note where
         <> Note status2 text2 start2 end2 track2 = Note
         (status1 <> status2) (text1 <> text2) (start1 <> start2) (end1 <> end2)
         (track1 <> track2)
-
-instance Semigroup Tracked where
-    Tracked extId1 source1 <> Tracked extId2 source2 = Tracked (extId1 <> extId2) (source1 <> source2)
 
 instance Semilattice Note
 
@@ -160,8 +157,8 @@ noteView nid Note {..} = NoteView
     , text   = Text.pack $ RGA.toString noteText
     , start  = LWW.query noteStart
     , end    = LWW.query noteEnd
-    , extId  = pure $ maybe "" (\(Tracked x _) -> x) (LWW.query noteTrack)
-    , source = pure $ maybe "" (\(Tracked _ u) -> u) (LWW.query noteTrack)
+    , extId  = pure $ maybe "" ((\(Tracked x _) -> x) . Max.query) noteTrack
+    , source = pure $ maybe "" ((\(Tracked _ u) -> u) . Max.query) noteTrack
     }
 
 type Limit = Natural
