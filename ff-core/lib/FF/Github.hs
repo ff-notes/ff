@@ -61,9 +61,7 @@ runCmdTrack Track{trackAddress, trackLimit} today = do
 trackCopy
     :: Maybe Text
     -> ExceptT Text IO [NoteView]
-trackCopy mAddress = do
-    response <- handleInput mAddress Nothing
-    pure $ noteViewList response
+trackCopy mAddress = noteViewList <$> handleInput mAddress Nothing
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =
