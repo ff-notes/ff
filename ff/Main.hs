@@ -30,9 +30,10 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdTrack)
-import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), Shuffle (..), parseOptions)
+import           FF.Github (exceptNoteView, exceptSampleMap)
+import           FF.Options (Cmd (..), CmdAction (..), CmdTrack (..),
+                             DataDir (..), Search (..), Shuffle (..),
+                             parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -125,14 +126,14 @@ runCmdAction ui cmd = do
         CmdTrack track -> liftIO $ do
             hPutStr stderr "fetching"
             possibleIssues <- fromEither <$> race
-                (runExceptT $ runCmdTrack track today)
+                (runExceptT $ exceptSampleMap address limit today)
                 (forever $ hPutChar stderr '.' >> threadDelay 500000)
             hPutStrLn stderr ""
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
-        CmdTrack (TrackCopy address) -> do
-            nvs <- liftIO $ runExceptT $ trackCopy address
+        CmdTrack (TrackGet address) -> do
+            nvs <- liftIO $ runExceptT $ exceptNoteView address
             case nvs of
                 Left err   -> liftIO $ hPutStrLn stderr err
                 Right nvs' -> do
