@@ -174,8 +174,7 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     pure note { noteStatus = noteStatus' }
 
 cmdServe :: MonadStorage m => m Text
-cmdServe = do
-    pure $ Text.pack "TODO: sart http server at port ..."
+cmdServe = pure $ Text.pack "TODO: start http server at port ..."
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =

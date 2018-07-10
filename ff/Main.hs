@@ -138,8 +138,8 @@ runCmdAction ui cmd = do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> do
-            rv <- cmdServe
-            pprint . withHeader "serving:" $ rv
+            cmdServe
+            return ()
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
