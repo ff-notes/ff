@@ -16,6 +16,7 @@ module FF
     , cmdSearch
     , cmdServe
     , cmdUnarchive
+    , cmdServe
     , getSamples
     , getUtcToday
     , loadActiveNotes
@@ -229,10 +230,8 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: MonadIO m => m ()
-cmdServe =
-    liftIO $ scotty serveHttpPort $
-    get "/" $ html "Hello, world!"
+cmdServe :: MonadStorage m => m ()
+cmdServe = pure ()
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =

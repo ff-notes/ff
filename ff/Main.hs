@@ -27,7 +27,8 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
+                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
+                     newTrackedNote)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
