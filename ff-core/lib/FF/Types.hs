@@ -60,8 +60,10 @@ data Note = Note
     deriving (Eq, Generic, Show)
 
 data Tracked = Tracked
-    { trackedExtId  :: Text
-    , trackedSource :: Text
+    { trackedProvider :: Text
+    , trackedSource   :: Text
+    , trackedExtId    :: Text
+    , trackedUrl      :: Text
     }
     deriving (Eq, Show, Ord)
 
@@ -83,13 +85,15 @@ instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { nid    :: NoteId
-    , status :: Status
-    , text   :: Text
-    , start  :: Day
-    , end    :: Maybe Day
-    , extId  :: Maybe Text
-    , source :: Maybe Text
+    { nid      :: NoteId
+    , status   :: Status
+    , text     :: Text
+    , start    :: Day
+    , end      :: Maybe Day
+    , provider :: Text
+    , source   :: Text
+    , extId    :: Text
+    , url      :: Maybe Text
     }
     deriving (Eq, Show)
 
@@ -152,13 +156,15 @@ singletonTaskModeMap today note = Map.singleton (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
-    { nid    = nid
-    , status = LWW.query noteStatus
-    , text   = Text.pack $ RGA.toString noteText
-    , start  = LWW.query noteStart
-    , end    = LWW.query noteEnd
-    , extId  = pure $ maybe "" ((\(Tracked x _) -> x) . Max.query) noteTrack
-    , source = pure $ maybe "" ((\(Tracked _ u) -> u) . Max.query) noteTrack
+    { nid      = nid
+    , status   = LWW.query noteStatus
+    , text     = Text.pack $ RGA.toString noteText
+    , start    = LWW.query noteStart
+    , end      = LWW.query noteEnd
+    , provider = maybe "" ((\(Tracked p _ _ _) -> p) . Max.query) noteTrack
+    , source   = maybe "" ((\(Tracked _ s _ _) -> s) . Max.query) noteTrack
+    , extId    = maybe "" ((\(Tracked _ _ x _) -> x) . Max.query) noteTrack
+    , url      = pure $ maybe "" ((\(Tracked _ _ _ u) -> u) . Max.query) noteTrack
     }
 
 type Limit = Natural
