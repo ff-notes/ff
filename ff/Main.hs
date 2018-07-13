@@ -30,7 +30,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (exceptNoteView, exceptSampleMap)
+import           FF.Github (getIssueSamples, getIssueViews)
 import           FF.Options (Cmd (..), CmdAction (..), CmdTrack (..),
                              DataDir (..), Search (..), Shuffle (..),
                              parseOptions)
@@ -123,17 +123,17 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack track -> liftIO $ do
+        CmdTrack (TrackList True address limit ) -> liftIO $ do
             hPutStr stderr "fetching"
             possibleIssues <- fromEither <$> race
-                (runExceptT $ exceptSampleMap address limit today)
+                (runExceptT $ getIssueSamples address limit today)
                 (forever $ hPutChar stderr '.' >> threadDelay 500000)
             hPutStrLn stderr ""
             case possibleIssues of
                 Left err      -> hPutStrLn stderr err
                 Right samples -> pprint $ UI.prettySamplesBySections samples
         CmdTrack (TrackGet address) -> do
-            nvs <- liftIO $ runExceptT $ exceptNoteView address
+            nvs <- liftIO $ runExceptT $ getIssueViews address
             case nvs of
                 Left err   -> liftIO $ hPutStrLn stderr err
                 Right nvs' -> do

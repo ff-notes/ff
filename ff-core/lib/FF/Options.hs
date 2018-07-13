@@ -46,10 +46,11 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdServe
 
-data Track = Track
-    { trackAddress  :: Maybe Text
-    , trackLimit    :: Maybe Limit
-    }
+data CmdTrack = TrackGet (Maybe Text)
+              | TrackList Bool (Maybe Text) (Maybe Limit)
+                  -- { address :: Maybe Text
+                  -- , limit   :: Maybe Limit
+                  -- }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
@@ -120,8 +121,15 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdUnarchive = CmdAction . CmdUnarchive <$> noteid
     cmdServe     = pure $ CmdAction CmdServe
 
-    track = Track <$> optional repo <*> optional limit
-    repo = strOption $
+    track = pTrackList <|> pTrackList
+    -- tCommands  = command "dry-run" iTrackList
+    -- iTrackList = i pTrackList "list issues from a github repository"
+    pTrackList = TrackList <$> pDryRun <*> optional pRepo <*> optional limitOption
+    pTrackGet  = TrackGet <$> optional pRepo
+
+    pDryRun = flag' True (long "dry-run" <> help "list issues from github")
+
+    pRepo  = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
     new = New <$> text <*> optional start <*> optional end
