@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-orphans #-}
+
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,7 +10,7 @@ import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            string, (<+/>), (</>))
+                                            string, (<+/>), (</>), (<>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
