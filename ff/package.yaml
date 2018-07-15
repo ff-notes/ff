@@ -1,5 +1,5 @@
 name: ff
-version: '0.4'
+version: '0.5'
 copyright:
   2018 Yuriy Syrovetskiy, Nikolay Loginov
 
@@ -8,9 +8,11 @@ executable:
   other-modules: Paths_ff
 
 dependencies:
+  - async
   - base
   - crdt
   - directory
+  - extra
   - filepath
   - gitrev
   - mainland-pretty
