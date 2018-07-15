@@ -60,6 +60,12 @@ import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
 
+import           Web.Spock (spock, runSpock, get, root, SpockM)
+import qualified Web.Spock as WS
+import           Web.Spock.Config (defaultSpockCfg, PoolOrConn (..))
+
+serveHttpPort = 8080
+
 getSamples
     :: MonadStorage m
     => ConfigUI
@@ -173,8 +179,14 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: MonadStorage m => m ()
-cmdServe = pure ()
+cmdServe :: (MonadStorage m, MonadIO m) => m ()
+cmdServe = do
+    spockCfg <- liftIO $ defaultSpockCfg Nothing PCNoDatabase Nothing
+    liftIO $ runSpock 8080 (spock spockCfg spockWebApp)
+
+spockWebApp :: SpockM () (Maybe a) (Maybe b) ()
+spockWebApp =
+    get root $ WS.text $ Text.pack "Hello World!"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
