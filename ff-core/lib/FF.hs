@@ -62,6 +62,8 @@ import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
 
+
+serveHttpPort :: Int
 serveHttpPort = 8080
 
 getSamples
@@ -177,11 +179,10 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: (MonadStorage m, MonadIO m) => m ()
+cmdServe :: MonadIO m => m ()
 cmdServe =
     liftIO $ scotty serveHttpPort $
-    get "/" $ do
-        html "Hello, world!"
+    get "/" $ html "Hello, world!"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
