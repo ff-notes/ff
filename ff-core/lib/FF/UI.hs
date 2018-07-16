@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
