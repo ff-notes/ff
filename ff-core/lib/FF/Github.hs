@@ -34,8 +34,8 @@ runCmdTrack
     :: Track
     -> Day  -- ^ today
     -> ExceptT Text IO (ModeMap Sample)
-runCmdTrack Track{address = mAddress, limit} today = do
-    address <- case mAddress of
+runCmdTrack Track{trackAddress, trackLimit} today = do
+    address <- case trackAddress of
         Just address -> pure address
         Nothing -> do
             packed <- liftIO $ Text.pack <$>
@@ -54,8 +54,8 @@ runCmdTrack Track{address = mAddress, limit} today = do
             (mkOwnerName owner)
             (mkRepoName repo)
             mempty
-            (maybe FetchAll (FetchAtLeast . fromIntegral) limit)
-    pure $ sampleMaps limit today response
+            (maybe FetchAll (FetchAtLeast . fromIntegral) trackLimit)
+    pure $ sampleMaps trackLimit today response
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =

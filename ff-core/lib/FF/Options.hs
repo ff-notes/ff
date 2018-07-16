@@ -47,8 +47,8 @@ data CmdAction
     | CmdServe
 
 data Track = Track
-    { address  :: Maybe Text
-    , limit    :: Maybe Limit
+    { trackAddress  :: Maybe Text
+    , trackLimit    :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -79,7 +79,7 @@ data Search = Search Text (Maybe Limit)
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = pCmdVersion <|> subparser commands <|> pCmdAgenda
+    parser   = version <|> subparser commands <|> cmdAgenda
     commands = mconcat
         [ command "add"       iCmdAdd
         , command "agenda"    iCmdAgenda
@@ -95,64 +95,56 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "unarchive" iCmdUnarchive
         ]
 
-    iCmdAdd       = i pCmdNew       "add a new task or note"
-    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
+    iCmdAdd       = i cmdNew        "add a new task or note"
+    iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i pCmdConfig    "show/edit configuration"
-    iCmdDelete    = i pCmdDelete    "delete a task"
-    iCmdDone      = i pCmdDone      "mark a task done (archive)"
-    iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdTrack     = i pCmdTrack     "track issues from external sources"
-    iCmdNew       = i pCmdNew       "synonym for `add`"
-    iCmdPostpone  = i pCmdPostpone  "make a task start later"
-    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
-    iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdServe     = i pCmdServe "serve application through the http"
+    iCmdConfig    = i cmdConfig     "show/edit configuration"
+    iCmdDelete    = i cmdDelete     "delete a task"
+    iCmdDone      = i cmdDone       "mark a task done (archive)"
+    iCmdEdit      = i cmdEdit       "edit a task or a note"
+    iCmdTrack     = i cmdTrack      "track issues from external sources"
+    iCmdNew       = i cmdNew        "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone   "make a task start later"
+    iCmdSearch    = i cmdSearch     "search for notes with the given text"
+    iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
+    iCmdServe     = i cmdServe      "serve web UI"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> optional limitOption
-    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
-    pCmdDone      = CmdAction . CmdDone      <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdTrack     = CmdAction . CmdTrack     <$> pTrack
-    pCmdNew       = CmdAction . CmdNew       <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
-    pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdServe     = pure $ CmdAction CmdServe
+    cmdAgenda    = CmdAction . CmdAgenda    <$> optional limit
+    cmdDelete    = CmdAction . CmdDelete    <$> noteid
+    cmdDone      = CmdAction . CmdDone      <$> noteid
+    cmdEdit      = CmdAction . CmdEdit      <$> edit
+    cmdTrack     = CmdAction . CmdTrack     <$> track
+    cmdNew       = CmdAction . CmdNew       <$> new
+    cmdPostpone  = CmdAction . CmdPostpone  <$> noteid
+    cmdSearch    = CmdAction . CmdSearch    <$> search
+    cmdUnarchive = CmdAction . CmdUnarchive <$> noteid
+    cmdServe     = pure $ CmdAction CmdServe
 
-    pTrack = Track <$> optional pRepo <*> optional limitOption
-
-    pRepo  = strOption $
+    track = Track <$> optional repo <*> optional limit
+    repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-
-    pNew = New <$> textArgument <*> optional startOption <*> optional endOption
-    pEdit = Edit
-        <$> idArgument
+    new = New <$> text <*> optional start <*> optional end
+    edit = Edit
+        <$> noteid
         <*> optional textOption
-        <*> optional startOption
-        <*> optional maybeEndOption
-
-    pSearch      = Search   <$> strArgument (metavar "TEXT")
-                            <*> optional limitOption
-
-    idArgument   = DocId <$> strArgument (metavar "ID" <> help "note id")
-    textArgument = strArgument $ metavar "TEXT" <> help "note text"
-
-    endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
-    limitOption  = option auto $
-        long "limit" <> short 'l' <> help "Number of issues"
-    startOption  = dateOption $ long "start" <> short 's' <> help "start date"
-    textOption   = strOption $
+        <*> optional start
+        <*> optional maybeEnd
+    search = Search <$> strArgument (metavar "TEXT") <*> optional limit
+    noteid = DocId <$> strArgument (metavar "ID" <> help "note id")
+    text = strArgument $ metavar "TEXT" <> help "note text"
+    end = dateOption $ long "end" <> short 'e' <> help "end date"
+    limit = option auto $ long "limit" <> short 'l' <> help "Number of issues"
+    start = dateOption $ long "start" <> short 's' <> help "start date"
+    textOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
-
-    maybeEndOption =
-        Just <$> endOption <|>
+    maybeEnd =
+        Just <$> end <|>
         flag' Nothing (long "end-clear" <> help "clear end date")
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    pCmdConfig = fmap CmdConfig . optional $
+    cmdConfig = fmap CmdConfig . optional $
         subparser $ command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
@@ -162,14 +154,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             pYandexDisk = flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
-        iUi = i pUi "UI tweaks"
-        pUi = fmap ConfigUI . optional $
+        iUi = i ui "UI tweaks"
+        ui = fmap ConfigUI . optional $
             flag'
                 Shuffle
                 (long "shuffle" <> help "shuffle notes in section") <|>
             flag' Sort (long "sort" <> help "sort notes in section")
 
-    pCmdVersion = flag'
+    version = flag'
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
 
