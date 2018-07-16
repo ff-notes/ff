@@ -5,6 +5,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module FF
     ( cmdDelete
@@ -51,6 +52,7 @@ import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
+import           Web.Scotty (scotty, get, html)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
@@ -59,6 +61,10 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
+
+
+serveHttpPort :: Int
+serveHttpPort = 8080
 
 getSamples
     :: MonadStorage m
@@ -173,8 +179,10 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: MonadStorage m => m ()
-cmdServe = pure ()
+cmdServe :: MonadIO m => m ()
+cmdServe =
+    liftIO $ scotty serveHttpPort $
+    get "/" $ html "Hello, world!"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =

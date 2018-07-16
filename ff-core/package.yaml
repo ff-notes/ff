@@ -18,6 +18,7 @@ library:
     - process
     - random
     - stm
+    - scotty
     - temporary
     - text
     - time
