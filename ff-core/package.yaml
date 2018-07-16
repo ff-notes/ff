@@ -17,8 +17,9 @@ library:
     - optparse-applicative
     - process
     - random
-    - stm
     - scotty
+    - semigroups
+    - stm
     - temporary
     - text
     - time

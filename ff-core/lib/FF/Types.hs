@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -10,20 +11,24 @@
 
 module FF.Types where
 
+import           CRDT.Cv.Max (Max)
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (camelTo2)
-import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier)
+import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier,
+                                omitNothingFields)
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup (Semigroup, (<>))
+import           Data.Semigroup.Generic (gmappend)
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, diffDays)
+import           GHC.Generics (Generic)
 import           Numeric.Natural (Natural)
 
 import           FF.CrdtAesonInstances ()
@@ -34,23 +39,36 @@ data Status = Active | Archived | Deleted
 
 deriveJSON defaultOptions ''Status
 
+data Tracked = Tracked
+    { trackedProvider   :: Text
+    , trackedSource     :: Text
+    , trackedExternalId :: Text
+    , trackedUrl        :: Text
+    }
+    deriving (Eq, Show, Ord)
+
+deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
+
 data Note = Note
     { noteStatus  :: LWW Status
     , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
+    , noteTracked :: Maybe (Max Tracked)
     }
-    deriving (Eq, Show)
+    deriving (Eq, Generic, Show)
 
 type NoteId = DocId Note
 
 instance Semigroup Note where
-    Note status1 text1 start1 end1 <> Note status2 text2 start2 end2 = Note
-        (status1 <> status2) (text1 <> text2) (start1 <> start2) (end1 <> end2)
+    (<>) = gmappend
 
 instance Semilattice Note
 
-deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 4} ''Note
+deriveJSON
+    defaultOptions
+        {fieldLabelModifier = camelTo2 '_' . drop 4, omitNothingFields = True}
+    ''Note
 
 instance Collection Note where
     collectionName = "note"
