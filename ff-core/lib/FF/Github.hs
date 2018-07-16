@@ -4,7 +4,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FF.Github
-    ( runCmdGithub
+    ( runCmdTrack
     , sampleMaps
     ) where
 
@@ -25,16 +25,16 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
+import           FF.Options (Track (..))
 import           FF.Storage (DocId (..))
 import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
                            Status (..))
 
-runCmdGithub
-    :: Maybe Text
-    -> Maybe Limit
+runCmdTrack
+    :: Track
     -> Day  -- ^ today
     -> ExceptT Text IO (ModeMap Sample)
-runCmdGithub mAddress mlimit today = do
+runCmdTrack Track{address = mAddress, limit} today = do
     address <- case mAddress of
         Just address -> pure address
         Nothing -> do
@@ -54,8 +54,8 @@ runCmdGithub mAddress mlimit today = do
             (mkOwnerName owner)
             (mkRepoName repo)
             mempty
-            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
-    pure $ sampleMaps mlimit today response
+            (maybe FetchAll (FetchAtLeast . fromIntegral) limit)
+    pure $ sampleMaps limit today response
 
 sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
 sampleMaps mlimit today issues =

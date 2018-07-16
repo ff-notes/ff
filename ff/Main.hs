@@ -27,13 +27,12 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdUnarchive, cmdServe, getSamples, getUtcToday)
+                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdGithub)
-import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
-                             DataDir (..), Search (..), Shuffle (..),
-                             parseOptions)
+import           FF.Github (runCmdTrack)
+import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
+                             Search (..), Shuffle (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -123,10 +122,10 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub GithubList { address, limit } -> liftIO $ do
+        CmdTrack track -> liftIO $ do
             hPutStr stderr "fetching"
             possibleIssues <- fromEither <$> race
-                (runExceptT $ runCmdGithub address limit today)
+                (runExceptT $ runCmdTrack track today)
                 (forever $ hPutChar stderr '.' >> threadDelay 500000)
             hPutStrLn stderr ""
             case possibleIssues of

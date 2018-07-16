@@ -7,13 +7,13 @@
 module FF.Options
     ( Cmd (..)
     , CmdAction (..)
-    , CmdGithub (..)
     , Config (..)
     , DataDir (..)
     , Edit (..)
     , New (..)
     , Search (..)
     , Shuffle (..)
+    , Track (..)
     , parseOptions
     ) where
 
@@ -39,14 +39,14 @@ data CmdAction
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
-    | CmdGithub     CmdGithub
+    | CmdTrack      Track
     | CmdNew        New
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
     | CmdServe
 
-data CmdGithub = GithubList
+data Track = Track
     { address  :: Maybe Text
     , limit    :: Maybe Limit
     }
@@ -87,12 +87,12 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "delete"    iCmdDelete
         , command "done"      iCmdDone
         , command "edit"      iCmdEdit
-        , command "github"    iCmdGithub
         , command "new"       iCmdNew
         , command "postpone"  iCmdPostpone
         , command "search"    iCmdSearch
-        , command "unarchive" iCmdUnarchive
         , command "serve"     iCmdServe
+        , command "track"     iCmdTrack
+        , command "unarchive" iCmdUnarchive
         ]
 
     iCmdAdd       = i pCmdNew       "add a new task or note"
@@ -102,7 +102,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdDelete    = i pCmdDelete    "delete a task"
     iCmdDone      = i pCmdDone      "mark a task done (archive)"
     iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdGithub    = i pCmdGithub    "synchronize issues with GitHub"
+    iCmdTrack     = i pCmdTrack     "track issues from external sources"
     iCmdNew       = i pCmdNew       "synonym for `add`"
     iCmdPostpone  = i pCmdPostpone  "make a task start later"
     iCmdSearch    = i pCmdSearch    "search for notes with the given text"
@@ -113,16 +113,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
     pCmdDone      = CmdAction . CmdDone      <$> idArgument
     pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdGithub    = CmdAction . CmdGithub    <$> list
+    pCmdTrack     = CmdAction . CmdTrack     <$> pTrack
     pCmdNew       = CmdAction . CmdNew       <$> pNew
     pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
     pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
     pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
     pCmdServe     = pure $ CmdAction CmdServe
 
-    list     = subparser (command "list" iCmdList)
-    iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList <$> optional pRepo <*> optional limitOption
+    pTrack = Track <$> optional pRepo <*> optional limitOption
 
     pRepo  = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>

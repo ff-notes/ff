@@ -14,12 +14,12 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
-    , cmdUnarchive
     , cmdServe
+    , cmdUnarchive
     , getSamples
     , getUtcToday
-    , loadAllNotes
     , loadActiveNotes
+    , loadAllNotes
     , newNote
     , splitModes
     , takeSamples
