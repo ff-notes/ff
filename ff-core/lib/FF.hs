@@ -64,7 +64,7 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
                              Storage, create, listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           Tracked (..), noteView, singletonTaskModeMap)
+                           noteView, singletonTaskModeMap)
 
 
 serveHttpPort :: Int
@@ -102,7 +102,7 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure  [ (noteId, noteView noteId value)
           | (noteId, Just Document{value}) <- zip docs mnotes
-          , isJust (noteTrack value)
+          , isJust (Max.query $ noteTrack value)
           ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
@@ -171,12 +171,7 @@ newTrackedNote mOldNotes nvNew =
         noteStart'  <- LWW.assign (start nvNew) noteStart
         noteEnd'    <- LWW.assign (end nvNew) noteEnd
         pure $ note noteStatus' noteText' noteStart' noteEnd'
-    noteTrack' = Just $ Max.initial Tracked
-        { trackedProvider = fromMaybe "" (provider nvNew)
-        , trackedSource   = fromMaybe "" (source nvNew)
-        , trackedExtId    = fromMaybe "" (extId nvNew)
-        , trackedUrl      = fromMaybe "" (url nvNew)
-        }
+    noteTrack' = Max.initial $ track nvNew
     note noteStatus' noteText' noteStart' noteEnd' = Note
         { noteStatus = noteStatus'
         , noteText   = noteText'
@@ -184,10 +179,7 @@ newTrackedNote mOldNotes nvNew =
         , noteEnd    = noteEnd'
         , noteTrack  = noteTrack'
         }
-    isSame nvN nvO
-        =  ((==) `on` provider) nvN nvO
-        && ((==) `on` source) nvN nvO
-        && ((==) `on`  extId) nvN nvO
+    isSame = (==) `on` track
     same = listToMaybe $ filter (isSame nvNew . snd) mOldNotes
 
 cmdTrack :: [NoteView] -> Storage ()
@@ -207,7 +199,7 @@ newNote status text start end = do
     noteText   <- rgaFromText text
     noteStart  <- LWW.initialize start
     noteEnd    <- LWW.initialize end
-    let noteTrack = Nothing
+    let noteTrack = Max.initial Nothing
     pure Note {..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
