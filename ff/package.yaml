@@ -21,5 +21,6 @@ dependencies:
   - stm
   - terminal-size
   - text
+  - time
 
   - ff-core

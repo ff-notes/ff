@@ -15,9 +15,11 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
+import           Data.Text (Text)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy as Text
+import           Data.Time (Day)
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
@@ -28,7 +30,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
-                     updateTracks)
+                     updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
@@ -37,6 +39,7 @@ import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
+import           FF.Types (Limit)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 import           System.Pager (printOrPage)
@@ -125,7 +128,7 @@ runCmdAction ui cmd = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
         CmdTrack (Track trackDryRun trackAddress trackLimit) ->
-            track trackDryRun trackAddress trackLimit today
+            cmdTrack trackDryRun trackAddress trackLimit today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -139,29 +142,31 @@ runCmdAction ui cmd = do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> cmdServe
+
+cmdTrack :: Bool -> Maybe Text -> Maybe Limit -> Day -> Storage ()
+cmdTrack trackDryRun trackAddress trackLimit today =
+    if trackDryRun then liftIO $ do
+        possibleIssues <- getIssues (getIssueSamples trackAddress trackLimit today)
+        case possibleIssues of
+            Left err      -> hPutStrLn stderr err
+            Right samples -> pprint $ UI.prettySamplesBySections samples
+    else do
+        possibleIssues <- liftIO $ getIssues (getIssueViews trackAddress trackLimit)
+        case possibleIssues of
+            Left err   -> liftIO $ hPutStrLn stderr err
+            Right nvs' -> do
+                updateTracked nvs'
+                let nvsLength = show $ length nvs'
+                liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
   where
-    track trackDryRun trackAddress trackLimit today = do
-        liftIO $ hPutStr stderr "fetching"
-        if trackDryRun
-        then liftIO $ do
-            possibleIssues <- fromEither <$> race
-                (runExceptT $ getIssueSamples trackAddress trackLimit today)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
-            hPutStrLn stderr ""
-            case possibleIssues of
-                Left err      -> hPutStrLn stderr err
-                Right samples -> pprint $ UI.prettySamplesBySections samples
-        else do
-            nvs <- liftIO $ fromEither <$> race
-                (runExceptT $ getIssueViews trackAddress trackLimit)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
-            liftIO $ hPutStrLn stderr ""
-            case nvs of
-                Left err   -> liftIO $ hPutStrLn stderr err
-                Right nvs' -> do
-                    updateTracks nvs'
-                    let nvsLength = show $ length nvs'
-                    liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
+      getIssues getter = do
+          hPutStr stderr "fetching"
+          possibleIssues <-
+              fromEither <$> race
+                  (runExceptT getter)
+                  (forever $ hPutChar stderr '.' >> threadDelay 500000)
+          hPutStrLn stderr ""
+          pure possibleIssues
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

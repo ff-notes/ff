@@ -95,22 +95,21 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "serve"     iCmdServe
         , command "track"     iCmdTrack
         , command "unarchive" iCmdUnarchive
-        , command "serve"     iCmdServe
         ]
 
     iCmdAdd       = i cmdNew        "add a new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i cmdConfig    "show/edit configuration"
-    iCmdDelete    = i cmdDelete    "delete a task"
-    iCmdDone      = i cmdDone      "mark a task done (archive)"
-    iCmdEdit      = i cmdEdit      "edit a task or a note"
-    iCmdTrack     = i cmdTrack     "track issues from GitHub"
-    iCmdNew       = i cmdNew       "synonym for `add`"
-    iCmdPostpone  = i cmdPostpone  "make a task start later"
-    iCmdSearch    = i cmdSearch    "search for notes with the given text"
-    iCmdUnarchive = i cmdUnarchive "restore the note from archive"
-    iCmdServe     = i cmdServe     "serve application through the http"
+    iCmdConfig    = i cmdConfig     "show/edit configuration"
+    iCmdDelete    = i cmdDelete     "delete a task"
+    iCmdDone      = i cmdDone       "mark a task done (archive)"
+    iCmdEdit      = i cmdEdit       "edit a task or a note"
+    iCmdNew       = i cmdNew        "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone   "make a task start later"
+    iCmdSearch    = i cmdSearch     "search for notes with the given text"
+    iCmdServe     = i cmdServe      "serve web UI"
+    iCmdTrack     = i cmdTrack      "track issues from external sources"
+    iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
 
     cmdAgenda    = CmdAction . CmdAgenda    <$> optional limit
     cmdDelete    = CmdAction . CmdDelete    <$> noteid
@@ -124,15 +123,13 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdServe     = pure $ CmdAction CmdServe
 
     track = Track
-        <$> pDryRun
-        <*> optional pRepo
+        <$> dryRun
+        <*> optional repo
         <*> optional limit
-
-    pDryRun = switch
+    dryRun = switch
         (long "dry-run" <> short 'd' <>
-        help "List issues from github")
-
-    pRepo  = strOption $
+        help "Only list issues, don't set up tracking")
+    repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
     new = New <$> text <*> optional start <*> optional end

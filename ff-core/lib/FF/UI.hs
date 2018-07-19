@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -32,7 +30,7 @@ indentation = 2
 
 pshow :: Show a => a -> Doc
 pshow = Pretty.string . show
-
+nid    = Just nid
 prettySamplesBySections :: ModeMap Sample -> Doc
 prettySamplesBySections samples = stack $
     [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
@@ -65,7 +63,7 @@ prettySample mode = \case
         Starting n -> case n of
             1 -> "Starting tomorrow:"
             _ -> "Starting in " <> show n <> " days:"
-    cmdToSeeAll = \case
+    cmdToSeeAll = \casenid    =nid    = Just nid Just nid
         Overdue _  -> "ff search --overdue"
         EndToday   -> "ff search --today"
         EndSoon _  -> "ff search --soon"
@@ -76,18 +74,16 @@ noteView :: NoteView -> Doc
 noteView NoteView{..} =
     string (Text.unpack text) </> sep fields
   where
-    fields = case track of
-        Nothing -> common
-        Just Tracked {trackedProvider, trackedSource, trackedExternalId, trackedUrl}
-            -> concat
-                [ common
-                , ["| provider " <> pshow trackedProvider]
-                , ["| source "   <> pshow trackedSource]
-                , ["| extId "    <> pshow trackedExternalId]
-                , ["| url "      <> pshow trackedUrl]
-                ]
-    common = concat
-        [ ["| id "    <> pshow i | Just i <- [nid]]
-        , ["| start " <> pshow start]
-        , ["| end "   <> pshow e | Just e <- [end]]
-        ]
+    fields =
+        concat
+            [ ["| id "    <> pshow i | Just i <- [nid]]
+            , ["| start " <> pshow start]
+            , ["| end "   <> pshow e | Just e <- [end]]
+            ] ++
+        concat
+            [ [ "| source " <> pshow trackedSource
+              , "| url "    <> pshow trackedUrl
+              ]
+              | Just Tracked{..} <- [track]
+            ]
+

@@ -23,7 +23,7 @@ module FF
     , newNote
     , splitModes
     , takeSamples
-    , updateTracks
+    , updateTracked
     ) where
 
 import           Control.Arrow ((&&&))
@@ -100,7 +100,7 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure  [ (noteId, value)
           | (noteId, Just Document{value}) <- zip docs mnotes
-          , isJust (Max.query <$> noteTrack value)
+          , isJust (Max.query <$> noteTracked value)
           ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
@@ -161,7 +161,7 @@ newTrackedNote mOldNotes nvNew =
             _ <- create $ note noteStatus' noteText' noteStart' noteEnd'
             pure $ note noteStatus' noteText' noteStart' noteEnd'
         Just (n, _) ->
-            modifyOrFail n $ \jNote -> update jNote
+            modifyOrFail n update
   where
     update Note {..} = do
         noteStatus' <- LWW.assign (status nvNew) noteStatus
@@ -169,36 +169,29 @@ newTrackedNote mOldNotes nvNew =
         noteStart'  <- LWW.assign (start nvNew) noteStart
         noteEnd'    <- LWW.assign (end nvNew) noteEnd
         pure $ note noteStatus' noteText' noteStart' noteEnd'
-    noteTrack' = Max.initial <$> track nvNew
+    noteTracked' = Max.initial <$> track nvNew
     note noteStatus' noteText' noteStart' noteEnd' = Note
-        { noteStatus = noteStatus'
-        , noteText   = noteText'
-        , noteStart  = noteStart'
-        , noteEnd    = noteEnd'
-        , noteTrack  = noteTrack'
+        { noteStatus   = noteStatus'
+        , noteText     = noteText'
+        , noteStart    = noteStart'
+        , noteEnd      = noteEnd'
+        , noteTracked  = noteTracked'
         }
-    isSameTrack oldNote = track nvNew == (Max.query <$> noteTrack oldNote)
+    isSameTrack oldNote = track nvNew == (Max.query <$> noteTracked oldNote)
     sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
 
-updateTracks :: [NoteView] -> Storage ()
-updateTracks nvNews = do
+updateTracked :: [NoteView] -> Storage ()
+updateTracked nvNews = do
     mOldNotes <- loadTrackedNotes
     mapM_ (newTrackedNote mOldNotes) nvNews
 
-newNote
-    :: Clock m
-    => Status
-    -> Text
-    -> Day
-    -> Maybe Day
-    -> m Note
+newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
-    noteStatus <- LWW.initialize status
-    noteText   <- rgaFromText text
-    noteStart  <- LWW.initialize start
-    noteEnd    <- LWW.initialize end
-    let noteTrack = Nothing
-    pure Note {..}
+  noteStatus <- LWW.initialize status
+  noteText   <- rgaFromText text
+  noteStart  <- LWW.initialize start
+  noteEnd    <- LWW.initialize end
+  pure Note{noteTracked = Nothing, ..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do

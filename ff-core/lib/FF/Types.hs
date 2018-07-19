@@ -24,6 +24,7 @@ import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup (Semigroup, (<>))
+import           Data.Semigroup.Generic (gmappend)
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -50,25 +51,25 @@ data Tracked = Tracked
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 data Note = Note
-    { noteStatus :: LWW Status
-    , noteText   :: RgaString
-    , noteStart  :: LWW Day
-    , noteEnd    :: LWW (Maybe Day)
-    , noteTrack  :: Maybe (Max Tracked)
+    { noteStatus  :: LWW Status
+    , noteText    :: RgaString
+    , noteStart   :: LWW Day
+    , noteEnd     :: LWW (Maybe Day)
+    , noteTracked :: Maybe (Max Tracked)
     }
     deriving (Eq, Generic, Show)
 
 type NoteId = DocId Note
 
 instance Semigroup Note where
-    Note status1 text1 start1 end1 track1
-        <> Note status2 text2 start2 end2 track2 = Note
-        (status1 <> status2) (text1 <> text2) (start1 <> start2) (end1 <> end2)
-        (track1 <> track2)
+  (<>) = gmappend
 
 instance Semilattice Note
 
-deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 4, omitNothingFields = True} ''Note
+deriveJSON
+    defaultOptions
+        {fieldLabelModifier = camelTo2 '_' . drop 4, omitNothingFields = True}
+    ''Note
 
 instance Collection Note where
     collectionName = "note"
@@ -142,12 +143,12 @@ singletonTaskModeMap today note = Map.singleton (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
-    { nid    = pure nid
+    { nid    = Just nid
     , status = LWW.query noteStatus
     , text   = Text.pack $ RGA.toString noteText
     , start  = LWW.query noteStart
     , end    = LWW.query noteEnd
-    , track  = Max.query <$> noteTrack
+    , track  = Max.query <$> noteTracked
     }
 
 type Limit = Natural

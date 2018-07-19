@@ -72,18 +72,18 @@ getIssueViews mAddress mlimit =
     noteViewList mlimit <$> getIssues mAddress mlimit
 
 sampleMap :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMap mlimit today vIssues =
+sampleMap mlimit today issues =
     takeSamples mlimit
     . splitModes today
     . map issueToNoteView
     . maybe id (take . fromIntegral) mlimit
-    $ toList vIssues
+    $ toList issues
 
 noteViewList :: Foldable t => Maybe Limit -> t Issue -> [NoteView]
-noteViewList mlimit vIssues =
+noteViewList mlimit issues =
     map issueToNoteView
     . maybe id (take . fromIntegral) mlimit
-    $ toList vIssues
+    $ toList issues
 
 issueToNoteView :: Issue -> NoteView
 issueToNoteView Issue{..} = NoteView
@@ -95,7 +95,7 @@ issueToNoteView Issue{..} = NoteView
     , track  = Just Tracked
         { trackedProvider   = "github"
         , trackedSource     = source'
-        , trackedExternalId = Text.pack . show $ issueNumber
+        , trackedExternalId = extId
         , trackedUrl        = url'
         }
     }
@@ -107,8 +107,11 @@ issueToNoteView Issue{..} = NoteView
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
+    extId = Text.pack . show $ issueNumber
     source' = fromMaybe "no repository" maybeSource
-    url' = fromMaybe "no url" maybeUrl
+    url' = fromMaybe
+        (Text.concat ["https://github.com/", source', "/issues/", extId])
+        maybeUrl
 
 toStatus :: IssueState -> Status
 toStatus = \case
