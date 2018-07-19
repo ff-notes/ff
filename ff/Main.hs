@@ -27,12 +27,14 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
+                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
+                     updateTracks)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdTrack)
+import           FF.Github (getIssueSamples, getIssueViews)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), Shuffle (..), parseOptions)
+                             Search (..), Shuffle (..), Track (..),
+                             parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -122,15 +124,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack track -> liftIO $ do
-            hPutStr stderr "fetching"
-            possibleIssues <- fromEither <$> race
-                (runExceptT $ runCmdTrack track today)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
-            hPutStrLn stderr ""
-            case possibleIssues of
-                Left err      -> hPutStrLn stderr err
-                Right samples -> pprint $ UI.prettySamplesBySections samples
+        CmdTrack (Track trackDryRun trackAddress trackLimit) ->
+            track trackDryRun trackAddress trackLimit today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -144,6 +139,29 @@ runCmdAction ui cmd = do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> cmdServe
+  where
+    track trackDryRun trackAddress trackLimit today = do
+        liftIO $ hPutStr stderr "fetching"
+        if trackDryRun
+        then liftIO $ do
+            possibleIssues <- fromEither <$> race
+                (runExceptT $ getIssueSamples trackAddress trackLimit today)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+            hPutStrLn stderr ""
+            case possibleIssues of
+                Left err      -> hPutStrLn stderr err
+                Right samples -> pprint $ UI.prettySamplesBySections samples
+        else do
+            nvs <- liftIO $ fromEither <$> race
+                (runExceptT $ getIssueViews trackAddress trackLimit)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+            liftIO $ hPutStrLn stderr ""
+            case nvs of
+                Left err   -> liftIO $ hPutStrLn stderr err
+                Right nvs' -> do
+                    updateTracks nvs'
+                    let nvsLength = show $ length nvs'
+                    liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

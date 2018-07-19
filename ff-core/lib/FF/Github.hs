@@ -4,38 +4,38 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FF.Github
-    ( runCmdTrack
-    , sampleMaps
+    ( getIssueViews
+    , getIssueSamples
+    , sampleMap
     ) where
 
 import           Control.Error (failWith)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
+import           Data.Maybe (fromMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (FetchCount (..), Id, Issue (..), IssueState (..),
-                         Milestone (..), URL (..), executeRequest',
+import           Data.Vector (Vector)
+import           GitHub (FetchCount (..), Issue (..), IssueState (..),
+                         Milestone (..), executeRequest', getUrl,
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle, mkOwnerName, mkRepoName,
-                         untagId)
+                         issueState, issueTitle, mkOwnerName, mkRepoName)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Options (Track (..))
-import           FF.Storage (DocId (..))
-import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..))
+import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
+                           Status (..), Tracked (..))
 
-runCmdTrack
-    :: Track
-    -> Day  -- ^ today
-    -> ExceptT Text IO (ModeMap Sample)
-runCmdTrack Track{trackAddress, trackLimit} today = do
-    address <- case trackAddress of
+getIssues
+    :: Maybe Text
+    -> Maybe Limit
+    -> ExceptT Text IO (Vector Issue)
+getIssues mAddress mlimit = do
+    address <- case mAddress of
         Just address -> pure address
         Nothing -> do
             packed <- liftIO $ Text.pack <$>
@@ -49,40 +49,66 @@ runCmdTrack Track{trackAddress, trackLimit} today = do
         _ -> throwError $
             "Something is wrong with " <> address <>
             ". Please, check correctness of input. Right format is OWNER/REPO"
-    response <- withExceptT (Text.pack . show) $ ExceptT $
+    withExceptT (Text.pack . show) $ ExceptT $
         executeRequest' $ issuesForRepoR
             (mkOwnerName owner)
             (mkRepoName repo)
             mempty
-            (maybe FetchAll (FetchAtLeast . fromIntegral) trackLimit)
-    pure $ sampleMaps trackLimit today response
+            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
 
-sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps mlimit today issues =
+getIssueSamples
+    :: Maybe Text
+    -> Maybe Limit
+    -> Day
+    -> ExceptT Text IO (ModeMap Sample)
+getIssueSamples mAddress mlimit today =
+    sampleMap mlimit today <$> getIssues mAddress mlimit
+
+getIssueViews
+    :: Maybe Text
+    -> Maybe Limit
+    -> ExceptT Text IO [NoteView]
+getIssueViews mAddress mlimit =
+    noteViewList mlimit <$> getIssues mAddress mlimit
+
+sampleMap :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMap mlimit today vIssues =
     takeSamples mlimit
     . splitModes today
-    . map toNoteView
+    . map issueToNoteView
     . maybe id (take . fromIntegral) mlimit
-    $ toList issues
+    $ toList vIssues
 
-toNoteView :: Issue -> NoteView
-toNoteView Issue{..} = NoteView
-    { nid    = toNoteId issueId
+noteViewList :: Foldable t => Maybe Limit -> t Issue -> [NoteView]
+noteViewList mlimit vIssues =
+    map issueToNoteView
+    . maybe id (take . fromIntegral) mlimit
+    $ toList vIssues
+
+issueToNoteView :: Issue -> NoteView
+issueToNoteView Issue{..} = NoteView
+    { nid    = Nothing
     , status = toStatus issueState
-    , text   = issueTitle <> maybeUrl
+    , text   = issueTitle
     , start  = utctDay issueCreatedAt
     , end    = maybeMilestone
+    , track  = Just Tracked
+        { trackedProvider   = "github"
+        , trackedSource     = source'
+        , trackedExternalId = Text.pack . show $ issueNumber
+        , trackedUrl        = url'
+        }
     }
   where
-    maybeUrl = case issueHtmlUrl of
-        Just (URL url) -> "\nurl " <> url
-        Nothing        -> ""
+    maybeUrl = getUrl <$> issueHtmlUrl
+    maybeSource = fmap
+        (Text.intercalate "/" . take 2 . Text.splitOn "/")
+        (Text.stripPrefix "https://github.com/" =<< maybeUrl)
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
-
-toNoteId :: Id Issue -> NoteId
-toNoteId = DocId . show . untagId
+    source' = fromMaybe "no repository" maybeSource
+    url' = fromMaybe "no url" maybeUrl
 
 toStatus :: IssueState -> Status
 toStatus = \case

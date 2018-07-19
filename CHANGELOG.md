@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+- Add tracking of github issues
 
 ## [0.5] - 2018-07-06
 ### Added

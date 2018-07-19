@@ -24,6 +24,7 @@ library:
     - text
     - time
     - typed-process
+    - vector
     - yaml
   source-dirs: lib
 

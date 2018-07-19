@@ -24,7 +24,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, (<**>))
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -47,8 +48,9 @@ data CmdAction
     | CmdServe
 
 data Track = Track
-    { trackAddress  :: Maybe Text
-    , trackLimit    :: Maybe Limit
+    { trackDryrun  :: Bool
+    , trackAddress :: Maybe Text
+    , trackLimit   :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -93,21 +95,22 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , command "serve"     iCmdServe
         , command "track"     iCmdTrack
         , command "unarchive" iCmdUnarchive
+        , command "serve"     iCmdServe
         ]
 
     iCmdAdd       = i cmdNew        "add a new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i cmdConfig     "show/edit configuration"
-    iCmdDelete    = i cmdDelete     "delete a task"
-    iCmdDone      = i cmdDone       "mark a task done (archive)"
-    iCmdEdit      = i cmdEdit       "edit a task or a note"
-    iCmdTrack     = i cmdTrack      "track issues from external sources"
-    iCmdNew       = i cmdNew        "synonym for `add`"
-    iCmdPostpone  = i cmdPostpone   "make a task start later"
-    iCmdSearch    = i cmdSearch     "search for notes with the given text"
-    iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
-    iCmdServe     = i cmdServe      "serve web UI"
+    iCmdConfig    = i cmdConfig    "show/edit configuration"
+    iCmdDelete    = i cmdDelete    "delete a task"
+    iCmdDone      = i cmdDone      "mark a task done (archive)"
+    iCmdEdit      = i cmdEdit      "edit a task or a note"
+    iCmdTrack     = i cmdTrack     "track issues from GitHub"
+    iCmdNew       = i cmdNew       "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone  "make a task start later"
+    iCmdSearch    = i cmdSearch    "search for notes with the given text"
+    iCmdUnarchive = i cmdUnarchive "restore the note from archive"
+    iCmdServe     = i cmdServe     "serve application through the http"
 
     cmdAgenda    = CmdAction . CmdAgenda    <$> optional limit
     cmdDelete    = CmdAction . CmdDelete    <$> noteid
@@ -120,8 +123,16 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdUnarchive = CmdAction . CmdUnarchive <$> noteid
     cmdServe     = pure $ CmdAction CmdServe
 
-    track = Track <$> optional repo <*> optional limit
-    repo = strOption $
+    track = Track
+        <$> pDryRun
+        <*> optional pRepo
+        <*> optional limit
+
+    pDryRun = switch
+        (long "dry-run" <> short 'd' <>
+        help "List issues from github")
+
+    pRepo  = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
     new = New <$> text <*> optional start <*> optional end

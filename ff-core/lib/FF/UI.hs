@@ -1,11 +1,15 @@
+{-# OPTIONS -Wno-orphans #-}
+
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module FF.UI where
 
 import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
+import           Data.Semigroup ((<>))
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
                                             string, (<+/>), (</>))
@@ -13,7 +17,7 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           omitted)
+                           Tracked (..), omitted)
 
 type Template a = a -> String
 
@@ -69,10 +73,21 @@ prettySample mode = \case
         Starting _ -> "ff search --starting"
 
 noteView :: NoteView -> Doc
-noteView NoteView{nid, text, start, end} =
+noteView NoteView{..} =
     string (Text.unpack text) </> sep fields
   where
-    fields
-        =  "| id "    <> pshow nid
-        :  "| start " <> pshow start
-        : ["| end "   <> pshow e | Just e <- [end]]
+    fields = case track of
+        Nothing -> common
+        Just Tracked {trackedProvider, trackedSource, trackedExternalId, trackedUrl}
+            -> concat
+                [ common
+                , ["| provider " <> pshow trackedProvider]
+                , ["| source "   <> pshow trackedSource]
+                , ["| extId "    <> pshow trackedExternalId]
+                , ["| url "      <> pshow trackedUrl]
+                ]
+    common = concat
+        [ ["| id "    <> pshow i | Just i <- [nid]]
+        , ["| start " <> pshow start]
+        , ["| end "   <> pshow e | Just e <- [end]]
+        ]

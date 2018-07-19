@@ -23,12 +23,14 @@ module FF
     , newNote
     , splitModes
     , takeSamples
+    , updateTracks
     ) where
 
 import           Control.Arrow ((&&&))
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
+import qualified CRDT.Cv.Max as Max
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
@@ -37,7 +39,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, isJust, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -92,6 +94,15 @@ loadAllNotes = do
         | (noteId, Just Document{value}) <- zip docs mnotes
         ]
 
+loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
+loadTrackedNotes = do
+    docs   <- listDocuments
+    mnotes <- for docs load
+    pure  [ (noteId, value)
+          | (noteId, Just Document{value}) <- zip docs mnotes
+          , isJust (Max.query <$> noteTrack value)
+          ]
+
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
     filter (\NoteView { status } -> status == Active) <$> loadAllNotes
@@ -139,13 +150,55 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
+newTrackedNote :: [(NoteId, Note)] -> NoteView -> Storage Note
+newTrackedNote mOldNotes nvNew =
+    case sameTrack of
+        Nothing -> do
+            noteStatus' <- LWW.initialize (status nvNew)
+            noteText'   <- rgaFromText (text nvNew)
+            noteStart'  <- LWW.initialize (start nvNew)
+            noteEnd'    <- LWW.initialize (end nvNew)
+            _ <- create $ note noteStatus' noteText' noteStart' noteEnd'
+            pure $ note noteStatus' noteText' noteStart' noteEnd'
+        Just (n, _) ->
+            modifyOrFail n $ \jNote -> update jNote
+  where
+    update Note {..} = do
+        noteStatus' <- LWW.assign (status nvNew) noteStatus
+        noteText'   <- rgaEditText (text nvNew) noteText
+        noteStart'  <- LWW.assign (start nvNew) noteStart
+        noteEnd'    <- LWW.assign (end nvNew) noteEnd
+        pure $ note noteStatus' noteText' noteStart' noteEnd'
+    noteTrack' = Max.initial <$> track nvNew
+    note noteStatus' noteText' noteStart' noteEnd' = Note
+        { noteStatus = noteStatus'
+        , noteText   = noteText'
+        , noteStart  = noteStart'
+        , noteEnd    = noteEnd'
+        , noteTrack  = noteTrack'
+        }
+    isSameTrack oldNote = track nvNew == (Max.query <$> noteTrack oldNote)
+    sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
+
+updateTracks :: [NoteView] -> Storage ()
+updateTracks nvNews = do
+    mOldNotes <- loadTrackedNotes
+    mapM_ (newTrackedNote mOldNotes) nvNews
+
+newNote
+    :: Clock m
+    => Status
+    -> Text
+    -> Day
+    -> Maybe Day
+    -> m Note
 newNote status text start end = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
     noteStart  <- LWW.initialize start
     noteEnd    <- LWW.initialize end
-    pure Note{noteTracked = Nothing, ..}
+    let noteTrack = Nothing
+    pure Note {..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do
@@ -277,3 +330,4 @@ rgaFromText = RGA.fromString . Text.unpack
 
 rgaToText :: RgaString -> Text
 rgaToText = Text.pack . RGA.toString
+
