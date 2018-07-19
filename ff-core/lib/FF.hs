@@ -169,7 +169,7 @@ newTrackedNote mOldNotes nvNew =
         noteStart'  <- LWW.assign (start nvNew) noteStart
         noteEnd'    <- LWW.assign (end nvNew) noteEnd
         pure $ note noteStatus' noteText' noteStart' noteEnd'
-    noteTracked' = Max.initial <$> track nvNew
+    noteTracked' = Max.initial <$> tracked nvNew
     note noteStatus' noteText' noteStart' noteEnd' = Note
         { noteStatus   = noteStatus'
         , noteText     = noteText'
@@ -177,7 +177,7 @@ newTrackedNote mOldNotes nvNew =
         , noteEnd      = noteEnd'
         , noteTracked  = noteTracked'
         }
-    isSameTrack oldNote = track nvNew == (Max.query <$> noteTracked oldNote)
+    isSameTrack oldNote = tracked nvNew == (Max.query <$> noteTracked oldNote)
     sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
 
 updateTracked :: [NoteView] -> Storage ()

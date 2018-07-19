@@ -6,7 +6,7 @@
 module FF.Github
     ( getIssueViews
     , getIssueSamples
-    , sampleMap
+    , sampleMaps
     ) where
 
 import           Control.Error (failWith)
@@ -19,14 +19,17 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
 import           Data.Vector (Vector)
+-- import           GitHub (FetchCount (..), Issue (..), IssueState (..),
+--                          Milestone (..), executeRequest', getUrl,
 import           GitHub (FetchCount (..), Issue (..), IssueState (..),
-                         Milestone (..), executeRequest', getUrl,
+                         Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
                          issueState, issueTitle, mkOwnerName, mkRepoName)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
+-- import           FF.Options (Track (..))
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
                            Status (..), Tracked (..))
 
@@ -62,56 +65,54 @@ getIssueSamples
     -> Day
     -> ExceptT Text IO (ModeMap Sample)
 getIssueSamples mAddress mlimit today =
-    sampleMap mlimit today <$> getIssues mAddress mlimit
+    sampleMaps mAddress mlimit today <$> getIssues mAddress mlimit
 
 getIssueViews
     :: Maybe Text
     -> Maybe Limit
     -> ExceptT Text IO [NoteView]
 getIssueViews mAddress mlimit =
-    noteViewList mlimit <$> getIssues mAddress mlimit
+    noteViewList mAddress mlimit <$> getIssues mAddress mlimit
 
-sampleMap :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMap mlimit today issues =
+sampleMaps
+    :: Foldable t => Maybe Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMaps address mlimit today issues =
     takeSamples mlimit
     . splitModes today
-    . map issueToNoteView
+    . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-noteViewList :: Foldable t => Maybe Limit -> t Issue -> [NoteView]
-noteViewList mlimit issues =
-    map issueToNoteView
+noteViewList :: Foldable t => Maybe Text -> Maybe Limit -> t Issue -> [NoteView]
+noteViewList address mlimit issues =
+    map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-issueToNoteView :: Issue -> NoteView
-issueToNoteView Issue{..} = NoteView
-    { nid    = Nothing
-    , status = toStatus issueState
-    , text   = issueTitle
-    , start  = utctDay issueCreatedAt
-    , end    = maybeMilestone
-    , track  = Just Tracked
+issueToNoteView :: Maybe Text -> Issue -> NoteView
+issueToNoteView mAddress Issue{..} = NoteView
+    { nid     = Nothing
+    , status  = toStatus issueState
+    , text    = issueTitle
+    , start   = utctDay issueCreatedAt
+    , end     = maybeMilestone
+    , tracked = Just Tracked
         { trackedProvider   = "github"
-        , trackedSource     = source'
-        , trackedExternalId = extId
-        , trackedUrl        = url'
+        , trackedSource     = address
+        , trackedExternalId
+        , trackedUrl
         }
     }
   where
-    maybeUrl = getUrl <$> issueHtmlUrl
-    maybeSource = fmap
-        (Text.intercalate "/" . take 2 . Text.splitOn "/")
-        (Text.stripPrefix "https://github.com/" =<< maybeUrl)
+    address = fromMaybe "{noRepo}" mAddress
+    trackedExternalId = Text.pack $ show issueNumber
+    trackedUrl = case issueHtmlUrl of
+        Just (URL url) -> url
+        Nothing        ->
+            "https://github.com/" <> address <> "/issues/" <> trackedExternalId
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
-    extId = Text.pack . show $ issueNumber
-    source' = fromMaybe "no repository" maybeSource
-    url' = fromMaybe
-        (Text.concat ["https://github.com/", source', "/issues/", extId])
-        maybeUrl
 
 toStatus :: IssueState -> Status
 toStatus = \case

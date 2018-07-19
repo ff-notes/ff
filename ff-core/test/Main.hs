@@ -45,7 +45,7 @@ import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNew, getSamples)
 import           FF.Config (Config, ConfigUI (..))
-import           FF.Github (sampleMap)
+import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
@@ -164,12 +164,12 @@ case_smoke = do
             (Overdue 365478)
             Sample
                 { notes = pure NoteView
-                    { nid    = Just $ DocId "1"
-                    , status = Active
-                    , text   = "helloworld"
-                    , start  = fromGregorian 22 11 24
-                    , end    = Just $ fromGregorian 17 06 19
-                    , track  = Nothing
+                    { nid     = Just $ DocId "1"
+                    , status  = Active
+                    , text    = "helloworld"
+                    , start   = fromGregorian 22 11 24
+                    , end     = Just $ fromGregorian 17 06 19
+                    , tracked = Nothing
                     }
                 , total = 1
                 }
@@ -275,22 +275,23 @@ instance Arbitrary NoNul where
     arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary
 
 case_repo :: IO ()
-case_repo = sampleMap limit todayForIssues issues @?= ideal
+case_repo =
+    Github.sampleMaps "ff-notes/ff" limit todayForIssues issues @?= ideal
   where
     ideal = Map.singleton
         (Overdue 10)
         Sample
             { notes = pure NoteView
-                { nid = Nothing
-                , status = Active
-                , text = "import issues (GitHub -> ff)"
-                , start = fromGregorian 2018 06 21
-                , end = Just $ fromGregorian 2018 06 15
-                , track = Just Tracked
-                    { trackedProvider  = "github"
-                    , trackedSource    = "ff-notes/ff"
+                { nid     = Nothing
+                , status  = Active
+                , text    = "import issues (GitHub -> ff)"
+                , start   = fromGregorian 2018 06 21
+                , end     = Just $ fromGregorian 2018 06 15
+                , tracked = Just Tracked
+                    { trackedProvider = "github"
+                    , trackedSource = "ff-notes/ff"
                     , trackedExternalId = "60"
-                    , trackedUrl        = "https://github.com/ff-notes/ff/issues/60"
+                    , trackedUrl = "https://github.com/ff-notes/ff/issues/60"
                     }
                 }
             , total = 1

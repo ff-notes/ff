@@ -75,12 +75,12 @@ instance Collection Note where
     collectionName = "note"
 
 data NoteView = NoteView
-    { nid    :: Maybe NoteId
-    , status :: Status
-    , text   :: Text
-    , start  :: Day
-    , end    :: Maybe Day
-    , track  :: Maybe Tracked
+    { nid     :: Maybe NoteId
+    , status  :: Status
+    , text    :: Text
+    , start   :: Day
+    , end     :: Maybe Day
+    , tracked :: Maybe Tracked
     }
     deriving (Eq, Show)
 
@@ -143,12 +143,12 @@ singletonTaskModeMap today note = Map.singleton (taskMode today note) [note]
 
 noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
-    { nid    = Just nid
-    , status = LWW.query noteStatus
-    , text   = Text.pack $ RGA.toString noteText
-    , start  = LWW.query noteStart
-    , end    = LWW.query noteEnd
-    , track  = Max.query <$> noteTracked
+    { nid     = Just nid
+    , status  = LWW.query noteStatus
+    , text    = Text.pack $ RGA.toString noteText
+    , start   = LWW.query noteStart
+    , end     = LWW.query noteEnd
+    , tracked = Max.query <$> noteTracked
     }
 
 type Limit = Natural
