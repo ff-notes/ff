@@ -48,9 +48,9 @@ data CmdAction
     | CmdServe
 
 data Track = Track
-    { dryrun  :: Bool
-    , address :: Maybe Text
-    , limit   :: Maybe Limit
+    { trackDryrun  :: Bool
+    , trackAddress :: Maybe Text
+    , trackLimit   :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)

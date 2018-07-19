@@ -124,8 +124,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack (Track dryRun address limit) ->
-            track dryRun address limit today
+        CmdTrack (Track trackDryRun trackAddress trackLimit) ->
+            track trackDryRun trackAddress trackLimit today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -140,12 +140,12 @@ runCmdAction ui cmd = do
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> cmdServe
   where
-    track dryRun address limit today = do
+    track trackDryRun trackAddress trackLimit today = do
         liftIO $ hPutStr stderr "fetching"
-        if dryRun
+        if trackDryRun
         then liftIO $ do
             possibleIssues <- fromEither <$> race
-                (runExceptT $ getIssueSamples address limit today)
+                (runExceptT $ getIssueSamples trackAddress trackLimit today)
                 (forever $ hPutChar stderr '.' >> threadDelay 500000)
             hPutStrLn stderr ""
             case possibleIssues of
@@ -153,7 +153,7 @@ runCmdAction ui cmd = do
                 Right samples -> pprint $ UI.prettySamplesBySections samples
         else do
             nvs <- liftIO $ fromEither <$> race
-                (runExceptT $ getIssueViews address limit)
+                (runExceptT $ getIssueViews trackAddress trackLimit)
                 (forever $ hPutChar stderr '.' >> threadDelay 500000)
             liftIO $ hPutStrLn stderr ""
             case nvs of
