@@ -12,6 +12,7 @@
 module FF.Types where
 
 import           CRDT.Cv.Max (Max)
+import qualified CRDT.Cv.Max as Max
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LWW (LWW)
@@ -23,7 +24,6 @@ import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup (Semigroup, (<>))
-import           Data.Semigroup.Generic (gmappend)
 import           Data.Semilattice (Semilattice)
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -54,19 +54,9 @@ data Note = Note
     , noteText   :: RgaString
     , noteStart  :: LWW Day
     , noteEnd    :: LWW (Maybe Day)
-    , noteTrack  :: Maybe (Max Track)
+    , noteTrack  :: Maybe (Max Tracked)
     }
     deriving (Eq, Generic, Show)
-
-data Track = Track
-    { provider :: Text
-    , source   :: Text
-    , extId    :: Text
-    , url      :: Text
-    }
-    deriving (Eq, Show, Ord)
-
-deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_'} ''Track
 
 type NoteId = DocId Note
 
@@ -89,7 +79,7 @@ data NoteView = NoteView
     , text   :: Text
     , start  :: Day
     , end    :: Maybe Day
-    , track  :: Maybe Track
+    , track  :: Maybe Tracked
     }
     deriving (Eq, Show)
 

@@ -27,7 +27,7 @@ import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
-                           Status (..), Track (..))
+                           Status (..), Tracked (..))
 
 getIssues
     :: Maybe Text
@@ -91,11 +91,11 @@ issueToNoteView Issue{..} = NoteView
     , text   = issueTitle
     , start  = utctDay issueCreatedAt
     , end    = maybeMilestone
-    , track  = Just Track
-        { provider = "github"
-        , source   = source'
-        , extId    = Text.pack . show $ issueNumber
-        , url      = url'
+    , track  = Just Tracked
+        { trackedProvider   = "github"
+        , trackedSource     = source'
+        , trackedExternalId = Text.pack . show $ issueNumber
+        , trackedUrl        = url'
         }
     }
   where
@@ -106,7 +106,7 @@ issueToNoteView Issue{..} = NoteView
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
-    source' = fromMaybe "no source" maybeSource
+    source' = fromMaybe "no repository" maybeSource
     url' = fromMaybe "no url" maybeUrl
 
 toStatus :: IssueState -> Status

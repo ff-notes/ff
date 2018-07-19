@@ -16,8 +16,6 @@ module FF
     , cmdSearch
     , cmdServe
     , cmdUnarchive
-    , cmdServe
-    , cmdTrack
     , getSamples
     , getUtcToday
     , loadActiveNotes
@@ -25,6 +23,7 @@ module FF
     , newNote
     , splitModes
     , takeSamples
+    , updateTracks
     ) where
 
 import           Control.Arrow ((&&&))
@@ -38,7 +37,6 @@ import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
-import           Data.Function (on)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe, isJust, listToMaybe)
@@ -96,11 +94,11 @@ loadAllNotes = do
         | (noteId, Just Document{value}) <- zip docs mnotes
         ]
 
-loadTrackedNotes :: MonadStorage m => m [(NoteId, NoteView)]
+loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
 loadTrackedNotes = do
     docs   <- listDocuments
     mnotes <- for docs load
-    pure  [ (noteId, noteView noteId value)
+    pure  [ (noteId, value)
           | (noteId, Just Document{value}) <- zip docs mnotes
           , isJust (Max.query <$> noteTrack value)
           ]
@@ -152,9 +150,9 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-newTrackedNote :: [(NoteId, NoteView)] -> NoteView -> Storage Note
+newTrackedNote :: [(NoteId, Note)] -> NoteView -> Storage Note
 newTrackedNote mOldNotes nvNew =
-    case same of
+    case sameTrack of
         Nothing -> do
             noteStatus' <- LWW.initialize (status nvNew)
             noteText'   <- rgaFromText (text nvNew)
@@ -179,13 +177,13 @@ newTrackedNote mOldNotes nvNew =
         , noteEnd    = noteEnd'
         , noteTrack  = noteTrack'
         }
-    isSame = (==) `on` track
-    same = listToMaybe $ filter (isSame nvNew . snd) mOldNotes
+    isSameTrack oldNote = track nvNew == (Max.query <$> noteTrack oldNote)
+    sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
 
-cmdTrack :: [NoteView] -> Storage ()
-cmdTrack newNotes = do
+updateTracks :: [NoteView] -> Storage ()
+updateTracks nvNews = do
     mOldNotes <- loadTrackedNotes
-    mapM_ (newTrackedNote mOldNotes) newNotes
+    mapM_ (newTrackedNote mOldNotes) nvNews
 
 newNote
     :: Clock m
@@ -234,8 +232,10 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: MonadStorage m => m ()
-cmdServe = pure ()
+cmdServe :: MonadIO m => m ()
+cmdServe =
+    liftIO $ scotty serveHttpPort $
+    get "/" $ html "Hello, world!"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =

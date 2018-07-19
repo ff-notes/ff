@@ -47,7 +47,7 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdServe
 
-data CmdTrack = Track
+data Track = Track
     { dryrun  :: Bool
     , address :: Maybe Text
     , limit   :: Maybe Limit
@@ -101,32 +101,32 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdAdd       = i cmdNew        "add a new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i pCmdConfig    "show/edit configuration"
-    iCmdDelete    = i pCmdDelete    "delete a task"
-    iCmdDone      = i pCmdDone      "mark a task done (archive)"
-    iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdTrack     = i pCmdTrack     "track issues from GitHub"
-    iCmdNew       = i pCmdNew       "synonym for `add`"
-    iCmdPostpone  = i pCmdPostpone  "make a task start later"
-    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
-    iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdServe     = i pCmdServe     "serve application through the http"
+    iCmdConfig    = i cmdConfig    "show/edit configuration"
+    iCmdDelete    = i cmdDelete    "delete a task"
+    iCmdDone      = i cmdDone      "mark a task done (archive)"
+    iCmdEdit      = i cmdEdit      "edit a task or a note"
+    iCmdTrack     = i cmdTrack     "track issues from GitHub"
+    iCmdNew       = i cmdNew       "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone  "make a task start later"
+    iCmdSearch    = i cmdSearch    "search for notes with the given text"
+    iCmdUnarchive = i cmdUnarchive "restore the note from archive"
+    iCmdServe     = i cmdServe     "serve application through the http"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> optional limitOption
-    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
-    pCmdDone      = CmdAction . CmdDone      <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdTrack     = CmdAction . CmdTrack     <$> track
-    pCmdNew       = CmdAction . CmdNew       <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
-    pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdServe     = pure $ CmdAction CmdServe
+    cmdAgenda    = CmdAction . CmdAgenda    <$> optional limit
+    cmdDelete    = CmdAction . CmdDelete    <$> noteid
+    cmdDone      = CmdAction . CmdDone      <$> noteid
+    cmdEdit      = CmdAction . CmdEdit      <$> edit
+    cmdTrack     = CmdAction . CmdTrack     <$> track
+    cmdNew       = CmdAction . CmdNew       <$> new
+    cmdPostpone  = CmdAction . CmdPostpone  <$> noteid
+    cmdSearch    = CmdAction . CmdSearch    <$> search
+    cmdUnarchive = CmdAction . CmdUnarchive <$> noteid
+    cmdServe     = pure $ CmdAction CmdServe
 
     track = Track
         <$> pDryRun
         <*> optional pRepo
-        <*> optional limitOption
+        <*> optional limit
 
     pDryRun = switch
         (long "dry-run" <> short 'd' <>
