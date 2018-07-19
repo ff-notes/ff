@@ -6,6 +6,7 @@
 module FF.Github
     ( getIssueViews
     , getIssueSamples
+    , sampleMap
     ) where
 
 import           Control.Error (failWith)
