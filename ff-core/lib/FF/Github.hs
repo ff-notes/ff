@@ -16,18 +16,16 @@ import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (FetchCount (..), Id, Issue (..), IssueState (..),
+import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle, mkOwnerName, mkRepoName,
-                         untagId)
+                         issueState, issueTitle, mkOwnerName, mkRepoName)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
 import           FF.Options (Track (..))
-import           FF.Storage (DocId (..))
-import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
+import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
                            Status (..))
 
 runCmdTrack
@@ -67,7 +65,7 @@ sampleMaps mlimit today issues =
 
 toNoteView :: Issue -> NoteView
 toNoteView Issue{..} = NoteView
-    { nid    = toNoteId issueId
+    { nid    = Nothing
     , status = toStatus issueState
     , text   = issueTitle <> maybeUrl
     , start  = utctDay issueCreatedAt
@@ -80,9 +78,6 @@ toNoteView Issue{..} = NoteView
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
-
-toNoteId :: Id Issue -> NoteId
-toNoteId = DocId . show . untagId
 
 toStatus :: IssueState -> Status
 toStatus = \case

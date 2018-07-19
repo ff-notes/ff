@@ -164,7 +164,7 @@ case_smoke = do
             (Overdue 365478)
             Sample
                 { notes = pure $ NoteView
-                    { nid    = DocId "1"
+                    { nid    = Just $ DocId "1"
                     , status = Active
                     , text   = "helloworld"
                     , start  = fromGregorian 22 11 24
@@ -280,7 +280,7 @@ case_repo = sampleMaps limit todayForIssues issues @?= ideal
         (Overdue 10)
         Sample
             { notes = pure $ NoteView
-                { nid = DocId "334520780"
+                { nid = Nothing
                 , status = Active
                 , text =
                     "import issues (GitHub -> ff)\n\
