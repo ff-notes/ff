@@ -26,7 +26,7 @@ import           System.Process (readProcess)
 import           FF (splitModes, takeSamples)
 import           FF.Options (Track (..))
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
-                           Status (..))
+                           Status (..), Tracked (..))
 
 runCmdTrack
     :: Track
@@ -53,28 +53,37 @@ runCmdTrack Track{trackAddress, trackLimit} today = do
             (mkRepoName repo)
             mempty
             (maybe FetchAll (FetchAtLeast . fromIntegral) trackLimit)
-    pure $ sampleMaps trackLimit today response
+    pure $ sampleMaps address trackLimit today response
 
-sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps mlimit today issues =
+sampleMaps
+    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMaps address mlimit today issues =
     takeSamples mlimit
     . splitModes today
-    . map toNoteView
+    . map (toNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-toNoteView :: Issue -> NoteView
-toNoteView Issue{..} = NoteView
-    { nid    = Nothing
-    , status = toStatus issueState
-    , text   = issueTitle <> maybeUrl
-    , start  = utctDay issueCreatedAt
-    , end    = maybeMilestone
+toNoteView :: Text -> Issue -> NoteView
+toNoteView address Issue{..} = NoteView
+    { nid     = Nothing
+    , status  = toStatus issueState
+    , text    = issueTitle
+    , start   = utctDay issueCreatedAt
+    , end     = maybeMilestone
+    , tracked = Just Tracked
+        { trackedProvider   = "github"
+        , trackedSource     = address
+        , trackedExternalId
+        , trackedUrl
+        }
     }
   where
-    maybeUrl = case issueHtmlUrl of
-        Just (URL url) -> "\nurl " <> url
-        Nothing        -> ""
+    trackedExternalId = Text.pack $ show issueNumber
+    trackedUrl = case issueHtmlUrl of
+        Just (URL url) -> url
+        Nothing        ->
+            "https://github.com/" <> address <> "/issues/" <> trackedExternalId
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
