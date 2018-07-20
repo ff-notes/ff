@@ -4,8 +4,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FF.Github
-    ( runCmdTrack
-    , sampleMaps
+    ( getIssueViews
+    , getIssueSamples
+    , sampleMap
     ) where
 
 import           Control.Error (failWith)
@@ -16,6 +17,7 @@ import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
+import           Data.Vector (Vector)
 import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
@@ -24,16 +26,15 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Options (Track (..))
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
                            Status (..), Tracked (..))
 
-runCmdTrack
-    :: Track
-    -> Day  -- ^ today
-    -> ExceptT Text IO (ModeMap Sample)
-runCmdTrack Track{trackAddress, trackLimit} today = do
-    address <- case trackAddress of
+getIssues
+    :: Maybe Text
+    -> Maybe Limit
+    -> ExceptT Text IO (Text, Vector Issue)
+getIssues mAddress mlimit = do
+    address <- case mAddress of
         Just address -> pure address
         Nothing -> do
             packed <- liftIO $ Text.pack <$>
@@ -52,20 +53,43 @@ runCmdTrack Track{trackAddress, trackLimit} today = do
             (mkOwnerName owner)
             (mkRepoName repo)
             mempty
-            (maybe FetchAll (FetchAtLeast . fromIntegral) trackLimit)
-    pure $ sampleMaps address trackLimit today response
+            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
+    pure (address, response)
 
-sampleMaps
+getIssueSamples
+    :: Maybe Text
+    -> Maybe Limit
+    -> Day
+    -> ExceptT Text IO (ModeMap Sample)
+getIssueSamples mAddress mlimit today = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ sampleMap address mlimit today issues
+
+getIssueViews
+    :: Maybe Text
+    -> Maybe Limit
+    -> ExceptT Text IO [NoteView]
+getIssueViews mAddress mlimit = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ noteViewList address mlimit issues
+
+sampleMap
     :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps address mlimit today issues =
+sampleMap address mlimit today issues =
     takeSamples mlimit
     . splitModes today
-    . map (toNoteView address)
+    . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-toNoteView :: Text -> Issue -> NoteView
-toNoteView address Issue{..} = NoteView
+noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [NoteView]
+noteViewList address mlimit issues =
+    map (issueToNoteView address)
+    . maybe id (take . fromIntegral) mlimit
+    $ toList issues
+
+issueToNoteView :: Text -> Issue -> NoteView
+issueToNoteView address Issue{..} = NoteView
     { nid     = Nothing
     , status  = toStatus issueState
     , text    = issueTitle

@@ -22,7 +22,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, (<**>))
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -45,8 +46,9 @@ data CmdAction
     | CmdServe
 
 data Track = Track
-    { trackAddress  :: Maybe Text
-    , trackLimit    :: Maybe Limit
+    { trackDryrun  :: Bool
+    , trackAddress :: Maybe Text
+    , trackLimit   :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -120,7 +122,13 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
 
-    track = Track <$> optional repo <*> optional limit
+    track = Track
+        <$> dryRun
+        <*> optional repo
+        <*> optional limit
+    dryRun = switch
+        (long "dry-run" <> short 'd' <>
+        help "Only list issues, don't set up tracking")
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"

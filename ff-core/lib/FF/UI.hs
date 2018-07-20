@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
 module FF.UI where
@@ -8,6 +9,7 @@ module FF.UI where
 import           Data.Char (isSpace)
 import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
+import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
@@ -17,7 +19,7 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           TaskMode (..), omitted)
+                           TaskMode (..), Tracked (..), omitted)
 
 type Template a = a -> String
 
@@ -73,13 +75,20 @@ prettySample mode = \case
         Starting _ -> "ff search --starting"
 
 noteView :: NoteView -> Doc
-noteView NoteView{nid, text, start, end} = wrapLines text </> sep fields
+noteView NoteView{..} = wrapLines text </> sep fields
   where
-    fields = concat
-        [ ["| id "    <> pshow @NoteId i | Just i <- [nid]]
-        , ["| start " <> pshow @Day start]
-        , ["| end "   <> pshow @Day e | Just e <- [end]]
-        ]
+    fields
+        = concat
+            [ ["| id "    <> pshow @NoteId i | Just i <- [nid]]
+            , ["| start " <> pshow @Day start]
+            , ["| end "   <> pshow @Day e | Just e <- [end]]
+            ]
+        ++ concat
+            [   [ "| source " <> strictText trackedSource
+                , "| url "    <> strictText trackedUrl
+                ]
+            | Just Tracked{..} <- [tracked]
+            ]
 
 wrapLines :: Text -> Doc
 wrapLines =

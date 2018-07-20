@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main where
@@ -18,6 +19,7 @@ import           Data.Functor (($>))
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy as Text
+import           Data.Time (Day)
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
@@ -27,12 +29,14 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday)
+                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
+                     updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdTrack)
+import           FF.Github (getIssueSamples, getIssueViews)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), Shuffle (..), parseOptions)
+                             Search (..), Shuffle (..), Track (..),
+                             parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
 import           FF.UI (withHeader)
@@ -122,15 +126,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack track -> liftIO $ do
-            hPutStr stderr "fetching"
-            possibleIssues <- fromEither <$> race
-                (runExceptT $ runCmdTrack track today)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
-            hPutStrLn stderr ""
-            case possibleIssues of
-                Left err      -> hPutStrLn stderr err
-                Right samples -> pprint $ UI.prettySamplesBySections samples
+        CmdTrack track ->
+            cmdTrack track today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -144,6 +141,31 @@ runCmdAction ui cmd = do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> cmdServe
+
+cmdTrack :: Track -> Day -> Storage ()
+cmdTrack Track {..} today =
+    if trackDryrun then liftIO $ do
+        possibleIssues <- getIssues (getIssueSamples trackAddress trackLimit today)
+        case possibleIssues of
+            Left err      -> hPutStrLn stderr err
+            Right samples -> pprint $ UI.prettySamplesBySections samples
+    else do
+        possibleIssues <- liftIO $ getIssues (getIssueViews trackAddress trackLimit)
+        case possibleIssues of
+            Left err   -> liftIO $ hPutStrLn stderr err
+            Right nvs' -> do
+                updateTracked nvs'
+                let nvsLength = show $ length nvs'
+                liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
+  where
+    getIssues getter = do
+        hPutStr stderr "fetching"
+        possibleIssues <-
+            fromEither <$> race
+                (runExceptT getter)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+        hPutStrLn stderr ""
+        pure possibleIssues
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
