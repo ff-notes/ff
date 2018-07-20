@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.UI where
 
@@ -9,13 +10,14 @@ import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import           Data.Text (Text)
 import qualified Data.Text as Text
+import           Data.Time (Day)
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
                                             strictText, string, (<+/>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           omitted)
+import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+                           TaskMode (..), omitted)
 
 type Template a = a -> String
 
@@ -73,10 +75,11 @@ prettySample mode = \case
 noteView :: NoteView -> Doc
 noteView NoteView{nid, text, start, end} = wrapLines text </> sep fields
   where
-    fields
-        =  "| id "    <> pshow nid
-        :  "| start " <> pshow start
-        : ["| end "   <> pshow e | Just e <- [end]]
+    fields = concat
+        [ ["| id "    <> pshow @NoteId i | Just i <- [nid]]
+        , ["| start " <> pshow @Day start]
+        , ["| end "   <> pshow @Day e | Just e <- [end]]
+        ]
 
 wrapLines :: Text -> Doc
 wrapLines =
