@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
