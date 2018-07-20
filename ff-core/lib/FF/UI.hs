@@ -5,12 +5,14 @@
 
 module FF.UI where
 
+import           Data.Char (isSpace)
 import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            string, (<+/>), (</>))
+                                            strictText, string, (<+/>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -29,7 +31,7 @@ indentation :: Int
 indentation = 2
 
 pshow :: Show a => a -> Doc
-pshow = Pretty.string . show
+pshow = string . show
 
 prettySamplesBySections :: ModeMap Sample -> Doc
 prettySamplesBySections samples = stack $
@@ -71,19 +73,18 @@ prettySample mode = \case
         Starting _ -> "ff search --starting"
 
 noteView :: NoteView -> Doc
-noteView NoteView{..} =
-    string (Text.unpack text) </> sep fields
+noteView NoteView{..} = wrapLines text </> sep fields
   where
-    fields =
-        concat
-            [ ["| id "    <> pshow i | Just i <- [nid]]
-            , ["| start " <> pshow start]
-            , ["| end "   <> pshow e | Just e <- [end]]
-            ] ++
-        concat
+    fields
+        =  "| id "    <> pshow nid
+        :  "| start " <> pshow start
+        : ["| end "   <> pshow e | Just e <- [end]]
+        ++ concat
             [ [ "| source " <> pshow trackedSource
-              , "| url "    <> pshow trackedUrl
-              ]
-              | Just Tracked{..} <- [tracked]
+            , "| url " <> pshow trackedUrl]
+            | Just Tracked{..} <- [tracked]
             ]
 
+wrapLines :: Text -> Doc
+wrapLines =
+    stack . map (sep . map strictText . Text.split isSpace) . Text.splitOn "\n"

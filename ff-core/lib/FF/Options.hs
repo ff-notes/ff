@@ -21,11 +21,11 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (auto, command, execParser, flag',
-                                      fullDesc, help, helper, info, long,
-                                      metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, switch,
-                                      (<**>))
+import           Options.Applicative (CommandFields, Mod, ParserInfo, auto,
+                                      command, execParser, flag', fullDesc,
+                                      help, helper, info, long, metavar, option,
+                                      progDesc, short, strArgument, strOption,
+                                      subparser, switch, (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -81,21 +81,24 @@ data Search = Search Text (Maybe Limit)
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = version <|> subparser commands <|> cmdAgenda
+    parser   = version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
     commands = mconcat
-        [ command "add"       iCmdAdd
-        , command "agenda"    iCmdAgenda
+        [ action  "add"       iCmdAdd
+        , action  "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
-        , command "delete"    iCmdDelete
-        , command "done"      iCmdDone
-        , command "edit"      iCmdEdit
-        , command "new"       iCmdNew
-        , command "postpone"  iCmdPostpone
-        , command "search"    iCmdSearch
-        , command "serve"     iCmdServe
-        , command "track"     iCmdTrack
-        , command "unarchive" iCmdUnarchive
+        , action  "delete"    iCmdDelete
+        , action  "done"      iCmdDone
+        , action  "edit"      iCmdEdit
+        , action  "new"       iCmdNew
+        , action  "postpone"  iCmdPostpone
+        , action  "search"    iCmdSearch
+        , action  "serve"     iCmdServe
+        , action  "track"     iCmdTrack
+        , action  "unarchive" iCmdUnarchive
         ]
+      where
+        action :: String -> ParserInfo CmdAction -> Mod CommandFields Cmd
+        action s = command s . fmap CmdAction
 
     iCmdAdd       = i cmdNew        "add a new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
@@ -111,16 +114,16 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
 
-    cmdAgenda    = CmdAction . CmdAgenda    <$> optional limit
-    cmdDelete    = CmdAction . CmdDelete    <$> noteid
-    cmdDone      = CmdAction . CmdDone      <$> noteid
-    cmdEdit      = CmdAction . CmdEdit      <$> edit
-    cmdTrack     = CmdAction . CmdTrack     <$> track
-    cmdNew       = CmdAction . CmdNew       <$> new
-    cmdPostpone  = CmdAction . CmdPostpone  <$> noteid
-    cmdSearch    = CmdAction . CmdSearch    <$> search
-    cmdUnarchive = CmdAction . CmdUnarchive <$> noteid
-    cmdServe     = pure $ CmdAction CmdServe
+    cmdAgenda    = CmdAgenda    <$> optional limit
+    cmdDelete    = CmdDelete    <$> noteid
+    cmdDone      = CmdDone      <$> noteid
+    cmdEdit      = CmdEdit      <$> edit
+    cmdNew       = CmdNew       <$> new
+    cmdPostpone  = CmdPostpone  <$> noteid
+    cmdSearch    = CmdSearch    <$> search
+    cmdServe     = pure CmdServe
+    cmdTrack     = CmdTrack     <$> track
+    cmdUnarchive = CmdUnarchive <$> noteid
 
     track = Track
         <$> dryRun

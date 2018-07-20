@@ -91,8 +91,7 @@ loadAllNotes = do
     mnotes <- for docs load
     pure
         [ noteView noteId value
-        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}})
-        <- zip docs mnotes
+        | (noteId, Just Document{value}) <- zip docs mnotes
         ]
 
 loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
@@ -101,8 +100,8 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure
         [ (noteId, value)
-        | (noteId, Just Document{value}) <- zip docs mnotes
-        , Just _ <- [noteTracked value]
+        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}})
+        <- zip docs mnotes
         ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
