@@ -165,10 +165,10 @@ newTrackedNote mOldNotes nvNew =
             modifyOrFail n update
   where
     update Note {..} = do
-        noteStatus' <- LWW.assign (status nvNew) noteStatus
+        noteStatus' <- lwwAssignIfDiffer (status nvNew) noteStatus
         noteText'   <- rgaEditText (text nvNew) noteText
-        noteStart'  <- LWW.assign (start nvNew) noteStart
-        noteEnd'    <- LWW.assign (end nvNew) noteEnd
+        noteStart'  <- lwwAssignIfDiffer (start nvNew) noteStart
+        noteEnd'    <- lwwAssignIfDiffer (end nvNew) noteEnd
         pure $ note noteStatus' noteText' noteStart' noteEnd'
     noteTracked' = Max.initial <$> tracked nvNew
     note noteStatus' noteText' noteStart' noteEnd' = Note
@@ -324,3 +324,11 @@ rgaFromText = RGA.fromString . Text.unpack
 
 rgaToText :: RgaString -> Text
 rgaToText = Text.pack . RGA.toString
+
+lwwAssignIfDiffer :: (Eq a, Clock m) => a -> LWW a -> m (LWW a)
+lwwAssignIfDiffer new var = do
+    let cur = LWW.query var
+    if new == cur then
+        pure var
+    else
+        LWW.assign new var
