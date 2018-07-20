@@ -14,7 +14,8 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            strictText, string, (<+/>), (</>))
+                                            strictText, string, (<+/>), (<+>),
+                                            (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -79,13 +80,13 @@ noteView NoteView{..} = wrapLines text </> sep fields
   where
     fields
         = concat
-            [ ["| id "    <> pshow @NoteId i | Just i <- [nid]]
-            , ["| start " <> pshow @Day start]
-            , ["| end "   <> pshow @Day e | Just e <- [end]]
+            [ ["| id"    <+> pshow @NoteId i | Just i <- [nid]]
+            , ["| start" <+> pshow @Day start]
+            , ["| end"   <+> pshow @Day e | Just e <- [end]]
             ]
         ++ concat
-            [   [ "| source " <> strictText trackedSource
-                , "| url "    <> strictText trackedUrl
+            [   [ "| tracking" <+> strictText trackedSource
+                , "| url"      <+> strictText trackedUrl
                 ]
             | Just Tracked{..} <- [tracked]
             ]
