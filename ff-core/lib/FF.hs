@@ -187,11 +187,11 @@ updateTracked nvNews = do
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
-  noteStatus <- LWW.initialize status
-  noteText   <- rgaFromText text
-  noteStart  <- LWW.initialize start
-  noteEnd    <- LWW.initialize end
-  pure Note{noteTracked = Nothing, ..}
+    noteStatus <- LWW.initialize status
+    noteText   <- rgaFromText text
+    noteStart  <- LWW.initialize start
+    noteEnd    <- LWW.initialize end
+    pure Note{noteTracked = Nothing, ..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do

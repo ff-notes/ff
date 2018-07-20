@@ -276,7 +276,7 @@ instance Arbitrary NoNul where
 
 case_repo :: IO ()
 case_repo =
-    Github.sampleMaps "ff-notes/ff" limit todayForIssues issues @?= ideal
+    Github.sampleMap "ff-notes/ff" limit todayForIssues issues @?= ideal
   where
     ideal = Map.singleton
         (Overdue 10)

@@ -62,7 +62,7 @@ data Note = Note
 type NoteId = DocId Note
 
 instance Semigroup Note where
-  (<>) = gmappend
+    (<>) = gmappend
 
 instance Semilattice Note
 

@@ -6,21 +6,18 @@
 module FF.Github
     ( getIssueViews
     , getIssueSamples
-    , sampleMaps
+    , sampleMap
     ) where
 
 import           Control.Error (failWith)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
-import           Data.Maybe (fromMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
 import           Data.Vector (Vector)
--- import           GitHub (FetchCount (..), Issue (..), IssueState (..),
---                          Milestone (..), executeRequest', getUrl,
 import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
@@ -29,14 +26,13 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
--- import           FF.Options (Track (..))
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
                            Status (..), Tracked (..))
 
 getIssues
     :: Maybe Text
     -> Maybe Limit
-    -> ExceptT Text IO (Vector Issue)
+    -> ExceptT Text IO (Text, Vector Issue)
 getIssues mAddress mlimit = do
     address <- case mAddress of
         Just address -> pure address
@@ -52,12 +48,13 @@ getIssues mAddress mlimit = do
         _ -> throwError $
             "Something is wrong with " <> address <>
             ". Please, check correctness of input. Right format is OWNER/REPO"
-    withExceptT (Text.pack . show) $ ExceptT $
+    response <- withExceptT (Text.pack . show) $ ExceptT $
         executeRequest' $ issuesForRepoR
             (mkOwnerName owner)
             (mkRepoName repo)
             mempty
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
+    pure (address, response)
 
 getIssueSamples
     :: Maybe Text
@@ -65,32 +62,34 @@ getIssueSamples
     -> Day
     -> ExceptT Text IO (ModeMap Sample)
 getIssueSamples mAddress mlimit today =
-    sampleMaps mAddress mlimit today <$> getIssues mAddress mlimit
+    (\(address, issues) -> sampleMap address mlimit today issues)
+        <$> getIssues mAddress mlimit
 
 getIssueViews
     :: Maybe Text
     -> Maybe Limit
     -> ExceptT Text IO [NoteView]
 getIssueViews mAddress mlimit =
-    noteViewList mAddress mlimit <$> getIssues mAddress mlimit
+    (\(address, issues) -> noteViewList address mlimit issues)
+        <$> getIssues mAddress mlimit
 
-sampleMaps
-    :: Foldable t => Maybe Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps address mlimit today issues =
+sampleMap
+    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMap address mlimit today issues =
     takeSamples mlimit
     . splitModes today
     . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-noteViewList :: Foldable t => Maybe Text -> Maybe Limit -> t Issue -> [NoteView]
+noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [NoteView]
 noteViewList address mlimit issues =
     map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-issueToNoteView :: Maybe Text -> Issue -> NoteView
-issueToNoteView mAddress Issue{..} = NoteView
+issueToNoteView :: Text -> Issue -> NoteView
+issueToNoteView address Issue{..} = NoteView
     { nid     = Nothing
     , status  = toStatus issueState
     , text    = issueTitle
@@ -104,7 +103,6 @@ issueToNoteView mAddress Issue{..} = NoteView
         }
     }
   where
-    address = fromMaybe "{noRepo}" mAddress
     trackedExternalId = Text.pack $ show issueNumber
     trackedUrl = case issueHtmlUrl of
         Just (URL url) -> url

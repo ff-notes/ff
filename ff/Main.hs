@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main where
@@ -15,7 +16,6 @@ import           CRDT.LamportClock (getRealLocalTime)
 import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum)
 import           Data.Functor (($>))
-import           Data.Text (Text)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy as Text
@@ -39,7 +39,6 @@ import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
-import           FF.Types (Limit)
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 import           System.Pager (printOrPage)
@@ -127,8 +126,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack (Track trackDryRun trackAddress trackLimit) ->
-            cmdTrack trackDryRun trackAddress trackLimit today
+        CmdTrack Track {..} ->
+            cmdTrack Track {..} today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -143,9 +142,9 @@ runCmdAction ui cmd = do
             pprint . withHeader "unarchived:" $ UI.noteView nv
         CmdServe -> cmdServe
 
-cmdTrack :: Bool -> Maybe Text -> Maybe Limit -> Day -> Storage ()
-cmdTrack trackDryRun trackAddress trackLimit today =
-    if trackDryRun then liftIO $ do
+cmdTrack :: Track -> Day -> Storage ()
+cmdTrack Track {..} today =
+    if trackDryrun then liftIO $ do
         possibleIssues <- getIssues (getIssueSamples trackAddress trackLimit today)
         case possibleIssues of
             Left err      -> hPutStrLn stderr err
@@ -159,14 +158,14 @@ cmdTrack trackDryRun trackAddress trackLimit today =
                 let nvsLength = show $ length nvs'
                 liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
   where
-      getIssues getter = do
-          hPutStr stderr "fetching"
-          possibleIssues <-
-              fromEither <$> race
-                  (runExceptT getter)
-                  (forever $ hPutChar stderr '.' >> threadDelay 500000)
-          hPutStrLn stderr ""
-          pure possibleIssues
+    getIssues getter = do
+        hPutStr stderr "fetching"
+        possibleIssues <-
+            fromEither <$> race
+                (runExceptT getter)
+                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+        hPutStrLn stderr ""
+        pure possibleIssues
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
