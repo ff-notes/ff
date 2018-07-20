@@ -126,8 +126,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdTrack Track {..} ->
-            cmdTrack Track {..} today
+        CmdTrack track ->
+            cmdTrack track today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv

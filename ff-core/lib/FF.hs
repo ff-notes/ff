@@ -39,7 +39,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, isJust, listToMaybe)
+import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -98,10 +98,11 @@ loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
 loadTrackedNotes = do
     docs   <- listDocuments
     mnotes <- for docs load
-    pure  [ (noteId, value)
-          | (noteId, Just Document{value}) <- zip docs mnotes
-          , isJust (Max.query <$> noteTracked value)
-          ]
+    pure
+        [ (noteId, value)
+        | (noteId, Just Document{value}) <- zip docs mnotes
+        , Just _ <- [noteTracked value]
+        ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
@@ -323,4 +324,3 @@ rgaFromText = RGA.fromString . Text.unpack
 
 rgaToText :: RgaString -> Text
 rgaToText = Text.pack . RGA.toString
-

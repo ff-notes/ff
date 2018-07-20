@@ -61,17 +61,17 @@ getIssueSamples
     -> Maybe Limit
     -> Day
     -> ExceptT Text IO (ModeMap Sample)
-getIssueSamples mAddress mlimit today =
-    (\(address, issues) -> sampleMap address mlimit today issues)
-        <$> getIssues mAddress mlimit
+getIssueSamples mAddress mlimit today = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ sampleMap address mlimit today issues
 
 getIssueViews
     :: Maybe Text
     -> Maybe Limit
     -> ExceptT Text IO [NoteView]
-getIssueViews mAddress mlimit =
-    (\(address, issues) -> noteViewList address mlimit issues)
-        <$> getIssues mAddress mlimit
+getIssueViews mAddress mlimit = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ noteViewList address mlimit issues
 
 sampleMap
     :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
