@@ -23,6 +23,7 @@ import           Data.Time (Day)
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
+import           System.Exit (exitFailure)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPutChar, hPutStr, stderr)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
@@ -145,27 +146,24 @@ runCmdAction ui cmd = do
 cmdTrack :: Track -> Day -> Storage ()
 cmdTrack Track {..} today =
     if trackDryrun then liftIO $ do
-        possibleIssues <- getIssues (getIssueSamples trackAddress trackLimit today)
-        case possibleIssues of
-            Left err      -> hPutStrLn stderr err
-            Right samples -> pprint $ UI.prettySamplesBySections samples
+        samples <- run $ getIssueSamples trackAddress trackLimit today
+        pprint $ UI.prettySamplesBySections samples
     else do
-        possibleIssues <- liftIO $ getIssues (getIssueViews trackAddress trackLimit)
-        case possibleIssues of
-            Left err   -> liftIO $ hPutStrLn stderr err
-            Right nvs' -> do
-                updateTracked nvs'
-                let nvsLength = show $ length nvs'
-                liftIO $ putStrLn $ nvsLength ++ " issues copied to local base"
+        nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
+        updateTracked nvs
+        liftIO $ putStrLn $ show (length nvs) ++ " issues copied to local base"
   where
-    getIssues getter = do
+    run getter = do
         hPutStr stderr "fetching"
-        possibleIssues <-
-            fromEither <$> race
-                (runExceptT getter)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+        eIssues <- fromEither <$> race
+            (runExceptT getter)
+            (forever $ hPutChar stderr '.' >> threadDelay 500000)
         hPutStrLn stderr ""
-        pure possibleIssues
+        case eIssues of
+            Left err     -> do
+                hPutStrLn stderr err
+                exitFailure
+            Right issues -> pure issues
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
