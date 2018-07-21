@@ -15,6 +15,7 @@ import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
 import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
+import           CRDT.Laws (cvrdtLaws)
 import           Data.Aeson (FromJSON, ToJSON,
                              Value (Array, Number, Object, String), object,
                              parseJSON, toJSON, (.=))
@@ -44,12 +45,12 @@ import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNew, getSamples)
 import           FF.Config (Config, ConfigUI (..))
-import           FF.Github (sampleMaps)
+import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Version, collectionName, lamportTimeToFileName)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
-                           Status (Active), TaskMode (Overdue))
+                           Status (Active), TaskMode (Overdue), Tracked (..))
 
 import           ArbitraryOrphans ()
 
@@ -162,12 +163,13 @@ case_smoke = do
         Map.singleton
             (Overdue 365478)
             Sample
-                { notes = pure $ NoteView
-                    { nid    = DocId "1"
-                    , status = Active
-                    , text   = "helloworld"
-                    , start  = fromGregorian 22 11 24
-                    , end    = Just $ fromGregorian 17 06 19
+                { notes = pure NoteView
+                    { nid     = Just $ DocId "1"
+                    , status  = Active
+                    , text    = "helloworld"
+                    , start   = fromGregorian 22 11 24
+                    , end     = Just $ fromGregorian 17 06 19
+                    , tracked = Nothing
                     }
                 , total = 1
                 }
@@ -273,19 +275,24 @@ instance Arbitrary NoNul where
     arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary
 
 case_repo :: IO ()
-case_repo = sampleMaps limit todayForIssues issues @?= ideal
+case_repo =
+    Github.sampleMap "ff-notes/ff" limit todayForIssues issues @?= ideal
   where
     ideal = Map.singleton
         (Overdue 10)
         Sample
-            { notes = pure $ NoteView
-                { nid = DocId "334520780"
-                , status = Active
-                , text =
-                    "import issues (GitHub -> ff)\n\
-                    \url https://github.com/ff-notes/ff/issues/60"
-                , start = fromGregorian 2018 06 21
-                , end = Just $ fromGregorian 2018 06 15
+            { notes = pure NoteView
+                { nid     = Nothing
+                , status  = Active
+                , text    = "import issues (GitHub -> ff)"
+                , start   = fromGregorian 2018 06 21
+                , end     = Just $ fromGregorian 2018 06 15
+                , tracked = Just Tracked
+                    { trackedProvider = "github"
+                    , trackedSource = "ff-notes/ff"
+                    , trackedExternalId = "60"
+                    , trackedUrl = "https://github.com/ff-notes/ff/issues/60"
+                    }
                 }
             , total = 1
             }
@@ -297,7 +304,7 @@ limit :: Maybe Limit
 limit = Just 1
 
 issues :: [Issue]
-issues = pure $ Issue
+issues = pure Issue
     { issueClosedAt = Nothing
     , issueUpdatedAt =
         UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60 + 41)
@@ -339,3 +346,6 @@ issues = pure $ Issue
             URL "https://avatars0.githubusercontent.com/u/63495?v=4"
         , simpleUserUrl = URL "https://api.github.com/users/cblp"
         }
+
+test_CvRDT_Note :: [TestTree]
+test_CvRDT_Note = cvrdtLaws @Note

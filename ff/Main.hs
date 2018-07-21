@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main where
@@ -18,21 +19,24 @@ import           Data.Functor (($>))
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy as Text
+import           Data.Time (Day)
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
+import           System.Exit (exitFailure)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPutChar, hPutStr, stderr)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdUnarchive, getSamples, getUtcToday)
+                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
+                     updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (runCmdGithub)
-import           FF.Options (Cmd (..), CmdAction (..), CmdGithub (..),
-                             DataDir (..), Search (..), Shuffle (..),
+import           FF.Github (getIssueSamples, getIssueViews)
+import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
+                             Search (..), Shuffle (..), Track (..),
                              parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
@@ -123,15 +127,8 @@ runCmdAction ui cmd = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteView nv
-        CmdGithub GithubList { address, limit } -> liftIO $ do
-            hPutStr stderr "fetching"
-            possibleIssues <- fromEither <$> race
-                (runExceptT $ runCmdGithub address limit today)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
-            hPutStrLn stderr ""
-            case possibleIssues of
-                Left err      -> hPutStrLn stderr err
-                Right samples -> pprint $ UI.prettySamplesBySections samples
+        CmdTrack track ->
+            cmdTrack track today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
@@ -144,7 +141,29 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
-        CmdGithub _ -> liftIO runCmdGithub
+        CmdServe -> cmdServe
+
+cmdTrack :: Track -> Day -> Storage ()
+cmdTrack Track {..} today =
+    if trackDryrun then liftIO $ do
+        samples <- run $ getIssueSamples trackAddress trackLimit today
+        pprint $ UI.prettySamplesBySections samples
+    else do
+        nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
+        updateTracked nvs
+        liftIO $ putStrLn $ show (length nvs) ++ " issues copied to local base"
+  where
+    run getter = do
+        hPutStr stderr "fetching"
+        eIssues <- fromEither <$> race
+            (runExceptT getter)
+            (forever $ hPutChar stderr '.' >> threadDelay 500000)
+        hPutStrLn stderr ""
+        case eIssues of
+            Left err     -> do
+                hPutStrLn stderr err
+                exitFailure
+            Right issues -> pure issues
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

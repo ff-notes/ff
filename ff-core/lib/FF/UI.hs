@@ -1,20 +1,26 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.UI where
 
-import           Data.List (genericLength, intersperse)
+import           Data.Char (isSpace)
+import           Data.List (genericLength)
 import qualified Data.Map.Strict as Map
+import           Data.Semigroup ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as Text
+import           Data.Time (Day)
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            strictText, (<+/>), (</>), (<>),
-                                            (<|>))
+                                            strictText, string, (<+/>), (<+>),
+                                            (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           omitted)
+import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+                           TaskMode (..), Tracked (..), omitted)
 
 type Template a = a -> String
 
@@ -25,10 +31,10 @@ withHeader :: Pretty a => String -> a -> Doc
 withHeader header value = hang indentation $ Pretty.text header </> ppr value
 
 indentation :: Int
-indentation = 4
+indentation = 2
 
 pshow :: Show a => a -> Doc
-pshow = Pretty.text . show
+pshow = string . show
 
 prettySamplesBySections :: ModeMap Sample -> Doc
 prettySamplesBySections samples = stack $
@@ -70,14 +76,21 @@ prettySample mode = \case
         Starting _ -> "ff search --starting"
 
 noteView :: NoteView -> Doc
-noteView NoteView { nid, text, start, end } = noteText </> fieldsSep fields
+noteView NoteView{..} = wrapLines text </> sep fields
   where
-    noteText =
-        stack . map (sep . map strictText . Text.words) $ Text.lines text
-    fields =
-        "id"
-            .= pshow nid
-            :  "start"
-            .= pshow start
-            :  [ "end" .= pshow e | Just e <- pure end ]
-    fieldsSep docs = sep (intersperse "|" docs) <|> stack docs
+    fields
+        = concat
+            [ ["| id"    <+> pshow @NoteId i | Just i <- [nid]]
+            , ["| start" <+> pshow @Day start]
+            , ["| end"   <+> pshow @Day e | Just e <- [end]]
+            ]
+        ++ concat
+            [   [ "| tracking" <+> strictText trackedSource
+                , "| url"      <+> strictText trackedUrl
+                ]
+            | Just Tracked{..} <- [tracked]
+            ]
+
+wrapLines :: Text -> Doc
+wrapLines =
+    stack . map (sep . map strictText . Text.split isSpace) . Text.splitOn "\n"

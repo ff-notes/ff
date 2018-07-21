@@ -4,8 +4,9 @@
 {-# LANGUAGE RecordWildCards #-}
 
 module FF.Github
-    ( runCmdGithub
-    , sampleMaps
+    ( getIssueViews
+    , getIssueSamples
+    , sampleMap
     ) where
 
 import           Control.Error (failWith)
@@ -16,25 +17,23 @@ import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
-import           GitHub (FetchCount (..), Id, Issue (..), IssueState (..),
+import           Data.Vector (Vector)
+import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle, mkOwnerName, mkRepoName,
-                         untagId)
+                         issueState, issueTitle, mkOwnerName, mkRepoName)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Storage (DocId (..))
-import           FF.Types (Limit, ModeMap, NoteId, NoteView (..), Sample (..),
-                           Status (..))
+import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
+                           Status (..), Tracked (..))
 
-runCmdGithub
+getIssues
     :: Maybe Text
     -> Maybe Limit
-    -> Day  -- ^ today
-    -> ExceptT Text IO (ModeMap Sample)
-runCmdGithub mAddress mlimit today = do
+    -> ExceptT Text IO (Text, Vector Issue)
+getIssues mAddress mlimit = do
     address <- case mAddress of
         Just address -> pure address
         Nothing -> do
@@ -55,34 +54,63 @@ runCmdGithub mAddress mlimit today = do
             (mkRepoName repo)
             mempty
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
-    pure $ sampleMaps mlimit today response
+    pure (address, response)
 
-sampleMaps :: Foldable t => Maybe Limit -> Day -> t Issue -> ModeMap Sample
-sampleMaps mlimit today issues =
+getIssueSamples
+    :: Maybe Text
+    -> Maybe Limit
+    -> Day
+    -> ExceptT Text IO (ModeMap Sample)
+getIssueSamples mAddress mlimit today = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ sampleMap address mlimit today issues
+
+getIssueViews
+    :: Maybe Text
+    -> Maybe Limit
+    -> ExceptT Text IO [NoteView]
+getIssueViews mAddress mlimit = do
+    (address, issues) <- getIssues mAddress mlimit
+    pure $ noteViewList address mlimit issues
+
+sampleMap
+    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
+sampleMap address mlimit today issues =
     takeSamples mlimit
     . splitModes today
-    . map toNoteView
+    . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
 
-toNoteView :: Issue -> NoteView
-toNoteView Issue{..} = NoteView
-    { nid    = toNoteId issueId
-    , status = toStatus issueState
-    , text   = issueTitle <> maybeUrl
-    , start  = utctDay issueCreatedAt
-    , end    = maybeMilestone
+noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [NoteView]
+noteViewList address mlimit issues =
+    map (issueToNoteView address)
+    . maybe id (take . fromIntegral) mlimit
+    $ toList issues
+
+issueToNoteView :: Text -> Issue -> NoteView
+issueToNoteView address Issue{..} = NoteView
+    { nid     = Nothing
+    , status  = toStatus issueState
+    , text    = issueTitle
+    , start   = utctDay issueCreatedAt
+    , end     = maybeMilestone
+    , tracked = Just Tracked
+        { trackedProvider   = "github"
+        , trackedSource     = address
+        , trackedExternalId
+        , trackedUrl
+        }
     }
   where
-    maybeUrl = case issueHtmlUrl of
-        Just (URL url) -> "\nurl " <> url
-        Nothing        -> ""
+    trackedExternalId = Text.pack $ show issueNumber
+    trackedUrl = case issueHtmlUrl of
+        Just (URL url) -> url
+        Nothing        ->
+            "https://github.com/" <> address <> "/issues/" <> trackedExternalId
     maybeMilestone = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
-
-toNoteId :: Id Issue -> NoteId
-toNoteId = DocId . show . untagId
 
 toStatus :: IssueState -> Status
 toStatus = \case
