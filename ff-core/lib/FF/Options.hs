@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -21,11 +19,11 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (CommandFields, Mod, ParserInfo, auto,
-                                      command, execParser, flag', fullDesc,
-                                      help, helper, info, long, metavar, option,
-                                      progDesc, short, strArgument, strOption,
-                                      subparser, switch, (<**>))
+import           Options.Applicative (auto, command, execParser, flag',
+                                      fullDesc, help, helper, info, long,
+                                      metavar, option, progDesc, short,
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -97,7 +95,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , action  "unarchive" iCmdUnarchive
         ]
       where
-        action :: String -> ParserInfo CmdAction -> Mod CommandFields Cmd
         action s = command s . fmap CmdAction
 
     iCmdAdd       = i cmdNew        "add a new task or note"
