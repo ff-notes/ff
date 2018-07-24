@@ -5,6 +5,7 @@ copyright:
 library:
   dependencies:
     - aeson
+    - blaze-html
     - bytestring
     - containers
     - crdt

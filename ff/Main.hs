@@ -53,7 +53,7 @@ main = do
         CmdAction action -> do
             timeVar <- newTVarIO =<< getRealLocalTime
             dataDir <- getDataDir cfg
-            runStorage dataDir timeVar $ runCmdAction ui action
+            runStorage dataDir timeVar $ runCmdAction dataDir ui action
         CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
@@ -107,8 +107,8 @@ checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
-runCmdAction :: ConfigUI -> CmdAction -> Storage ()
-runCmdAction ui cmd = do
+runCmdAction :: FilePath -> ConfigUI -> CmdAction -> Storage ()
+runCmdAction dataDir ui cmd = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
@@ -144,7 +144,7 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
-        CmdServe -> cmdServe
+        CmdServe -> cmdServe dataDir ui
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
