@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
@@ -14,15 +15,16 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
-    , cmdUnarchive
     , cmdServe
+    , cmdUnarchive
     , getSamples
     , getUtcToday
-    , loadAllNotes
     , loadActiveNotes
+    , loadAllNotes
     , newNote
     , splitModes
     , takeSamples
+    , updateTracked
     ) where
 
 import           Control.Arrow ((&&&))
@@ -30,6 +32,7 @@ import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
+import qualified CRDT.Cv.Max as Max
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock, getRealLocalTime)
@@ -38,7 +41,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -53,6 +56,7 @@ import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
+
 import           Web.Scotty (scotty, get, html)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import qualified Text.Blaze.Html5 as H
@@ -67,6 +71,10 @@ import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            TaskMode (..),
                            noteView, omitted, singletonTaskModeMap)
+
+
+serveHttpPort :: Int
+serveHttpPort = 8080
 
 
 serveHttpPort :: Int
@@ -96,6 +104,16 @@ loadAllNotes = do
     pure
         [ noteView noteId value
         | (noteId, Just Document{value}) <- zip docs mnotes
+        ]
+
+loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
+loadTrackedNotes = do
+    docs   <- listDocuments
+    mnotes <- for docs load
+    pure
+        [ (noteId, value)
+        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}})
+        <- zip docs mnotes
         ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
@@ -145,13 +163,48 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
+newTrackedNote :: [(NoteId, Note)] -> NoteView -> Storage Note
+newTrackedNote mOldNotes nvNew =
+    case sameTrack of
+        Nothing -> do
+            noteStatus' <- LWW.initialize (status nvNew)
+            noteText'   <- rgaFromText (text nvNew)
+            noteStart'  <- LWW.initialize (start nvNew)
+            noteEnd'    <- LWW.initialize (end nvNew)
+            _ <- create $ note noteStatus' noteText' noteStart' noteEnd'
+            pure $ note noteStatus' noteText' noteStart' noteEnd'
+        Just (n, _) ->
+            modifyOrFail n update
+  where
+    update Note {..} = do
+        noteStatus' <- lwwAssignIfDiffer (status nvNew) noteStatus
+        noteText'   <- rgaEditText (text nvNew) noteText
+        noteStart'  <- lwwAssignIfDiffer (start nvNew) noteStart
+        noteEnd'    <- lwwAssignIfDiffer (end nvNew) noteEnd
+        pure $ note noteStatus' noteText' noteStart' noteEnd'
+    noteTracked' = Max.initial <$> tracked nvNew
+    note noteStatus' noteText' noteStart' noteEnd' = Note
+        { noteStatus   = noteStatus'
+        , noteText     = noteText'
+        , noteStart    = noteStart'
+        , noteEnd      = noteEnd'
+        , noteTracked  = noteTracked'
+        }
+    isSameTrack oldNote = tracked nvNew == (Max.query <$> noteTracked oldNote)
+    sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
+
+updateTracked :: [NoteView] -> Storage ()
+updateTracked nvNews = do
+    mOldNotes <- loadTrackedNotes
+    mapM_ (newTrackedNote mOldNotes) nvNews
+
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
     noteStart  <- LWW.initialize start
     noteEnd    <- LWW.initialize end
-    pure Note {..}
+    pure Note{noteTracked = Nothing, ..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do
@@ -220,7 +273,6 @@ prettyHtmlSample mode = \case
         Starting n -> case n of
             1 -> "Starting tomorrow:"
             _ -> "Starting in " <> show n <> " days:"
-
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
@@ -315,3 +367,11 @@ rgaFromText = RGA.fromString . Text.unpack
 
 rgaToText :: RgaString -> Text
 rgaToText = Text.pack . RGA.toString
+
+lwwAssignIfDiffer :: (Eq a, Clock m) => a -> LWW a -> m (LWW a)
+lwwAssignIfDiffer new var = do
+    let cur = LWW.query var
+    if new == cur then
+        pure var
+    else
+        LWW.assign new var

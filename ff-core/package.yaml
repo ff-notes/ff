@@ -18,12 +18,15 @@ library:
     - optparse-applicative
     - process
     - random
+    - scotty
+    - semigroups
     - stm
     - scotty
     - temporary
     - text
     - time
     - typed-process
+    - vector
     - yaml
   source-dirs: lib
 

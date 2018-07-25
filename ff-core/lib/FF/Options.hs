@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -7,13 +5,13 @@
 module FF.Options
     ( Cmd (..)
     , CmdAction (..)
-    , CmdGithub (..)
     , Config (..)
     , DataDir (..)
     , Edit (..)
     , New (..)
     , Search (..)
     , Shuffle (..)
+    , Track (..)
     , parseOptions
     ) where
 
@@ -24,7 +22,8 @@ import           Data.Time (Day)
 import           Options.Applicative (auto, command, execParser, flag',
                                       fullDesc, help, helper, info, long,
                                       metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, (<**>))
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
 
 import           FF.Storage (DocId (DocId))
 import           FF.Types (Limit, NoteId)
@@ -39,16 +38,17 @@ data CmdAction
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
-    | CmdGithub     CmdGithub
+    | CmdTrack      Track
     | CmdNew        New
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdUnarchive  NoteId
     | CmdServe
 
-data CmdGithub = GithubList
-    { address  :: Maybe Text
-    , limit    :: Maybe Limit
+data Track = Track
+    { trackDryrun  :: Bool
+    , trackAddress :: Maybe Text
+    , trackLimit   :: Maybe Limit
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -79,82 +79,80 @@ data Search = Search Text (Maybe Limit)
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = pCmdVersion <|> subparser commands <|> pCmdAgenda
+    parser   = version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
     commands = mconcat
-        [ command "add"       iCmdAdd
-        , command "agenda"    iCmdAgenda
+        [ action  "add"       iCmdAdd
+        , action  "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
-        , command "delete"    iCmdDelete
-        , command "done"      iCmdDone
-        , command "edit"      iCmdEdit
-        , command "github"    iCmdGithub
-        , command "new"       iCmdNew
-        , command "postpone"  iCmdPostpone
-        , command "search"    iCmdSearch
-        , command "unarchive" iCmdUnarchive
-        , command "serve"     iCmdServe
+        , action  "delete"    iCmdDelete
+        , action  "done"      iCmdDone
+        , action  "edit"      iCmdEdit
+        , action  "new"       iCmdNew
+        , action  "postpone"  iCmdPostpone
+        , action  "search"    iCmdSearch
+        , action  "serve"     iCmdServe
+        , action  "track"     iCmdTrack
+        , action  "unarchive" iCmdUnarchive
         ]
+      where
+        action s = command s . fmap CmdAction
 
-    iCmdAdd       = i pCmdNew       "add a new task or note"
-    iCmdAgenda    = i pCmdAgenda    "show what you can do right now\
+    iCmdAdd       = i cmdNew        "add a new task or note"
+    iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
-    iCmdConfig    = i pCmdConfig    "show/edit configuration"
-    iCmdDelete    = i pCmdDelete    "delete a task"
-    iCmdDone      = i pCmdDone      "mark a task done (archive)"
-    iCmdEdit      = i pCmdEdit      "edit a task or a note"
-    iCmdGithub    = i pCmdGithub    "synchronize issues with GitHub"
-    iCmdNew       = i pCmdNew       "synonym for `add`"
-    iCmdPostpone  = i pCmdPostpone  "make a task start later"
-    iCmdSearch    = i pCmdSearch    "search for notes with the given text"
-    iCmdUnarchive = i pCmdUnarchive "restore the note from archive"
-    iCmdServe     = i pCmdServe "serve application through the http"
+    iCmdConfig    = i cmdConfig     "show/edit configuration"
+    iCmdDelete    = i cmdDelete     "delete a task"
+    iCmdDone      = i cmdDone       "mark a task done (archive)"
+    iCmdEdit      = i cmdEdit       "edit a task or a note"
+    iCmdNew       = i cmdNew        "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone   "make a task start later"
+    iCmdSearch    = i cmdSearch     "search for notes with the given text"
+    iCmdServe     = i cmdServe      "serve web UI"
+    iCmdTrack     = i cmdTrack      "track issues from external sources"
+    iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
 
-    pCmdAgenda    = CmdAction . CmdAgenda    <$> optional limitOption
-    pCmdDelete    = CmdAction . CmdDelete    <$> idArgument
-    pCmdDone      = CmdAction . CmdDone      <$> idArgument
-    pCmdEdit      = CmdAction . CmdEdit      <$> pEdit
-    pCmdGithub    = CmdAction . CmdGithub    <$> list
-    pCmdNew       = CmdAction . CmdNew       <$> pNew
-    pCmdPostpone  = CmdAction . CmdPostpone  <$> idArgument
-    pCmdSearch    = CmdAction . CmdSearch    <$> pSearch
-    pCmdUnarchive = CmdAction . CmdUnarchive <$> idArgument
-    pCmdServe     = pure $ CmdAction CmdServe
+    cmdAgenda    = CmdAgenda    <$> optional limit
+    cmdDelete    = CmdDelete    <$> noteid
+    cmdDone      = CmdDone      <$> noteid
+    cmdEdit      = CmdEdit      <$> edit
+    cmdNew       = CmdNew       <$> new
+    cmdPostpone  = CmdPostpone  <$> noteid
+    cmdSearch    = CmdSearch    <$> search
+    cmdServe     = pure CmdServe
+    cmdTrack     = CmdTrack     <$> track
+    cmdUnarchive = CmdUnarchive <$> noteid
 
-    list     = subparser (command "list" iCmdList)
-    iCmdList = i pCmdList "list issues from a repository"
-    pCmdList = GithubList <$> optional pRepo <*> optional limitOption
-
-    pRepo  = strOption $
+    track = Track
+        <$> dryRun
+        <*> optional repo
+        <*> optional limit
+    dryRun = switch
+        (long "dry-run" <> short 'd' <>
+        help "Only list issues, don't set up tracking")
+    repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-
-    pNew = New <$> textArgument <*> optional startOption <*> optional endOption
-    pEdit = Edit
-        <$> idArgument
+    new = New <$> text <*> optional start <*> optional end
+    edit = Edit
+        <$> noteid
         <*> optional textOption
-        <*> optional startOption
-        <*> optional maybeEndOption
-
-    pSearch      = Search   <$> strArgument (metavar "TEXT")
-                            <*> optional limitOption
-
-    idArgument   = DocId <$> strArgument (metavar "ID" <> help "note id")
-    textArgument = strArgument $ metavar "TEXT" <> help "note text"
-
-    endOption    = dateOption $ long "end" <> short 'e' <> help "end date"
-    limitOption  = option auto $
-        long "limit" <> short 'l' <> help "Number of issues"
-    startOption  = dateOption $ long "start" <> short 's' <> help "start date"
-    textOption   = strOption $
+        <*> optional start
+        <*> optional maybeEnd
+    search = Search <$> strArgument (metavar "TEXT") <*> optional limit
+    noteid = DocId <$> strArgument (metavar "ID" <> help "note id")
+    text = strArgument $ metavar "TEXT" <> help "note text"
+    end = dateOption $ long "end" <> short 'e' <> help "end date"
+    limit = option auto $ long "limit" <> short 'l' <> help "Number of issues"
+    start = dateOption $ long "start" <> short 's' <> help "start date"
+    textOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
-
-    maybeEndOption =
-        Just <$> endOption <|>
+    maybeEnd =
+        Just <$> end <|>
         flag' Nothing (long "end-clear" <> help "clear end date")
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    pCmdConfig = fmap CmdConfig . optional $
+    cmdConfig = fmap CmdConfig . optional $
         subparser $ command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
@@ -164,14 +162,14 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
             pYandexDisk = flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
-        iUi = i pUi "UI tweaks"
-        pUi = fmap ConfigUI . optional $
+        iUi = i ui "UI tweaks"
+        ui = fmap ConfigUI . optional $
             flag'
                 Shuffle
                 (long "shuffle" <> help "shuffle notes in section") <|>
             flag' Sort (long "sort" <> help "sort notes in section")
 
-    pCmdVersion = flag'
+    version = flag'
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
 
