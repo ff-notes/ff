@@ -40,6 +40,7 @@ import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              parseOptions)
 import qualified FF.Options as Options
 import           FF.Storage (Storage, runStorage)
+import qualified FF.Storage as Storage
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
 import           System.Pager (printOrPage)
@@ -55,9 +56,10 @@ main = do
     case cmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
-            timeVar <- newTVarIO =<< getRealLocalTime
-            dataDir <- getDataDir cfg
-            runStorage dataDir timeVar $ runCmdAction ui action
+            hClock <- newTVarIO =<< getRealLocalTime
+            hDataDir <- getDataDir cfg
+            let h = Storage.Handle{..}
+            runStorage h $ runCmdAction ui action
         CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
