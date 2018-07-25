@@ -30,7 +30,7 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
+                     cmdSearch, cmdUnarchive, getSamples, getUtcToday,
                      updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
@@ -39,6 +39,7 @@ import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              Search (..), Shuffle (..), Track (..),
                              parseOptions)
 import qualified FF.Options as Options
+import           FF.Serve (cmdServe)
 import           FF.Storage (Storage, runStorage)
 import qualified FF.Storage as Storage
 import           FF.UI (withHeader)
@@ -59,7 +60,7 @@ main = do
             hClock <- newTVarIO =<< getRealLocalTime
             hDataDir <- getDataDir cfg
             let h = Storage.Handle{..}
-            runStorage h $ runCmdAction ui action
+            runStorage h $ runCmdAction h ui action
         CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
@@ -113,8 +114,8 @@ checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
-runCmdAction :: ConfigUI -> CmdAction -> Storage ()
-runCmdAction ui cmd = do
+runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Storage ()
+runCmdAction h ui cmd = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
@@ -143,7 +144,7 @@ runCmdAction ui cmd = do
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
-        CmdServe -> cmdServe
+        CmdServe -> cmdServe h ui
 
 cmdTrack :: Track -> Day -> Storage ()
 cmdTrack Track {..} today =
