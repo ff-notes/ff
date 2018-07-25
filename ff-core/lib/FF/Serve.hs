@@ -13,7 +13,6 @@ import qualified Data.Map.Strict as Map
 import           Web.Scotty (scotty, get, html)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
 
 import           FF (getUtcToday, getSamples)
 import           FF.Storage (runStorage)
@@ -42,7 +41,7 @@ prettyHtmlSamplesBySections samples = do
 prettyHtmlSample :: TaskMode -> Sample -> H.Html
 prettyHtmlSample mode = \case
     Sample{total = 0} -> mempty
-    Sample{total, notes} ->
+    Sample{notes} ->
         H.div $ do
             H.h1 $ H.toHtml (labels mode)
             H.ul $ mconcat $ map (H.li . H.toHtml . show) notes
