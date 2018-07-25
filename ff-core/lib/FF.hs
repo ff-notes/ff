@@ -18,6 +18,7 @@ module FF
     , cmdUnarchive
     , getSamples
     , getUtcToday
+    , isTrackedNote
     , loadActiveNotes
     , loadAllNotes
     , newNote
@@ -215,6 +216,19 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
               , noteStart  = noteStart'
               , noteEnd    = noteEnd'
               }
+
+isTrackedNote
+    :: (NoteId -> Storage NoteView)
+    -> NoteId
+    -> (NoteView -> Storage ())
+    -> Storage ()
+isTrackedNote cmdFunc nid pprinter = do
+    tracked <- loadTrackedNotes
+    let isTracked = any ((== nid) . fst) tracked
+    if isTracked then liftIO $ putStrLn "Oh, no! It is tracked note. Not for modifing. Sorry :("
+    else do
+        nv <- cmdFunc nid
+        pprinter nv
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
