@@ -19,6 +19,7 @@ module FF
     , getSamples
     , getUtcToday
     , isTrackedNote
+    , isTrackedNoteForEdit
     , loadActiveNotes
     , loadAllNotes
     , newNote
@@ -228,6 +229,20 @@ isTrackedNote cmdFunc nid pprinter = do
     if isTracked then liftIO $ putStrLn "Oh, no! It is tracked note. Not for modifing. Sorry :("
     else do
         nv <- cmdFunc nid
+        pprinter nv
+
+isTrackedNoteForEdit
+    :: (Edit -> Storage NoteView)
+    -> Edit
+    -> (NoteView -> Storage ())
+    -> Storage ()
+isTrackedNoteForEdit cmdFunc edit pprinter = do
+    tracked <- loadTrackedNotes
+    let nid = editId edit
+    let isTracked = any ((== nid) . fst) tracked
+    if isTracked then liftIO $ putStrLn "Oh, no! It is tracked note. Not for modifing. Sorry :("
+    else do
+        nv <- cmdFunc edit
         pprinter nv
 
 cmdDone :: NoteId -> Storage NoteView

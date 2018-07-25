@@ -31,7 +31,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
-                     isTrackedNote, updateTracked)
+                     isTrackedNote, isTrackedNoteForEdit, updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
@@ -126,9 +126,9 @@ runCmdAction ui cmd = do
         CmdDone noteId ->
             isTrackedNote cmdDone noteId
                 (pprint . withHeader "archived:" . UI.noteView)
-        CmdEdit edit -> do
-            nv <- cmdEdit edit
-            pprint $ withHeader "edited:" $ UI.noteView nv
+        CmdEdit edit ->
+            isTrackedNoteForEdit cmdEdit edit
+                (pprint . withHeader "edited:" . UI.noteView)
         CmdTrack track ->
             cmdTrack track today
         CmdNew new -> do
