@@ -18,8 +18,6 @@ module FF
     , cmdUnarchive
     , getSamples
     , getUtcToday
-    , isTrackedNote
-    , isTrackedNoteForEdit
     , loadActiveNotes
     , loadAllNotes
     , newNote
@@ -41,7 +39,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Maybe (fromMaybe, isNothing, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -207,48 +205,23 @@ cmdNew New { newText, newStart, newEnd } today = do
     pure $ noteView nid note
 
 cmdDelete :: NoteId -> Storage NoteView
-cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
-    noteStatus' <- LWW.assign Deleted noteStatus
-    noteText'   <- rgaEditText Text.empty noteText
-    noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
-    noteEnd'    <- LWW.assign Nothing noteEnd
-    pure note { noteStatus = noteStatus'
-              , noteText   = noteText'
-              , noteStart  = noteStart'
-              , noteEnd    = noteEnd'
-              }
-
-isTrackedNote
-    :: (NoteId -> Storage NoteView)
-    -> NoteId
-    -> (NoteView -> Storage ())
-    -> Storage ()
-isTrackedNote cmdFunc nid pprinter = do
-    tracked <- loadTrackedNotes
-    let isTracked = any ((== nid) . fst) tracked
-    if isTracked then liftIO $ putStrLn "Oh, no! It is tracked note. Not for modifing. Sorry :("
-    else do
-        nv <- cmdFunc nid
-        pprinter nv
-
-isTrackedNoteForEdit
-    :: (Edit -> Storage NoteView)
-    -> Edit
-    -> (NoteView -> Storage ())
-    -> Storage ()
-isTrackedNoteForEdit cmdFunc edit pprinter = do
-    tracked <- loadTrackedNotes
-    let nid = editId edit
-    let isTracked = any ((== nid) . fst) tracked
-    if isTracked then liftIO $ putStrLn "Oh, no! It is tracked note. Not for modifing. Sorry :("
-    else do
-        nv <- cmdFunc edit
-        pprinter nv
+cmdDelete nid = modifyAndView nid $ \note@Note {..} ->
+    blockTracked note $ \note' -> do
+        noteStatus' <- LWW.assign Deleted noteStatus
+        noteText'   <- rgaEditText Text.empty noteText
+        noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
+        noteEnd'    <- LWW.assign Nothing noteEnd
+        pure note' { noteStatus = noteStatus'
+                  , noteText   = noteText'
+                  , noteStart  = noteStart'
+                  , noteEnd    = noteEnd'
+                  }
 
 cmdDone :: NoteId -> Storage NoteView
-cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
-    noteStatus' <- LWW.assign Archived noteStatus
-    pure note { noteStatus = noteStatus' }
+cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } ->
+    blockTracked note $ \note' -> do
+        noteStatus' <- LWW.assign Archived noteStatus
+        pure note' { noteStatus = noteStatus' }
 
 cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
@@ -262,14 +235,16 @@ cmdServe =
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
-    modifyAndView nid $ \note@Note { noteText } -> do
-        text'     <- liftIO . runExternalEditor $ rgaToText noteText
-        noteText' <- rgaEditText text' noteText
-        pure note { noteText = noteText' }
+    modifyAndView nid $ \note@Note { noteText } ->
+        blockTracked note $ \note' -> do
+            text'     <- liftIO . runExternalEditor $ rgaToText noteText
+            noteText' <- rgaEditText text' noteText
+            pure note' { noteText = noteText' }
 cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
-    modifyAndView nid $ \note -> do
-        checkStartEnd note
-        update note
+    modifyAndView nid $ \note ->
+        blockTracked note $ \note' -> do
+            checkStartEnd note
+            update note'
   where
     checkStartEnd Note { noteStart = (LWW.query -> noteStart), noteEnd } =
         case newStartEnd of
@@ -296,14 +271,15 @@ lwwAssignIfJust :: Clock m => Maybe a -> LWW a -> m (LWW a)
 lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
-cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
-    today <- getUtcToday
-    let start' = addDays 1 $ max today $ LWW.query noteStart
-    noteStart' <- LWW.assign start' noteStart
-    noteEnd'   <- case LWW.query noteEnd of
-        Just end | end < start' -> LWW.assign (Just start') noteEnd
-        _                       -> pure noteEnd
-    pure note { noteStart = noteStart', noteEnd = noteEnd' }
+cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } ->
+    blockTracked note $ \note' -> do
+        today <- getUtcToday
+        let start' = addDays 1 $ max today $ LWW.query noteStart
+        noteStart' <- LWW.assign start' noteStart
+        noteEnd'   <- case LWW.query noteEnd of
+            Just end | end < start' -> LWW.assign (Just start') noteEnd
+            _                       -> pure noteEnd
+        pure note { noteStart = noteStart', noteEnd = noteEnd' }
 
 -- | Check the document exists. Return actual version.
 modifyOrFail
@@ -361,3 +337,8 @@ lwwAssignIfDiffer new var = do
         pure var
     else
         LWW.assign new var
+
+blockTracked :: Note -> (Note -> Storage Note) -> Storage Note
+blockTracked note cmd =
+    if isNothing (noteTracked note) then cmd note
+    else fail "Oh, no! It is tracked note. Not for modifing. Sorry :("

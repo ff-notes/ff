@@ -31,7 +31,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdServe, cmdUnarchive, getSamples, getUtcToday,
-                     isTrackedNote, isTrackedNoteForEdit, updateTracked)
+                     updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
@@ -120,23 +120,23 @@ runCmdAction ui cmd = do
         CmdAgenda mlimit -> do
             nvs <- getSamples ui mlimit today
             pprint $ UI.prettySamplesBySections nvs
-        CmdDelete noteId ->
-            isTrackedNote cmdDelete noteId
-                (pprint . withHeader "deleted:" . UI.noteView)
-        CmdDone noteId ->
-            isTrackedNote cmdDone noteId
-                (pprint . withHeader "archived:" . UI.noteView)
-        CmdEdit edit ->
-            isTrackedNoteForEdit cmdEdit edit
-                (pprint . withHeader "edited:" . UI.noteView)
+        CmdDelete noteId -> do
+            nv <- cmdDelete noteId
+            pprint $ withHeader "deleted:" $ UI.noteView nv
+        CmdDone noteId -> do
+            nv <- cmdDone noteId
+            pprint $ withHeader "archived:" $ UI.noteView nv
+        CmdEdit edit -> do
+            nv <- cmdEdit edit
+            pprint $ withHeader "edited:" $ UI.noteView nv
         CmdTrack track ->
             cmdTrack track today
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteView nv
-        CmdPostpone noteId ->
-            isTrackedNote cmdPostpone noteId
-                (pprint . withHeader "postponed:" . UI.noteView)
+        CmdPostpone noteId -> do
+            nv <- cmdPostpone noteId
+            pprint $ withHeader "postponed:" $ UI.noteView nv
         CmdSearch (Search text mlimit) -> do
             nvs <- cmdSearch text mlimit today
             pprint $ UI.prettySamplesBySections nvs
