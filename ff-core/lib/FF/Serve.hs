@@ -9,9 +9,7 @@ module FF.Serve
     ( cmdServe ) where
 
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Concurrent.STM (newTVarIO)
 import qualified Data.Map.Strict as Map
-import           CRDT.LamportClock (getRealLocalTime)
 import           Web.Scotty (scotty, get, html)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import qualified Text.Blaze.Html5 as H
@@ -19,6 +17,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import           FF (getUtcToday, getSamples)
 import           FF.Storage (runStorage)
+import qualified FF.Storage as Storage
 import           FF.Config (ConfigUI (..))
 import           FF.Types (ModeMap, Sample (..), TaskMode (..), omitted)
 
@@ -26,12 +25,11 @@ import           FF.Types (ModeMap, Sample (..), TaskMode (..), omitted)
 serveHttpPort :: Int
 serveHttpPort = 8080
 
-cmdServe :: MonadIO m => FilePath -> ConfigUI -> m ()
-cmdServe dataDir ui =
+cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
+cmdServe h ui =
     liftIO $ scotty serveHttpPort $ get "/" $ do
         today <- getUtcToday
-        timeVar <- liftIO $ newTVarIO =<< getRealLocalTime
-        nvs <- liftIO $ runStorage dataDir timeVar $ getSamples ui Nothing today
+        nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
         html $ renderHtml $ prettyHtmlSamplesBySections nvs
 
 prettyHtmlSamplesBySections :: ModeMap Sample -> H.Html
