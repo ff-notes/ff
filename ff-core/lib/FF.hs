@@ -6,7 +6,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module FF
     ( cmdDelete
@@ -15,7 +14,6 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
-    , cmdServe
     , cmdUnarchive
     , getSamples
     , getUtcToday
@@ -28,14 +26,13 @@ module FF
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Concurrent.STM (newTVarIO)
 import           Control.Monad (unless)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
 import qualified CRDT.Cv.Max as Max
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
-import           CRDT.LamportClock (Clock, getRealLocalTime)
+import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
@@ -57,28 +54,13 @@ import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
 
-import           Web.Scotty (scotty, get, html)
-import           Text.Blaze.Html.Renderer.Text (renderHtml)
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
-
-import           FF.Config (loadConfig, Config (..), ConfigUI (..))
+import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
-                             Storage, create, listDocuments, load, modify,
-                             runStorage)
+                             Storage, create, listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           TaskMode (..),
-                           noteView, omitted, singletonTaskModeMap)
-
-
-serveHttpPort :: Int
-serveHttpPort = 8080
-
-
-serveHttpPort :: Int
-serveHttpPort = 8080
+                           noteView, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -237,42 +219,6 @@ cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
-
-cmdServe :: MonadIO m => FilePath -> ConfigUI -> m ()
-cmdServe dataDir ui =
-    liftIO $ scotty serveHttpPort $ get "/" $ do
-        today <- getUtcToday
-        timeVar <- liftIO $ newTVarIO =<< getRealLocalTime
-        nvs <- liftIO $ runStorage dataDir timeVar $ getSamples ui Nothing today
-        html $ renderHtml $ prettyHtmlSamplesBySections nvs
-
-prettyHtmlSamplesBySections :: ModeMap Sample -> H.Html
-prettyHtmlSamplesBySections samples = do
-    mconcat [prettyHtmlSample mode sample | (mode, sample) <- Map.assocs samples]
-    mconcat [H.p $ H.toHtml numOmitted <> " task(s) omitted" | numOmitted > 0]
-  where
-    numOmitted = sum $ fmap omitted samples
-
-prettyHtmlSample :: TaskMode -> Sample -> H.Html
-prettyHtmlSample mode = \case
-    Sample{total = 0} -> mempty
-    Sample{total, notes} ->
-        H.div $ do
-         H.h1 $ H.toHtml (labels mode)
-         H.ul $ mconcat $ map (H.li . H.toHtml . show) notes
-  where
-    labels = \case
-        Overdue n -> case n of
-            1 -> "1 day overdue:"
-            _ -> show n <> " days overdue:"
-        EndToday -> "Due today:"
-        EndSoon n -> case n of
-            1 -> "Due tomorrow:"
-            _ -> "Due in " <> show n <> " days:"
-        Actual -> "Actual:"
-        Starting n -> case n of
-            1 -> "Starting tomorrow:"
-            _ -> "Starting in " <> show n <> " days:"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
