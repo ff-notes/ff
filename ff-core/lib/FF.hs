@@ -211,19 +211,11 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
               , noteEnd    = noteEnd'
               }
 
-
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     editable note
     noteStatus' <- LWW.assign Archived noteStatus
     pure note { noteStatus = noteStatus' }
-
-
--- cmdDone :: NoteId -> Storage NoteView
--- cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } ->
---     editable note $ \note' -> do
---         noteStatus' <- LWW.assign Archived noteStatus
---         pure note' { noteStatus = noteStatus' }
 
 cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
