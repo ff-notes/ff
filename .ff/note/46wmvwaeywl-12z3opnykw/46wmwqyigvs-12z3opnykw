@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15326062461575123,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-26",
+    15326062461574484,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15326062461572933,
+    109952946870224
+  ],
+  "text": [
+    [
+      15326062461573734,
+      109952946870224,
+      "\u0000ff serve command: some styling for better appearance"
+    ]
+  ],
+  "text.trace": [
+    "ff serve command: some styling for better appearance"
+  ],
+  "tracked": {
+    "external_id": "79",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/79"
+  }
+}
