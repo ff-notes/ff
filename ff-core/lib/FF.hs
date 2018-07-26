@@ -14,7 +14,6 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
-    , cmdServe
     , cmdUnarchive
     , getSamples
     , getUtcToday
@@ -27,7 +26,7 @@ module FF
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Monad (unless)
+import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
 import qualified CRDT.Cv.Max as Max
@@ -39,7 +38,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Maybe (fromMaybe, isJust, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -54,7 +53,6 @@ import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
-import           Web.Scotty (get, html, scotty)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
@@ -63,10 +61,6 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
-
-
-serveHttpPort :: Int
-serveHttpPort = 8080
 
 getSamples
     :: MonadStorage m
@@ -206,6 +200,7 @@ cmdNew New { newText, newStart, newEnd } today = do
 
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
+    assertEditable note
     noteStatus' <- LWW.assign Deleted noteStatus
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
@@ -218,6 +213,7 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
+    assertEditable note
     noteStatus' <- LWW.assign Archived noteStatus
     pure note { noteStatus = noteStatus' }
 
@@ -226,19 +222,16 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
 
-cmdServe :: MonadIO m => m ()
-cmdServe =
-    liftIO $ scotty serveHttpPort $
-    get "/" $ html "Hello, world!"
-
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
     modifyAndView nid $ \note@Note { noteText } -> do
+        assertEditable note
         text'     <- liftIO . runExternalEditor $ rgaToText noteText
         noteText' <- rgaEditText text' noteText
         pure note { noteText = noteText' }
 cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
     modifyAndView nid $ \note -> do
+        assertEditable note
         checkStartEnd note
         update note
   where
@@ -268,6 +261,7 @@ lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
+    assertEditable note
     today <- getUtcToday
     let start' = addDays 1 $ max today $ LWW.query noteStart
     noteStart' <- LWW.assign start' noteStart
@@ -332,3 +326,7 @@ lwwAssignIfDiffer new var = do
         pure var
     else
         LWW.assign new var
+
+assertEditable :: Note -> Storage ()
+assertEditable note = when (isJust (noteTracked note))
+    (fail "Oh, no! It is tracked note. Not for modifing. Sorry :(")

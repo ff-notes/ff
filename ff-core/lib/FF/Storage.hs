@@ -4,6 +4,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -45,6 +46,11 @@ instance Show (DocId doc) where
 -- | Environment is the dataDir
 newtype Storage a = Storage (ReaderT FilePath LamportClock a)
     deriving (Applicative, Clock, Functor, Monad, MonadIO, Process)
+
+data Handle = Handle
+    { hDataDir  :: FilePath
+    , hClock    :: TVar LocalTime
+    }
 
 type Version = FilePath
 
@@ -91,9 +97,9 @@ instance MonadStorage Storage where
             `catch` \e ->
                 unless (isDoesNotExistError e) $ throwIO e
 
-runStorage :: FilePath -> TVar LocalTime -> Storage a -> IO a
-runStorage dataDir var (Storage action) =
-    runLamportClock var $ runReaderT action dataDir
+runStorage :: Handle -> Storage a -> IO a
+runStorage Handle{..} (Storage action) =
+    runLamportClock hClock $ runReaderT action hDataDir
 
 listDocuments
     :: forall doc m . (Collection doc, MonadStorage m) => m [DocId doc]
