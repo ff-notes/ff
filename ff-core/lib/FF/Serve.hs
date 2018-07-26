@@ -53,7 +53,7 @@ prettyHtmlSample mode = \case
         H.div $ do
             H.h1 $ H.toHtml (labels mode)
             H.ul $ mconcat $ map fmtNote notes
-  where
+    where
     fmtNote (NoteView nid _ text start _ tracked) =
         H.li $ do
             H.h3 $ H.toHtml text
