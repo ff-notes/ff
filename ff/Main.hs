@@ -35,9 +35,9 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
-import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Search (..), Shuffle (..), Track (..),
-                             parseOptions)
+import           FF.Options (Agenda (..), Cmd (..), CmdAction (..),
+                             DataDir (..), Search (..), Shuffle (..),
+                             Track (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Serve (cmdServe)
 import           FF.Storage (Storage, runStorage)
@@ -118,9 +118,9 @@ runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Storage ()
 runCmdAction h ui cmd = do
     today <- getUtcToday
     case cmd of
-        CmdAgenda mlimit -> do
-            nvs <- getSamples ui mlimit today
-            pprint $ UI.prettySamplesBySections nvs
+        CmdAgenda Agenda {..} -> do
+            nvs <- getSamples ui agendaLimit today
+            pprint $ UI.prettySamplesBySections agendaShort nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
             pprint $ withHeader "deleted:" $ UI.noteView nv
@@ -138,9 +138,9 @@ runCmdAction h ui cmd = do
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId
             pprint $ withHeader "postponed:" $ UI.noteView nv
-        CmdSearch (Search text mlimit) -> do
-            nvs <- cmdSearch text mlimit today
-            pprint $ UI.prettySamplesBySections nvs
+        CmdSearch Search {..} -> do
+            nvs <- cmdSearch searchText searchLimit today
+            pprint $ UI.prettySamplesBySections searchShort nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteView nv
@@ -150,7 +150,7 @@ cmdTrack :: Track -> Day -> Storage ()
 cmdTrack Track {..} today =
     if trackDryrun then liftIO $ do
         samples <- run $ getIssueSamples trackAddress trackLimit today
-        pprint $ UI.prettySamplesBySections samples
+        pprint $ UI.prettySamplesBySections trackShort samples
     else do
         nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTracked nvs

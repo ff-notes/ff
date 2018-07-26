@@ -3,7 +3,8 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module FF.Options
-    ( Cmd (..)
+    ( Agenda (..)
+    , Cmd (..)
     , CmdAction (..)
     , Config (..)
     , DataDir (..)
@@ -34,7 +35,7 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     (Maybe Limit)
+    = CmdAgenda     Agenda
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
@@ -45,10 +46,16 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdServe
 
+data Agenda = Agenda
+    { agendaLimit :: Maybe Limit
+    , agendaShort :: Bool
+    }
+
 data Track = Track
     { trackDryrun  :: Bool
     , trackAddress :: Maybe Text
     , trackLimit   :: Maybe Limit
+    , trackShort   :: Bool
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -74,7 +81,11 @@ data New = New
     , newEnd    :: Maybe Day
     }
 
-data Search = Search Text (Maybe Limit)
+data Search = Search
+    { searchText  :: Text
+    , searchLimit :: Maybe Limit
+    , searchShort :: Bool
+    }
 
 parseOptions :: IO Cmd
 parseOptions = execParser $ i parser "A note taker and task tracker"
@@ -111,7 +122,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
 
-    cmdAgenda    = CmdAgenda    <$> optional limit
+    cmdAgenda    = CmdAgenda    <$> agenda
     cmdDelete    = CmdDelete    <$> noteid
     cmdDone      = CmdDone      <$> noteid
     cmdEdit      = CmdEdit      <$> edit
@@ -122,13 +133,18 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
 
+    agenda = Agenda <$> optional limit <*> shortView
+    shortView = switch
+        (long "short" <> short 's' <>
+        help "List only note titles")
     track = Track
         <$> dryRun
         <*> optional repo
         <*> optional limit
+        <*> shortView
     dryRun = switch
         (long "dry-run" <> short 'd' <>
-        help "Only list issues, don't set up tracking")
+        help "List only issues, don't set up tracking")
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
@@ -138,7 +154,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> optional textOption
         <*> optional start
         <*> optional maybeEnd
-    search = Search <$> strArgument (metavar "TEXT") <*> optional limit
+    search = Search <$> strArgument (metavar "TEXT") <*> optional limit <*> shortView
     noteid = DocId <$> strArgument (metavar "ID" <> help "note id")
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"

@@ -36,25 +36,26 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettySamplesBySections :: ModeMap Sample -> Doc
-prettySamplesBySections samples = stack $
-    [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
+prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
+prettySamplesBySections short samples = stack $
+    [prettySample short mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: TaskMode -> Sample -> Doc
-prettySample mode = \case
+prettySample :: Bool -> TaskMode -> Sample -> Doc
+prettySample short mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
         withHeader (labels mode) . stack $
-            map ((star <>) . indent 1 . noteView) notes
+            map ((star <>) . indent 1 . pickNoteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
                 ]
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
         count         = genericLength notes
+        pickNoteView = if short then noteViewShort else noteView
   where
     labels = \case
         Overdue n -> case n of
@@ -74,6 +75,9 @@ prettySample mode = \case
         EndSoon _  -> "ff search --soon"
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
+
+noteViewShort :: NoteView -> Doc
+noteViewShort NoteView{..} = wrapLines text
 
 noteView :: NoteView -> Doc
 noteView NoteView{..} = wrapLines text </> sep fields
