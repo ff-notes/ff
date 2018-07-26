@@ -14,7 +14,6 @@ module FF
     , cmdNew
     , cmdPostpone
     , cmdSearch
-    , cmdServe
     , cmdUnarchive
     , getSamples
     , getUtcToday
@@ -54,7 +53,6 @@ import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
-import           Web.Scotty (get, html, scotty)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
@@ -63,10 +61,6 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            noteView, singletonTaskModeMap)
-
-
-serveHttpPort :: Int
-serveHttpPort = 8080
 
 getSamples
     :: MonadStorage m
@@ -235,11 +229,6 @@ cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     noteStatus' <- LWW.assign Active noteStatus
     pure note { noteStatus = noteStatus' }
-
-cmdServe :: MonadIO m => m ()
-cmdServe =
-    liftIO $ scotty serveHttpPort $
-    get "/" $ html "Hello, world!"
 
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =

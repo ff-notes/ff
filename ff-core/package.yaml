@@ -5,6 +5,7 @@ copyright:
 library:
   dependencies:
     - aeson
+    - blaze-html
     - bytestring
     - containers
     - crdt
@@ -20,6 +21,7 @@ library:
     - scotty
     - semigroups
     - stm
+    - scotty
     - temporary
     - text
     - time
