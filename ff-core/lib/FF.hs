@@ -200,7 +200,7 @@ cmdNew New { newText, newStart, newEnd } today = do
 
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
-    editable note
+    assert note
     noteStatus' <- LWW.assign Deleted noteStatus
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
@@ -213,7 +213,7 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
-    editable note
+    assert note
     noteStatus' <- LWW.assign Archived noteStatus
     pure note { noteStatus = noteStatus' }
 
@@ -225,13 +225,13 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
 cmdEdit :: Edit -> Storage NoteView
 cmdEdit (Edit nid Nothing Nothing Nothing) =
     modifyAndView nid $ \note@Note { noteText } -> do
-        editable note
+        assert note
         text'     <- liftIO . runExternalEditor $ rgaToText noteText
         noteText' <- rgaEditText text' noteText
         pure note { noteText = noteText' }
 cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
     modifyAndView nid $ \note -> do
-        editable note
+        assert note
         checkStartEnd note
         update note
   where
@@ -261,7 +261,7 @@ lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
-    editable note
+    assert note
     today <- getUtcToday
     let start' = addDays 1 $ max today $ LWW.query noteStart
     noteStart' <- LWW.assign start' noteStart
@@ -327,6 +327,6 @@ lwwAssignIfDiffer new var = do
     else
         LWW.assign new var
 
-editable :: Note -> Storage ()
-editable note = when (isJust (noteTracked note))
+assert :: Note -> Storage ()
+assert note = when (isJust (noteTracked note))
     (fail "Oh, no! It is tracked note. Not for modifing. Sorry :(")
