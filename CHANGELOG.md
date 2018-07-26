@@ -6,7 +6,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 
 ## [Unreleased]
 - Add tracking of github issues
-- Blocked to edit tracked notes
+- Prohibit editing tracked notes
 
 ## [0.5] - 2018-07-06
 ### Added
