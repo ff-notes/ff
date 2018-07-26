@@ -6,6 +6,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 
 ## [Unreleased]
 - Add tracking of github issues
+- Prohibit editing tracked notes
 - Add short option for view notes
 
 ## [0.5] - 2018-07-06
