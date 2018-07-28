@@ -15,11 +15,13 @@ import           CRDT.Cv.Max (Max)
 import qualified CRDT.Cv.Max as Max
 import           CRDT.Cv.RGA (RgaString)
 import qualified CRDT.Cv.RGA as RGA
+import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (camelTo2)
-import           Data.Aeson.TH (defaultOptions, deriveJSON, fieldLabelModifier,
-                                omitNothingFields)
+import           Data.Aeson (ToJSON (..), Value (Object), camelTo2)
+import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveJSON,
+                                fieldLabelModifier, mkToJSON)
+import qualified Data.HashMap.Strict as HashMap
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
@@ -34,6 +36,7 @@ import           Numeric.Natural (Natural)
 
 import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
+import           FF.Types.Internal (noteJsonOptions)
 
 data Status = Active | Archived | Deleted
     deriving (Bounded, Enum, Eq, Show)
@@ -66,10 +69,16 @@ instance Semigroup Note where
 
 instance Semilattice Note
 
-deriveJSON
-    defaultOptions
-        {fieldLabelModifier = camelTo2 '_' . drop 4, omitNothingFields = True}
-    ''Note
+deriveFromJSON noteJsonOptions ''Note
+
+instance ToJSON Note where
+    toJSON note@Note{noteText} =
+        case $(mkToJSON noteJsonOptions ''Note) note of
+            Object obj ->
+                Object $
+                HashMap.insert
+                    "text.trace" (toJSON $ lines $ RGA.toString noteText) obj
+            value -> error $ "expected Object, but got " ++ show value
 
 instance Collection Note where
     collectionName = "note"
@@ -152,3 +161,9 @@ noteView nid Note {..} = NoteView
     }
 
 type Limit = Natural
+
+rgaFromText :: Clock m => Text -> m RgaString
+rgaFromText = RGA.fromString . Text.unpack
+
+rgaToText :: RgaString -> Text
+rgaToText = Text.pack . RGA.toString

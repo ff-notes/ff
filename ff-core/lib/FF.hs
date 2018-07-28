@@ -60,7 +60,8 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
                              Storage, create, listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           noteView, singletonTaskModeMap)
+                           noteView, rgaFromText, rgaToText,
+                           singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -312,12 +313,6 @@ assertStartBeforeEnd start end =
 
 rgaEditText :: Clock m => Text -> RgaString -> m RgaString
 rgaEditText = RGA.edit . Text.unpack
-
-rgaFromText :: Clock m => Text -> m RgaString
-rgaFromText = RGA.fromString . Text.unpack
-
-rgaToText :: RgaString -> Text
-rgaToText = Text.pack . RGA.toString
 
 lwwAssignIfDiffer :: (Eq a, Clock m) => a -> LWW a -> m (LWW a)
 lwwAssignIfDiffer new var = do

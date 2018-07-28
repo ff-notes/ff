@@ -21,7 +21,9 @@ import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
                                     Pid (Pid), Process, getTime,
                                     runLamportClock)
-import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode, encode)
+import           Data.Aeson (FromJSON, ToJSON, ToJSONKey, eitherDecode)
+import           Data.Aeson.Encode.Pretty (encodePretty')
+import qualified Data.Aeson.Encode.Pretty as Json
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
@@ -81,7 +83,7 @@ instance MonadStorage Storage where
         let file = docDir </> lamportTimeToFileName time
         liftIO $ do
             createDirectoryIfMissing True docDir
-            BSL.writeFile file $ encode doc
+            BSL.writeFile file $ encodePretty' jsonConfig doc
 
     readFileEither docId version = Storage $ do
         docDir <- askDocDir docId
@@ -96,6 +98,13 @@ instance MonadStorage Storage where
             removeFile file
             `catch` \e ->
                 unless (isDoesNotExistError e) $ throwIO e
+
+jsonConfig :: Json.Config
+jsonConfig = Json.defConfig
+    { Json.confIndent = Json.Spaces 2
+    , Json.confCompare = compare
+    , Json.confTrailingNewline = True
+    }
 
 runStorage :: Handle -> Storage a -> IO a
 runStorage Handle{..} (Storage action) =

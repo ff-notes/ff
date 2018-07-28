@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15326062461565227,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-26",
+    15326062461564374,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15326062461561133,
+    109952946870224
+  ],
+  "text": [
+    [
+      15326062461563131,
+      109952946870224,
+      "Short note view"
+    ]
+  ],
+  "text.trace": [
+    "Short note view"
+  ],
+  "tracked": {
+    "external_id": "80",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/80"
+  }
+}

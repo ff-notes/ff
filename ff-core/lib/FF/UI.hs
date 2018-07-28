@@ -7,15 +7,15 @@
 module FF.UI where
 
 import           Data.Char (isSpace)
-import           Data.List (genericLength)
+import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
-import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            strictText, string, (<+/>), (<+>),
-                                            (</>))
+import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
+                                            stack, star, strictText, string,
+                                            (<+/>), (<+>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -36,18 +36,18 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettySamplesBySections :: ModeMap Sample -> Doc
-prettySamplesBySections samples = stack $
-    [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
+prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
+prettySamplesBySections brief samples = sparsedStack $
+    [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: TaskMode -> Sample -> Doc
-prettySample mode = \case
+prettySample :: Bool -> TaskMode -> Sample -> Doc
+prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
-        withHeader (labels mode) . stack $
+        withHeader (labels mode) . sparsedStack $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
@@ -55,6 +55,7 @@ prettySample mode = \case
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
         count         = genericLength notes
+        noteView = if brief then noteViewBrief else noteViewFull
   where
     labels = \case
         Overdue n -> case n of
@@ -75,8 +76,18 @@ prettySample mode = \case
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
 
-noteView :: NoteView -> Doc
-noteView NoteView{..} = wrapLines text </> sep fields
+noteViewBrief :: NoteView -> Doc
+noteViewBrief NoteView{..} = sparsedStack [title text, fields]
+  where
+    fields = stack ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    title
+        = stack
+        . map (sep . map strictText . Text.split isSpace)
+        . take 1
+        . Text.lines
+
+noteViewFull :: NoteView -> Doc
+noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
   where
     fields
         = concat
@@ -94,3 +105,6 @@ noteView NoteView{..} = wrapLines text </> sep fields
 wrapLines :: Text -> Doc
 wrapLines =
     stack . map (sep . map strictText . Text.split isSpace) . Text.splitOn "\n"
+
+sparsedStack :: [Doc] -> Doc
+sparsedStack = stack . intersperse space

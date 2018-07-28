@@ -5,6 +5,7 @@ copyright:
 library:
   dependencies:
     - aeson
+    - aeson-pretty
     - blaze-html
     - bytestring
     - containers
@@ -21,14 +22,16 @@ library:
     - scotty
     - semigroups
     - stm
-    - scotty
     - temporary
     - text
     - time
     - typed-process
+    - unordered-containers
     - vector
     - yaml
   source-dirs: lib
+  other-modules:
+    - FF.Types.Internal
 
 tests:
   test:
