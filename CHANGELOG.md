@@ -8,6 +8,7 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Add tracking of github issues
 - Prohibit editing tracked notes
 - Add option to view notes briefly
+- Archive an issue in the ff after one has closed on github 
 
 ## [0.5] - 2018-07-06
 ### Added

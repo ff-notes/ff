@@ -21,7 +21,8 @@ import           Data.Vector (Vector)
 import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle, mkOwnerName, mkRepoName)
+                         issueState, issueTitle, mkOwnerName, mkRepoName,
+                         stateAll)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
@@ -52,7 +53,7 @@ getIssues mAddress mlimit = do
         executeRequest' $ issuesForRepoR
             (mkOwnerName owner)
             (mkRepoName repo)
-            mempty
+            stateAll
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
@@ -78,6 +79,7 @@ sampleMap
 sampleMap address mlimit today issues =
     takeSamples mlimit
     . splitModes today
+    . filter (\NoteView { status } -> status == Active)
     . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues
