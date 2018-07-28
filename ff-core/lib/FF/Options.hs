@@ -9,6 +9,7 @@ module FF.Options
     , DataDir (..)
     , Edit (..)
     , New (..)
+    , Options (..)
     , Search (..)
     , Shuffle (..)
     , Track (..)
@@ -45,6 +46,11 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdServe
 
+data Options = Options
+    { optionBrief :: Bool
+    , optionCmd   :: Cmd
+    }
+
 data Track = Track
     { trackDryrun  :: Bool
     , trackAddress :: Maybe Text
@@ -74,12 +80,16 @@ data New = New
     , newEnd    :: Maybe Day
     }
 
-data Search = Search Text (Maybe Limit)
+data Search = Search
+    { searchText  :: Text
+    , searchLimit :: Maybe Limit
+    }
 
-parseOptions :: IO Cmd
+parseOptions :: IO Options
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
+    parser   = Options <$> brief <*>
+        (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
         , action  "agenda"    iCmdAgenda
@@ -122,13 +132,16 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
 
+    brief = switch
+        (long "brief" <> short 'b' <>
+        help "List only note titles and ids")
     track = Track
         <$> dryRun
         <*> optional repo
         <*> optional limit
     dryRun = switch
         (long "dry-run" <> short 'd' <>
-        help "Only list issues, don't set up tracking")
+        help "List only issues, don't set up tracking")
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"

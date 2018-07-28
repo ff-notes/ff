@@ -36,15 +36,15 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettySamplesBySections :: ModeMap Sample -> Doc
-prettySamplesBySections samples = sparsedStack $
-    [prettySample mode sample | (mode, sample) <- Map.assocs samples] ++
+prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
+prettySamplesBySections brief samples = sparsedStack $
+    [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: TaskMode -> Sample -> Doc
-prettySample mode = \case
+prettySample :: Bool -> TaskMode -> Sample -> Doc
+prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
         withHeader (labels mode) . sparsedStack $
@@ -55,6 +55,7 @@ prettySample mode = \case
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
         count         = genericLength notes
+        noteView = if brief then noteViewBrief else noteViewFull
   where
     labels = \case
         Overdue n -> case n of
@@ -75,8 +76,18 @@ prettySample mode = \case
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
 
-noteView :: NoteView -> Doc
-noteView NoteView{..} = sparsedStack [wrapLines text, sep fields]
+noteViewBrief :: NoteView -> Doc
+noteViewBrief NoteView{..} = sparsedStack [title text, fields]
+  where
+    fields = stack ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    title
+        = stack
+        . map (sep . map strictText . Text.split isSpace)
+        . take 1
+        . Text.lines
+
+noteViewFull :: NoteView -> Doc
+noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
   where
     fields
         = concat
