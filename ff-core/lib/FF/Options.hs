@@ -3,13 +3,13 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module FF.Options
-    ( Agenda (..)
-    , Cmd (..)
+    ( Cmd (..)
     , CmdAction (..)
     , Config (..)
     , DataDir (..)
     , Edit (..)
     , New (..)
+    , Options (..)
     , Search (..)
     , Shuffle (..)
     , Track (..)
@@ -35,7 +35,7 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     Agenda
+    = CmdAgenda     (Maybe Limit)
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
@@ -46,16 +46,15 @@ data CmdAction
     | CmdUnarchive  NoteId
     | CmdServe
 
-data Agenda = Agenda
-    { agendaLimit :: Maybe Limit
-    , agendaShort :: Bool
+data Options = Options
+    { optionBrief :: Bool
+    , optionCmd   :: Cmd
     }
 
 data Track = Track
     { trackDryrun  :: Bool
     , trackAddress :: Maybe Text
     , trackLimit   :: Maybe Limit
-    , trackShort   :: Bool
     }
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
@@ -84,11 +83,10 @@ data New = New
 data Search = Search
     { searchText  :: Text
     , searchLimit :: Maybe Limit
-    , searchShort :: Bool
     }
 
-parseOptions :: IO Cmd
-parseOptions = execParser $ i parser "A note taker and task tracker"
+parseOptions :: IO Options
+parseOptions = execParser $ i (Options <$> brief <*> parser) "A note taker and task tracker"
   where
     parser   = version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
     commands = mconcat
@@ -122,7 +120,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
 
-    cmdAgenda    = CmdAgenda    <$> agenda
+    cmdAgenda    = CmdAgenda    <$> optional limit
     cmdDelete    = CmdDelete    <$> noteid
     cmdDone      = CmdDone      <$> noteid
     cmdEdit      = CmdEdit      <$> edit
@@ -133,15 +131,13 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
 
-    agenda = Agenda <$> optional limit <*> shortView
-    shortView = switch
-        (long "short" <> short 's' <>
-        help "List only note titles")
+    brief = switch
+        (long "brief" <> short 'b' <>
+        help "List only note titles and ids")
     track = Track
         <$> dryRun
         <*> optional repo
         <*> optional limit
-        <*> shortView
     dryRun = switch
         (long "dry-run" <> short 'd' <>
         help "List only issues, don't set up tracking")
@@ -154,7 +150,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> optional textOption
         <*> optional start
         <*> optional maybeEnd
-    search = Search <$> strArgument (metavar "TEXT") <*> optional limit <*> shortView
+    search = Search <$> strArgument (metavar "TEXT") <*> optional limit
     noteid = DocId <$> strArgument (metavar "ID" <> help "note id")
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"

@@ -37,25 +37,25 @@ pshow :: Show a => a -> Doc
 pshow = string . show
 
 prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
-prettySamplesBySections short samples = stack $
-    [prettySample short mode sample | (mode, sample) <- Map.assocs samples] ++
+prettySamplesBySections brief samples = stack $
+    [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
 prettySample :: Bool -> TaskMode -> Sample -> Doc
-prettySample short mode = \case
+prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
         withHeader (labels mode) . stack $
-            map ((star <>) . indent 1 . pickNoteView) notes
+            map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
                 ]
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
         count         = genericLength notes
-        pickNoteView = if short then noteViewShort else noteView
+        noteView = if brief then noteViewBrief else noteViewFull
   where
     labels = \case
         Overdue n -> case n of
@@ -76,11 +76,18 @@ prettySample short mode = \case
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
 
-noteViewShort :: NoteView -> Doc
-noteViewShort NoteView{..} = wrapLines text
+noteViewBrief :: NoteView -> Doc
+noteViewBrief NoteView{..} = oneLine text </> sep fields
+  where
+    fields = ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    oneLine
+        = stack
+        . map (sep . map strictText . Text.split isSpace)
+        . take 1
+        . Text.splitOn "\n"
 
-noteView :: NoteView -> Doc
-noteView NoteView{..} = wrapLines text </> sep fields
+noteViewFull :: NoteView -> Doc
+noteViewFull NoteView{..} = wrapLines text </> sep fields
   where
     fields
         = concat

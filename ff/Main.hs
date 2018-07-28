@@ -35,8 +35,8 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueSamples, getIssueViews)
-import           FF.Options (Agenda (..), Cmd (..), CmdAction (..),
-                             DataDir (..), Search (..), Shuffle (..),
+import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
+                             Options (..), Search (..), Shuffle (..),
                              Track (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Serve (cmdServe)
@@ -53,14 +53,14 @@ import           Paths_ff (version)
 main :: IO ()
 main = do
     cfg@Config { ui } <- loadConfig
-    cmd               <- parseOptions
-    case cmd of
+    Options {..}      <- parseOptions
+    case optionCmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> do
             hClock <- newTVarIO =<< getRealLocalTime
             hDataDir <- getDataDir cfg
             let h = Storage.Handle{..}
-            runStorage h $ runCmdAction h ui action
+            runStorage h $ runCmdAction h ui action optionBrief
         CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
@@ -114,43 +114,43 @@ checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
-runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Storage ()
-runCmdAction h ui cmd = do
+runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Storage ()
+runCmdAction h ui cmd brief = do
     today <- getUtcToday
     case cmd of
-        CmdAgenda Agenda {..} -> do
-            nvs <- getSamples ui agendaLimit today
-            pprint $ UI.prettySamplesBySections agendaShort nvs
+        CmdAgenda mlimit -> do
+            nvs <- getSamples ui mlimit today
+            pprint $ UI.prettySamplesBySections brief nvs
         CmdDelete noteId -> do
             nv <- cmdDelete noteId
-            pprint $ withHeader "deleted:" $ UI.noteView nv
+            pprint $ withHeader "deleted:" $ UI.noteViewFull nv
         CmdDone noteId -> do
             nv <- cmdDone noteId
-            pprint $ withHeader "archived:" $ UI.noteView nv
+            pprint $ withHeader "archived:" $ UI.noteViewFull nv
         CmdEdit edit -> do
             nv <- cmdEdit edit
-            pprint $ withHeader "edited:" $ UI.noteView nv
+            pprint $ withHeader "edited:" $ UI.noteViewFull nv
         CmdTrack track ->
-            cmdTrack track today
+            cmdTrack track today brief
         CmdNew new -> do
             nv <- cmdNew new today
-            pprint $ withHeader "added:" $ UI.noteView nv
+            pprint $ withHeader "added:" $ UI.noteViewFull nv
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId
-            pprint $ withHeader "postponed:" $ UI.noteView nv
+            pprint $ withHeader "postponed:" $ UI.noteViewFull nv
         CmdSearch Search {..} -> do
             nvs <- cmdSearch searchText searchLimit today
-            pprint $ UI.prettySamplesBySections searchShort nvs
+            pprint $ UI.prettySamplesBySections brief nvs
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
-            pprint . withHeader "unarchived:" $ UI.noteView nv
+            pprint . withHeader "unarchived:" $ UI.noteViewFull nv
         CmdServe -> cmdServe h ui
 
-cmdTrack :: Track -> Day -> Storage ()
-cmdTrack Track {..} today =
+cmdTrack :: Track -> Day -> Bool -> Storage ()
+cmdTrack Track {..} today brief =
     if trackDryrun then liftIO $ do
         samples <- run $ getIssueSamples trackAddress trackLimit today
-        pprint $ UI.prettySamplesBySections trackShort samples
+        pprint $ UI.prettySamplesBySections brief samples
     else do
         nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTracked nvs
