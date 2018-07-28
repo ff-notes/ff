@@ -7,15 +7,15 @@
 module FF.UI where
 
 import           Data.Char (isSpace)
-import           Data.List (genericLength)
+import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
-import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, stack, star,
-                                            strictText, string, (<+/>), (<+>),
-                                            (</>))
+import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
+                                            stack, star, strictText, string,
+                                            (<+/>), (<+>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -37,7 +37,7 @@ pshow :: Show a => a -> Doc
 pshow = string . show
 
 prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
-prettySamplesBySections brief samples = stack $
+prettySamplesBySections brief samples = sparsedStack $
     [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
@@ -47,7 +47,7 @@ prettySample :: Bool -> TaskMode -> Sample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
-        withHeader (labels mode) . stack $
+        withHeader (labels mode) . sparsedStack $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
@@ -77,7 +77,7 @@ prettySample brief mode = \case
         Starting _ -> "ff search --starting"
 
 noteViewBrief :: NoteView -> Doc
-noteViewBrief NoteView{..} = oneLine text </> sep fields
+noteViewBrief NoteView{..} = sparsedStack [oneLine text, sep fields]
   where
     fields = ["| id" <+> pshow @NoteId i | Just i <- [nid]]
     oneLine
@@ -87,7 +87,7 @@ noteViewBrief NoteView{..} = oneLine text </> sep fields
         . Text.splitOn "\n"
 
 noteViewFull :: NoteView -> Doc
-noteViewFull NoteView{..} = wrapLines text </> sep fields
+noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
   where
     fields
         = concat
@@ -105,3 +105,6 @@ noteViewFull NoteView{..} = wrapLines text </> sep fields
 wrapLines :: Text -> Doc
 wrapLines =
     stack . map (sep . map strictText . Text.split isSpace) . Text.splitOn "\n"
+
+sparsedStack :: [Doc] -> Doc
+sparsedStack = stack . intersperse space
