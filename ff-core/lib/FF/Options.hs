@@ -86,9 +86,10 @@ data Search = Search
     }
 
 parseOptions :: IO Options
-parseOptions = execParser $ i (Options <$> brief <*> parser) "A note taker and task tracker"
+parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
+    parser   = Options <$> brief <*>
+        (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
         , action  "agenda"    iCmdAgenda

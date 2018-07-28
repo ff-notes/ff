@@ -77,14 +77,14 @@ prettySample brief mode = \case
         Starting _ -> "ff search --starting"
 
 noteViewBrief :: NoteView -> Doc
-noteViewBrief NoteView{..} = sparsedStack [oneLine text, sep fields]
+noteViewBrief NoteView{..} = sparsedStack [title text, fields]
   where
-    fields = ["| id" <+> pshow @NoteId i | Just i <- [nid]]
-    oneLine
+    fields = stack ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    title
         = stack
         . map (sep . map strictText . Text.split isSpace)
         . take 1
-        . Text.splitOn "\n"
+        . Text.lines
 
 noteViewFull :: NoteView -> Doc
 noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
