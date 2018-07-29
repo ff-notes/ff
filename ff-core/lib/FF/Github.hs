@@ -22,19 +22,21 @@ import           GitHub (FetchCount (..), Issue (..), IssueState (..),
                          Milestone (..), URL (..), executeRequest',
                          issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
                          issueState, issueTitle, mkOwnerName, mkRepoName,
-                         stateAll)
+                         stateAll, stateOpen)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
+import           FF.Options (State (..))
 import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
                            Status (..), Tracked (..))
 
 getIssues
     :: Maybe Text
     -> Maybe Limit
+    -> State
     -> ExceptT Text IO (Text, Vector Issue)
-getIssues mAddress mlimit = do
+getIssues mAddress mlimit state = do
     address <- case mAddress of
         Just address -> pure address
         Nothing -> do
@@ -53,7 +55,7 @@ getIssues mAddress mlimit = do
         executeRequest' $ issuesForRepoR
             (mkOwnerName owner)
             (mkRepoName repo)
-            stateAll
+            (if state == Open then stateOpen else stateAll)
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
@@ -61,17 +63,19 @@ getIssueSamples
     :: Maybe Text
     -> Maybe Limit
     -> Day
+    -> State
     -> ExceptT Text IO (ModeMap Sample)
-getIssueSamples mAddress mlimit today = do
-    (address, issues) <- getIssues mAddress mlimit
+getIssueSamples mAddress mlimit today state = do
+    (address, issues) <- getIssues mAddress mlimit state
     pure $ sampleMap address mlimit today issues
 
 getIssueViews
     :: Maybe Text
     -> Maybe Limit
+    -> State
     -> ExceptT Text IO [NoteView]
-getIssueViews mAddress mlimit = do
-    (address, issues) <- getIssues mAddress mlimit
+getIssueViews mAddress mlimit state = do
+    (address, issues) <- getIssues mAddress mlimit state
     pure $ noteViewList address mlimit issues
 
 sampleMap
@@ -79,7 +83,6 @@ sampleMap
 sampleMap address mlimit today issues =
     takeSamples mlimit
     . splitModes today
-    . filter (\NoteView { status } -> status == Active)
     . map (issueToNoteView address)
     . maybe id (take . fromIntegral) mlimit
     $ toList issues

@@ -149,10 +149,10 @@ runCmdAction h ui cmd brief = do
 cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today brief =
     if trackDryrun then liftIO $ do
-        samples <- run $ getIssueSamples trackAddress trackLimit today
+        samples <- run $ getIssueSamples trackAddress trackLimit today trackState
         pprint $ UI.prettySamplesBySections brief samples
     else do
-        nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
+        nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit trackState
         updateTracked nvs
         liftIO $ putStrLn $ show (length nvs) ++ " issues copied to local base"
   where
