@@ -13,7 +13,6 @@ module FF.Options
     , Search (..)
     , Shuffle (..)
     , Track (..)
-    , State (..)
     , parseOptions
     ) where
 
@@ -56,10 +55,7 @@ data Track = Track
     { trackDryrun  :: Bool
     , trackAddress :: Maybe Text
     , trackLimit   :: Maybe Limit
-    , trackState   :: State
     }
-
-data State = Open | All deriving (Eq)
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
@@ -143,15 +139,12 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <$> dryRun
         <*> optional repo
         <*> optional limit
-        <*> state
     dryRun = switch
         (long "dry-run" <> short 'd' <>
         help "List only issues, don't set up tracking")
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    state = flag Open All
-        (long "all" <> short 'a' <> help "Show both closed and open issues")
     new = New <$> text <*> optional start <*> optional end
     edit = Edit
         <$> noteid
