@@ -12,6 +12,7 @@ library:
     - crdt
     - directory
     - errors
+    - extra
     - filepath
     - github
     - mainland-pretty

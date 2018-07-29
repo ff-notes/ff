@@ -3,21 +3,24 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 
 module FF.Serve
-    ( cmdServe ) where
+    ( cmdServe
+    ) where
 
-import           Control.Monad (when)
+import           Prelude hiding (div, span)
+
+import           Control.Monad.Extra (whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromJust, isJust)
 import qualified Data.Text as Text
-import           Text.Blaze.Html (stringValue)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
-import           Text.Blaze.Html5 (Html, a, b, h1, h3, li, p, section, style,
-                                   toHtml, ul, (!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
+                                   stringValue, strong, style, toHtml, ul, (!))
+import           Text.Blaze.Html5.Attributes (class_, href)
 import           Web.Scotty (get, html, scotty)
 
 import           FF (getSamples, getUtcToday)
@@ -26,7 +29,6 @@ import           FF.Storage (runStorage)
 import qualified FF.Storage as Storage
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
                            Tracked (..), omitted)
-
 
 serveHttpPort :: Int
 serveHttpPort = 8080
@@ -37,7 +39,7 @@ cmdServe h ui =
         today <- getUtcToday
         nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
         html $ renderHtml $ do
-            style ".info-item * { margin: 2px; }"
+            style ".meta-item { color: #ccc; }"
             prettyHtmlSamplesBySections nvs
 
 prettyHtmlSamplesBySections :: ModeMap Sample -> Html
@@ -53,25 +55,26 @@ prettyHtmlSample mode = \case
     Sample{notes} ->
         section $ do
             h1 $ toHtml (labels mode)
-            ul $ mconcat $ map fmtNote notes
+            ul $ mconcat $ map noteView notes
   where
-    fmtNote (NoteView nid _ text start _ tracked) =
-        li $ do
-            h3 $ toHtml text
-            when (isJust nid) $ section ! A.class_ "info-item" $ do
-                b "id"
-                toHtml $ show $ fromJust nid
-            section ! A.class_ "info-item" $ do
-                b "start"
-                toHtml $ show start
-            when (isJust tracked) $ do
-                section ! A.class_ "info-item" $ do
-                    b "tracking"
-                    toHtml $ trackedSource $ fromJust tracked
-                section ! A.class_ "info-item" $ do
-                    let url = trackedUrl $ fromJust tracked
-                    b "url"
-                    a ! A.href (stringValue $ Text.unpack url) $ toHtml url
+    metaItem k v = span ! class_ "meta-item" $ " | " *> strong k *> " " *> v
+    noteView NoteView{..} = li $ do
+        p $
+            case Text.lines text of
+                []            -> pure ()
+                [_]           -> toHtml text
+                header : body ->
+                    mconcat $
+                    intersperse br $
+                    strong (toHtml header) : map toHtml body
+        div $ do
+            whenJust nid $ \i -> metaItem "id" $ toHtml $ show i
+            metaItem "start" $ toHtml $ show start
+            whenJust tracked $ \Tracked{..} -> do
+                metaItem "tracking" $ toHtml trackedSource
+                metaItem "url" $
+                    a ! href (stringValue $ Text.unpack trackedUrl) $
+                        toHtml trackedUrl
     labels = \case
         Overdue n -> case n of
             1 -> "1 day overdue:"
