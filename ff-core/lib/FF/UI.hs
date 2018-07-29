@@ -37,7 +37,7 @@ pshow :: Show a => a -> Doc
 pshow = string . show
 
 prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
-prettySamplesBySections brief samples = sparsedStack $
+prettySamplesBySections brief samples = stack' brief $
     [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
@@ -47,7 +47,7 @@ prettySample :: Bool -> TaskMode -> Sample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
-        withHeader (labels mode) . sparsedStack $
+        withHeader (labels mode) . stack' brief $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
@@ -77,9 +77,9 @@ prettySample brief mode = \case
         Starting _ -> "ff search --starting"
 
 noteViewBrief :: NoteView -> Doc
-noteViewBrief NoteView{..} = sparsedStack [title text, fields]
+noteViewBrief NoteView{..} = title text <+/> meta
   where
-    fields = stack ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    meta = foldMap (\i -> "| id" <+> pshow @NoteId i) nid
     title
         = stack
         . map (sep . map strictText . Text.split isSpace)
@@ -87,9 +87,9 @@ noteViewBrief NoteView{..} = sparsedStack [title text, fields]
         . Text.lines
 
 noteViewFull :: NoteView -> Doc
-noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
+noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
   where
-    fields
+    meta
         = concat
             [ ["| id"    <+> pshow @NoteId i | Just i <- [nid]]
             , ["| start" <+> pshow @Day start]
@@ -108,3 +108,6 @@ wrapLines =
 
 sparsedStack :: [Doc] -> Doc
 sparsedStack = stack . intersperse space
+
+stack' :: Bool -> [Doc] -> Doc
+stack' brief = if brief then stack else sparsedStack
