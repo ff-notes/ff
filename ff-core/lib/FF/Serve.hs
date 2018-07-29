@@ -35,7 +35,6 @@ cmdServe h ui =
         today <- getUtcToday
         nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
         html $ renderHtml $ do
-            meta ! A.charset "utf-8"
             style ".info-item * { margin: 2px; }"
             prettyHtmlSamplesBySections nvs
 
