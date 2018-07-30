@@ -31,7 +31,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      cmdSearch, cmdUnarchive, getSamples, getUtcToday,
-                     updateTracked)
+                     updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -153,7 +153,7 @@ cmdTrack Track {..} today brief =
         pprint $ UI.prettySamplesBySections brief samples
     else do
         nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
-        updateTracked nvs
+        updateTrackedNotes nvs
         liftIO $ putStrLn $ show (length nvs) ++ " issues copied to local base"
   where
     run getter = do

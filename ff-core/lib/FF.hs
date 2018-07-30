@@ -22,11 +22,11 @@ module FF
     , newNote
     , splitModes
     , takeSamples
-    , updateTracked
+    , updateTrackedNotes
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Monad.Extra (unless, whenJust)
+import           Control.Monad.Extra (unless, void, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
 import qualified CRDT.Cv.Max as Max
@@ -146,40 +146,32 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-newTrackedNote :: [(NoteId, Note)] -> NoteView -> Storage Note
-newTrackedNote mOldNotes nvNew =
+updateTrackedNote
+    :: [(NoteId, Note)] -- ^ selection of all aready tracked notes
+    -> NoteView
+    -> Storage ()
+updateTrackedNote mOldNotes nvNew =
     case sameTrack of
         Nothing -> do
-            noteStatus' <- LWW.initialize (status nvNew)
-            noteText'   <- rgaFromText (text nvNew)
-            noteStart'  <- LWW.initialize (start nvNew)
-            noteEnd'    <- LWW.initialize (end nvNew)
-            _ <- create $ note noteStatus' noteText' noteStart' noteEnd'
-            pure $ note noteStatus' noteText' noteStart' noteEnd'
+            noteStatus <- LWW.initialize (status nvNew)
+            noteText   <- rgaFromText (text nvNew)
+            noteStart  <- LWW.initialize (start nvNew)
+            noteEnd    <- LWW.initialize (end nvNew)
+            let noteTracked = Max.initial <$> tracked nvNew
+            void $ create Note{..}
         Just (n, _) ->
-            modifyOrFail n update
+            void $ modifyOrFail n $ \note @ Note{..} -> do
+                noteStatus' <- lwwAssignIfDiffer (status nvNew) noteStatus
+                noteText'   <- rgaEditText (text nvNew) noteText
+                pure note{noteStatus = noteStatus', noteText = noteText'}
   where
-    update Note {..} = do
-        noteStatus' <- lwwAssignIfDiffer (status nvNew) noteStatus
-        noteText'   <- rgaEditText (text nvNew) noteText
-        noteStart'  <- lwwAssignIfDiffer (start nvNew) noteStart
-        noteEnd'    <- lwwAssignIfDiffer (end nvNew) noteEnd
-        pure $ note noteStatus' noteText' noteStart' noteEnd'
-    noteTracked' = Max.initial <$> tracked nvNew
-    note noteStatus' noteText' noteStart' noteEnd' = Note
-        { noteStatus   = noteStatus'
-        , noteText     = noteText'
-        , noteStart    = noteStart'
-        , noteEnd      = noteEnd'
-        , noteTracked  = noteTracked'
-        }
     isSameTrack oldNote = tracked nvNew == (Max.query <$> noteTracked oldNote)
     sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
 
-updateTracked :: [NoteView] -> Storage ()
-updateTracked nvNews = do
+updateTrackedNotes :: [NoteView] -> Storage ()
+updateTrackedNotes nvNews = do
     mOldNotes <- loadTrackedNotes
-    mapM_ (newTrackedNote mOldNotes) nvNews
+    mapM_ (updateTrackedNote mOldNotes) nvNews
 
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = do
