@@ -12,9 +12,10 @@ module FF.Serve
 
 import           Prelude hiding (div, span)
 
-import           Control.Monad.Extra (whenJust)
+import           Control.Monad.Extra (when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Default.Class (def)
+import           Data.Foldable (for_)
 import           Data.Function ((&))
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
@@ -33,6 +34,7 @@ import           FF.Storage (runStorage)
 import qualified FF.Storage as Storage
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
                            Tracked (..), omitted)
+import           FF.UI (sampleLabel)
 
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
 cmdServe h ui = liftIO $ do
@@ -48,8 +50,8 @@ cmdServe h ui = liftIO $ do
 
 prettyHtmlSamplesBySections :: ModeMap Sample -> Html
 prettyHtmlSamplesBySections samples = do
-    mconcat [prettyHtmlSample mode sample | (mode, sample) <- Map.assocs samples]
-    mconcat [p $ toHtml numOmitted <> " task(s) omitted" | numOmitted > 0]
+    for_ (Map.assocs samples) $ uncurry prettyHtmlSample
+    when (numOmitted > 0) $ p $ toHtml numOmitted <> " task(s) omitted"
   where
     numOmitted = sum $ fmap omitted samples
 
@@ -58,7 +60,7 @@ prettyHtmlSample mode = \case
     Sample{total = 0} -> mempty
     Sample{notes} ->
         section $ do
-            h1 $ toHtml (labels mode)
+            h1 $ toHtml (sampleLabel mode)
             ul $ mconcat $ map noteView notes
   where
     metaItem k v = span ! class_ "metaItem" $ " | " *> strong k *> " " *> v
@@ -79,15 +81,3 @@ prettyHtmlSample mode = \case
                 metaItem "url" $
                     a ! href (stringValue $ Text.unpack trackedUrl) $
                         toHtml trackedUrl
-    labels = \case
-        Overdue n -> case n of
-            1 -> "1 day overdue:"
-            _ -> show n <> " days overdue:"
-        EndToday -> "Due today:"
-        EndSoon n -> case n of
-            1 -> "Due tomorrow:"
-            _ -> "Due in " <> show n <> " days:"
-        Actual -> "Actual:"
-        Starting n -> case n of
-            1 -> "Starting tomorrow:"
-            _ -> "Starting in " <> show n <> " days:"

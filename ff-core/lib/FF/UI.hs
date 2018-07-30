@@ -47,7 +47,7 @@ prettySample :: Bool -> TaskMode -> Sample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
-        withHeader (labels mode) . stack' brief $
+        withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
@@ -57,24 +57,26 @@ prettySample brief mode = \case
         count         = genericLength notes
         noteView = if brief then noteViewBrief else noteViewFull
   where
-    labels = \case
-        Overdue n -> case n of
-            1 -> "1 day overdue:"
-            _ -> show n <> " days overdue:"
-        EndToday -> "Due today:"
-        EndSoon n -> case n of
-            1 -> "Due tomorrow:"
-            _ -> "Due in " <> show n <> " days:"
-        Actual -> "Actual:"
-        Starting n -> case n of
-            1 -> "Starting tomorrow:"
-            _ -> "Starting in " <> show n <> " days:"
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"
         EndToday   -> "ff search --today"
         EndSoon _  -> "ff search --soon"
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
+
+sampleLabel :: TaskMode -> String
+sampleLabel = \case
+    Overdue n -> case n of
+        1 -> "1 day overdue:"
+        _ -> show n <> " days overdue:"
+    EndToday -> "Due today:"
+    EndSoon n -> case n of
+        1 -> "Due tomorrow:"
+        _ -> "Due in " <> show n <> " days:"
+    Actual -> "Actual:"
+    Starting n -> case n of
+        1 -> "Starting tomorrow:"
+        _ -> "Starting in " <> show n <> " days:"
 
 noteViewBrief :: NoteView -> Doc
 noteViewBrief NoteView{..} = title text <+/> meta
