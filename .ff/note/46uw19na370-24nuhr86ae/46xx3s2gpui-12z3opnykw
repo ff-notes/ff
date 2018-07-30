@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15321153154417280,
+    216273105866966
+  ],
+  "start": [
+    "2018-07-31",
+    15329684372159343,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15321153154416290,
+    216273105866966
+  ],
+  "text": [
+    [
+      15321137210815750,
+      216273105866966,
+      "Import from gmail"
+    ]
+  ],
+  "text.trace": [
+    "Import from gmail"
+  ],
+  "tracked": {
+    "external_id": "11",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/11"
+  }
+}

@@ -154,7 +154,9 @@ cmdTrack Track {..} today brief =
     else do
         nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTrackedNotes nvs
-        liftIO $ putStrLn $ show (length nvs) ++ " issues copied to local base"
+        liftIO $
+            putStrLn $
+            show (length nvs) ++ " issues synchronized with the local database"
   where
     run getter = do
         hPutStr stderr "fetching"
