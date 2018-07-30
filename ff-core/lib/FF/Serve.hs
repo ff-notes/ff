@@ -14,14 +14,16 @@ import           Prelude hiding (div, span)
 
 import           Control.Monad.Extra (whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Data.Default.Class (def)
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
+import           System.IO (hPutStrLn, stderr)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
                                    stringValue, strong, style, toHtml, ul, (!))
 import           Text.Blaze.Html5.Attributes (class_, href)
-import           Web.Scotty (get, html, scotty)
+import           Web.Scotty (get, html, scottyOpts, verbose)
 
 import           FF (getSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
@@ -30,16 +32,14 @@ import qualified FF.Storage as Storage
 import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
                            Tracked (..), omitted)
 
-serveHttpPort :: Int
-serveHttpPort = 8080
-
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
-cmdServe h ui =
-    liftIO $ scotty serveHttpPort $ get "/" $ do
+cmdServe h ui = liftIO $ do
+    hPutStrLn stderr "serving at http://localhost:3000/"
+    scottyOpts def{verbose = 0} $ get "/" $ do
         today <- getUtcToday
         nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
         html $ renderHtml $ do
-            style ".meta-item { color: #ccc; }"
+            style ".metaItem { color: #ccc; }"
             prettyHtmlSamplesBySections nvs
 
 prettyHtmlSamplesBySections :: ModeMap Sample -> Html
@@ -57,7 +57,7 @@ prettyHtmlSample mode = \case
             h1 $ toHtml (labels mode)
             ul $ mconcat $ map noteView notes
   where
-    metaItem k v = span ! class_ "meta-item" $ " | " *> strong k *> " " *> v
+    metaItem k v = span ! class_ "metaItem" $ " | " *> strong k *> " " *> v
     noteView NoteView{..} = li $ do
         p $
             case Text.lines text of

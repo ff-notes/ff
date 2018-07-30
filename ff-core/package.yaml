@@ -10,6 +10,7 @@ library:
     - bytestring
     - containers
     - crdt
+    - data-default-class
     - directory
     - errors
     - extra
