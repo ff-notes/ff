@@ -15,15 +15,17 @@ import           Prelude hiding (div, span)
 import           Control.Monad.Extra (whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Default.Class (def)
+import           Data.Function ((&))
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
+import           Network.Wai.Handler.Warp (defaultSettings, setHost)
 import           System.IO (hPutStrLn, stderr)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
                                    stringValue, strong, style, toHtml, ul, (!))
 import           Text.Blaze.Html5.Attributes (class_, href)
-import           Web.Scotty (get, html, scottyOpts, verbose)
+import           Web.Scotty (get, html, scottyOpts, settings, verbose)
 
 import           FF (getSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
@@ -35,12 +37,14 @@ import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
 cmdServe h ui = liftIO $ do
     hPutStrLn stderr "serving at http://localhost:3000/"
-    scottyOpts def{verbose = 0} $ get "/" $ do
+    scottyOpts opts $ get "/" $ do
         today <- getUtcToday
         nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
         html $ renderHtml $ do
             style ".metaItem { color: #ccc; }"
             prettyHtmlSamplesBySections nvs
+  where
+    opts = def{verbose = 0, settings = defaultSettings & setHost "::1"}
 
 prettyHtmlSamplesBySections :: ModeMap Sample -> Html
 prettyHtmlSamplesBySections samples = do

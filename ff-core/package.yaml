@@ -30,6 +30,7 @@ library:
     - typed-process
     - unordered-containers
     - vector
+    - warp
     - yaml
   source-dirs: lib
   other-modules:
