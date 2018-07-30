@@ -73,15 +73,16 @@ getIssues mAddress mlimit issueState = do
                 , ". Please, check correctness of input."
                 , " Right format is OWNER/REPO"
                 ]
-    response <-
-        withExceptT (Text.pack . show)
-        $ ExceptT
-        $ executeRequest'
-        $ issuesForRepoR
-              (mkOwnerName owner)
-              (mkRepoName repo)
-              issueState
-              (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
+    auth <-
+        liftIO (getEnv "FF_GITHUB_TOKEN") >>= \case
+            Nothing    -> pure Nothing
+            Just token -> pure $ Just $ OAuth token
+    response <- withExceptT (Text.pack . show) $ ExceptT $
+        executeRequestMaybe auth $ issuesForRepoR
+            (mkOwnerName owner)
+            (mkRepoName repo)
+            issueState
+            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
 getOpenIssueSamples
