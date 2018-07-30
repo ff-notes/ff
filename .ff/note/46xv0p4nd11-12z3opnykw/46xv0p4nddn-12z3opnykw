@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935757848,
+    109952946870224
+  ],
+  "start": [
+    "2018-02-25",
+    15329520935757185,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935756295,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935756749,
+      109952946870224,
+      "samplesInSections: Add \"N task(s) omitted\" message"
+    ]
+  ],
+  "text.trace": [
+    "samplesInSections: Add \"N task(s) omitted\" message"
+  ],
+  "tracked": {
+    "external_id": "36",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/36"
+  }
+}

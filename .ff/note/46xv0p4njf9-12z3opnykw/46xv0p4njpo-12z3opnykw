@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935766176,
+    109952946870224
+  ],
+  "start": [
+    "2018-02-08",
+    15329520935765792,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935764794,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935765347,
+      109952946870224,
+      "RGA: assign sequential timestamps"
+    ]
+  ],
+  "text.trace": [
+    "RGA: assign sequential timestamps"
+  ],
+  "tracked": {
+    "external_id": "34",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/34"
+  }
+}

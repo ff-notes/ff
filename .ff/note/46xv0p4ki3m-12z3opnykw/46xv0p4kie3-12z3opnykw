@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935624488,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-15",
+    15329520935624092,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935623050,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935623522,
+      109952946870224,
+      "Added basic \"hello world\" page in ff serve command"
+    ]
+  ],
+  "text.trace": [
+    "Added basic \"hello world\" page in ff serve command"
+  ],
+  "tracked": {
+    "external_id": "69",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/69"
+  }
+}

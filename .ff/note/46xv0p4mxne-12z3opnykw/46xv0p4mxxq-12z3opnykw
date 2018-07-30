@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935737956,
+    109952946870224
+  ],
+  "start": [
+    "2018-04-21",
+    15329520935737566,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935736573,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935737023,
+      109952946870224,
+      "Deleting old versions"
+    ]
+  ],
+  "text.trace": [
+    "Deleting old versions"
+  ],
+  "tracked": {
+    "external_id": "41",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/41"
+  }
+}

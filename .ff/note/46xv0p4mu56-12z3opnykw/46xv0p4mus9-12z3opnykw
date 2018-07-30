@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935733409,
+    109952946870224
+  ],
+  "start": [
+    "2018-04-28",
+    15329520935733015,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935732009,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935732457,
+      109952946870224,
+      "Remove readFile method"
+    ]
+  ],
+  "text.trace": [
+    "Remove readFile method"
+  ],
+  "tracked": {
+    "external_id": "42",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/42"
+  }
+}

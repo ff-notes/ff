@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935800112,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935799708,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935798379,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935799162,
+      109952946870224,
+      "Version option"
+    ]
+  ],
+  "text.trace": [
+    "Version option"
+  ],
+  "tracked": {
+    "external_id": "24",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/24"
+  }
+}

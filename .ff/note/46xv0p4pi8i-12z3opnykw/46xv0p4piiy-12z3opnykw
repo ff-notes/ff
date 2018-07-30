@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935857948,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935857565,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935856659,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935857125,
+      109952946870224,
+      "Change start date to non-maybe"
+    ]
+  ],
+  "text.trace": [
+    "Change start date to non-maybe"
+  ],
+  "tracked": {
+    "external_id": "5",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/5"
+  }
+}

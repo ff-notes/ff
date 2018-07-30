@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935793573,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-09",
+    15329520935793180,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935792255,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935792739,
+      109952946870224,
+      "Subcommand to delete notes"
+    ]
+  ],
+  "text.trace": [
+    "Subcommand to delete notes"
+  ],
+  "tracked": {
+    "external_id": "26",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/26"
+  }
+}
