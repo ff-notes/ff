@@ -5,7 +5,7 @@
 
 module FF.Github
     ( getIssueViews
-    , getIssueSamples
+    , getOpenIssueSamples
     , sampleMap
     ) where
 
@@ -58,12 +58,12 @@ getIssues mAddress mlimit issueState = do
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
-getIssueSamples
+getOpenIssueSamples
     :: Maybe Text
     -> Maybe Limit
     -> Day
     -> ExceptT Text IO (ModeMap Sample)
-getIssueSamples mAddress mlimit today = do
+getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
 

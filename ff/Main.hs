@@ -34,7 +34,7 @@ import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
                      updateTracked)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
-import           FF.Github (getIssueSamples, getIssueViews)
+import           FF.Github (getIssueViews, getOpenIssueSamples)
 import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
                              Options (..), Search (..), Shuffle (..),
                              Track (..), parseOptions)
@@ -149,7 +149,7 @@ runCmdAction h ui cmd brief = do
 cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today brief =
     if trackDryrun then liftIO $ do
-        samples <- run $ getIssueSamples trackAddress trackLimit today
+        samples <- run $ getOpenIssueSamples trackAddress trackLimit today
         pprint $ UI.prettySamplesBySections brief samples
     else do
         nvs <- liftIO $ run $ getIssueViews trackAddress trackLimit
