@@ -1,10 +1,8 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.Serve
     ( cmdServe
@@ -20,6 +18,7 @@ import           Data.Function ((&))
 import           Data.List (intersperse)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
+import           Data.Time (Day)
 import           Network.Wai.Handler.Warp (defaultSettings, setHost)
 import           System.IO (hPutStrLn, stderr)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
@@ -32,8 +31,8 @@ import           FF (getSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
 import           FF.Storage (runStorage)
 import qualified FF.Storage as Storage
-import           FF.Types (ModeMap, NoteView (..), Sample (..), TaskMode (..),
-                           Tracked (..), omitted)
+import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+                           TaskMode (..), Tracked (..), omitted)
 import           FF.UI (sampleLabel)
 
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
@@ -74,8 +73,8 @@ prettyHtmlSample mode = \case
                     intersperse br $
                     strong (toHtml header) : map toHtml body
         div $ do
-            whenJust nid $ \i -> metaItem "id" $ toHtml $ show i
-            metaItem "start" $ toHtml $ show start
+            whenJust nid $ \i -> metaItem "id" $ toHtml $ show @NoteId i
+            metaItem "start" $ toHtml $ show @Day start
             whenJust tracked $ \Tracked{..} -> do
                 metaItem "tracking" $ toHtml trackedSource
                 metaItem "url" $
