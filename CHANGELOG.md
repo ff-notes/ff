@@ -2,12 +2,15 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Compatible Versioning](https://github.com/staltz/comver).
+and this project adheres to
+[Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
-- Add tracking of github issues
-- Prohibit editing tracked notes
-- Add option to view notes briefly
+### Added
+- Tracking of GitHub issues
+  - Prohibit editing text of tracked notes, allow editing dates
+- Option to view notes briefly and compactly (`--brief`)
+- Web UI (command `ff serve`)
 
 ## [0.5] - 2018-07-06
 ### Added

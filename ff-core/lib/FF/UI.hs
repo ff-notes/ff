@@ -79,14 +79,14 @@ sampleLabel = \case
         _ -> "Starting in " <> show n <> " days:"
 
 noteViewBrief :: NoteView -> Doc
-noteViewBrief NoteView{..} = title text <+/> meta
+noteViewBrief NoteView{..} = title <+/> meta
   where
     meta = foldMap (\i -> "| id" <+> pshow @NoteId i) nid
     title
         = stack
         . map (sep . map strictText . Text.split isSpace)
         . take 1
-        . Text.lines
+        $ Text.lines text
 
 noteViewFull :: NoteView -> Doc
 noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]

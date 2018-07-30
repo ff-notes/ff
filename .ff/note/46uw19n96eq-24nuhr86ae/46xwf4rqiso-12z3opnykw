@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15321153154345520,
+    216273105866966
+  ],
+  "start": [
+    "2018-07-31",
+    15329630720644254,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15321153154343910,
+    216273105866966
+  ],
+  "text": [
+    [
+      15321137210772070,
+      216273105866966,
+      "Contacts"
+    ]
+  ],
+  "text.trace": [
+    "Contacts"
+  ],
+  "tracked": {
+    "external_id": "22",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/22"
+  }
+}

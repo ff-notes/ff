@@ -96,7 +96,7 @@ issueToNoteView address Issue{..} = NoteView
     , status  = toStatus issueState
     , text    = issueTitle
     , start   = utctDay issueCreatedAt
-    , end     = maybeMilestone
+    , end
     , tracked = Just Tracked
         { trackedProvider   = "github"
         , trackedSource     = address
@@ -110,7 +110,7 @@ issueToNoteView address Issue{..} = NoteView
         Just (URL url) -> url
         Nothing        ->
             "https://github.com/" <> address <> "/issues/" <> trackedExternalId
-    maybeMilestone = case issueMilestone of
+    end = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
 
