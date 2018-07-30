@@ -97,10 +97,7 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
             , ["| start" <+> pshow @Day start]
             , ["| end"   <+> pshow @Day e | Just e <- [end]]
             ]
-        ++ concat
-            [   [ "| tracking" <+> strictText trackedSource
-                , "| url"      <+> strictText trackedUrl
-                ]
+        ++  [ "| tracking" <+> strictText trackedUrl
             | Just Tracked{..} <- [tracked]
             ]
 
@@ -112,4 +109,6 @@ sparsedStack :: [Doc] -> Doc
 sparsedStack = stack . intersperse space
 
 stack' :: Bool -> [Doc] -> Doc
-stack' brief = if brief then stack else sparsedStack
+stack' brief
+    | brief     = stack
+    | otherwise = sparsedStack

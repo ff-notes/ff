@@ -75,8 +75,7 @@ prettyHtmlSample mode = \case
         div $ do
             whenJust nid $ \i -> metaItem "id" $ toHtml $ show @NoteId i
             metaItem "start" $ toHtml $ show @Day start
-            whenJust tracked $ \Tracked{..} -> do
-                metaItem "tracking" $ toHtml trackedSource
-                metaItem "url" $
+            whenJust tracked $ \Tracked{..} ->
+                metaItem "tracking" $
                     a ! href (stringValue $ Text.unpack trackedUrl) $
                         toHtml trackedUrl
