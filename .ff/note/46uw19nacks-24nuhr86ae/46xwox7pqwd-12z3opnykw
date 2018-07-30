@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15321153154425250,
+    216273105866966
+  ],
+  "start": [
+    "2018-01-08",
+    15321153154424910,
+    216273105866966
+  ],
+  "status": [
+    "Archived",
+    15329652031576923,
+    109952946870224
+  ],
+  "text": [
+    [
+      15321137210827970,
+      216273105866966,
+      "Desktop app"
+    ]
+  ],
+  "text.trace": [
+    "Desktop app"
+  ],
+  "tracked": {
+    "external_id": "9",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/9"
+  }
+}
