@@ -61,7 +61,7 @@ prettyHtmlSample mode = \case
     Sample{notes} ->
         section $ do
             h1 $ toHtml (sampleLabel mode)
-            ul $ mconcat $ map noteView notes
+            ul $ for_ notes noteView
   where
     metaItem k v = span ! class_ "metaItem" $ " | " *> strong k *> " " *> v
     noteView NoteView{..} = li $ do
