@@ -12,6 +12,10 @@ and this project adheres to
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
 
+## [WIP]
+### Added
+- `ff-upgrade` -- tool to upgrade database format
+
 ## [0.5] - 2018-07-06
 ### Added
 - Subcommand `github` to synchronize issues with GitHub
