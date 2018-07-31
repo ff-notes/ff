@@ -1,3 +1,5 @@
+name: ff-upgrade
+
 executable:
   main: Main
 
