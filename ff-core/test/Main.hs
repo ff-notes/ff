@@ -76,6 +76,8 @@ newtype TestM a = TestM (StateT Dir ProcessSim a)
     deriving (Applicative, Clock, Functor, Monad, Process)
 
 instance MonadStorage TestM where
+    listCollections = undefined
+
     listDirectoryIfExists relpath = TestM $ do
         fs <- get
         pure . go fs $ splitDirectories relpath

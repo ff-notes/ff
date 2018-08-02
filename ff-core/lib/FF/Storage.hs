@@ -13,9 +13,10 @@ module FF.Storage where
 import           Control.Concurrent.STM (TVar)
 import           Control.Error (ExceptT (..), runExceptT)
 import           Control.Exception (catch, throwIO)
-import           Control.Monad (unless, when)
+import           Control.Monad (filterM, unless, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Reader (MonadReader, ReaderT, asks, runReaderT)
+import           Control.Monad.Reader (MonadReader, ReaderT, ask, asks,
+                                       runReaderT)
 import           CRDT.Cv (CvRDT)
 import           CRDT.LamportClock (Clock, LamportClock,
                                     LamportTime (LamportTime), LocalTime,
@@ -63,6 +64,7 @@ data Document a = Document
 
 -- | Environment is the dataDir
 class Clock m => MonadStorage m where
+    listCollections :: m [FilePath]
     listDirectoryIfExists
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
@@ -72,6 +74,10 @@ class Clock m => MonadStorage m where
     removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
 
 instance MonadStorage Storage where
+    listCollections = Storage $ do
+        dataDir <- ask
+        liftIO $ listDirectory dataDir >>= filterM (doesDirectoryExist . (dataDir </>))
+
     listDirectoryIfExists relpath = Storage $ do
         dir <- asks (</> relpath)
         liftIO $ do

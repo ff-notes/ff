@@ -2,12 +2,6 @@ name: ff-upgrade
 
 library:
   dependencies:
-    # global
-      - crdt
-      - directory
-      - filepath
-      - mtl
-      - stm
     # project
       - ff-core
   source-dirs: lib
@@ -19,10 +13,15 @@ tests:
   json2ron:
     dependencies:
       # global
+        - crdt
         - directory
         - filepath
+        - mtl
         - process
+        - stm
         - temporary
+      # project
+        - ff-core
       # package
         - ff-upgrade
     main: TestJson2Ron.hs
