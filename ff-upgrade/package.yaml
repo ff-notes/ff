@@ -16,9 +16,7 @@ tests:
         - crdt
         - directory
         - filepath
-        - mtl
         - process
-        - stm
         - temporary
       # project
         - ff-core

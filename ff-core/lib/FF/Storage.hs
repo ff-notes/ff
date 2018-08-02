@@ -46,9 +46,11 @@ newtype DocId doc = DocId FilePath
 instance Show (DocId doc) where
     show (DocId path) = path
 
--- | Environment is the dataDir
-newtype Storage a = Storage (ReaderT FilePath LamportClock a)
+-- Environment is the dataDir
+newtype StorageT clock a = Storage (ReaderT FilePath clock a)
     deriving (Applicative, Clock, Functor, Monad, MonadIO, Process)
+
+type Storage = StorageT LamportClock
 
 data Handle = Handle
     { hDataDir  :: FilePath
@@ -73,7 +75,7 @@ class Clock m => MonadStorage m where
         :: Collection doc => DocId doc -> Version -> m (Either String doc)
     removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
 
-instance MonadStorage Storage where
+instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
         dataDir <- ask
         liftIO $ listDirectory dataDir >>= filterM (doesDirectoryExist . (dataDir </>))
@@ -113,8 +115,10 @@ jsonConfig = Json.defConfig
     }
 
 runStorage :: Handle -> Storage a -> IO a
-runStorage Handle{..} (Storage action) =
-    runLamportClock hClock $ runReaderT action hDataDir
+runStorage Handle{..} = runLamportClock hClock . runStorageT hDataDir
+
+runStorageT :: FilePath -> StorageT m a -> m a
+runStorageT hDataDir (Storage action) = runReaderT action hDataDir
 
 listDocuments
     :: forall doc m . (Collection doc, MonadStorage m) => m [DocId doc]
