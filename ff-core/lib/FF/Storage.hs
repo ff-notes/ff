@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -87,15 +88,25 @@ instance Semigroup a => Semigroup (Result a) where
 class Clock m => MonadStorage m where
     listCollections :: m [CollectionName]
 
-    listDirectoryIfExists
-        :: FilePath     -- ^ Path relative to data dir
-        -> m [FilePath] -- ^ Paths relative to data dir
+    -- | Must return @[]@ for non-existent collection
+    listDocuments :: Collection doc => m [DocId doc]
 
+    -- | Must return @[]@ for non-existent document
+    listVersions :: Collection doc => DocId doc -> m [Version]
+
+    -- | Must create collection and document if not exist
     createVersion :: Collection doc => DocId doc -> Version -> doc -> m ()
 
     readVersion :: Collection doc => DocId doc -> Version -> m (Result doc)
 
     deleteVersion :: Collection doc => DocId doc -> Version -> m ()
+
+listDirectoryIfExists :: MonadIO m => FilePath -> StorageT m [FilePath]
+listDirectoryIfExists relpath = Storage $ do
+    dir <- asks (</> relpath)
+    liftIO $ do
+        exists <- doesDirectoryExist dir
+        if exists then listDirectory dir else pure []
 
 instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
@@ -104,11 +115,11 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
             listDirectory dataDir
             >>= filterM (doesDirectoryExist . (dataDir </>))
 
-    listDirectoryIfExists relpath = Storage $ do
-        dir <- asks (</> relpath)
-        liftIO $ do
-            exists <- doesDirectoryExist dir
-            if exists then listDirectory dir else pure []
+    listDocuments :: forall doc. Collection doc => StorageT m [DocId doc]
+    listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
+
+    listVersions (DocId docId :: DocId doc) =
+        listDirectoryIfExists $ collectionName @doc </> docId
 
     createVersion docId version doc = Storage $ do
         docDir <- askDocDir docId
@@ -144,10 +155,6 @@ runStorage Handle{..} = runLamportClock hClock . runStorageT hDataDir
 runStorageT :: FilePath -> StorageT m a -> m a
 runStorageT hDataDir (Storage action) = runReaderT action hDataDir
 
-listDocuments
-    :: forall doc m . (Collection doc, MonadStorage m) => m [DocId doc]
-listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
-
 load
     :: forall doc m
      . (Collection doc, MonadStorage m)
@@ -173,13 +180,6 @@ load docId = loadRetry 3
                             "collection " ++ collectionName @doc ++
                             ", document " ++ show docId ++ ": " ++ e
         | otherwise = fail "Maximum retries exceeded"
-listVersions
-    :: forall doc m
-     . (Collection doc, MonadStorage m)
-    => DocId doc
-    -> m [Version]
-listVersions (DocId docId) =
-    listDirectoryIfExists $ collectionName @doc </> docId
 
 askDocDir
     :: forall doc m

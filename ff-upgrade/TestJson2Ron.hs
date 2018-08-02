@@ -1,60 +1,57 @@
-{-# OPTIONS_GHC -Wno-orphans #-}
+{-# LANGUAGE OverloadedLists #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
 
-{-# LANGUAGE MultiWayIf #-}
+import           Data.Aeson (Value, decode, encode)
+import           Data.ByteString.Lazy (ByteString)
+import           Data.String.Interpolate.IsString (i)
+import           GHC.Exts (IsList, Item, fromList)
+import           Test.Tasty (defaultMain)
+import           Test.Tasty.HUnit (testCase, (@?=))
 
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           CRDT.LamportClock (Pid (..))
-import           CRDT.LamportClock.Simulation (LamportClockSimT (..),
-                                               ProcessSimT (..),
-                                               runLamportClockSimT,
-                                               runProcessSimT)
-import           Data.Foldable (for_)
-import           System.Directory (copyFile, createDirectory,
-                                   doesDirectoryExist, doesFileExist,
-                                   listDirectory)
-import           System.FilePath ((</>))
-import           System.IO.Temp (withSystemTempDirectory)
-import           System.Process (callProcess)
-
-import           FF.Storage (StorageT, runStorageT)
-
+import           FF.Test (TestDB, runStorageSim)
 import           FF.Upgrade (upgradeDatabase)
 
 main :: IO ()
-main =
-    withSystemTempDirectory "TestJson2Ron" $ \hDataDir -> do
-        copyContent "TestJson2Ron.in" hDataDir
-        runStorageSim hDataDir upgradeDatabase
-        diff "TestJson2Ron.out" hDataDir
+main = defaultMain $ testCase "json2ron" $
+    case runStorageSim dbIn upgradeDatabase of
+        Left e          -> fail e
+        Right ((), db') -> db' @?= dbOut
 
-copyContent :: FilePath -> FilePath -> IO ()
-copyContent src dst = do
-    content <- listDirectory src
-    for_ content $ \name -> do
-        let src' = src </> name
-            dst' = dst </> name
-        nameIsDir <- doesDirectoryExist src'
-        nameIsFile <- doesFileExist src'
-        if  | nameIsDir -> do
-                createDirectory dst'
-                copyContent src' dst'
-            | nameIsFile ->
-                copyFile src' dst'
-            | otherwise ->
-                fail "only plain files and dirs are supported"
+dbIn :: TestDB
+dbIn = "note" -:- "1" -:-
+    [ "2" -: [i|
+        { "status": ["Active", 15154096036380270, 216273105866966]
+        , "text":   [[15154096036382360, 216273105866966, "hello"]]
+        , "start":  ["2018-02-15", 15186101521538050, 169324965521840]
+        , "end":    [null, 0, 0]
+        } |]
+    , "3" -: [i|
+        { "status": ["Active", 15154096036380270, 216273105866966]
+        , "text":   [[15154096036382360, 216273105866966, "hello"]]
+        , "start":  ["2018-03-31", 15224207489438798, 109952946870224]
+        , "end":    [null, 0, 0]
+        } |]
+    ]
 
-diff :: FilePath -> FilePath -> IO ()
-diff a b = callProcess "diff" ["--recursive", "--unified", a, b]
+dbOut :: TestDB
+dbOut = "note" -:- "1" -:- "a6bp8-6qen" -:- norm [i|
+    { "status":     ["Active", 15154096036380270, 216273105866966]
+    , "text.trace": ["hello"]
+    , "text":       [[15154096036382360, 216273105866966, "hello"]]
+    , "start":      ["2018-03-31", 15224207489438798, 109952946870224]
+    , "end":        [null, 0, 0]
+    } |]
 
-type StorageSim = StorageT (ProcessSimT IO)
+(-:) :: a -> b -> (a, b)
+a -: b = (a, b)
+infix 0 -:
 
-runStorageSim :: FilePath -> StorageSim a -> IO a
-runStorageSim dataDir action =
-    runLamportClockSimT (runProcessSimT (Pid 42) $ runStorageT dataDir action)
-    >>= either fail pure
+(-:-) :: (IsList list, Item list ~ (a, b)) => a -> b -> list
+a -:- b = fromList [(a, b)]
+infixr 0 -:-
 
-instance MonadIO m => MonadIO (ProcessSimT m) where
-    liftIO io = ProcessSim $ liftIO io
-
-instance MonadIO m => MonadIO (LamportClockSimT m) where
-    liftIO io = LamportClockSim $ liftIO io
+norm :: ByteString -> ByteString
+norm = encode . decode @Value

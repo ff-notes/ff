@@ -1,12 +1,27 @@
 name: ff-test
 
+dependencies:
+  - base
+  - containers
+
+library:
+  dependencies:
+    # global
+      - aeson
+      - bytestring
+      - crdt
+      - lens
+      - mtl
+    # project
+      - ff-core
+  exposed-modules:
+    - FF.Test
+
 tests:
   test:
     dependencies:
       # global
         - aeson
-        - base
-        - containers
         - crdt-test
         - errors
         - github
@@ -19,10 +34,9 @@ tests:
         - text
         - time
         - unordered-containers
-        - mtl
-        - crdt
-        - filepath
       # project
         - ff-core
+      # package
+        - ff-test
     main: Main
     source-dirs: test

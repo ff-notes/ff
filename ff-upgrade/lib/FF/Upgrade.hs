@@ -21,8 +21,8 @@ upgradeDatabase = do
 upgradeCollection
     :: forall doc m . (Collection doc, Eq doc, MonadStorage m) => m ()
 upgradeCollection = do
-    docs <- listDocuments @doc
+    docs <- listDocuments @_ @doc
     for_ docs $ \docId ->
         modify docId $ \case
-            Nothing  -> fail "Can't load document"
+            Nothing  -> fail $ "Can't load document " ++ show docId
             Just doc -> pure ((), doc)

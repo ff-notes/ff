@@ -13,13 +13,13 @@ tests:
   json2ron:
     dependencies:
       # global
-        - crdt
-        - directory
-        - filepath
-        - process
-        - temporary
+        - aeson
+        - bytestring
+        - interpolate
+        - tasty
+        - tasty-hunit
       # project
-        - ff-core
+        - ff-test
       # package
         - ff-upgrade
     main: TestJson2Ron.hs

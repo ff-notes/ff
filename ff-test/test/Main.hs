@@ -11,21 +11,14 @@
 module Main (main) where
 
 import           Control.Error ((?:))
-import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
-import           CRDT.LamportClock (Clock, Pid (Pid), Process)
-import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
-                                               runProcessSim)
 import           CRDT.Laws (cvrdtLaws)
 import           Data.Aeson (FromJSON, ToJSON,
-                             Value (Array, Number, Object, String), object,
-                             parseJSON, toJSON, (.=))
+                             Value (Array, Number, Object, String), decode,
+                             encode, object, parseJSON, toJSON, (.=))
 import           Data.Aeson.Types (Parser, parseEither)
 import           Data.Foldable (toList)
 import           Data.HashMap.Strict ((!))
-import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -34,7 +27,6 @@ import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
-import           System.FilePath (splitDirectories)
 import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
                                   counterexample, property, (===), (==>))
 import           Test.QuickCheck.Instances ()
@@ -47,120 +39,28 @@ import           FF (cmdNew, getSamples)
 import           FF.Config (Config, ConfigUI (..))
 import qualified FF.Github as Github
 import           FF.Options (New (..))
-import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
-                             Result (Error, NotFound, Ok), Version,
-                             collectionName)
+import           FF.Storage (DocId (DocId))
+import           FF.Test (TestDB, runStorageSim)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
                            Status (Active), TaskMode (Overdue), Tracked (..))
 
 import           ArbitraryOrphans ()
-
-data DirItem = Dir Dir | File Value
-    deriving (Eq, Show)
-
-type Dir = Map FilePath DirItem
-
-data NDirItem = NDir NDir | NFile Value
-    deriving (Eq, Show)
-
-type NDir = [NDirItem]
-
-stripNames :: Dir -> NDir
-stripNames = map stripNames' . Map.elems
-
-stripNames' :: DirItem -> NDirItem
-stripNames' = \case
-    Dir  dir  -> NDir $ stripNames dir
-    File file -> NFile file
-
-newtype TestM a = TestM (StateT Dir ProcessSim a)
-    deriving (Applicative, Clock, Functor, Monad, Process)
-
-instance MonadStorage TestM where
-    listCollections = undefined
-
-    listDirectoryIfExists relpath = TestM $ do
-        fs <- get
-        pure . go fs $ splitDirectories relpath
-      where
-        go dir = \case
-            []        -> Map.keys dir
-            name:rest -> case Map.lookup name dir of
-                Just (Dir subdir) -> go subdir rest
-                _                 -> []
-
-    createVersion
-        :: forall doc. Collection doc => DocId doc -> Version -> doc -> TestM ()
-    createVersion (DocId docId) version doc =
-        TestM $ modify $ go $ collectionName @doc :| [docId, version]
-      where
-        doc' = File $ toJSON doc
-        go path base = case path of
-            file :| [] -> case Map.lookup file base of
-                Nothing -> Map.insert file doc' base
-                Just File{} -> error "file already exists"
-                Just Dir{} -> error "directory already exists under this name"
-            subdir :| (name2:rest) -> case Map.lookup subdir base of
-                Nothing -> Map.insert subdir (make $ name2 :| rest) base
-                Just File{} -> error "file already exists under this name"
-                Just (Dir dir) ->
-                    Map.insert subdir (Dir $ go (name2 :| rest) dir) base
-        make = \case
-            file :| [] -> Dir $ Map.singleton file doc'
-            subdir :| (name2:rest) ->
-                Dir $ Map.singleton subdir $ make (name2 :| rest)
-
-    readVersion
-        :: forall doc
-        . Collection doc => DocId doc -> Version -> TestM (Result doc)
-    readVersion (DocId docId) version = TestM $ do
-        fs <- get
-        go fs [collectionName @doc, docId, version]
-      where
-        go dir = \case
-            []        -> fail "is directory"
-            name:rest -> case Map.lookup name dir of
-                Nothing             -> pure NotFound
-                Just (Dir subdir)   -> go subdir rest
-                Just (File content) ->
-                    pure $ either Error Ok $ parseEither parseJSON content
-
-    deleteVersion
-        :: forall doc.
-        Collection doc => DocId doc -> Version -> TestM ()
-    deleteVersion (DocId docId) version =
-        TestM $ modify $ go $ collectionName @doc :| [docId, version]
-      where
-        go path base = case path of
-            file :| [] -> case Map.lookup file base of
-                Nothing     -> base
-                Just File{} -> Map.delete file base
-                Just Dir{}  -> error "is directory"
-            subdir :| (name2:rest) -> case Map.lookup subdir base of
-                Nothing        -> base
-                Just File{}    -> error "is file"
-                Just (Dir dir) -> go (name2 :| rest) dir
-
-runTestM :: Monad m => Dir -> TestM a -> m (a, Dir)
-runTestM fs (TestM stateful) =
-    either fail pure
-        . runLamportClockSim
-        . runProcessSim (Pid 314159)
-        $ runStateT stateful fs
 
 main :: IO ()
 main = $defaultMainGenerator
 
 case_not_exist :: IO ()
 case_not_exist = do
-    (agenda, fs') <- runTestM fs $ getSamples ui agendaLimit today
+    (agenda, fs') <-
+        either fail pure $ runStorageSim fs $ getSamples ui agendaLimit today
     agenda @?= Map.empty
     fs' @?= fs
     where fs = Map.empty
 
 case_smoke :: IO ()
 case_smoke = do
-    (agenda, fs') <- runTestM fs123 $ getSamples ui agendaLimit today
+    (agenda, fs') <-
+        either fail pure $ runStorageSim fs123 $ getSamples ui agendaLimit today
     agenda @?=
         Map.singleton
             (Overdue 365478)
@@ -177,10 +77,10 @@ case_smoke = do
                 }
     fs' @?= fs123
 
-fs123 :: Dir
-fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ Map.fromList
+fs123 :: TestDB
+fs123 = Map.singleton "note" $ Map.singleton "1" $ Map.fromList
     [   ( "2"
-        , File $ object
+        , encode $ object
             [ "end"    .= ["17-06-19", Number 20, Number 21]
             , "start"  .= ["22-11-24", Number 25, Number 26]
             , "status" .= ["Active",   Number 29, Number 30]
@@ -188,7 +88,7 @@ fs123 = Map.singleton "note" $ Dir $ Map.singleton "1" $ Dir $ Map.fromList
             ]
         )
     ,   ( "3"
-        , File $ object
+        , encode $ object
             [ "end"    .= ["12-01-14", Number 15, Number 16]
             , "start"  .= ["9-10-11",  Number  7, Number  8]
             , "status" .= ["Active",   Number 27, Number 28]
@@ -203,23 +103,23 @@ agendaLimit = Just 10
 today :: Day
 today = fromGregorian 1018 02 10
 
-prop_new :: NoNul -> Maybe Day -> Maybe Day -> Property
-prop_new (NoNul newText) newStart newEnd =
-    newStart <= newEnd && Just today <= newEnd ==> expectJust test
+prop_new :: NoContainNul -> Maybe Day -> Maybe Day -> Property
+prop_new (NoContainNul newText) newStart newEnd =
+    newStart <= newEnd && Just today <= newEnd ==> expectRight test
   where
     test = do
-        (nv, fs') <- runTestM Map.empty
-            $ cmdNew New {newText , newStart , newEnd } today
+        (nv, fs') <-
+            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd} today
         pure $ conjoin
             [ case nv of
-                NoteView { text, start, end } ->
+                NoteView{text, start, end} ->
                     conjoin
-                        [ text === newText
+                        [ text  === newText
                         , start === (newStart ?: today)
-                        , end === newEnd
+                        , end   === newEnd
                         ]
-            , case stripNames fs' of
-                [NDir [NDir [NFile (Object note)]]] -> conjoin
+            , case fs' of
+                (toList -> [toList -> [toList -> [decode -> Just (Object note)]]]) -> conjoin
                     [ case note ! "status" of
                         Array (toList -> ["Active", Number _, Number 314159])
                             -> ok
@@ -244,8 +144,11 @@ prop_new (NoNul newText) newStart newEnd =
                 _ -> failProp $ "expected singleton dir " ++ show fs'
             ]
 
-expectJust :: Maybe Property -> Property
-expectJust = fromMaybe . counterexample "got Nothing" $ property False
+-- expectJust :: Maybe Property -> Property
+-- expectJust = fromMaybe . counterexample "got Nothing" $ property False
+
+expectRight :: Either String Property -> Property
+expectRight = either failProp id
 
 failProp :: String -> Property
 failProp s = counterexample s $ property False
@@ -270,11 +173,11 @@ test_JSON_Tests =
 ui :: ConfigUI
 ui = ConfigUI {shuffle = False}
 
-newtype NoNul = NoNul Text
+newtype NoContainNul = NoContainNul Text
     deriving Show
 
-instance Arbitrary NoNul where
-    arbitrary = NoNul . Text.filter ('\NUL' /=) <$> arbitrary
+instance Arbitrary NoContainNul where
+    arbitrary = NoContainNul . Text.filter ('\NUL' /=) <$> arbitrary
 
 case_repo :: IO ()
 case_repo =
