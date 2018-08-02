@@ -186,7 +186,7 @@ modify docId f =
     load docId >>= \case
         Just Document{value = docOld, versions} -> do
             (a, docNew) <- f $ Just docOld
-            when (docNew /= docOld) $ do
+            when (docNew /= docOld || length versions /= 1) $ do
                 for_ versions (removeFileIfExists docId)
                 save docId docNew
             pure a
