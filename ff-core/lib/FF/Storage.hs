@@ -28,7 +28,7 @@ import qualified Data.Aeson.Encode.Pretty as Json
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
-import           Data.List.NonEmpty (nonEmpty)
+import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
 import           Numeric (showIntAtBase)
@@ -63,7 +63,7 @@ type Version = FilePath
 
 data Document a = Document
     { value    :: a
-    , versions :: [Version]
+    , versions :: NonEmpty Version
     }
 
 -- | Environment is the dataDir
@@ -131,16 +131,20 @@ load
      . (Collection a, MonadStorage m)
     => DocId a
     -> m (Maybe (Document a))
-load docId = do
-    (versions, values) <- loadAnyway
-    pure $ (\v -> Document{value = v, versions}) . sconcat <$> nonEmpty values
+load docId = loadAnyway
   where
+    loadAnyway :: m (Maybe (Document a))
     loadAnyway = do
-        versions <- listVersions docId
-        eValues <- runExceptT $ for versions $ ExceptT . readFileEither docId
-        case eValues of
-            Right values -> pure (versions, values)
-            Left _       -> loadAnyway
+        versions0 <- listVersions docId
+        case versions0 of
+            [] -> pure Nothing
+            v:vs -> do
+                let versions = v :| vs
+                eValue <- runExceptT $
+                    fmap sconcat $ for versions $ ExceptT . readFileEither docId
+                case eValue of
+                    Right value -> pure . Just $ Document{versions, value}
+                    Left _      -> loadAnyway
 
 listVersions
     :: forall doc m
