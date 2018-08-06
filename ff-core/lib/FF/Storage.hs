@@ -37,8 +37,10 @@ import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
 import           System.FilePath ((</>))
 import           System.IO.Error (isDoesNotExistError)
 
+type CollectionName = FilePath
+
 class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
-    collectionName :: FilePath
+    collectionName :: CollectionName
 
 newtype DocId doc = DocId FilePath
     deriving (Eq, Ord, ToJSON, ToJSONKey)
