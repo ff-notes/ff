@@ -12,6 +12,9 @@ and this project adheres to
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
 
+### Fixed
+- Treat document without versions as non-existent
+
 ## [WIP]
 ### Added
 - `ff-upgrade` -- tool to upgrade database format
