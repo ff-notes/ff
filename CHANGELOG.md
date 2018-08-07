@@ -8,7 +8,7 @@ and this project adheres to
 ## [Unreleased]
 ### Added
 - Tracking of GitHub issues
-  - Prohibit editing text of tracked notes, allow editing dates
+  - Prohibit editing text and status of tracked notes, allow editing dates
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
 
