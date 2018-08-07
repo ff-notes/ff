@@ -39,12 +39,13 @@ data CmdAction
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
-    | CmdTrack      Track
     | CmdNew        New
     | CmdPostpone   NoteId
     | CmdSearch     Search
-    | CmdUnarchive  NoteId
     | CmdServe
+    | CmdTrack      Track
+    | CmdUnarchive  NoteId
+    | CmdUpgrade
 
 data Options = Options
     { optionBrief :: Bool
@@ -103,6 +104,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         , action  "serve"     iCmdServe
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
+        , action  "upgrade"   iCmdUpgrade
         ]
       where
         action s = command s . fmap CmdAction
@@ -120,6 +122,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     iCmdServe     = i cmdServe      "serve web UI"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
+    iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
+                                    \ recent format"
 
     cmdAgenda    = CmdAgenda    <$> optional limit
     cmdDelete    = CmdDelete    <$> noteid
@@ -131,6 +135,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdServe     = pure CmdServe
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
+    cmdUpgrade   = pure CmdUpgrade
 
     brief = switch
         (long "brief" <> short 'b' <>

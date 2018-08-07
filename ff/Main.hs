@@ -26,6 +26,7 @@ import           System.Directory (doesDirectoryExist, getCurrentDirectory,
 import           System.Exit (exitFailure)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPutChar, hPutStr, stderr)
+import           System.Pager (printOrPage)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -44,7 +45,7 @@ import           FF.Storage (Storage, runStorage)
 import qualified FF.Storage as Storage
 import           FF.UI (withHeader)
 import qualified FF.UI as UI
-import           System.Pager (printOrPage)
+import           FF.Upgrade (upgradeDatabase)
 
 import           Data.Version (showVersion)
 import           Development.GitRev (gitDirty, gitHash)
@@ -130,8 +131,6 @@ runCmdAction h ui cmd brief = do
         CmdEdit edit -> do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteViewFull nv
-        CmdTrack track ->
-            cmdTrack track today brief
         CmdNew new -> do
             nv <- cmdNew new today
             pprint $ withHeader "added:" $ UI.noteViewFull nv
@@ -141,10 +140,15 @@ runCmdAction h ui cmd brief = do
         CmdSearch Search {..} -> do
             nvs <- cmdSearch searchText searchLimit today
             pprint $ UI.prettySamplesBySections brief nvs
+        CmdServe -> cmdServe h ui
+        CmdTrack track ->
+            cmdTrack track today brief
         CmdUnarchive noteId -> do
             nv <- cmdUnarchive noteId
             pprint . withHeader "unarchived:" $ UI.noteViewFull nv
-        CmdServe -> cmdServe h ui
+        CmdUpgrade -> do
+            upgradeDatabase
+            liftIO $ putStrLn "upgraded"
 
 cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today brief =

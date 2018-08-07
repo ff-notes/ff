@@ -11,14 +11,11 @@ and this project adheres to
   - Prohibit editing text and status of tracked notes, allow editing dates
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
+- `ff upgrade` -- tool to upgrade database format
 
 ### Fixed
 - Treat document without versions as non-existent
 - Limit retrying on reading
-
-## [WIP]
-### Added
-- `ff-upgrade` -- tool to upgrade database format
 
 ## [0.5] - 2018-07-06
 ### Added
