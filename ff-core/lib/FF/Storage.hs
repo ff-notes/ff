@@ -2,7 +2,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -72,10 +71,10 @@ class Clock m => MonadStorage m where
     listDirectoryIfExists
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
-    createFile :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
-    readFileEither
+    createVersion :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
+    readVersion
         :: Collection doc => DocId doc -> Version -> m (Either String doc)
-    removeFileIfExists :: Collection doc => DocId doc -> Version -> m ()
+    deleteVersion :: Collection doc => DocId doc -> Version -> m ()
 
 instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
@@ -88,20 +87,20 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
             exists <- doesDirectoryExist dir
             if exists then listDirectory dir else pure []
 
-    createFile docId time doc = Storage $ do
+    createVersion docId time doc = Storage $ do
         docDir <- askDocDir docId
         let file = docDir </> lamportTimeToFileName time
         liftIO $ do
             createDirectoryIfMissing True docDir
             BSL.writeFile file $ encodePretty' jsonConfig doc
 
-    readFileEither docId version = Storage $ do
+    readVersion docId version = Storage $ do
         docDir <- askDocDir docId
         let file = docDir </> version
         contents <- liftIO $ BSL.readFile file
         pure $ eitherDecode contents
 
-    removeFileIfExists docId version = Storage $ do
+    deleteVersion docId version = Storage $ do
         docDir <- askDocDir docId
         let file = docDir </> version
         liftIO $
@@ -141,7 +140,7 @@ load docId = loadAnyway
             v:vs -> do
                 let versions = v :| vs
                 eValue <- runExceptT $
-                    fmap sconcat $ for versions $ ExceptT . readFileEither docId
+                    fmap sconcat $ for versions $ ExceptT . readVersion docId
                 case eValue of
                     Right value -> pure . Just $ Document{versions, value}
                     Left _      -> loadAnyway
@@ -161,20 +160,20 @@ askDocDir
     -> m FilePath
 askDocDir (DocId docId) = asks (</> collectionName @doc </> docId)
 
-save
+update
     :: forall doc m
      . (Collection doc, MonadStorage m)
     => DocId doc
     -> doc
     -> m ()
-save docId doc = do
+update docId doc = do
     time <- getTime
-    createFile docId time doc
+    createVersion docId time doc
 
 create :: (Collection doc, MonadStorage m) => doc -> m (DocId doc)
 create doc = do
     docId <- DocId . lamportTimeToFileName <$> getTime
-    save docId doc
+    update docId doc
     pure docId
 
 showBase36K :: (Integral a, Show a) => a -> String -> String
@@ -184,9 +183,10 @@ showBase36 :: (Integral a, Show a) => a -> String
 showBase36 a = showBase36K a ""
 
 intToDigit36 :: Int -> Char
-intToDigit36 i | (i >= 0) && (i <= 9)   = chr (ord '0' + i)
-               | (i >= 10) && (i <= 35) = chr (ord 'a' - 10 + i)
-               | otherwise              = error ("not a digit " ++ show i)
+intToDigit36 i
+    | (i >= 0) && (i <= 9)   = chr (ord '0' + i)
+    | (i >= 10) && (i <= 35) = chr (ord 'a' - 10 + i)
+    | otherwise              = error ("not a digit " ++ show i)
 
 lamportTimeToFileName :: LamportTime -> FilePath
 lamportTimeToFileName (LamportTime time (Pid pid)) =
@@ -198,15 +198,16 @@ modify
     => DocId doc
     -> (Maybe doc -> m (a, doc))
     -> m a
-modify docId f =
-    load docId >>= \case
+modify docId f = do
+    mdoc <- load docId
+    case mdoc of
         Just Document{value = docOld, versions} -> do
             (a, docNew) <- f $ Just docOld
             when (docNew /= docOld || length versions /= 1) $ do
-                for_ versions (removeFileIfExists docId)
-                save docId docNew
+                for_ versions (deleteVersion docId)
+                update docId docNew
             pure a
         Nothing -> do
             (a, docNew) <- f Nothing
-            save docId docNew
+            update docId docNew
             pure a

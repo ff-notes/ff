@@ -88,10 +88,10 @@ instance MonadStorage TestM where
                 Just (Dir subdir) -> go subdir rest
                 _                 -> []
 
-    createFile
+    createVersion
         :: forall doc.
         Collection doc => DocId doc -> LamportTime -> doc -> TestM ()
-    createFile (DocId docId) time doc =
+    createVersion (DocId docId) time doc =
         TestM $ modify $ go $ collectionName @doc :| [docId, version]
       where
         version = lamportTimeToFileName time
@@ -111,10 +111,10 @@ instance MonadStorage TestM where
             subdir :| (name2:rest) ->
                 Dir $ Map.singleton subdir $ make (name2 :| rest)
 
-    readFileEither
+    readVersion
         :: forall doc
         . Collection doc => DocId doc -> Version -> TestM (Either String doc)
-    readFileEither (DocId docId) version = TestM $ do
+    readVersion (DocId docId) version = TestM $ do
         fs <- get
         go fs [collectionName @doc, docId, version]
       where
@@ -125,10 +125,10 @@ instance MonadStorage TestM where
                 Just (Dir subdir)   -> go subdir rest
                 Just (File content) -> pure $ parseEither parseJSON content
 
-    removeFileIfExists
+    deleteVersion
         :: forall doc.
         Collection doc => DocId doc -> Version -> TestM ()
-    removeFileIfExists (DocId docId) version =
+    deleteVersion (DocId docId) version =
         TestM $ modify $ go $ collectionName @doc :| [docId, version]
       where
         go path base = case path of
