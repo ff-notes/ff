@@ -85,18 +85,24 @@ instance Semigroup a => Semigroup (Result a) where
 
 -- | Environment is the dataDir
 class Clock m => MonadStorage m where
-    listCollections :: m [FilePath]
+    listCollections :: m [CollectionName]
+
     listDirectoryIfExists
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
-    createVersion :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
+
+    createVersion :: Collection doc => DocId doc -> Version -> doc -> m ()
+
     readVersion :: Collection doc => DocId doc -> Version -> m (Result doc)
+
     deleteVersion :: Collection doc => DocId doc -> Version -> m ()
 
 instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
         dataDir <- ask
-        liftIO $ listDirectory dataDir >>= filterM (doesDirectoryExist . (dataDir </>))
+        liftIO $
+            listDirectory dataDir
+            >>= filterM (doesDirectoryExist . (dataDir </>))
 
     listDirectoryIfExists relpath = Storage $ do
         dir <- asks (</> relpath)
@@ -104,9 +110,9 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
             exists <- doesDirectoryExist dir
             if exists then listDirectory dir else pure []
 
-    createVersion docId time doc = Storage $ do
+    createVersion docId version doc = Storage $ do
         docDir <- askDocDir docId
-        let file = docDir </> lamportTimeToFileName time
+        let file = docDir </> version
         liftIO $ do
             createDirectoryIfMissing True docDir
             BSL.writeFile file $ encodePretty' jsonConfig doc
@@ -190,7 +196,7 @@ update
     -> m ()
 update docId doc = do
     time <- getTime
-    createVersion docId time doc
+    createVersion docId (lamportTimeToFileName time) doc
 
 create :: (Collection doc, MonadStorage m) => doc -> m (DocId doc)
 create doc = do

@@ -12,7 +12,7 @@ module Main (main) where
 
 import           Control.Error ((?:))
 import           Control.Monad.State.Strict (StateT, get, modify, runStateT)
-import           CRDT.LamportClock (Clock, LamportTime, Pid (Pid), Process)
+import           CRDT.LamportClock (Clock, Pid (Pid), Process)
 import           CRDT.LamportClock.Simulation (ProcessSim, runLamportClockSim,
                                                runProcessSim)
 import           CRDT.Laws (cvrdtLaws)
@@ -49,7 +49,7 @@ import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
                              Result (Error, NotFound, Ok), Version,
-                             collectionName, lamportTimeToFileName)
+                             collectionName)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
                            Status (Active), TaskMode (Overdue), Tracked (..))
 
@@ -90,12 +90,10 @@ instance MonadStorage TestM where
                 _                 -> []
 
     createVersion
-        :: forall doc.
-        Collection doc => DocId doc -> LamportTime -> doc -> TestM ()
-    createVersion (DocId docId) time doc =
+        :: forall doc. Collection doc => DocId doc -> Version -> doc -> TestM ()
+    createVersion (DocId docId) version doc =
         TestM $ modify $ go $ collectionName @doc :| [docId, version]
       where
-        version = lamportTimeToFileName time
         doc' = File $ toJSON doc
         go path base = case path of
             file :| [] -> case Map.lookup file base of
