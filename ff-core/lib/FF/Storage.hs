@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -10,7 +11,6 @@
 module FF.Storage where
 
 import           Control.Concurrent.STM (TVar)
-import           Control.Error (ExceptT (..), runExceptT)
 import           Control.Exception (catch, throwIO)
 import           Control.Monad (filterM, unless, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -65,6 +65,24 @@ data Document a = Document
     , versions :: NonEmpty Version
     }
 
+data Result a = Ok a | NotFound | Error String
+
+mapError :: (String -> String) -> Result a -> Result a
+mapError f = \case
+    Error e -> Error $ f e
+    x       -> x
+
+instance Semigroup a => Semigroup (Result a) where
+    Error e <> _ = Error e
+    _ <> Error e = Error e
+
+    NotFound <> Ok b = Ok b
+    Ok a <> NotFound = Ok a
+
+    NotFound <> NotFound = NotFound
+
+    Ok a <> Ok b = Ok $ a <> b
+
 -- | Environment is the dataDir
 class Clock m => MonadStorage m where
     listCollections :: m [FilePath]
@@ -72,8 +90,7 @@ class Clock m => MonadStorage m where
         :: FilePath     -- ^ Path relative to data dir
         -> m [FilePath] -- ^ Paths relative to data dir
     createVersion :: Collection doc => DocId doc -> LamportTime -> doc -> m ()
-    readVersion
-        :: Collection doc => DocId doc -> Version -> m (Either String doc)
+    readVersion :: Collection doc => DocId doc -> Version -> m (Result doc)
     deleteVersion :: Collection doc => DocId doc -> Version -> m ()
 
 instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
@@ -98,7 +115,7 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
         docDir <- askDocDir docId
         let file = docDir </> version
         contents <- liftIO $ BSL.readFile file
-        pure $ eitherDecode contents
+        pure $ either Error Ok $ eitherDecode contents
 
     deleteVersion docId version = Storage $ do
         docDir <- askDocDir docId
@@ -126,25 +143,30 @@ listDocuments
 listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
 
 load
-    :: forall a m
-     . (Collection a, MonadStorage m)
-    => DocId a
-    -> m (Maybe (Document a))
-load docId = loadAnyway
+    :: forall doc m
+     . (Collection doc, MonadStorage m)
+    => DocId doc
+    -> m (Maybe (Document doc))
+load docId = loadRetry 3
   where
-    loadAnyway :: m (Maybe (Document a))
-    loadAnyway = do
-        versions0 <- listVersions docId
-        case versions0 of
-            [] -> pure Nothing
-            v:vs -> do
-                let versions = v :| vs
-                eValue <- runExceptT $
-                    fmap sconcat $ for versions $ ExceptT . readVersion docId
-                case eValue of
-                    Right value -> pure . Just $ Document{versions, value}
-                    Left _      -> loadAnyway
-
+    loadRetry (n :: Int)
+        | n > 0 = do
+            versions0 <- listVersions docId
+            case versions0 of
+                []   -> pure Nothing
+                v:vs -> do
+                    let versions = v :| vs
+                    result <-
+                        fmap sconcat $ for versions $ \ver ->
+                            mapError (("version " ++ ver ++ ": ") ++)
+                            <$> readVersion docId ver
+                    case result of
+                        Ok value -> pure $ Just Document{value, versions}
+                        NotFound -> pure Nothing
+                        Error e  -> fail $
+                            "collection " ++ collectionName @doc ++
+                            ", document " ++ show docId ++ ": " ++ e
+        | otherwise = fail "Maximum retries exceeded"
 listVersions
     :: forall doc m
      . (Collection doc, MonadStorage m)

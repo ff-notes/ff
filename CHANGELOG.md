@@ -14,6 +14,7 @@ and this project adheres to
 
 ### Fixed
 - Treat document without versions as non-existent
+- Limit retrying on reading
 
 ## [WIP]
 ### Added

@@ -48,7 +48,8 @@ import           FF.Config (Config, ConfigUI (..))
 import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (Collection, DocId (DocId), MonadStorage (..),
-                             Version, collectionName, lamportTimeToFileName)
+                             Result (Error, NotFound, Ok), Version,
+                             collectionName, lamportTimeToFileName)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
                            Status (Active), TaskMode (Overdue), Tracked (..))
 
@@ -113,7 +114,7 @@ instance MonadStorage TestM where
 
     readVersion
         :: forall doc
-        . Collection doc => DocId doc -> Version -> TestM (Either String doc)
+        . Collection doc => DocId doc -> Version -> TestM (Result doc)
     readVersion (DocId docId) version = TestM $ do
         fs <- get
         go fs [collectionName @doc, docId, version]
@@ -121,9 +122,10 @@ instance MonadStorage TestM where
         go dir = \case
             []        -> fail "is directory"
             name:rest -> case Map.lookup name dir of
-                Nothing             -> fail "does not exist"
+                Nothing             -> pure NotFound
                 Just (Dir subdir)   -> go subdir rest
-                Just (File content) -> pure $ parseEither parseJSON content
+                Just (File content) ->
+                    pure $ either Error Ok $ parseEither parseJSON content
 
     deleteVersion
         :: forall doc.
