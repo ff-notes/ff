@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.6] - 2018-08-07
 ### Added
 - Tracking of GitHub issues
   - Prohibit editing text and status of tracked notes, allow editing dates
@@ -87,7 +89,8 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.5...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.6...HEAD
+[0.6]: https://github.com/ff-notes/ff/compare/v0.5...v0.6
 [0.5]: https://github.com/ff-notes/ff/compare/v0.4...v0.5
 [0.4]: https://github.com/ff-notes/ff/compare/v0.3...v0.4
 [0.3]: https://github.com/ff-notes/ff/compare/v0.2...v0.3
