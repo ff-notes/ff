@@ -3,12 +3,12 @@ name: ff-test
 dependencies:
   - base
   - containers
+  - bytestring
 
 library:
   dependencies:
     # global
       - aeson
-      - bytestring
       - crdt
       - lens
       - mtl
@@ -25,6 +25,7 @@ tests:
         - crdt-test
         - errors
         - github
+        - interpolate
         - QuickCheck
         - quickcheck-instances
         - tasty

@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -20,6 +21,7 @@ import           Data.Foldable (toList)
 import           Data.HashMap.Strict ((!))
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
+import           Data.String.Interpolate.IsString (i)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..), fromGregorian)
@@ -43,6 +45,7 @@ import           FF.Storage (DocId (DocId))
 import           FF.Test (TestDB, runStorageSim)
 import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
                            Status (Active), TaskMode (Overdue), Tracked (..))
+import           FF.Upgrade (upgradeDatabase)
 
 import           ArbitraryOrphans ()
 
@@ -79,22 +82,18 @@ case_smoke = do
 
 fs123 :: TestDB
 fs123 = Map.singleton "note" $ Map.singleton "1" $ Map.fromList
-    [   ( "2"
-        , encode $ object
-            [ "end"    .= ["17-06-19", Number 20, Number 21]
-            , "start"  .= ["22-11-24", Number 25, Number 26]
-            , "status" .= ["Active",   Number 29, Number 30]
-            , "text"   .= ["hello",    Number  6, Number  7]
-            ]
-        )
-    ,   ( "3"
-        , encode $ object
-            [ "end"    .= ["12-01-14", Number 15, Number 16]
-            , "start"  .= ["9-10-11",  Number  7, Number  8]
-            , "status" .= ["Active",   Number 27, Number 28]
-            , "text"   .= ["world",    Number  4, Number  5]
-            ]
-        )
+    [ "2" -: encode $ object
+        [ "end"    .= ["17-06-19", Number 20, Number 21]
+        , "start"  .= ["22-11-24", Number 25, Number 26]
+        , "status" .= ["Active",   Number 29, Number 30]
+        , "text"   .= ["hello",    Number  6, Number  7]
+        ]
+    , "3" -: encode $ object
+        [ "end"    .= ["12-01-14", Number 15, Number 16]
+        , "start"  .= ["9-10-11",  Number  7, Number  8]
+        , "status" .= ["Active",   Number 27, Number 28]
+        , "text"   .= ["world",    Number  4, Number  5]
+        ]
     ]
 
 agendaLimit :: Maybe Limit
@@ -254,3 +253,23 @@ issues = pure Issue
 
 test_CvRDT_Note :: [TestTree]
 test_CvRDT_Note = cvrdtLaws @Note
+
+case_json2ron :: IO ()
+case_json2ron =
+    case runStorageSim fs123 upgradeDatabase of
+        Left e          -> fail e
+        Right ((), db') -> db' @?= fs123merged
+  where
+    fs123merged = Map.singleton "note" $ Map.singleton "1" $
+        Map.singleton "a6bp8-6qen" $ norm [i|
+            { "status":     ["Active", 29, 30]
+            , "text.trace": ["helloworld"]
+            , "text":       [[6, 7, "hello"], [4, 5, "world"]]
+            , "start":      ["0022-11-24", 25, 26]
+            , "end":        ["0017-06-19", 20, 21]
+            } |]
+    norm = encode . decode @Value
+
+(-:) :: a -> b -> (a, b)
+a -: b = (a, b)
+infixr 0 -:

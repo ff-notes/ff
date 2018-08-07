@@ -4,7 +4,6 @@ packages:
   - ff
   - ff-core
   - ff-test
-  - ff-upgrade
 
 extra-deps:
   # crdt-test:
