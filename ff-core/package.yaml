@@ -37,31 +37,6 @@ library:
     - FF.Types.Internal
 
 tests:
-  test:
-    dependencies:
-      - aeson
-      - containers
-      - crdt
-      - crdt-test
-      - errors
-      - filepath
-      - github
-      - mtl
-      - QuickCheck
-      - quickcheck-instances
-      - tasty
-      - tasty-hunit
-      - tasty-quickcheck
-      - tasty-th
-      - text
-      - time
-      - unordered-containers
-
-      - ff-core
-
-    main: Main
-    source-dirs: test
-
   features:
     dependencies:
       - blaze-html

@@ -1,0 +1,28 @@
+name: ff-test
+
+tests:
+  test:
+    dependencies:
+      # global
+        - aeson
+        - base
+        - containers
+        - crdt-test
+        - errors
+        - github
+        - QuickCheck
+        - quickcheck-instances
+        - tasty
+        - tasty-hunit
+        - tasty-quickcheck
+        - tasty-th
+        - text
+        - time
+        - unordered-containers
+        - mtl
+        - crdt
+        - filepath
+      # project
+        - ff-core
+    main: Main
+    source-dirs: test
