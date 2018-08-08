@@ -3,7 +3,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -12,6 +11,7 @@
 module FF.Storage where
 
 import           Control.Concurrent.STM (TVar)
+import           Control.Error (fmapL)
 import           Control.Exception (catch, throwIO)
 import           Control.Monad (filterM, unless, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
@@ -29,7 +29,6 @@ import qualified Data.ByteString.Lazy as BSL
 import           Data.Char (chr, ord)
 import           Data.Foldable (for_)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Semigroup (sconcat)
 import           Data.Traversable (for)
 import           Numeric (showIntAtBase)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
@@ -45,8 +44,8 @@ class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
 newtype DocId doc = DocId FilePath
     deriving (Eq, Ord, ToJSON, ToJSONKey)
 
-instance Show (DocId doc) where
-    show (DocId path) = path
+instance Collection doc => Show (DocId doc) where
+    show (DocId path) = collectionName @doc </> path
 
 -- Environment is the dataDir
 newtype StorageT clock a = Storage (ReaderT FilePath clock a)
@@ -66,24 +65,6 @@ data Document a = Document
     , versions :: NonEmpty Version
     }
 
-data Result a = Ok a | NotFound | Error String
-
-mapError :: (String -> String) -> Result a -> Result a
-mapError f = \case
-    Error e -> Error $ f e
-    x       -> x
-
-instance Semigroup a => Semigroup (Result a) where
-    Error e <> _ = Error e
-    _ <> Error e = Error e
-
-    NotFound <> Ok b = Ok b
-    Ok a <> NotFound = Ok a
-
-    NotFound <> NotFound = NotFound
-
-    Ok a <> Ok b = Ok $ a <> b
-
 -- | Environment is the dataDir
 class Clock m => MonadStorage m where
     listCollections :: m [CollectionName]
@@ -97,7 +78,8 @@ class Clock m => MonadStorage m where
     -- | Must create collection and document if not exist
     createVersion :: Collection doc => DocId doc -> Version -> doc -> m ()
 
-    readVersion :: Collection doc => DocId doc -> Version -> m (Result doc)
+    readVersion
+        :: Collection doc => DocId doc -> Version -> m (Either String doc)
 
     deleteVersion :: Collection doc => DocId doc -> Version -> m ()
 
@@ -132,7 +114,7 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
         docDir <- askDocDir docId
         let file = docDir </> version
         contents <- liftIO $ BSL.readFile file
-        pure $ either Error Ok $ eitherDecode contents
+        pure $ eitherDecode contents
 
     deleteVersion docId version = Storage $ do
         docDir <- askDocDir docId
@@ -159,27 +141,21 @@ load
     :: forall doc m
      . (Collection doc, MonadStorage m)
     => DocId doc
-    -> m (Maybe (Document doc))
+    -> m (Either String (Document doc))
 load docId = loadRetry 3
   where
     loadRetry (n :: Int)
         | n > 0 = do
             versions0 <- listVersions docId
             case versions0 of
-                []   -> pure Nothing
+                []   -> pure $ Left "Empty document"
                 v:vs -> do
                     let versions = v :| vs
-                    result <-
-                        fmap sconcat $ for versions $ \ver ->
-                            mapError (("version " ++ ver ++ ": ") ++)
-                            <$> readVersion docId ver
-                    case result of
-                        Ok value -> pure $ Just Document{value, versions}
-                        NotFound -> pure Nothing
-                        Error e  -> fail $
-                            "collection " ++ collectionName @doc ++
-                            ", document " ++ show docId ++ ": " ++ e
-        | otherwise = fail "Maximum retries exceeded"
+                    let wrapDoc value = Document{value, versions}
+                    fmap (fmap wrapDoc . vsconcat) $ for versions $ \ver ->
+                        fmapL (("version " ++ ver ++ ": ") ++)
+                        <$> readVersion docId ver
+        | otherwise = pure $ Left "Maximum retries exceeded"
 
 askDocDir
     :: forall doc m
@@ -220,22 +196,28 @@ lamportTimeToFileName :: LamportTime -> FilePath
 lamportTimeToFileName (LamportTime time (Pid pid)) =
     showBase36K time $ '-' : showBase36K pid ""
 
--- | For user-supplied function input Nothing means non-existent document.
+-- | For user-supplied function input Left means document cannot be loaded.
 modify
     :: (Collection doc, Eq doc, MonadStorage m)
     => DocId doc
-    -> (Maybe doc -> m (a, doc))
-    -> m a
+    -> (doc -> m doc)
+    -> m doc
 modify docId f = do
     mdoc <- load docId
     case mdoc of
-        Just Document{value = docOld, versions} -> do
-            (a, docNew) <- f $ Just docOld
+        Right Document{value = docOld, versions} -> do
+            docNew <- f docOld
             when (docNew /= docOld || length versions /= 1) $ do
                 for_ versions (deleteVersion docId)
                 update docId docNew
-            pure a
-        Nothing -> do
-            (a, docNew) <- f Nothing
-            update docId docNew
-            pure a
+            pure docNew
+        Left e -> fail $ "Document " ++ show docId ++ ": " ++ e
+
+-- | Validation-like version of 'sconcat'.
+vsconcat :: (Semigroup e, Semigroup a) => NonEmpty (Either e a) -> Either e a
+vsconcat = foldr1 vappend
+  where
+    vappend    (Left  e1)    (Left  e2) = Left  $ e1 <> e2
+    vappend e1@(Left  _ )     _         =         e1
+    vappend    (Right a1)    (Right a2) = Right $ a1 <> a2
+    vappend     _         e2@(Left  _ ) =               e2
