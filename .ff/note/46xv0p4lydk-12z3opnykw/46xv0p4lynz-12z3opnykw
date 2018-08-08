@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935692240,
+    109952946870224
+  ],
+  "start": [
+    "2018-05-28",
+    15329520935691850,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935690837,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935691289,
+      109952946870224,
+      "git dirtiness"
+    ]
+  ],
+  "text.trace": [
+    "git dirtiness"
+  ],
+  "tracked": {
+    "external_id": "52",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/52"
+  }
+}

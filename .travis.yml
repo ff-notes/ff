@@ -28,24 +28,25 @@ before_install:
 
 matrix:
   include:
-    - compiler: build and test
+    - name: build and test
       install:
         # Build dependencies
         - $STACK build --test --only-dependencies
       script:
         # Build the package, its tests, and its docs and run the tests
         - test/script
-    - compiler: hlint
+    - name: hlint
       install:
         - $STACK build hlint
       script:
         - $STACK exec -- hlint .
-    - compiler: haddock
+    - name: haddock
       script:
         - $STACK haddock --no-haddock-deps
-  allow_failures:
-    - compiler: weeder
+    - name: weeder
       install:
         - $STACK build weeder
       script:
         - $STACK exec -- weeder
+  allow_failures:
+    - name: weeder

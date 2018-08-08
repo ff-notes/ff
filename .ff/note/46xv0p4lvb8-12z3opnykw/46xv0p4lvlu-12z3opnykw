@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935688263,
+    109952946870224
+  ],
+  "start": [
+    "2018-06-03",
+    15329520935687840,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935686030,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935686477,
+      109952946870224,
+      "Github list issues"
+    ]
+  ],
+  "text.trace": [
+    "Github list issues"
+  ],
+  "tracked": {
+    "external_id": "53",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/53"
+  }
+}

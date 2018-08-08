@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935708873,
+    109952946870224
+  ],
+  "start": [
+    "2018-05-17",
+    15329520935708487,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935707479,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935707930,
+      109952946870224,
+      "Version Upgrade"
+    ]
+  ],
+  "text.trace": [
+    "Version Upgrade"
+  ],
+  "tracked": {
+    "external_id": "48",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/48"
+  }
+}

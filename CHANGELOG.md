@@ -2,12 +2,22 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
-and this project adheres to [Compatible Versioning](https://github.com/staltz/comver).
+and this project adheres to
+[Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
-- Add tracking of github issues
-- Prohibit editing tracked notes
-- Add option to view notes briefly
+
+## [0.6] - 2018-08-07
+### Added
+- Tracking of GitHub issues
+  - Prohibit editing text and status of tracked notes, allow editing dates
+- Option to view notes briefly and compactly (`--brief`)
+- Web UI (command `ff serve`)
+- `ff upgrade` -- tool to upgrade database format
+
+### Fixed
+- Treat document without versions as non-existent
+- Limit retrying on reading
 
 ## [0.5] - 2018-07-06
 ### Added
@@ -79,7 +89,8 @@ and this project adheres to [Compatible Versioning](https://github.com/staltz/co
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.5...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.6...HEAD
+[0.6]: https://github.com/ff-notes/ff/compare/v0.5...v0.6
 [0.5]: https://github.com/ff-notes/ff/compare/v0.4...v0.5
 [0.4]: https://github.com/ff-notes/ff/compare/v0.3...v0.4
 [0.3]: https://github.com/ff-notes/ff/compare/v0.2...v0.3

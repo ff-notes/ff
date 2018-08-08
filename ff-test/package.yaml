@@ -1,0 +1,43 @@
+name: ff-test
+
+dependencies:
+  - base
+  - containers
+  - bytestring
+
+library:
+  dependencies:
+    # global
+      - aeson
+      - crdt
+      - lens
+      - mtl
+    # project
+      - ff-core
+  exposed-modules:
+    - FF.Test
+
+tests:
+  test:
+    dependencies:
+      # global
+        - aeson
+        - crdt-test
+        - errors
+        - github
+        - interpolate
+        - QuickCheck
+        - quickcheck-instances
+        - tasty
+        - tasty-hunit
+        - tasty-quickcheck
+        - tasty-th
+        - text
+        - time
+        - unordered-containers
+      # project
+        - ff-core
+      # package
+        - ff-test
+    main: Main
+    source-dirs: test

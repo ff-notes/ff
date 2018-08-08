@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935861970,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935861568,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935860569,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935861122,
+      109952946870224,
+      "dates for notes"
+    ]
+  ],
+  "text.trace": [
+    "dates for notes"
+  ],
+  "tracked": {
+    "external_id": "4",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/4"
+  }
+}

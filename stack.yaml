@@ -3,15 +3,15 @@ resolver: lts-12.0
 packages:
   - ff
   - ff-core
-  # - ff-qt
+  - ff-test
 
 extra-deps:
   # crdt-test:
     - QuickCheck-GenT-0.2.0
   # ff:
-    - crdt-10.2
+    - crdt-10.3
   # ff:test:
     - git: https://github.com/cblp/crdt.git
-      commit: '2b6d790'  # 'v10.2' + 2018-07-06
+      commit: 'v10.3'
       subdirs:
         - crdt-test

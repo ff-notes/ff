@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935720845,
+    109952946870224
+  ],
+  "start": [
+    "2018-05-08",
+    15329520935720463,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935719469,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935719918,
+      109952946870224,
+      "Start date can't be less than current"
+    ]
+  ],
+  "text.trace": [
+    "Start date can't be less than current"
+  ],
+  "tracked": {
+    "external_id": "45",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/45"
+  }
+}

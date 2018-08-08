@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15321153154302180,
+    216273105866966
+  ],
+  "start": [
+    "2018-06-16",
+    15321153154301520,
+    216273105866966
+  ],
+  "status": [
+    "Archived",
+    15329652031506786,
+    109952946870224
+  ],
+  "text": [
+    [
+      15321137210730400,
+      216273105866966,
+      "export issue status (ff -> GitHub)"
+    ]
+  ],
+  "text.trace": [
+    "export issue status (ff -> GitHub)"
+  ],
+  "tracked": {
+    "external_id": "59",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/59"
+  }
+}

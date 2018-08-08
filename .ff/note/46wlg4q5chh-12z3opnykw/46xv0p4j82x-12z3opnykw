@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15325949779047441,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-25",
+    15325949779046491,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935564389,
+    109952946870224
+  ],
+  "text": [
+    [
+      15325949779045142,
+      109952946870224,
+      "Add blocking to edit tracked notes"
+    ]
+  ],
+  "text.trace": [
+    "Add blocking to edit tracked notes"
+  ],
+  "tracked": {
+    "external_id": "74",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/74"
+  }
+}

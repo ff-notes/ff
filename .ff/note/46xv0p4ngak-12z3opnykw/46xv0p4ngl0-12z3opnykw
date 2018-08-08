@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935762117,
+    109952946870224
+  ],
+  "start": [
+    "2018-02-23",
+    15329520935761734,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935760847,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935761298,
+      109952946870224,
+      "Shuffle"
+    ]
+  ],
+  "text.trace": [
+    "Shuffle"
+  ],
+  "tracked": {
+    "external_id": "35",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/35"
+  }
+}

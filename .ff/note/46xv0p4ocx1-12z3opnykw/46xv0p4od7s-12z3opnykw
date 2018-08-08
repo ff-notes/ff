@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935804386,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935803993,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935802950,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935803534,
+      109952946870224,
+      "Use sequence CRDT for text"
+    ]
+  ],
+  "text.trace": [
+    "Use sequence CRDT for text"
+  ],
+  "tracked": {
+    "external_id": "23",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/23"
+  }
+}

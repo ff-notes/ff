@@ -5,7 +5,7 @@
 
 module FF.Github
     ( getIssueViews
-    , getIssueSamples
+    , getOpenIssueSamples
     , sampleMap
     ) where
 
@@ -18,10 +18,11 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..))
 import           Data.Vector (Vector)
-import           GitHub (FetchCount (..), Issue (..), IssueState (..),
-                         Milestone (..), URL (..), executeRequest',
-                         issueCreatedAt, issueHtmlUrl, issueId, issueMilestone,
-                         issueState, issueTitle, mkOwnerName, mkRepoName)
+import           GitHub (FetchCount (..), Issue (..), IssueRepoMod,
+                         IssueState (..), Milestone (..), URL (..),
+                         executeRequest', issueCreatedAt, issueHtmlUrl, issueId,
+                         issueMilestone, issueState, issueTitle, mkOwnerName,
+                         mkRepoName, stateAll, stateOpen)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
@@ -32,8 +33,9 @@ import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
 getIssues
     :: Maybe Text
     -> Maybe Limit
+    -> IssueRepoMod
     -> ExceptT Text IO (Text, Vector Issue)
-getIssues mAddress mlimit = do
+getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
         Nothing -> do
@@ -52,17 +54,17 @@ getIssues mAddress mlimit = do
         executeRequest' $ issuesForRepoR
             (mkOwnerName owner)
             (mkRepoName repo)
-            mempty
+            issueState
             (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
-getIssueSamples
+getOpenIssueSamples
     :: Maybe Text
     -> Maybe Limit
     -> Day
     -> ExceptT Text IO (ModeMap Sample)
-getIssueSamples mAddress mlimit today = do
-    (address, issues) <- getIssues mAddress mlimit
+getOpenIssueSamples mAddress mlimit today = do
+    (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
 
 getIssueViews
@@ -70,7 +72,7 @@ getIssueViews
     -> Maybe Limit
     -> ExceptT Text IO [NoteView]
 getIssueViews mAddress mlimit = do
-    (address, issues) <- getIssues mAddress mlimit
+    (address, issues) <- getIssues mAddress mlimit stateAll
     pure $ noteViewList address mlimit issues
 
 sampleMap
@@ -94,7 +96,7 @@ issueToNoteView address Issue{..} = NoteView
     , status  = toStatus issueState
     , text    = issueTitle
     , start   = utctDay issueCreatedAt
-    , end     = maybeMilestone
+    , end
     , tracked = Just Tracked
         { trackedProvider   = "github"
         , trackedSource     = address
@@ -108,7 +110,7 @@ issueToNoteView address Issue{..} = NoteView
         Just (URL url) -> url
         Nothing        ->
             "https://github.com/" <> address <> "/issues/" <> trackedExternalId
-    maybeMilestone = case issueMilestone of
+    end = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
 

@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935779107,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-27",
+    15329520935778705,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935777498,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935778154,
+      109952946870224,
+      "Search subcommand"
+    ]
+  ],
+  "text.trace": [
+    "Search subcommand"
+  ],
+  "tracked": {
+    "external_id": "31",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/31"
+  }
+}

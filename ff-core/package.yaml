@@ -10,8 +10,10 @@ library:
     - bytestring
     - containers
     - crdt
+    - data-default-class
     - directory
     - errors
+    - extra
     - filepath
     - github
     - mainland-pretty
@@ -28,37 +30,13 @@ library:
     - typed-process
     - unordered-containers
     - vector
+    - warp
     - yaml
   source-dirs: lib
   other-modules:
     - FF.Types.Internal
 
 tests:
-  test:
-    dependencies:
-      - aeson
-      - containers
-      - crdt
-      - crdt-test
-      - errors
-      - filepath
-      - github
-      - mtl
-      - QuickCheck
-      - quickcheck-instances
-      - tasty
-      - tasty-hunit
-      - tasty-quickcheck
-      - tasty-th
-      - text
-      - time
-      - unordered-containers
-
-      - ff-core
-
-    main: Main
-    source-dirs: test
-
   features:
     dependencies:
       - blaze-html

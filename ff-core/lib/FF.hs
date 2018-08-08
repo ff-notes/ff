@@ -22,11 +22,11 @@ module FF
     , newNote
     , splitModes
     , takeSamples
-    , updateTracked
+    , updateTrackedNotes
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Monad (unless, when)
+import           Control.Monad.Extra (unless, void, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (evalState, state)
 import qualified CRDT.Cv.Max as Max
@@ -38,7 +38,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, isJust, listToMaybe)
+import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -60,7 +60,7 @@ import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
                              Storage, create, listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
-                           noteView, rgaFromText, rgaToText,
+                           Tracked, noteView, rgaFromText, rgaToText,
                            singletonTaskModeMap)
 
 getSamples
@@ -95,8 +95,8 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure
         [ (noteId, value)
-        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}})
-        <- zip docs mnotes
+        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}}) <-
+            zip docs mnotes
         ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
@@ -146,48 +146,43 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-newTrackedNote :: [(NoteId, Note)] -> NoteView -> Storage Note
-newTrackedNote mOldNotes nvNew =
+updateTrackedNote
+    :: [(NoteId, Note)] -- ^ selection of all aready tracked notes
+    -> NoteView
+    -> Storage ()
+updateTrackedNote oldNotes NoteView{..} =
     case sameTrack of
         Nothing -> do
-            noteStatus' <- LWW.initialize (status nvNew)
-            noteText'   <- rgaFromText (text nvNew)
-            noteStart'  <- LWW.initialize (start nvNew)
-            noteEnd'    <- LWW.initialize (end nvNew)
-            _ <- create $ note noteStatus' noteText' noteStart' noteEnd'
-            pure $ note noteStatus' noteText' noteStart' noteEnd'
+            note <- newNote' status text start end tracked
+            void $ create note
         Just (n, _) ->
-            modifyOrFail n update
+            void $ modifyOrFail n $ \note @ Note{..} -> do
+                noteStatus' <- lwwAssignIfDiffer status noteStatus
+                noteText'   <- rgaEditText text noteText
+                pure note{noteStatus = noteStatus', noteText = noteText'}
   where
-    update Note {..} = do
-        noteStatus' <- lwwAssignIfDiffer (status nvNew) noteStatus
-        noteText'   <- rgaEditText (text nvNew) noteText
-        noteStart'  <- lwwAssignIfDiffer (start nvNew) noteStart
-        noteEnd'    <- lwwAssignIfDiffer (end nvNew) noteEnd
-        pure $ note noteStatus' noteText' noteStart' noteEnd'
-    noteTracked' = Max.initial <$> tracked nvNew
-    note noteStatus' noteText' noteStart' noteEnd' = Note
-        { noteStatus   = noteStatus'
-        , noteText     = noteText'
-        , noteStart    = noteStart'
-        , noteEnd      = noteEnd'
-        , noteTracked  = noteTracked'
-        }
-    isSameTrack oldNote = tracked nvNew == (Max.query <$> noteTracked oldNote)
-    sameTrack = listToMaybe $ filter (isSameTrack . snd) mOldNotes
+    isSameTrack oldNote = tracked == (Max.query <$> noteTracked oldNote)
+    sameTrack = listToMaybe $ filter (isSameTrack . snd) oldNotes
 
-updateTracked :: [NoteView] -> Storage ()
-updateTracked nvNews = do
-    mOldNotes <- loadTrackedNotes
-    mapM_ (newTrackedNote mOldNotes) nvNews
+updateTrackedNotes :: [NoteView] -> Storage ()
+updateTrackedNotes nvNews = do
+    oldNotes <- loadTrackedNotes
+    mapM_ (updateTrackedNote oldNotes) nvNews
 
+-- | Native 'Note' smart constructor
 newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
-newNote status text start end = do
+newNote status text start end = newNote' status text start end Nothing
+
+-- | Generic 'Note' smart constructor
+newNote'
+    :: Clock m => Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
+newNote' status text start end tracked = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
     noteStart  <- LWW.initialize start
     noteEnd    <- LWW.initialize end
-    pure Note{noteTracked = Nothing, ..}
+    let noteTracked = Max.initial <$> tracked
+    pure Note{..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd } today = do
@@ -201,7 +196,7 @@ cmdNew New { newText, newStart, newEnd } today = do
 
 cmdDelete :: NoteId -> Storage NoteView
 cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
-    assertEditable note
+    assertNoteIsNative note
     noteStatus' <- LWW.assign Deleted noteStatus
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
@@ -214,7 +209,7 @@ cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
 
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
-    assertEditable note
+    assertNoteIsNative note
     noteStatus' <- LWW.assign Archived noteStatus
     pure note { noteStatus = noteStatus' }
 
@@ -224,17 +219,18 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
-cmdEdit (Edit nid Nothing Nothing Nothing) =
-    modifyAndView nid $ \note@Note { noteText } -> do
-        assertEditable note
-        text'     <- liftIO . runExternalEditor $ rgaToText noteText
-        noteText' <- rgaEditText text' noteText
-        pure note { noteText = noteText' }
-cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
-    modifyAndView nid $ \note -> do
-        assertEditable note
-        checkStartEnd note
-        update note
+cmdEdit Edit{..} = case (editText, editStart, editEnd) of
+    (Nothing, Nothing, Nothing) ->
+        modifyAndView editId $ \note@Note{noteText} -> do
+            assertNoteIsNative note
+            text'     <- liftIO . runExternalEditor $ rgaToText noteText
+            noteText' <- rgaEditText text' noteText
+            pure note{noteText = noteText'}
+    _ ->
+        modifyAndView editId $ \note -> do
+            whenJust editText $ \_ -> assertNoteIsNative note
+            checkStartEnd note
+            update note
   where
     checkStartEnd Note { noteStart = (LWW.query -> noteStart), noteEnd } =
         case newStartEnd of
@@ -246,23 +242,22 @@ cmdEdit Edit { editId = nid, editEnd, editStart, editText } =
             (Nothing   , Just (Just end), _       ) -> Just (noteStart, end)
             (Just start, Just (Just end), _       ) -> Just (start, end)
             _ -> Nothing
-    update note@Note { noteEnd, noteStart, noteText } = do
+    update :: Note -> Storage Note
+    update note @ Note{noteEnd, noteStart, noteText} = do
         noteEnd'   <- lwwAssignIfJust editEnd noteEnd
         noteStart' <- lwwAssignIfJust editStart noteStart
-        noteText'  <- case editText of
-            Nothing -> pure noteText
-            Just et -> rgaEditText et noteText
-        pure note { noteEnd   = noteEnd'
-                  , noteStart = noteStart'
-                  , noteText  = noteText'
-                  }
+        noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText
+        pure note
+            { noteEnd   = noteEnd'
+            , noteStart = noteStart'
+            , noteText  = noteText'
+            }
 
 lwwAssignIfJust :: Clock m => Maybe a -> LWW a -> m (LWW a)
 lwwAssignIfJust = maybe pure LWW.assign
 
 cmdPostpone :: NoteId -> Storage NoteView
 cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
-    assertEditable note
     today <- getUtcToday
     let start' = addDays 1 $ max today $ LWW.query noteStart
     noteStart' <- LWW.assign start' noteStart
@@ -322,6 +317,9 @@ lwwAssignIfDiffer new var = do
     else
         LWW.assign new var
 
-assertEditable :: Note -> Storage ()
-assertEditable note = when (isJust (noteTracked note))
-    (fail "Oh, no! It is tracked note. Not for modifing. Sorry :(")
+assertNoteIsNative :: Monad m => Note -> m ()
+assertNoteIsNative = \case
+    Note{noteTracked = Just _} ->
+        fail "Oh, no! It is tracked note. Not for modifying. Sorry :("
+    _ ->
+        pure ()

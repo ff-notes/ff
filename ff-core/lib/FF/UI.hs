@@ -37,7 +37,7 @@ pshow :: Show a => a -> Doc
 pshow = string . show
 
 prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
-prettySamplesBySections brief samples = sparsedStack $
+prettySamplesBySections brief samples = stack' brief $
     [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
@@ -47,7 +47,7 @@ prettySample :: Bool -> TaskMode -> Sample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, notes} ->
-        withHeader (labels mode) . sparsedStack $
+        withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView) notes
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
@@ -57,18 +57,6 @@ prettySample brief mode = \case
         count         = genericLength notes
         noteView = if brief then noteViewBrief else noteViewFull
   where
-    labels = \case
-        Overdue n -> case n of
-            1 -> "1 day overdue:"
-            _ -> show n <> " days overdue:"
-        EndToday -> "Due today:"
-        EndSoon n -> case n of
-            1 -> "Due tomorrow:"
-            _ -> "Due in " <> show n <> " days:"
-        Actual -> "Actual:"
-        Starting n -> case n of
-            1 -> "Starting tomorrow:"
-            _ -> "Starting in " <> show n <> " days:"
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"
         EndToday   -> "ff search --today"
@@ -76,29 +64,40 @@ prettySample brief mode = \case
         Actual     -> "ff search --actual"
         Starting _ -> "ff search --starting"
 
+sampleLabel :: TaskMode -> String
+sampleLabel = \case
+    Overdue n -> case n of
+        1 -> "1 day overdue:"
+        _ -> show n <> " days overdue:"
+    EndToday -> "Due today:"
+    EndSoon n -> case n of
+        1 -> "Due tomorrow:"
+        _ -> "Due in " <> show n <> " days:"
+    Actual -> "Actual:"
+    Starting n -> case n of
+        1 -> "Starting tomorrow:"
+        _ -> "Starting in " <> show n <> " days:"
+
 noteViewBrief :: NoteView -> Doc
-noteViewBrief NoteView{..} = sparsedStack [title text, fields]
+noteViewBrief NoteView{..} = title <+/> meta
   where
-    fields = stack ["| id" <+> pshow @NoteId i | Just i <- [nid]]
+    meta = foldMap (\i -> "| id" <+> pshow @NoteId i) nid
     title
         = stack
         . map (sep . map strictText . Text.split isSpace)
         . take 1
-        . Text.lines
+        $ Text.lines text
 
 noteViewFull :: NoteView -> Doc
-noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep fields]
+noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
   where
-    fields
+    meta
         = concat
             [ ["| id"    <+> pshow @NoteId i | Just i <- [nid]]
             , ["| start" <+> pshow @Day start]
             , ["| end"   <+> pshow @Day e | Just e <- [end]]
             ]
-        ++ concat
-            [   [ "| tracking" <+> strictText trackedSource
-                , "| url"      <+> strictText trackedUrl
-                ]
+        ++  [ "| tracking" <+> strictText trackedUrl
             | Just Tracked{..} <- [tracked]
             ]
 
@@ -108,3 +107,8 @@ wrapLines =
 
 sparsedStack :: [Doc] -> Doc
 sparsedStack = stack . intersperse space
+
+stack' :: Bool -> [Doc] -> Doc
+stack' brief
+    | brief     = stack
+    | otherwise = sparsedStack

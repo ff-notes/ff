@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935650217,
+    109952946870224
+  ],
+  "start": [
+    "2018-06-26",
+    15329520935649819,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935648814,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935649267,
+      109952946870224,
+      "Add test for github list"
+    ]
+  ],
+  "text.trace": [
+    "Add test for github list"
+  ],
+  "tracked": {
+    "external_id": "63",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/63"
+  }
+}

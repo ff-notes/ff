@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15329520935817817,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935817426,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935816396,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935816978,
+      109952946870224,
+      "Hide pid from note-id when pid is unique"
+    ]
+  ],
+  "text.trace": [
+    "Hide pid from note-id when pid is unique"
+  ],
+  "tracked": {
+    "external_id": "16",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/16"
+  }
+}
