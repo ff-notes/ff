@@ -148,7 +148,7 @@ load docId = loadRetry 3
         | n > 0 = do
             versions0 <- listVersions docId
             case versions0 of
-                []   -> pure $ Left "Empty document"
+                []   -> pure $ Left "Invalid document"
                 v:vs -> do
                     let versions = v :| vs
                     let wrapDoc value = Document{value, versions}
