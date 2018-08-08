@@ -56,8 +56,8 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (Collection, DocId, Document (..), MonadStorage,
-                             Storage, create, listDocuments, load, modify)
+import           FF.Storage (Document (..), MonadStorage, Storage, create,
+                             listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), Status (Active, Archived, Deleted),
                            Tracked, noteView, rgaFromText, rgaToText,
@@ -86,7 +86,7 @@ loadAllNotes = do
     mnotes <- for docs load
     pure
         [ noteView noteId value
-        | (noteId, Just Document{value}) <- zip docs mnotes
+        | (noteId, Right Document{value}) <- zip docs mnotes
         ]
 
 loadTrackedNotes :: MonadStorage m => m [(NoteId, Note)]
@@ -95,8 +95,8 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure
         [ (noteId, value)
-        | (noteId, Just Document{value = value @ Note{noteTracked = Just _}}) <-
-            zip docs mnotes
+        | (noteId, Right Document{value = value @ Note{noteTracked = Just _}})
+            <- zip docs mnotes
         ]
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
@@ -156,7 +156,7 @@ updateTrackedNote oldNotes NoteView{..} =
             note <- newNote' status text start end tracked
             void $ create note
         Just (n, _) ->
-            void $ modifyOrFail n $ \note @ Note{..} -> do
+            void $ modify n $ \note @ Note{..} -> do
                 noteStatus' <- lwwAssignIfDiffer status noteStatus
                 noteText'   <- rgaEditText text noteText
                 pure note{noteStatus = noteStatus', noteText = noteText'}
@@ -266,21 +266,8 @@ cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
         _                       -> pure noteEnd
     pure note { noteStart = noteStart', noteEnd = noteEnd' }
 
--- | Check the document exists. Return actual version.
-modifyOrFail
-    :: (Collection doc, Eq doc)
-    => DocId doc
-    -> (doc -> Storage doc)
-    -> Storage doc
-modifyOrFail docId f = modify docId $ \case
-    Nothing -> fail $ concat
-        ["Can't load document ", show docId, ". Where did you get this id?"]
-    Just docOld -> do
-        docNew <- f docOld
-        pure (docNew, docNew)
-
 modifyAndView :: NoteId -> (Note -> Storage Note) -> Storage NoteView
-modifyAndView nid f = noteView nid <$> modifyOrFail nid f
+modifyAndView nid f = noteView nid <$> modify nid f
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime

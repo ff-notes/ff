@@ -18,7 +18,7 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 
 import           FF.Storage (CollectionName, DocId (..), MonadStorage (..),
-                             Result (..), Version, collectionName)
+                             Version, collectionName)
 import qualified FF.Storage as Storage
 
 type TestDB = Map CollectionName Collection
@@ -47,8 +47,8 @@ instance MonadStorage StorageSim where
     readVersion (DocId docId :: DocId doc) version = StorageSim $ do
         mdoc <- use (at' (collectionName @doc) . at' docId . at version)
         pure $ case mdoc of
-            Nothing  -> NotFound
-            Just doc -> either Error Ok $ eitherDecode doc
+            Nothing  -> Left "Not found"
+            Just doc -> eitherDecode doc
 
     deleteVersion (DocId docId :: DocId doc) version = StorageSim $
         at' (collectionName @doc) . at' docId . at version .= Nothing
