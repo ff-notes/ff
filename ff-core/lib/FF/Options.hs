@@ -52,11 +52,6 @@ data Options = Options
     , optionCmd   :: Cmd
     }
 
-data Options = Options
-    { optionBrief :: Bool
-    , optionCmd   :: Cmd
-    }
-
 data Track = Track
     { trackDryrun  :: Bool
     , trackAddress :: Maybe Text
