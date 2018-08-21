@@ -255,10 +255,17 @@ test_CvRDT_Note :: [TestTree]
 test_CvRDT_Note = cvrdtLaws @Note
 
 case_json2ron :: IO ()
-case_json2ron =
-    case runStorageSim fs123 upgradeDatabase of
-        Left e          -> fail e
-        Right ((), db') -> db' @?= fs123merged
+case_json2ron = do
+
+    -- read JSON, merge, write RON
+    do  ((), db') <- either fail pure $ runStorageSim fs123 upgradeDatabase
+        db' @?= fs123merged
+
+    -- idempotency
+    do  ((), db') <-
+            either fail pure $ runStorageSim fs123merged upgradeDatabase
+        db' @?= fs123merged
+
   where
     fs123merged = Map.singleton "note" $ Map.singleton "1" $
         Map.singleton "a6bp8-6qen" $ norm [i|
