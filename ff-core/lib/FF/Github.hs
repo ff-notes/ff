@@ -13,7 +13,6 @@ import           Control.Error (failWith)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
-import           Data.Maybe (fromMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -95,7 +94,7 @@ issueToNoteView :: Text -> Issue -> NoteView
 issueToNoteView address Issue{..} = NoteView
     { nid     = Nothing
     , status  = toStatus issueState
-    , text    = issueTitle <> "\n\n" <> fromMaybe "" issueBody
+    , text    = issueTitle <> body
     , start   = utctDay issueCreatedAt
     , end
     , tracked = Just Tracked
@@ -114,6 +113,9 @@ issueToNoteView address Issue{..} = NoteView
     end = case issueMilestone of
         Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
         _                                                      -> Nothing
+    body = case issueBody of
+        Nothing -> ""
+        Just b  -> if Text.null b then "" else "\n\n" <> b
 
 toStatus :: IssueState -> Status
 toStatus = \case
