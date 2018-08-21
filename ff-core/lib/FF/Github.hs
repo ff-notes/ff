@@ -95,7 +95,7 @@ issueToNoteView :: Text -> Issue -> NoteView
 issueToNoteView address Issue{..} = NoteView
     { nid     = Nothing
     , status  = toStatus issueState
-    , text    = issueTitle <> fromMaybe "" issueBody
+    , text    = issueTitle <> "\n\n" <> fromMaybe "" issueBody
     , start   = utctDay issueCreatedAt
     , end
     , tracked = Just Tracked
