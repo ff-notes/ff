@@ -6,6 +6,7 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+- Track issue content
 
 ## [0.6] - 2018-08-07
 ### Added
