@@ -103,7 +103,7 @@ today :: Day
 today = fromGregorian 1018 02 10
 
 prop_new :: NoContainNul -> Maybe Day -> Maybe Day -> Bool -> Property
-prop_new (NoContainNul newText) newStart newEnd newWiki =
+prop_new (NoContainNul newText) newStart newEnd _ =
     newStart <= newEnd && Just today <= newEnd ==> expectRight test
   where
     test = do
