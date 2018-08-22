@@ -1,0 +1,45 @@
+{
+  "end": [
+    null,
+    15349164518156910,
+    266187445077842
+  ],
+  "start": [
+    "2018-08-21",
+    15349164518156560,
+    266187445077842
+  ],
+  "status": [
+    "Archived",
+    15349164518154960,
+    266187445077842
+  ],
+  "text": [
+    [
+      15349164518156020,
+      266187445077842,
+      "[#78] Track issue body"
+    ],
+    [
+      15349309375413948,
+      109952946870224,
+      "\n\nResolves [#78](https://github.com/ff-notes/ff/issues/78)\n\n<!-- Reviewable:start -->\n---\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/87)\n<!-- Reviewable:end -->\n"
+    ]
+  ],
+  "text.trace": [
+    "[#78] Track issue body",
+    "",
+    "Resolves [#78](https://github.com/ff-notes/ff/issues/78)",
+    "",
+    "<!-- Reviewable:start -->",
+    "---",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/87)",
+    "<!-- Reviewable:end -->"
+  ],
+  "tracked": {
+    "external_id": "87",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/87"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "end": [
+    null,
+    15321153154290130,
+    216273105866966
+  ],
+  "start": [
+    "2018-06-21",
+    15321153154289370,
+    216273105866966
+  ],
+  "status": [
+    "Archived",
+    15329520935661689,
+    109952946870224
+  ],
+  "text": [
+    [
+      15321137210719490,
+      216273105866966,
+      "import issues (GitHub -> ff)"
+    ],
+    [
+      15349309377409684,
+      109952946870224,
+      "\n\n- [ ] implement this feature\r\n- [ ] import ff notes"
+    ]
+  ],
+  "text.trace": [
+    "import issues (GitHub -> ff)",
+    "",
+    "- [ ] implement this feature\r",
+    "- [ ] import ff notes"
+  ],
+  "tracked": {
+    "external_id": "60",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/60"
+  }
+}

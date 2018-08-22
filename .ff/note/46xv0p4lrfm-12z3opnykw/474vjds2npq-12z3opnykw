@@ -1,0 +1,51 @@
+{
+  "end": [
+    null,
+    15329520935683238,
+    109952946870224
+  ],
+  "start": [
+    "2018-06-06",
+    15329520935682843,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935681851,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935682300,
+      109952946870224,
+      "Choose repo by user and list as command"
+    ],
+    [
+      15349309377723512,
+      109952946870224,
+      "\n\nПока не работает. Загвоздка в файле `Main.hs`  в строке 116:\r\n`CmdGithub list -> liftIO $ runCmdGithub list`\r\nгде\r\n`CmdGithub` принимает один аргумент, а `runCmdGithub` два. И не ясно, нужно дополнительную функцию писать или как-то здесь же можно реализовать.\r\n\r\nUpdate: \r\nНашел как сделать. Вопрос снят.\r\n\r\n<!-- Reviewable:start -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/54)\r\n<!-- Reviewable:end -->\r\n"
+    ]
+  ],
+  "text.trace": [
+    "Choose repo by user and list as command",
+    "",
+    "Пока не работает. Загвоздка в файле `Main.hs`  в строке 116:\r",
+    "`CmdGithub list -> liftIO $ runCmdGithub list`\r",
+    "где\r",
+    "`CmdGithub` принимает один аргумент, а `runCmdGithub` два. И не ясно, нужно дополнительную функцию писать или как-то здесь же можно реализовать.\r",
+    "\r",
+    "Update: \r",
+    "Нашел как сделать. Вопрос снят.\r",
+    "\r",
+    "<!-- Reviewable:start -->\r",
+    "---\r",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/54)\r",
+    "<!-- Reviewable:end -->\r"
+  ],
+  "tracked": {
+    "external_id": "54",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/54"
+  }
+}

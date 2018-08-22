@@ -1,0 +1,44 @@
+{
+  "end": [
+    null,
+    15329520935857948,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935857565,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935856659,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935857125,
+      109952946870224,
+      "Change start date to non-maybe"
+    ],
+    [
+      15349309379291114,
+      109952946870224,
+      "\n\n\n\n<!-- Reviewable:start -->\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/cblp/ff/5)\n<!-- Reviewable:end -->\n"
+    ]
+  ],
+  "text.trace": [
+    "Change start date to non-maybe",
+    "",
+    "",
+    "",
+    "<!-- Reviewable:start -->",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/cblp/ff/5)",
+    "<!-- Reviewable:end -->"
+  ],
+  "tracked": {
+    "external_id": "5",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/5"
+  }
+}

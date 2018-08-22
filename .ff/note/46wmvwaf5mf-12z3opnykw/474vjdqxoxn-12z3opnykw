@@ -1,0 +1,40 @@
+{
+  "end": [
+    null,
+    15326062461583641,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-26",
+    15326062461582829,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15349164518188270,
+    266187445077842
+  ],
+  "text": [
+    [
+      15326062461581889,
+      109952946870224,
+      "Track issue content"
+    ],
+    [
+      15349309375813424,
+      109952946870224,
+      "\n\nalong with title"
+    ]
+  ],
+  "text.trace": [
+    "Track issue content",
+    "",
+    "along with title"
+  ],
+  "tracked": {
+    "external_id": "78",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/78"
+  }
+}

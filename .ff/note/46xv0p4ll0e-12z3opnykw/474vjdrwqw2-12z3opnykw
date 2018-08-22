@@ -1,0 +1,44 @@
+{
+  "end": [
+    null,
+    15329520935674921,
+    109952946870224
+  ],
+  "start": [
+    "2018-06-15",
+    15329520935674530,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935673520,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935673981,
+      109952946870224,
+      "taskMode to get proper state in ff github llist"
+    ],
+    [
+      15349309377448893,
+      109952946870224,
+      "\n\n\n\n<!-- Reviewable:start -->\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/56)\n<!-- Reviewable:end -->\n"
+    ]
+  ],
+  "text.trace": [
+    "taskMode to get proper state in ff github llist",
+    "",
+    "",
+    "",
+    "<!-- Reviewable:start -->",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/56)",
+    "<!-- Reviewable:end -->"
+  ],
+  "tracked": {
+    "external_id": "56",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/56"
+  }
+}

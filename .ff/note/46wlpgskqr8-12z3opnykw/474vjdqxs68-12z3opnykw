@@ -1,0 +1,40 @@
+{
+  "end": [
+    null,
+    15325970099760738,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-26",
+    15325970099760184,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15325970099757932,
+    109952946870224
+  ],
+  "text": [
+    [
+      15325970099759354,
+      109952946870224,
+      "ff serve: open browser"
+    ],
+    [
+      15349309375817649,
+      109952946870224,
+      "\n\nnot default; with option `-o` | `--open`"
+    ]
+  ],
+  "text.trace": [
+    "ff serve: open browser",
+    "",
+    "not default; with option `-o` | `--open`"
+  ],
+  "tracked": {
+    "external_id": "77",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/77"
+  }
+}

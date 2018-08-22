@@ -1,0 +1,55 @@
+{
+  "end": [
+    null,
+    15329520935650217,
+    109952946870224
+  ],
+  "start": [
+    "2018-06-26",
+    15329520935649819,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935648814,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935649267,
+      109952946870224,
+      "Add test for github list"
+    ],
+    [
+      15349309377266787,
+      109952946870224,
+      "\n\nТест не проходит:\r\n```haskell\r\n> case_repo\r\n*** Exception: HUnitFailure (Just (SrcLoc {srcLocPackage = \"main\", srcLocModule = \"Main\", srcLocFile = \"/media/metaxis/stock/Coding/Haskell/ff/ff-core/test/Main.hs\", srcLocStartLine = 262, srcLocStartCol = 5, srcLocEndLine = 262, srcLocEndCol = 21})) \r\n\r\n\"expected: \r\nfromList [(Starting 365374,Sample {notes = [NoteView {nid = 334520780, status = Active, text = \\\"import issues (GitHub -> ff)\\\\nurl https://github.com/ff-notes/ff/issues/60\\\", start = 2018-06-21, end = Just 2018-06-15}], total = 1})]\\n \r\n\r\nbut got: \r\nfromList [(Overdue 10,Sample {notes = [NoteView {nid = 334520780, status = Active, text = \\\"import issues (GitHub -> ff)\\\\nurl            https://github.com/ff-notes/ff/issues/60\\\", start = 2018-06-21, end = Just 2018-06-15}], total = 1})]\"\r\n```\r\n\r\n<!-- Reviewable:start -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/63)\r\n<!-- Reviewable:end -->\r\n"
+    ]
+  ],
+  "text.trace": [
+    "Add test for github list",
+    "",
+    "Тест не проходит:\r",
+    "```haskell\r",
+    "> case_repo\r",
+    "*** Exception: HUnitFailure (Just (SrcLoc {srcLocPackage = \"main\", srcLocModule = \"Main\", srcLocFile = \"/media/metaxis/stock/Coding/Haskell/ff/ff-core/test/Main.hs\", srcLocStartLine = 262, srcLocStartCol = 5, srcLocEndLine = 262, srcLocEndCol = 21})) \r",
+    "\r",
+    "\"expected: \r",
+    "fromList [(Starting 365374,Sample {notes = [NoteView {nid = 334520780, status = Active, text = \\\"import issues (GitHub -> ff)\\\\nurl https://github.com/ff-notes/ff/issues/60\\\", start = 2018-06-21, end = Just 2018-06-15}], total = 1})]\\n \r",
+    "\r",
+    "but got: \r",
+    "fromList [(Overdue 10,Sample {notes = [NoteView {nid = 334520780, status = Active, text = \\\"import issues (GitHub -> ff)\\\\nurl            https://github.com/ff-notes/ff/issues/60\\\", start = 2018-06-21, end = Just 2018-06-15}], total = 1})]\"\r",
+    "```\r",
+    "\r",
+    "<!-- Reviewable:start -->\r",
+    "---\r",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/63)\r",
+    "<!-- Reviewable:end -->\r"
+  ],
+  "tracked": {
+    "external_id": "63",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/63"
+  }
+}

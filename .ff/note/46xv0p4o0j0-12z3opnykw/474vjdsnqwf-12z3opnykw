@@ -1,0 +1,48 @@
+{
+  "end": [
+    null,
+    15329520935788335,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-11",
+    15329520935787944,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935787021,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935787498,
+      109952946870224,
+      "Use a git repository as a storage"
+    ],
+    [
+      15349309378708592,
+      109952946870224,
+      "\n\nShould be useful for software projects\r\n\r\nNecessary:\r\n- Find data dir based on git: look for `.git`/`.hg`/`.svn`, else take dataDir from config\r\n\r\nOptional:\r\n- Commit automatically on editing.\r\n- `ff --global` — do not look for `.ff`, use dataDir only from config\r\n- `ff --vcs` — look for `.git`/`.hg`/`.svn`, create `.ff` there"
+    ]
+  ],
+  "text.trace": [
+    "Use a git repository as a storage",
+    "",
+    "Should be useful for software projects\r",
+    "\r",
+    "Necessary:\r",
+    "- Find data dir based on git: look for `.git`/`.hg`/`.svn`, else take dataDir from config\r",
+    "\r",
+    "Optional:\r",
+    "- Commit automatically on editing.\r",
+    "- `ff --global` — do not look for `.ff`, use dataDir only from config\r",
+    "- `ff --vcs` — look for `.git`/`.hg`/`.svn`, create `.ff` there"
+  ],
+  "tracked": {
+    "external_id": "28",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/28"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "end": [
+    null,
+    15329652031298696,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-30",
+    15329652031298297,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15329652031296514,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329652031297672,
+      109952946870224,
+      "Support multiple external note sources"
+    ],
+    [
+      15349309375612096,
+      109952946870224,
+      "\n\nCreate a dedicated table for sources"
+    ]
+  ],
+  "text.trace": [
+    "Support multiple external note sources",
+    "",
+    "Create a dedicated table for sources"
+  ],
+  "tracked": {
+    "external_id": "83",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/83"
+  }
+}

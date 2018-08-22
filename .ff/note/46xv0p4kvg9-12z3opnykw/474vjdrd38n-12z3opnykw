@@ -1,0 +1,45 @@
+{
+  "end": [
+    null,
+    15329520935641794,
+    109952946870224
+  ],
+  "start": [
+    "2018-07-03",
+    15329520935641406,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935640311,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935640958,
+      109952946870224,
+      "Add ExceptT"
+    ],
+    [
+      15349309376531562,
+      109952946870224,
+      "\n\nНе сильно код поменялся. Один _case_ сократился.\n\n<!-- Reviewable:start -->\n---\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/65)\n<!-- Reviewable:end -->\n"
+    ]
+  ],
+  "text.trace": [
+    "Add ExceptT",
+    "",
+    "Не сильно код поменялся. Один _case_ сократился.",
+    "",
+    "<!-- Reviewable:start -->",
+    "---",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/65)",
+    "<!-- Reviewable:end -->"
+  ],
+  "tracked": {
+    "external_id": "65",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/65"
+  }
+}

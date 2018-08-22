@@ -1,0 +1,44 @@
+{
+  "end": [
+    null,
+    15329520935852240,
+    109952946870224
+  ],
+  "start": [
+    "2018-01-08",
+    15329520935851849,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15329520935850837,
+    109952946870224
+  ],
+  "text": [
+    [
+      15329520935851401,
+      109952946870224,
+      "Setting dataDir should prompt to create it"
+    ],
+    [
+      15349309379256738,
+      109952946870224,
+      "\n\nOtherwise, until a first note recorded:\r\n```\r\n$ ff\r\nff: /home/user/.local/share/ff/note: getDirectoryContents:openDirStream: does not exist (No such file or directory)\r\n```"
+    ]
+  ],
+  "text.trace": [
+    "Setting dataDir should prompt to create it",
+    "",
+    "Otherwise, until a first note recorded:\r",
+    "```\r",
+    "$ ff\r",
+    "ff: /home/user/.local/share/ff/note: getDirectoryContents:openDirStream: does not exist (No such file or directory)\r",
+    "```"
+  ],
+  "tracked": {
+    "external_id": "7",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/7"
+  }
+}

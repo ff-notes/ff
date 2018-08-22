@@ -1,0 +1,39 @@
+{
+  "end": [
+    null,
+    15349309375348660,
+    109952946870224
+  ],
+  "start": [
+    "2018-08-22",
+    15349309375348072,
+    109952946870224
+  ],
+  "status": [
+    "Active",
+    15349309375345958,
+    109952946870224
+  ],
+  "text": [
+    [
+      15349309375347219,
+      109952946870224,
+      "Add Wiki\n\n1. new status `Wiki`\r\n1. `add` adds task\r\n1. `add --wiki` adds wiki\r\n1. `edit` works with both\r\n1. `agenda` doesn't list wikis"
+    ]
+  ],
+  "text.trace": [
+    "Add Wiki",
+    "",
+    "1. new status `Wiki`\r",
+    "1. `add` adds task\r",
+    "1. `add --wiki` adds wiki\r",
+    "1. `edit` works with both\r",
+    "1. `agenda` doesn't list wikis"
+  ],
+  "tracked": {
+    "external_id": "88",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/88"
+  }
+}
