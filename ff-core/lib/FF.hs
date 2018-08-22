@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -184,7 +183,7 @@ newNote' status text start end tracked = do
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
-cmdNew :: forall m. (MonadStorage m) => New -> Day -> m NoteView
+cmdNew :: MonadStorage m => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd, newWiki } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
@@ -192,8 +191,8 @@ cmdNew New { newText, newStart, newEnd, newWiki } today = do
         _        -> pure ()
     (status, end) <-
         if newWiki then case newEnd of
-            Nothing  -> pure (Wiki, Nothing)
-            Just _ -> fail "Wiki note has no end date."
+            Nothing -> pure (Wiki, Nothing)
+            Just _  -> fail "Wiki note has no end date."
         else pure (Active, newEnd)
     note <- newNote status newText newStart' end
     nid  <- create note
@@ -253,7 +252,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
             Wiki -> case (editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _                  -> fail "Wiki note has unchangable dates."
-            _    -> pure (editStart, editEnd)
+            _ -> pure (editStart, editEnd)
         noteEnd'   <- lwwAssignIfJust end noteEnd
         noteStart' <- lwwAssignIfJust start noteStart
         noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText
