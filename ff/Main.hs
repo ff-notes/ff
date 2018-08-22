@@ -61,7 +61,7 @@ main = do
             hClock <- newTVarIO =<< getRealLocalTime
             hDataDir <- getDataDir cfg
             let h = Storage.Handle{..}
-            runStorage h $ runCmdAction h ui action optionBrief
+            runStorage h $ runCmdAction h ui action optionBrief optionWiki
         CmdVersion -> runCmdVersion
 
 getDataDir :: Config -> IO FilePath
@@ -115,8 +115,8 @@ checkDataDir Config { dataDir } = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
-runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Storage ()
-runCmdAction h ui cmd brief = do
+runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Bool -> Storage ()
+runCmdAction h ui cmd brief wiki = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
@@ -132,7 +132,7 @@ runCmdAction h ui cmd brief = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteViewFull nv
         CmdNew new -> do
-            nv <- cmdNew new today
+            nv <- cmdNew new today wiki
             pprint $ withHeader "added:" $ UI.noteViewFull nv
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId

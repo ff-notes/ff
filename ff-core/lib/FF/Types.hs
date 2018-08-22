@@ -38,7 +38,7 @@ import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
 import           FF.Types.Internal (noteJsonOptions)
 
-data Status = Active | Archived | Deleted
+data Status = Active | Archived | Deleted | Wiki
     deriving (Bounded, Enum, Eq, Show)
 
 deriveJSON defaultOptions ''Status
