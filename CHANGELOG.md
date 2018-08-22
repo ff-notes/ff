@@ -7,6 +7,7 @@ and this project adheres to
 
 ## [Unreleased]
 - Track issue content
+- Add wiki notes
 
 ## [0.6] - 2018-08-07
 ### Added

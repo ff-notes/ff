@@ -49,6 +49,7 @@ data CmdAction
 
 data Options = Options
     { optionBrief :: Bool
+    , optionWiki  :: Bool
     , optionCmd   :: Cmd
     }
 
@@ -89,7 +90,7 @@ data Search = Search
 parseOptions :: IO Options
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = Options <$> brief <*>
+    parser   = Options <$> brief <*> wiki <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
@@ -137,6 +138,9 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdUnarchive = CmdUnarchive <$> noteid
     cmdUpgrade   = pure CmdUpgrade
 
+    wiki = switch
+        (long "wiki" <> short 'w' <>
+        help "Handle wiki note")
     brief = switch
         (long "brief" <> short 'b' <>
         help "List only note titles and ids")

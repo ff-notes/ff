@@ -59,9 +59,8 @@ import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (Active, Archived, Deleted),
-                           Tracked, noteView, rgaFromText, rgaToText,
-                           singletonTaskModeMap)
+                           Sample (..), Status (..), Tracked, noteView,
+                           rgaFromText, rgaToText, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -103,6 +102,10 @@ loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
     filter (\NoteView { status } -> status == Active) <$> loadAllNotes
 
+loadWikiNotes :: MonadStorage m => m [NoteView]
+loadWikiNotes =
+    filter (\NoteView { status } -> status == Wiki) <$> loadAllNotes
+
 getSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter notes by text
@@ -112,13 +115,14 @@ getSamplesWith
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
+    wikiNotes <- loadWikiNotes
     -- in sorting by nid no business-logic is involved,
     -- it's just for determinism
     pure .
         takeSamples limit .
         (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
-        filter (predicate . text) activeNotes
+        filter (predicate . text) (activeNotes <> wikiNotes)
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
@@ -184,13 +188,14 @@ newNote' status text start end tracked = do
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
-cmdNew :: MonadStorage m => New -> Day -> m NoteView
-cmdNew New { newText, newStart, newEnd } today = do
+cmdNew :: MonadStorage m => New -> Day -> Bool -> m NoteView
+cmdNew New { newText, newStart, newEnd } today wiki = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    note <- newNote Active newText newStart' newEnd
+    let (status, end) = if wiki then (Wiki, Nothing) else (Active, newEnd)
+    note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
 
@@ -219,18 +224,19 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
-cmdEdit Edit{..} = case (editText, editStart, editEnd) of
-    (Nothing, Nothing, Nothing) ->
-        modifyAndView editId $ \note@Note{noteText} -> do
-            assertNoteIsNative note
-            text'     <- liftIO . runExternalEditor $ rgaToText noteText
-            noteText' <- rgaEditText text' noteText
-            pure note{noteText = noteText'}
-    _ ->
-        modifyAndView editId $ \note -> do
-            whenJust editText $ \_ -> assertNoteIsNative note
-            checkStartEnd note
-            update note
+cmdEdit Edit{..} =
+    case (editText, editStart, editEnd) of
+        (Nothing, Nothing, Nothing) ->
+            modifyAndView editId $ \note@Note{noteText} -> do
+                assertNoteIsNative note
+                text'     <- liftIO . runExternalEditor $ rgaToText noteText
+                noteText' <- rgaEditText text' noteText
+                pure note{noteText = noteText'}
+        _ ->
+            modifyAndView editId $ \note -> do
+                whenJust editText $ \_ -> assertNoteIsNative note
+                checkStartEnd note
+                update note
   where
     checkStartEnd Note { noteStart = (LWW.query -> noteStart), noteEnd } =
         case newStartEnd of
@@ -243,9 +249,10 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
             (Just start, Just (Just end), _       ) -> Just (start, end)
             _ -> Nothing
     update :: Note -> Storage Note
-    update note @ Note{noteEnd, noteStart, noteText} = do
-        noteEnd'   <- lwwAssignIfJust editEnd noteEnd
-        noteStart' <- lwwAssignIfJust editStart noteStart
+    update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
+        let (start, end) = if noteStatus == Wiki then (Nothing, Nothing) else (editStart, editEnd)
+        noteEnd'   <- lwwAssignIfJust end noteEnd
+        noteStart' <- lwwAssignIfJust start noteStart
         noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText
         pure note
             { noteEnd   = noteEnd'
