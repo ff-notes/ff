@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -38,7 +39,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, isNothing, listToMaybe)
+import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -183,15 +184,17 @@ newNote' status text start end tracked = do
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
-cmdNew :: MonadStorage m => New -> Day -> m NoteView
+cmdNew :: forall m. (MonadStorage m) => New -> Day -> m NoteView
 cmdNew New { newText, newStart, newEnd, newWiki } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    let (status, end) = if newWiki then if isNothing newEnd then (Wiki, Nothing)
-                                        else error "Wiki note has no end date."
-                        else (Active, newEnd)
+    (status, end) <-
+        if newWiki then case newEnd of
+            Nothing  -> pure (Wiki, Nothing)
+            Just _ -> fail "Wiki note has no end date."
+        else pure (Active, newEnd)
     note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
@@ -246,9 +249,11 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
             _ -> Nothing
     update :: Note -> Storage Note
     update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
-        let (start, end) = if noteStatus == Wiki then if isNothing editStart && isNothing editEnd then (Nothing, Nothing)
-                                                      else error "Wiki note has unchangable dates."
-                           else (editStart, editEnd)
+        (start, end) <- case noteStatus of
+            Wiki -> case (editStart, editEnd) of
+                (Nothing, Nothing) -> pure (Nothing, Nothing)
+                _                  -> fail "Wiki note has unchangable dates."
+            _    -> pure (editStart, editEnd)
         noteEnd'   <- lwwAssignIfJust end noteEnd
         noteStart' <- lwwAssignIfJust start noteStart
         noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText
