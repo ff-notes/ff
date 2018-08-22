@@ -42,10 +42,10 @@ class (CvRDT doc, FromJSON doc, ToJSON doc) => Collection doc where
     collectionName :: CollectionName
 
 newtype DocId doc = DocId FilePath
-    deriving (Eq, Ord, ToJSON, ToJSONKey)
+    deriving (Eq, Ord, Show, ToJSON, ToJSONKey)
 
-instance Collection doc => Show (DocId doc) where
-    show (DocId path) = collectionName @doc </> path
+rawDocId :: DocId doc -> FilePath
+rawDocId (DocId name) = name
 
 -- Environment is the dataDir
 newtype StorageT clock a = Storage (ReaderT FilePath clock a)

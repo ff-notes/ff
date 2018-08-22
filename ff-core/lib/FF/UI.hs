@@ -19,7 +19,8 @@ import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
+import           FF.Storage (rawDocId)
+import           FF.Types (ModeMap, NoteView (..), Sample (..),
                            TaskMode (..), Tracked (..), omitted)
 
 type Template a = a -> String
@@ -81,7 +82,7 @@ sampleLabel = \case
 noteViewBrief :: NoteView -> Doc
 noteViewBrief NoteView{..} = title <+/> meta
   where
-    meta = foldMap (\i -> "| id" <+> pshow @NoteId i) nid
+    meta = foldMap (\i -> "| id" <+> string (rawDocId i)) nid
     title
         = stack
         . map (sep . map strictText . Text.split isSpace)
@@ -93,7 +94,7 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
   where
     meta
         = concat
-            [ ["| id"    <+> pshow @NoteId i | Just i <- [nid]]
+            [ ["| id"    <+> string (rawDocId i) | Just i <- [nid]]
             , ["| start" <+> pshow @Day start]
             , ["| end"   <+> pshow @Day e | Just e <- [end]]
             ]
