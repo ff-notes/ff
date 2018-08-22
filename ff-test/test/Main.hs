@@ -108,7 +108,7 @@ prop_new (NoContainNul newText) newStart newEnd =
   where
     test = do
         (nv, fs') <-
-            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd} today
+            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd, newWiki = False} today
         pure $ conjoin
             [ case nv of
                 NoteView{text, start, end} ->

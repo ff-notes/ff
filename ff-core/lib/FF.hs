@@ -59,9 +59,8 @@ import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
 import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (Active, Archived, Deleted),
-                           Tracked, noteView, rgaFromText, rgaToText,
-                           singletonTaskModeMap)
+                           Sample (..), Status (..), Tracked, noteView,
+                           rgaFromText, rgaToText, singletonTaskModeMap)
 
 getSamples
     :: MonadStorage m
@@ -185,12 +184,17 @@ newNote' status text start end tracked = do
     pure Note{..}
 
 cmdNew :: MonadStorage m => New -> Day -> m NoteView
-cmdNew New { newText, newStart, newEnd } today = do
+cmdNew New { newText, newStart, newEnd, newWiki } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    note <- newNote Active newText newStart' newEnd
+    (status, end) <-
+        if newWiki then case newEnd of
+            Nothing -> pure (Wiki, Nothing)
+            Just _  -> fail "Wiki note has no end date."
+        else pure (Active, newEnd)
+    note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
 
@@ -243,9 +247,14 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
             (Just start, Just (Just end), _       ) -> Just (start, end)
             _ -> Nothing
     update :: Note -> Storage Note
-    update note @ Note{noteEnd, noteStart, noteText} = do
-        noteEnd'   <- lwwAssignIfJust editEnd noteEnd
-        noteStart' <- lwwAssignIfJust editStart noteStart
+    update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
+        (start, end) <- case noteStatus of
+            Wiki -> case (editStart, editEnd) of
+                (Nothing, Nothing) -> pure (Nothing, Nothing)
+                _                  -> fail "Wiki note has unchangable dates."
+            _ -> pure (editStart, editEnd)
+        noteEnd'   <- lwwAssignIfJust end noteEnd
+        noteStart' <- lwwAssignIfJust start noteStart
         noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText
         pure note
             { noteEnd   = noteEnd'

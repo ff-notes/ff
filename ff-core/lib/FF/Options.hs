@@ -79,6 +79,7 @@ data New = New
     { newText   :: Text
     , newStart  :: Maybe Day
     , newEnd    :: Maybe Day
+    , newWiki   :: Bool
     }
 
 data Search = Search
@@ -137,6 +138,9 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     cmdUnarchive = CmdUnarchive <$> noteid
     cmdUpgrade   = pure CmdUpgrade
 
+    wiki = switch
+        (long "wiki" <> short 'w' <>
+        help "Handle wiki note")
     brief = switch
         (long "brief" <> short 'b' <>
         help "List only note titles and ids")
@@ -150,7 +154,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    new = New <$> text <*> optional start <*> optional end
+    new = New <$> text <*> optional start <*> optional end <*> wiki
     edit = Edit
         <$> noteid
         <*> optional textOption
