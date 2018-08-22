@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15349164518165640,
+    266187445077842
+  ],
+  "start": [
+    "2018-08-15",
+    15349164518165300,
+    266187445077842
+  ],
+  "status": [
+    "Active",
+    15349164518164440,
+    266187445077842
+  ],
+  "text": [
+    [
+      15349164518164880,
+      266187445077842,
+      "Use modern prettyprinter"
+    ]
+  ],
+  "text.trace": [
+    "Use modern prettyprinter"
+  ],
+  "tracked": {
+    "external_id": "86",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/86"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "end": [
+    null,
+    15349164518171900,
+    266187445077842
+  ],
+  "start": [
+    "2018-08-10",
+    15349164518171480,
+    266187445077842
+  ],
+  "status": [
+    "Active",
+    15349164518170620,
+    266187445077842
+  ],
+  "text": [
+    [
+      15349164518171070,
+      266187445077842,
+      "Add timezone to timestamps"
+    ]
+  ],
+  "text.trace": [
+    "Add timezone to timestamps"
+  ],
+  "tracked": {
+    "external_id": "85",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/85"
+  }
+}
