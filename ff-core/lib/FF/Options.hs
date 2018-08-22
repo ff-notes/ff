@@ -49,7 +49,6 @@ data CmdAction
 
 data Options = Options
     { optionBrief :: Bool
-    , optionWiki  :: Bool
     , optionCmd   :: Cmd
     }
 
@@ -80,6 +79,7 @@ data New = New
     { newText   :: Text
     , newStart  :: Maybe Day
     , newEnd    :: Maybe Day
+    , newWiki   :: Bool
     }
 
 data Search = Search
@@ -90,7 +90,7 @@ data Search = Search
 parseOptions :: IO Options
 parseOptions = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = Options <$> brief <*> wiki <*>
+    parser   = Options <$> brief <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
@@ -154,7 +154,7 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    new = New <$> text <*> optional start <*> optional end
+    new = New <$> text <*> optional start <*> optional end <*> wiki
     edit = Edit
         <$> noteid
         <*> optional textOption

@@ -38,7 +38,7 @@ import qualified CRDT.LWW as LWW
 import           Data.Foldable (asum)
 import           Data.List (genericLength, sortOn)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromMaybe, listToMaybe)
+import           Data.Maybe (fromMaybe, isNothing, listToMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -102,10 +102,6 @@ loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
     filter (\NoteView { status } -> status == Active) <$> loadAllNotes
 
-loadWikiNotes :: MonadStorage m => m [NoteView]
-loadWikiNotes =
-    filter (\NoteView { status } -> status == Wiki) <$> loadAllNotes
-
 getSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter notes by text
@@ -115,14 +111,13 @@ getSamplesWith
     -> m (ModeMap Sample)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
-    wikiNotes <- loadWikiNotes
     -- in sorting by nid no business-logic is involved,
     -- it's just for determinism
     pure .
         takeSamples limit .
         (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
-        filter (predicate . text) (activeNotes <> wikiNotes)
+        filter (predicate . text) activeNotes
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
@@ -188,13 +183,15 @@ newNote' status text start end tracked = do
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
-cmdNew :: MonadStorage m => New -> Day -> Bool -> m NoteView
-cmdNew New { newText, newStart, newEnd } today wiki = do
+cmdNew :: MonadStorage m => New -> Day -> m NoteView
+cmdNew New { newText, newStart, newEnd, newWiki } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    let (status, end) = if wiki then (Wiki, Nothing) else (Active, newEnd)
+    let (status, end) = if newWiki then if isNothing newEnd then (Wiki, Nothing)
+                                        else error "Wiki note has no end date."
+                        else (Active, newEnd)
     note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
@@ -224,19 +221,18 @@ cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
-cmdEdit Edit{..} =
-    case (editText, editStart, editEnd) of
-        (Nothing, Nothing, Nothing) ->
-            modifyAndView editId $ \note@Note{noteText} -> do
-                assertNoteIsNative note
-                text'     <- liftIO . runExternalEditor $ rgaToText noteText
-                noteText' <- rgaEditText text' noteText
-                pure note{noteText = noteText'}
-        _ ->
-            modifyAndView editId $ \note -> do
-                whenJust editText $ \_ -> assertNoteIsNative note
-                checkStartEnd note
-                update note
+cmdEdit Edit{..} = case (editText, editStart, editEnd) of
+    (Nothing, Nothing, Nothing) ->
+        modifyAndView editId $ \note@Note{noteText} -> do
+            assertNoteIsNative note
+            text'     <- liftIO . runExternalEditor $ rgaToText noteText
+            noteText' <- rgaEditText text' noteText
+            pure note{noteText = noteText'}
+    _ ->
+        modifyAndView editId $ \note -> do
+            whenJust editText $ \_ -> assertNoteIsNative note
+            checkStartEnd note
+            update note
   where
     checkStartEnd Note { noteStart = (LWW.query -> noteStart), noteEnd } =
         case newStartEnd of
@@ -250,7 +246,9 @@ cmdEdit Edit{..} =
             _ -> Nothing
     update :: Note -> Storage Note
     update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
-        let (start, end) = if noteStatus == Wiki then (Nothing, Nothing) else (editStart, editEnd)
+        let (start, end) = if noteStatus == Wiki then if isNothing editStart && isNothing editEnd then (Nothing, Nothing)
+                                                      else error "Wiki note has unchangable dates."
+                           else (editStart, editEnd)
         noteEnd'   <- lwwAssignIfJust end noteEnd
         noteStart' <- lwwAssignIfJust start noteStart
         noteText'  <- maybe (pure noteText) (`rgaEditText` noteText) editText

@@ -102,13 +102,13 @@ agendaLimit = Just 10
 today :: Day
 today = fromGregorian 1018 02 10
 
-prop_new :: NoContainNul -> Maybe Day -> Maybe Day -> Property
-prop_new (NoContainNul newText) newStart newEnd =
+prop_new :: NoContainNul -> Maybe Day -> Maybe Day -> Bool -> Property
+prop_new (NoContainNul newText) newStart newEnd newWiki =
     newStart <= newEnd && Just today <= newEnd ==> expectRight test
   where
     test = do
         (nv, fs') <-
-            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd} today False
+            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd, newWiki = False} today
         pure $ conjoin
             [ case nv of
                 NoteView{text, start, end} ->
