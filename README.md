@@ -28,6 +28,10 @@ Feel free to open a ticket if you want to extend support.
     $ cd ff
     $ stack install ff
 
+### Completion for commands and options (tested on Ubuntu 18.04)
+
+    ff --bash-completion-script `which ff` | sudo tee /etc/bash_completion.d/ff
+
 ## Usage
 
 ### Look what 𝑓𝑓 can do for you
