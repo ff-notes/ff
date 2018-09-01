@@ -8,7 +8,7 @@ and this project adheres to
 ## [Unreleased]
 - Track issue content
 - Add wiki notes
-- Add completion instruction
+- Add completion installation instruction
 
 ## [0.6] - 2018-08-07
 ### Added
