@@ -20,13 +20,15 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (auto, command, execParser, flag',
-                                      fullDesc, help, helper, info, long,
-                                      metavar, option, progDesc, short,
-                                      strArgument, strOption, subparser, switch,
-                                      (<**>))
+import           Options.Applicative (auto, command, completer, execParser,
+                                      flag', fullDesc, help, helper, info,
+                                      listIOCompleter, long, metavar, option,
+                                      progDesc, short, strArgument, strOption,
+                                      subparser, switch, (<**>))
 
-import           FF.Storage (DocId (DocId))
+import           FF.Storage (DocId (DocId), Storage, listDocuments, rawDocId,
+                             runStorage)
+import qualified FF.Storage as Storage
 import           FF.Types (Limit, NoteId)
 
 data Cmd
@@ -87,8 +89,8 @@ data Search = Search
     , searchLimit :: Maybe Limit
     }
 
-parseOptions :: IO Options
-parseOptions = execParser $ i parser "A note taker and task tracker"
+parseOptions :: Storage.Handle -> IO Options
+parseOptions h = execParser $ i parser "A note taker and task tracker"
   where
     parser   = Options <$> brief <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
@@ -161,7 +163,8 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         <*> optional start
         <*> optional maybeEnd
     search = Search <$> strArgument (metavar "TEXT") <*> optional limit
-    noteid = DocId <$> strArgument (metavar "ID" <> help "note id")
+    noteid = DocId <$> strArgument
+        (metavar "ID" <> help "note id" <> completer completeNoteIds)
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"
     limit = option auto $ long "limit" <> short 'l' <> help "Number of issues"
@@ -196,3 +199,6 @@ parseOptions = execParser $ i parser "A note taker and task tracker"
         (long "version" <> short 'V' <> help "Current ff-note version")
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
+
+    completeNoteIds = listIOCompleter $
+        map rawDocId <$> runStorage h (listDocuments :: Storage [NoteId])
