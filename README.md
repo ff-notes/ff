@@ -36,7 +36,7 @@ Feel free to open a ticket if you want to extend support.
 
 #### MacOS
 
-    ff --bash-completion-script which ff | sudo tee /usr/local/etc/bash_completion.d/ff
+    ff --bash-completion-script `which ff` | sudo tee /usr/local/etc/bash_completion.d/ff
 
 ## Usage
 
