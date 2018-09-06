@@ -118,9 +118,9 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
             ]
 
 contactViewFull :: ContactView -> Doc
-contactViewFull ContactView{..} = spread [strictText cvName, meta]
+contactViewFull ContactView{..} = spread [strictText contactViewName, meta]
   where
-    meta = "| id" <+> string (rawDocId cvId)
+    meta = "| id" <+> string (rawDocId contactViewId)
 
 wrapLines :: Text -> Doc
 wrapLines =

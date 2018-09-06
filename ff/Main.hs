@@ -176,7 +176,7 @@ cmdTrack Track {..} today brief =
             Right issues -> pure issues
 
 cmdContact :: Contact -> Storage ()
-cmdContact (ContactShow mCommand)  = case mCommand of
+cmdContact (Contact mCommand)  = case mCommand of
     Just (Add name) -> do
         cv <- cmdNewContact name
         pprint $ withHeader "added:" $ UI.contactViewFull cv

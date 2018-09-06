@@ -38,10 +38,15 @@ import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
 import           FF.Types.Internal (noteJsonOptions)
 
-data Status = Active | Archived | Deleted | Wiki
+data StatusNote = Active | Archived | Deleted | Wiki
     deriving (Bounded, Enum, Eq, Show)
 
-deriveJSON defaultOptions ''Status
+deriveJSON defaultOptions ''StatusNote
+
+data StatusContact = Added | Removed
+    deriving (Bounded, Enum, Eq, Show)
+
+deriveJSON defaultOptions ''StatusContact
 
 data Tracked = Tracked
     { trackedProvider   :: Text
@@ -54,7 +59,7 @@ data Tracked = Tracked
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 data Contact = Contact
-    { contactStatus :: LWW Status
+    { contactStatus :: LWW StatusContact
     , contactName   :: RgaString
     }
     deriving (Eq, Show, Generic)
@@ -62,7 +67,7 @@ data Contact = Contact
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Contact
 
 data Note = Note
-    { noteStatus  :: LWW Status
+    { noteStatus  :: LWW StatusNote
     , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
@@ -103,7 +108,7 @@ instance Collection Contact where
 
 data NoteView = NoteView
     { nid     :: Maybe NoteId
-    , status  :: Status
+    , status  :: StatusNote
     , text    :: Text
     , start   :: Day
     , end     :: Maybe Day
@@ -112,9 +117,9 @@ data NoteView = NoteView
     deriving (Eq, Show)
 
 data ContactView = ContactView
-    { cvId     :: ContactId
-    , cvStatus :: Status
-    , cvName   :: Text
+    { contactViewId     :: ContactId
+    , contactViewStatus :: StatusContact
+    , contactViewName   :: Text
     }
     deriving (Eq, Show)
 
@@ -191,9 +196,9 @@ noteView nid Note {..} = NoteView
 
 contactView :: ContactId -> Contact -> ContactView
 contactView contactId Contact {..} = ContactView
-    { cvId     = contactId
-    , cvStatus = LWW.query contactStatus
-    , cvName   = rgaToText contactName
+    { contactViewId    = contactId
+    , contactViewStatus = LWW.query contactStatus
+    , contactViewName  = rgaToText contactName
     }
 
 type Limit = Natural

@@ -63,7 +63,7 @@ data Track = Track
     , trackLimit   :: Maybe Limit
     }
 
-newtype Contact = ContactShow (Maybe ContactCommand)
+newtype Contact = Contact (Maybe ContactCommand)
 
 data ContactCommand = Add Text | Delete ContactId
 
@@ -164,7 +164,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    contact = fmap ContactShow . optional $ subparser
+    contact = fmap Contact . optional $ subparser
         $ command "add" (info (helper <*> contactName) $ progDesc "Add contact")
         <> command "delete" (info (helper <*> (Delete <$> contactId)) $ progDesc "Delete contact")
     contactName = Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")

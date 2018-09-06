@@ -27,7 +27,7 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Limit, ModeMap, NoteView (..), Status (..),
+import           FF.Types (Limit, ModeMap, NoteView (..), StatusNote (..),
                            Tracked (..), SampleNote)
 
 getIssues
@@ -117,7 +117,7 @@ issueToNoteView address Issue{..} = NoteView
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
 
-toStatus :: IssueState -> Status
+toStatus :: IssueState -> StatusNote
 toStatus = \case
     StateOpen   -> Active
     StateClosed -> Archived

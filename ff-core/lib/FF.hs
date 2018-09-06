@@ -61,11 +61,12 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
-import           FF.Types (Contact (..), ContactId,  ContactView (..), Limit,
+import           FF.Types (Contact (..), ContactId, ContactView (..), Limit,
                            ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), SampleNote, SampleContact, Status (..),
-                           Tracked, contactView, noteView, rgaFromText,
-                           rgaToText, singletonTaskModeMap)
+                           Sample (..), SampleContact, SampleNote,
+                           StatusContact (..), StatusNote (..), Tracked,
+                           contactView, noteView, rgaFromText, rgaToText,
+                           singletonTaskModeMap)
 
 loadAllContacts :: (MonadStorage m) => m [ContactView]
 loadAllContacts = do
@@ -78,7 +79,7 @@ loadAllContacts = do
 
 loadActiveContacts :: MonadStorage m => m [ContactView]
 loadActiveContacts =
-    filter (\ContactView { cvStatus } -> cvStatus == Active) <$> loadAllContacts
+    filter (\ContactView { contactViewStatus } -> contactViewStatus == Added) <$> loadAllContacts
 
 getContactSamples :: MonadStorage m => m SampleContact
 getContactSamples = getContactSamplesWith $ const True
@@ -90,7 +91,7 @@ getContactSamplesWith
 getContactSamplesWith predicate = do
     activeContacts <- loadActiveContacts
     pure . (\ys -> Sample ys $ genericLength ys) .
-        filter (predicate . cvName) $ activeContacts
+        filter (predicate . contactViewName) $ activeContacts
 
 loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
@@ -190,11 +191,11 @@ updateTrackedNotes nvNews = do
     mapM_ (updateTrackedNote oldNotes) nvNews
 
 -- | Native 'Note' smart constructor
-newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
+newNote :: Clock m => StatusNote -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = newNote' status text start end Nothing
 
 -- | Generic 'Note' smart constructor
-newNote' :: Clock m => Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
+newNote' :: Clock m => StatusNote -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
 newNote' status text start end tracked = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
@@ -219,25 +220,21 @@ cmdNewNote New { newText, newStart, newEnd, newWiki } today = do
     pure $ noteView nid note
 
 -- | Generic 'Contact' smart constructor
-newContact'
-    :: Clock m
-    => Status
-    -> Text
-    -> m Contact
-newContact' status name = do
-    contactStatus <- LWW.initialize status
+newContact' :: Clock m => StatusContact -> Text -> m Contact
+newContact' st name = do
+    contactStatus <- LWW.initialize st
     contactName   <- rgaFromText name
     pure Contact{..}
 
 cmdNewContact :: MonadStorage m => Text -> m ContactView
 cmdNewContact name = do
-    contact <- newContact' Active name
+    contact <- newContact' Added name
     cid  <- create contact
     pure $ contactView cid contact
 
 cmdDeleteContact :: ContactId -> Storage ContactView
 cmdDeleteContact cid = modifyAndViewContact cid $ \contact@Contact {..} -> do
-    contactStatus' <- LWW.assign Deleted contactStatus
+    contactStatus' <- LWW.assign Removed contactStatus
     contactName'   <- rgaEditText Text.empty contactName
     pure contact
         { contactStatus = contactStatus'
