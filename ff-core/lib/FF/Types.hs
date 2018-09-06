@@ -54,8 +54,8 @@ data Tracked = Tracked
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 data Contact = Contact
-    { contactStatus :: LWW Status 
-    , contactName   :: RgaString 
+    { contactStatus :: LWW Status
+    , contactName   :: RgaString
     }
     deriving (Eq, Show, Generic)
 
@@ -77,10 +77,10 @@ type ContactId = DocId Contact
 instance Semigroup Note where
     (<>) = gmappend
 
+instance Semilattice Note
+
 instance Semigroup Contact where
     (<>) = gmappend
-
-instance Semilattice Note
 
 instance Semilattice Contact
 
@@ -118,31 +118,22 @@ data ContactView = ContactView
     }
     deriving (Eq, Show)
 
-data Sample = Sample
-    { notes :: [NoteView]
+data Sample a = Sample
+    { docs  :: [a]
     , total :: Natural
     }
     deriving (Eq, Show)
 
-data ContactSample = ContactSample
-    { csContacts :: [ContactView]
-    , csTotal :: Natural
-    }
-    deriving (Eq, Show)
+type SampleContact = Sample ContactView
 
-emptyContactSample :: ContactSample
-emptyContactSample = ContactSample {csContacts = [], csTotal = 0}
+type SampleNote = Sample NoteView
 
-emptySample :: Sample
-emptySample = Sample {notes = [], total = 0}
+emptySample :: Sample a
+emptySample = Sample {docs = [], total = 0}
 
 -- | Number of notes omitted from the sample.
-omitted :: Sample -> Natural
-omitted Sample { notes, total } = total - genericLength notes
-
--- | Number of contacts omitted from the sample.
-omittedContacts :: ContactSample -> Natural
-omittedContacts ContactSample { csContacts, csTotal } = csTotal - genericLength csContacts
+omitted :: Sample a -> Natural
+omitted Sample { docs, total } = total - genericLength docs
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
@@ -192,7 +183,7 @@ noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
     { nid     = Just nid
     , status  = LWW.query noteStatus
-    , text    = Text.pack $ RGA.toString noteText
+    , text    = rgaToText noteText
     , start   = LWW.query noteStart
     , end     = LWW.query noteEnd
     , tracked = Max.query <$> noteTracked
@@ -202,7 +193,7 @@ contactView :: ContactId -> Contact -> ContactView
 contactView contactId Contact {..} = ContactView
     { cvId     = contactId
     , cvStatus = LWW.query contactStatus
-    , cvName   = Text.pack $ RGA.toString contactName
+    , cvName   = rgaToText contactName
     }
 
 type Limit = Natural

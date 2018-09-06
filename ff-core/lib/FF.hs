@@ -61,11 +61,11 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
-import           FF.Types (Contact (..), ContactId, ContactSample (..), ContactView (..), Limit,
+import           FF.Types (Contact (..), ContactId,  ContactView (..), Limit,
                            ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (..), Tracked, contactView,
-                           noteView, rgaFromText, rgaToText,
-                           singletonTaskModeMap)
+                           Sample (..), SampleNote, SampleContact, Status (..),
+                           Tracked, contactView, noteView, rgaFromText,
+                           rgaToText, singletonTaskModeMap)
 
 loadAllContacts :: (MonadStorage m) => m [ContactView]
 loadAllContacts = do
@@ -80,16 +80,16 @@ loadActiveContacts :: MonadStorage m => m [ContactView]
 loadActiveContacts =
     filter (\ContactView { cvStatus } -> cvStatus == Active) <$> loadAllContacts
 
-getContactSamples :: MonadStorage m => m ContactSample
+getContactSamples :: MonadStorage m => m SampleContact
 getContactSamples = getContactSamplesWith $ const True
 
 getContactSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter contacts by text
-    -> m ContactSample
+    -> m SampleContact
 getContactSamplesWith predicate = do
     activeContacts <- loadActiveContacts
-    pure . (\ys -> ContactSample ys $ genericLength ys) .
+    pure . (\ys -> Sample ys $ genericLength ys) .
         filter (predicate . cvName) $ activeContacts
 
 loadAllNotes :: MonadStorage m => m [NoteView]
@@ -120,7 +120,7 @@ getSamples
     => ConfigUI
     -> Maybe Limit
     -> Day  -- ^ today
-    -> m (ModeMap Sample)
+    -> m (ModeMap SampleNote)
 getSamples = getSamplesWith $ const True
 
 getSamplesWith
@@ -129,7 +129,7 @@ getSamplesWith
     -> ConfigUI
     -> Maybe Limit
     -> Day             -- ^ today
-    -> m (ModeMap Sample)
+    -> m (ModeMap SampleNote)
 getSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
     -- in sorting by nid no business-logic is involved,
@@ -152,7 +152,7 @@ shuffleItems gen = (`evalState` gen) . traverse shuf
 splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
 splitModes today = Map.unionsWith (<>) . fmap (singletonTaskModeMap today)
 
-takeSamples :: Maybe Limit -> ModeMap [NoteView] -> ModeMap Sample
+takeSamples :: Maybe Limit -> ModeMap [NoteView] -> ModeMap SampleNote
 takeSamples Nothing = fmap mkSample
   where
     mkSample ys = Sample ys $ genericLength ys
@@ -194,19 +194,12 @@ newNote :: Clock m => Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = newNote' status text start end Nothing
 
 -- | Generic 'Note' smart constructor
-newNote'
-    :: Clock m
-    => Status
-    -> Text
-    -> Day
-    -> Maybe Day
-    -> Maybe Tracked
-    -> m Note
+newNote' :: Clock m => Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
 newNote' status text start end tracked = do
-    noteStatus   <- LWW.initialize status
-    noteText     <- rgaFromText text
-    noteStart    <- LWW.initialize start
-    noteEnd      <- LWW.initialize end
+    noteStatus <- LWW.initialize status
+    noteText   <- rgaFromText text
+    noteStart  <- LWW.initialize start
+    noteEnd    <- LWW.initialize end
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
@@ -255,7 +248,7 @@ cmdSearch
     :: Text
     -> Maybe Limit
     -> Day  -- ^ today
-    -> Storage (ModeMap Sample)
+    -> Storage (ModeMap SampleNote)
 cmdSearch substr = getSamplesWith
     (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
     ConfigUI {shuffle = False}
