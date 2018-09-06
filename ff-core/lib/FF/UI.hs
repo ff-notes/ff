@@ -14,14 +14,16 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
-                                            stack, star, strictText, string,
-                                            (<+/>), (<+>), (</>))
+                                            spread, stack, star, strictText,
+                                            string, (<+/>), (<+>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Storage (rawDocId)
-import           FF.Types (ModeMap, NoteView (..), Sample (..),
-                           TaskMode (..), Tracked (..), omitted)
+import           FF.Types (ContactView(..), ContactSample (..), ModeMap,
+                           NoteView (..), Sample (..), ContactSample (..),
+                           TaskMode (..), Tracked (..), omitted,
+                           omittedContacts)
 
 type Template a = a -> String
 
@@ -36,6 +38,20 @@ indentation = 2
 
 pshow :: Show a => a -> Doc
 pshow = string . show
+
+prettyContactSamplesOmitted :: ContactSample -> Doc
+prettyContactSamplesOmitted samples = sparsedStack $
+    prettyContactSample samples :
+    [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
+  where
+    numOmitted = omittedContacts samples
+
+prettyContactSample :: ContactSample -> Doc
+prettyContactSample = \case
+    ContactSample{csTotal = 0} -> mempty
+    ContactSample{csContacts} ->
+        withHeader "Contacts:" . sparsedStack $
+        map ((star <>) . indent 1 . contactViewFull) csContacts
 
 prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
 prettySamplesBySections brief samples = stack' brief $
@@ -94,13 +110,18 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
   where
     meta
         = concat
-            [ ["| id"    <+> string (rawDocId i) | Just i <- [nid]]
-            , ["| start" <+> pshow @Day start]
-            , ["| end"   <+> pshow @Day e | Just e <- [end]]
+            [ ["| id"       <+> string (rawDocId i) | Just i <- [nid]]
+            , ["| start"    <+> pshow @Day start]
+            , ["| end"      <+> pshow @Day e | Just e <- [end]]
             ]
-        ++  [ "| tracking" <+> strictText trackedUrl
+        ++  [ "| tracking"  <+> strictText trackedUrl
             | Just Tracked{..} <- [tracked]
             ]
+
+contactViewFull :: ContactView -> Doc
+contactViewFull ContactView{..} = spread [strictText cvName, meta]
+  where
+    meta = "| id" <+> string (rawDocId cvId)
 
 wrapLines :: Text -> Doc
 wrapLines =

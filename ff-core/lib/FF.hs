@@ -8,13 +8,16 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module FF
-    ( cmdDelete
+    ( cmdDeleteNote
+    , cmdDeleteContact
     , cmdDone
     , cmdEdit
-    , cmdNew
+    , cmdNewNote
+    , cmdNewContact
     , cmdPostpone
     , cmdSearch
     , cmdUnarchive
+    , getContactSamples
     , getSamples
     , getUtcToday
     , loadActiveNotes
@@ -58,26 +61,36 @@ import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
-import           FF.Types (Limit, ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), Status (..), Tracked, noteView,
-                           rgaFromText, rgaToText, singletonTaskModeMap)
+import           FF.Types (Contact (..), ContactId, ContactSample (..), ContactView (..), Limit,
+                           ModeMap, Note (..), NoteId, NoteView (..),
+                           Sample (..), Status (..), Tracked, contactView,
+                           noteView, rgaFromText, rgaToText,
+                           singletonTaskModeMap)
 
-getSamples
+loadAllContacts :: (MonadStorage m) => m [ContactView]
+loadAllContacts = do
+    docs      <- listDocuments
+    mcontacts <- for docs load
+    pure
+        [ contactView contactId value
+        | (contactId, Right Document{value}) <- zip docs mcontacts
+        ]
+
+loadActiveContacts :: MonadStorage m => m [ContactView]
+loadActiveContacts =
+    filter (\ContactView { cvStatus } -> cvStatus == Active) <$> loadAllContacts
+
+getContactSamples :: MonadStorage m => m ContactSample
+getContactSamples = getContactSamplesWith $ const True
+
+getContactSamplesWith
     :: MonadStorage m
-    => ConfigUI
-    -> Maybe Limit
-    -> Day  -- ^ today
-    -> m (ModeMap Sample)
-getSamples = getSamplesWith $ const True
-
-cmdSearch
-    :: Text
-    -> Maybe Limit
-    -> Day  -- ^ today
-    -> Storage (ModeMap Sample)
-cmdSearch substr = getSamplesWith
-    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
-    ConfigUI {shuffle = False}
+    => (Text -> Bool)  -- ^ predicate to filter contacts by text
+    -> m ContactSample
+getContactSamplesWith predicate = do
+    activeContacts <- loadActiveContacts
+    pure . (\ys -> ContactSample ys $ genericLength ys) .
+        filter (predicate . cvName) $ activeContacts
 
 loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
@@ -101,6 +114,14 @@ loadTrackedNotes = do
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
     filter (\NoteView { status } -> status == Active) <$> loadAllNotes
+
+getSamples
+    :: MonadStorage m
+    => ConfigUI
+    -> Maybe Limit
+    -> Day  -- ^ today
+    -> m (ModeMap Sample)
+getSamples = getSamplesWith $ const True
 
 getSamplesWith
     :: MonadStorage m
@@ -174,17 +195,23 @@ newNote status text start end = newNote' status text start end Nothing
 
 -- | Generic 'Note' smart constructor
 newNote'
-    :: Clock m => Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
+    :: Clock m
+    => Status
+    -> Text
+    -> Day
+    -> Maybe Day
+    -> Maybe Tracked
+    -> m Note
 newNote' status text start end tracked = do
-    noteStatus <- LWW.initialize status
-    noteText   <- rgaFromText text
-    noteStart  <- LWW.initialize start
-    noteEnd    <- LWW.initialize end
+    noteStatus   <- LWW.initialize status
+    noteText     <- rgaFromText text
+    noteStart    <- LWW.initialize start
+    noteEnd      <- LWW.initialize end
     let noteTracked = Max.initial <$> tracked
     pure Note{..}
 
-cmdNew :: MonadStorage m => New -> Day -> m NoteView
-cmdNew New { newText, newStart, newEnd, newWiki } today = do
+cmdNewNote :: MonadStorage m => New -> Day -> m NoteView
+cmdNewNote New { newText, newStart, newEnd, newWiki } today = do
     let newStart' = fromMaybe today newStart
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
@@ -198,8 +225,43 @@ cmdNew New { newText, newStart, newEnd, newWiki } today = do
     nid  <- create note
     pure $ noteView nid note
 
-cmdDelete :: NoteId -> Storage NoteView
-cmdDelete nid = modifyAndView nid $ \note@Note {..} -> do
+-- | Generic 'Contact' smart constructor
+newContact'
+    :: Clock m
+    => Status
+    -> Text
+    -> m Contact
+newContact' status name = do
+    contactStatus <- LWW.initialize status
+    contactName   <- rgaFromText name
+    pure Contact{..}
+
+cmdNewContact :: MonadStorage m => Text -> m ContactView
+cmdNewContact name = do
+    contact <- newContact' Active name
+    cid  <- create contact
+    pure $ contactView cid contact
+
+cmdDeleteContact :: ContactId -> Storage ContactView
+cmdDeleteContact cid = modifyAndViewContact cid $ \contact@Contact {..} -> do
+    contactStatus' <- LWW.assign Deleted contactStatus
+    contactName'   <- rgaEditText Text.empty contactName
+    pure contact
+        { contactStatus = contactStatus'
+        , contactName   = contactName'
+        }
+
+cmdSearch
+    :: Text
+    -> Maybe Limit
+    -> Day  -- ^ today
+    -> Storage (ModeMap Sample)
+cmdSearch substr = getSamplesWith
+    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
+    ConfigUI {shuffle = False}
+
+cmdDeleteNote :: NoteId -> Storage NoteView
+cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do
     assertNoteIsNative note
     noteStatus' <- LWW.assign Deleted noteStatus
     noteText'   <- rgaEditText Text.empty noteText
@@ -277,6 +339,9 @@ cmdPostpone nid = modifyAndView nid $ \note@Note { noteStart, noteEnd } -> do
 
 modifyAndView :: NoteId -> (Note -> Storage Note) -> Storage NoteView
 modifyAndView nid f = noteView nid <$> modify nid f
+
+modifyAndViewContact :: ContactId -> (Contact -> Storage Contact) -> Storage ContactView
+modifyAndViewContact cid f = contactView cid <$> modify cid f
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime

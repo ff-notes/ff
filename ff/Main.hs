@@ -30,15 +30,16 @@ import           System.Pager (printOrPage)
 import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
-import           FF (cmdDelete, cmdDone, cmdEdit, cmdNew, cmdPostpone,
-                     cmdSearch, cmdUnarchive, getSamples, getUtcToday,
+import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
+                     cmdUnarchive, getContactSamples, getSamples, getUtcToday,
                      updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
-import           FF.Options (Cmd (..), CmdAction (..), DataDir (..),
-                             Options (..), Search (..), Shuffle (..),
-                             Track (..), parseOptions)
+import           FF.Options (Cmd (..), CmdAction (..), Contact (..), ContactCommand (..),
+                             DataDir (..), Options (..), Search (..),
+                             Shuffle (..), Track (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Serve (cmdServe)
 import           FF.Storage (Storage, runStorage)
@@ -121,8 +122,9 @@ runCmdAction h ui cmd brief = do
         CmdAgenda mlimit -> do
             nvs <- getSamples ui mlimit today
             pprint $ UI.prettySamplesBySections brief nvs
+        CmdContact contact -> cmdContact contact
         CmdDelete noteId -> do
-            nv <- cmdDelete noteId
+            nv <- cmdDeleteNote noteId
             pprint $ withHeader "deleted:" $ UI.noteViewFull nv
         CmdDone noteId -> do
             nv <- cmdDone noteId
@@ -131,7 +133,7 @@ runCmdAction h ui cmd brief = do
             nv <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteViewFull nv
         CmdNew new -> do
-            nv <- cmdNew new today
+            nv <- cmdNewNote new today
             pprint $ withHeader "added:" $ UI.noteViewFull nv
         CmdPostpone noteId -> do
             nv <- cmdPostpone noteId
@@ -172,6 +174,18 @@ cmdTrack Track {..} today brief =
                 hPutStrLn stderr err
                 exitFailure
             Right issues -> pure issues
+
+cmdContact :: Contact -> Storage ()
+cmdContact (ContactShow mCommand)  = case mCommand of
+    Just (Add name) -> do
+        cv <- cmdNewContact name
+        pprint $ withHeader "added:" $ UI.contactViewFull cv
+    Just (Delete cid) -> do
+        cv <- cmdDeleteContact cid
+        pprint $ withHeader "deleted:" $ UI.contactViewFull cv
+    Nothing -> do
+        cvs <- getContactSamples
+        pprint $ UI.prettyContactSamplesOmitted cvs
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

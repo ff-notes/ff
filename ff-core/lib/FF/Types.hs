@@ -53,6 +53,14 @@ data Tracked = Tracked
 
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
+data Contact = Contact
+    { contactStatus :: LWW Status 
+    , contactName   :: RgaString 
+    }
+    deriving (Eq, Show, Generic)
+
+deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Contact
+
 data Note = Note
     { noteStatus  :: LWW Status
     , noteText    :: RgaString
@@ -64,10 +72,17 @@ data Note = Note
 
 type NoteId = DocId Note
 
+type ContactId = DocId Contact
+
 instance Semigroup Note where
     (<>) = gmappend
 
+instance Semigroup Contact where
+    (<>) = gmappend
+
 instance Semilattice Note
+
+instance Semilattice Contact
 
 deriveFromJSON noteJsonOptions ''Note
 
@@ -83,6 +98,9 @@ instance ToJSON Note where
 instance Collection Note where
     collectionName = "note"
 
+instance Collection Contact where
+    collectionName = "contact"
+
 data NoteView = NoteView
     { nid     :: Maybe NoteId
     , status  :: Status
@@ -93,11 +111,27 @@ data NoteView = NoteView
     }
     deriving (Eq, Show)
 
+data ContactView = ContactView
+    { cvId     :: ContactId
+    , cvStatus :: Status
+    , cvName   :: Text
+    }
+    deriving (Eq, Show)
+
 data Sample = Sample
     { notes :: [NoteView]
     , total :: Natural
     }
     deriving (Eq, Show)
+
+data ContactSample = ContactSample
+    { csContacts :: [ContactView]
+    , csTotal :: Natural
+    }
+    deriving (Eq, Show)
+
+emptyContactSample :: ContactSample
+emptyContactSample = ContactSample {csContacts = [], csTotal = 0}
 
 emptySample :: Sample
 emptySample = Sample {notes = [], total = 0}
@@ -105,6 +139,10 @@ emptySample = Sample {notes = [], total = 0}
 -- | Number of notes omitted from the sample.
 omitted :: Sample -> Natural
 omitted Sample { notes, total } = total - genericLength notes
+
+-- | Number of contacts omitted from the sample.
+omittedContacts :: ContactSample -> Natural
+omittedContacts ContactSample { csContacts, csTotal } = csTotal - genericLength csContacts
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
@@ -158,6 +196,13 @@ noteView nid Note {..} = NoteView
     , start   = LWW.query noteStart
     , end     = LWW.query noteEnd
     , tracked = Max.query <$> noteTracked
+    }
+
+contactView :: ContactId -> Contact -> ContactView
+contactView contactId Contact {..} = ContactView
+    { cvId     = contactId
+    , cvStatus = LWW.query contactStatus
+    , cvName   = Text.pack $ RGA.toString contactName
     }
 
 type Limit = Natural

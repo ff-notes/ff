@@ -9,6 +9,7 @@ and this project adheres to
 - Track issue content
 - Add wiki notes
 - Add completion installation instruction
+- Add contacts
 
 ## [0.6] - 2018-08-07
 ### Added
