@@ -7,7 +7,6 @@ module FF.Options
     , CmdAction (..)
     , Config (..)
     , Contact (..)
-    , ContactCommand (..)
     , DataDir (..)
     , Edit (..)
     , New (..)
@@ -40,7 +39,7 @@ data Cmd
 
 data CmdAction
     = CmdAgenda     (Maybe Limit)
-    | CmdContact    Contact
+    | CmdContact    (Maybe Contact)
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
@@ -63,9 +62,7 @@ data Track = Track
     , trackLimit   :: Maybe Limit
     }
 
-newtype Contact = Contact (Maybe ContactCommand)
-
-data ContactCommand = Add Text | Delete ContactId
+data Contact = Add Text | Delete ContactId
 
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
@@ -136,7 +133,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
                                     \ recent format"
 
     cmdAgenda    = CmdAgenda    <$> optional limit
-    cmdContact   = CmdContact   <$> contact
+    cmdContact   = CmdContact   <$> optional contact
     cmdDelete    = CmdDelete    <$> noteid
     cmdDone      = CmdDone      <$> noteid
     cmdEdit      = CmdEdit      <$> edit
@@ -164,12 +161,13 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    contact = fmap Contact . optional $ subparser
-        $ command "add" (info (helper <*> contactName) $ progDesc "Add contact")
-        <> command "delete" (info (helper <*> (Delete <$> contactId)) $ progDesc "Delete contact")
-    contactName = Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
-    contactId = DocId <$> strArgument
-        (metavar "CONTACT_ID" <> help "contact id" <> completer completeContactIds)
+    contact = subparser $ command "add" iAdd <> command "delete" iDelete
+      where
+        iAdd = i pAdd "Add contact"
+        iDelete = i pDelete "Delete contact"
+        pAdd = Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
+        pDelete = Delete . DocId <$> strArgument
+            (metavar "CONTACT_ID" <> help "contact id" <> completer completeContactIds)
     new = New
         <$> text
         <*> optional start

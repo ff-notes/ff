@@ -37,7 +37,7 @@ import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
-import           FF.Options (Cmd (..), CmdAction (..), Contact (..), ContactCommand (..),
+import           FF.Options (Cmd (..), CmdAction (..), Contact (..),
                              DataDir (..), Options (..), Search (..),
                              Shuffle (..), Track (..), parseOptions)
 import qualified FF.Options as Options
@@ -175,8 +175,8 @@ cmdTrack Track {..} today brief =
                 exitFailure
             Right issues -> pure issues
 
-cmdContact :: Contact -> Storage ()
-cmdContact (Contact mCommand)  = case mCommand of
+cmdContact :: Maybe Contact -> Storage ()
+cmdContact mCommand = case mCommand of
     Just (Add name) -> do
         cv <- cmdNewContact name
         pprint $ withHeader "added:" $ UI.contactViewFull cv
