@@ -38,15 +38,14 @@ import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
 import           FF.Types.Internal (noteJsonOptions)
 
-data StatusNote = Active | Archived | Deleted | Wiki
+data Status = Active | Archived | Deleted
     deriving (Bounded, Enum, Eq, Show)
 
-deriveJSON defaultOptions ''StatusNote
+deriveJSON defaultOptions ''Status
 
-data StatusContact = Added | Removed
-    deriving (Bounded, Enum, Eq, Show)
+data Wiki = Wiki deriving (Bounded, Enum, Eq, Show)
 
-deriveJSON defaultOptions ''StatusContact
+deriveJSON defaultOptions ''Wiki
 
 data Tracked = Tracked
     { trackedProvider   :: Text
@@ -59,7 +58,7 @@ data Tracked = Tracked
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
 data Contact = Contact
-    { contactStatus :: LWW StatusContact
+    { contactStatus :: LWW Status
     , contactName   :: RgaString
     }
     deriving (Eq, Show, Generic)
@@ -67,7 +66,7 @@ data Contact = Contact
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Contact
 
 data Note = Note
-    { noteStatus  :: LWW StatusNote
+    { noteStatus  :: LWW (Either Wiki Status)
     , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
@@ -108,7 +107,7 @@ instance Collection Contact where
 
 data NoteView = NoteView
     { nid     :: Maybe NoteId
-    , status  :: StatusNote
+    , status  :: Either Wiki Status
     , text    :: Text
     , start   :: Day
     , end     :: Maybe Day
@@ -118,7 +117,7 @@ data NoteView = NoteView
 
 data ContactView = ContactView
     { contactViewId     :: ContactId
-    , contactViewStatus :: StatusContact
+    , contactViewStatus :: Status
     , contactViewName   :: Text
     }
     deriving (Eq, Show)

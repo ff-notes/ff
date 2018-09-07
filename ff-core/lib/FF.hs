@@ -64,7 +64,7 @@ import           FF.Storage (Document (..), MonadStorage, Storage, create,
 import           FF.Types (Contact (..), ContactId, ContactView (..), Limit,
                            ModeMap, Note (..), NoteId, NoteView (..),
                            Sample (..), SampleContact, SampleNote,
-                           StatusContact (..), StatusNote (..), Tracked,
+                           Status (..), Wiki (..), Tracked,
                            contactView, noteView, rgaFromText, rgaToText,
                            singletonTaskModeMap)
 
@@ -79,7 +79,7 @@ loadAllContacts = do
 
 loadActiveContacts :: MonadStorage m => m [ContactView]
 loadActiveContacts =
-    filter (\ContactView { contactViewStatus } -> contactViewStatus == Added) <$> loadAllContacts
+    filter (\ContactView { contactViewStatus } -> contactViewStatus == Active) <$> loadAllContacts
 
 getContactSamples :: MonadStorage m => m SampleContact
 getContactSamples = getContactSamplesWith $ const True
@@ -114,7 +114,7 @@ loadTrackedNotes = do
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
-    filter (\NoteView { status } -> status == Active) <$> loadAllNotes
+    filter (\NoteView { status } -> status == Right Active) <$> loadAllNotes
 
 getSamples
     :: MonadStorage m
@@ -191,11 +191,11 @@ updateTrackedNotes nvNews = do
     mapM_ (updateTrackedNote oldNotes) nvNews
 
 -- | Native 'Note' smart constructor
-newNote :: Clock m => StatusNote -> Text -> Day -> Maybe Day -> m Note
+newNote :: Clock m => Either Wiki Status -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = newNote' status text start end Nothing
 
 -- | Generic 'Note' smart constructor
-newNote' :: Clock m => StatusNote -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
+newNote' :: Clock m => Either Wiki Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
 newNote' status text start end tracked = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
@@ -212,15 +212,15 @@ cmdNewNote New { newText, newStart, newEnd, newWiki } today = do
         _        -> pure ()
     (status, end) <-
         if newWiki then case newEnd of
-            Nothing -> pure (Wiki, Nothing)
+            Nothing -> pure (Left Wiki, Nothing)
             Just _  -> fail "Wiki note has no end date."
-        else pure (Active, newEnd)
+        else pure (Right Active, newEnd)
     note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
 
 -- | Generic 'Contact' smart constructor
-newContact' :: Clock m => StatusContact -> Text -> m Contact
+newContact' :: Clock m => Status -> Text -> m Contact
 newContact' st name = do
     contactStatus <- LWW.initialize st
     contactName   <- rgaFromText name
@@ -228,13 +228,13 @@ newContact' st name = do
 
 cmdNewContact :: MonadStorage m => Text -> m ContactView
 cmdNewContact name = do
-    contact <- newContact' Added name
+    contact <- newContact' Active name
     cid  <- create contact
     pure $ contactView cid contact
 
 cmdDeleteContact :: ContactId -> Storage ContactView
 cmdDeleteContact cid = modifyAndViewContact cid $ \contact@Contact {..} -> do
-    contactStatus' <- LWW.assign Removed contactStatus
+    contactStatus' <- LWW.assign Deleted contactStatus
     contactName'   <- rgaEditText Text.empty contactName
     pure contact
         { contactStatus = contactStatus'
@@ -253,7 +253,7 @@ cmdSearch substr = getSamplesWith
 cmdDeleteNote :: NoteId -> Storage NoteView
 cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do
     assertNoteIsNative note
-    noteStatus' <- LWW.assign Deleted noteStatus
+    noteStatus' <- LWW.assign (Right Deleted) noteStatus
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
     noteEnd'    <- LWW.assign Nothing noteEnd
@@ -266,12 +266,12 @@ cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     assertNoteIsNative note
-    noteStatus' <- LWW.assign Archived noteStatus
+    noteStatus' <- LWW.assign (Right Archived) noteStatus
     pure note { noteStatus = noteStatus' }
 
 cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
-    noteStatus' <- LWW.assign Active noteStatus
+    noteStatus' <- LWW.assign (Right Active) noteStatus
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
@@ -301,7 +301,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
     update :: Note -> Storage Note
     update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
         (start, end) <- case noteStatus of
-            Wiki -> case (editStart, editEnd) of
+            Left Wiki -> case (editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _                  -> fail "Wiki note has unchangable dates."
             _ -> pure (editStart, editEnd)
