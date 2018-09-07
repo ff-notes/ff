@@ -25,6 +25,7 @@ import           Data.String.Interpolate.IsString (i)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..), fromGregorian)
+import qualified Data.Vector as Vector
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
@@ -119,10 +120,8 @@ prop_new (NoContainNul newText) newStart newEnd =
                         ]
             , case fs' of
                 (toList -> [toList -> [toList -> [decode -> Just (Object note)]]]) -> conjoin
-                    [ case note ! "status" of
-                        Array (toList -> ["Active", Number _, Number 314159])
-                            -> ok
-                        status -> failProp $ "status = " ++ show status
+                    [ note ! "status"
+                        === array ["Active", Number 17091260, Number 314159]
                     , case note ! "text" of
                         Array (toList ->
                                 [Array (toList ->
@@ -280,3 +279,6 @@ case_json2ron = do
 (-:) :: a -> b -> (a, b)
 a -: b = (a, b)
 infixr 0 -:
+
+array :: [Value] -> Value
+array = Array . Vector.fromList
