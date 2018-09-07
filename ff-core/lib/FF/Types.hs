@@ -43,7 +43,7 @@ data Status = Active | Archived | Deleted
 
 deriveJSON defaultOptions ''Status
 
-data Wiki = Wiki deriving (Bounded, Enum, Eq, Show)
+data Wiki = Wiki deriving (Eq, Show)
 
 deriveJSON defaultOptions ''Wiki
 
