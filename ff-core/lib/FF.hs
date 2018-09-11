@@ -62,10 +62,10 @@ import           FF.Options (Edit (..), New (..))
 import           FF.Storage (Document (..), MonadStorage, Storage, create,
                              listDocuments, load, modify)
 import           FF.Types (Contact (..), ContactId, ContactView (..), Limit,
-                           ModeMap, Note (..), NoteId, NoteView (..),
-                           Sample (..), SampleContact, SampleNote,
-                           Status (..), Wiki (..), Tracked,
-                           contactView, noteView, rgaFromText, rgaToText,
+                           ModeMap, Note (..), NoteId, NoteStatus (..),
+                           NoteView (..), Sample (..), SampleContact,
+                           SampleNote, Status (..), Tracked, contactView,
+                           noteView, rgaFromText, rgaToText,
                            singletonTaskModeMap)
 
 loadAllContacts :: (MonadStorage m) => m [ContactView]
@@ -114,7 +114,7 @@ loadTrackedNotes = do
 
 loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
-    filter (\NoteView { status } -> status == Right Active) <$> loadAllNotes
+    filter (\NoteView { status } -> status == TaskStatus Active) <$> loadAllNotes
 
 getSamples
     :: MonadStorage m
@@ -191,11 +191,11 @@ updateTrackedNotes nvNews = do
     mapM_ (updateTrackedNote oldNotes) nvNews
 
 -- | Native 'Note' smart constructor
-newNote :: Clock m => Either Wiki Status -> Text -> Day -> Maybe Day -> m Note
+newNote :: Clock m => NoteStatus -> Text -> Day -> Maybe Day -> m Note
 newNote status text start end = newNote' status text start end Nothing
 
 -- | Generic 'Note' smart constructor
-newNote' :: Clock m => Either Wiki Status -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
+newNote' :: Clock m => NoteStatus -> Text -> Day -> Maybe Day -> Maybe Tracked -> m Note
 newNote' status text start end tracked = do
     noteStatus <- LWW.initialize status
     noteText   <- rgaFromText text
@@ -212,9 +212,9 @@ cmdNewNote New { newText, newStart, newEnd, newWiki } today = do
         _        -> pure ()
     (status, end) <-
         if newWiki then case newEnd of
-            Nothing -> pure (Left Wiki, Nothing)
+            Nothing -> pure (Wiki, Nothing)
             Just _  -> fail "Wiki note has no end date."
-        else pure (Right Active, newEnd)
+        else pure (TaskStatus Active, newEnd)
     note <- newNote status newText newStart' end
     nid  <- create note
     pure $ noteView nid note
@@ -253,7 +253,7 @@ cmdSearch substr = getSamplesWith
 cmdDeleteNote :: NoteId -> Storage NoteView
 cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do
     assertNoteIsNative note
-    noteStatus' <- LWW.assign (Right Deleted) noteStatus
+    noteStatus' <- LWW.assign (TaskStatus Deleted) noteStatus
     noteText'   <- rgaEditText Text.empty noteText
     noteStart'  <- LWW.assign (fromGregorian 0 1 1) noteStart
     noteEnd'    <- LWW.assign Nothing noteEnd
@@ -266,12 +266,12 @@ cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do
 cmdDone :: NoteId -> Storage NoteView
 cmdDone nid = modifyAndView nid $ \note@Note { noteStatus } -> do
     assertNoteIsNative note
-    noteStatus' <- LWW.assign (Right Archived) noteStatus
+    noteStatus' <- LWW.assign (TaskStatus Archived) noteStatus
     pure note { noteStatus = noteStatus' }
 
 cmdUnarchive :: NoteId -> Storage NoteView
 cmdUnarchive nid = modifyAndView nid $ \note@Note { noteStatus } -> do
-    noteStatus' <- LWW.assign (Right Active) noteStatus
+    noteStatus' <- LWW.assign (TaskStatus Active) noteStatus
     pure note { noteStatus = noteStatus' }
 
 cmdEdit :: Edit -> Storage NoteView
@@ -301,7 +301,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
     update :: Note -> Storage Note
     update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
         (start, end) <- case noteStatus of
-            Left Wiki -> case (editStart, editEnd) of
+            Wiki -> case (editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _                  -> fail "Wiki note has unchangable dates."
             _ -> pure (editStart, editEnd)

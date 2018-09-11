@@ -44,8 +44,9 @@ import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (DocId (DocId))
 import           FF.Test (TestDB, runStorageSim)
-import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
-                           Status (Active), TaskMode (Overdue), Tracked (..))
+import           FF.Types (Limit, Note (..), NoteStatus (..), NoteView (..),
+                           Sample (..), Status (Active), TaskMode (Overdue),
+                           Tracked (..))
 import           FF.Upgrade (upgradeDatabase)
 
 import           ArbitraryOrphans ()
@@ -71,7 +72,7 @@ case_smoke = do
             Sample
                 { docs = pure NoteView
                     { nid     = Just $ DocId "1"
-                    , status  = Right Active
+                    , status  = TaskStatus Active
                     , text    = "helloworld"
                     , start   = fromGregorian 22 11 24
                     , end     = Just $ fromGregorian 17 06 19
@@ -186,7 +187,7 @@ case_repo =
         Sample
             { docs = pure NoteView
                 { nid     = Nothing
-                , status  = Right Active
+                , status  = TaskStatus Active
                 , text    = "import issues (GitHub -> ff)"
                 , start   = fromGregorian 2018 06 21
                 , end     = Just $ fromGregorian 2018 06 15

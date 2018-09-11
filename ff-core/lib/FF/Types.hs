@@ -18,7 +18,8 @@ import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (ToJSON (..), Value (Object), camelTo2)
+import           Data.Aeson (FromJSON (..), ToJSON (..), Value (Object, String),
+                             camelTo2, withText)
 import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveJSON,
                                 fieldLabelModifier, mkToJSON)
 import qualified Data.HashMap.Strict as HashMap
@@ -43,9 +44,25 @@ data Status = Active | Archived | Deleted
 
 deriveJSON defaultOptions ''Status
 
-data Wiki = Wiki deriving (Eq, Show)
+data NoteStatus = TaskStatus Status | Wiki
+    deriving (Eq, Show)
 
-deriveJSON defaultOptions ''Wiki
+instance ToJSON NoteStatus where
+    toJSON ns = String $ Text.pack st
+      where
+        st = case ns of
+            TaskStatus s -> show s
+            _ -> show Wiki
+
+instance FromJSON NoteStatus where
+    parseJSON = withText "NoteStatus" $ \x -> do
+        let s = case x of
+                "Wiki"     -> Wiki
+                "Active"   -> TaskStatus Active
+                "Archived" -> TaskStatus Archived
+                "Deleted"  -> TaskStatus Deleted
+                _          -> error "Not NoteStatus type"
+        return s
 
 data Tracked = Tracked
     { trackedProvider   :: Text
@@ -66,7 +83,7 @@ data Contact = Contact
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Contact
 
 data Note = Note
-    { noteStatus  :: LWW (Either Wiki Status)
+    { noteStatus  :: LWW NoteStatus
     , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
@@ -107,7 +124,7 @@ instance Collection Contact where
 
 data NoteView = NoteView
     { nid     :: Maybe NoteId
-    , status  :: Either Wiki Status
+    , status  :: NoteStatus
     , text    :: Text
     , start   :: Day
     , end     :: Maybe Day
@@ -163,15 +180,14 @@ instance Ord TaskMode where
     m1         <= m2         = taskModeOrder m1 <= taskModeOrder m2
 
 taskMode :: Day -> NoteView -> TaskMode
-taskMode today NoteView{start, end} = case end of
-    Nothing
-        | start <= today -> Actual
-        | otherwise      -> starting start today
+taskMode today NoteView { start, end } = case end of
+    Nothing | start <= today -> Actual
+            | otherwise      -> starting start today
     Just e -> case compare e today of
         LT -> overdue today e
         EQ -> EndToday
-        GT  | start <= today -> endSoon  e today
-            | otherwise      -> starting start today
+        GT | start <= today -> endSoon e today
+           | otherwise      -> starting start today
   where
     overdue  = helper Overdue
     endSoon  = helper EndSoon
@@ -195,9 +211,9 @@ noteView nid Note {..} = NoteView
 
 contactView :: ContactId -> Contact -> ContactView
 contactView contactId Contact {..} = ContactView
-    { contactViewId    = contactId
+    { contactViewId     = contactId
     , contactViewStatus = LWW.query contactStatus
-    , contactViewName  = rgaToText contactName
+    , contactViewName   = rgaToText contactName
     }
 
 type Limit = Natural
