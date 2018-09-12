@@ -18,7 +18,7 @@ import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (FromJSON (..), ToJSON (..), Value (Object, String),
+import           Data.Aeson (FromJSON (..), ToJSON (..), Value (Object),
                              camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveJSON,
                                 fieldLabelModifier, mkToJSON)
@@ -48,8 +48,9 @@ data NoteStatus = TaskStatus Status | Wiki
     deriving (Eq, Show)
 
 instance ToJSON NoteStatus where
-    toJSON (TaskStatus a) = toJSON a
-    toJSON _ = String "Wiki"
+    toJSON = \case
+        TaskStatus a -> toJSON a
+        Wiki         -> "Wiki"
 
 instance FromJSON NoteStatus where
     parseJSON v = case v of
@@ -140,7 +141,6 @@ data Sample a = Sample
 type ContactSample = Sample ContactView
 
 type NoteSample = Sample NoteView
-
 
 emptySample :: Sample a
 emptySample = Sample {docs = [], total = 0}
