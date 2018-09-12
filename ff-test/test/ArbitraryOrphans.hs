@@ -1,8 +1,6 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ArbitraryOrphans
-    ()
-where
+module ArbitraryOrphans () where
 
 import           CRDT.Arbitrary ()
 import           Test.QuickCheck (Arbitrary (..), arbitraryBoundedEnum, oneof)
@@ -22,7 +20,7 @@ instance Arbitrary Note where
         <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance Arbitrary NoteStatus where
-    arbitrary = oneof [TaskStatus <$> arbitrary, arbitrary]
+    arbitrary = oneof [TaskStatus <$> arbitrary, pure Wiki]
 
 instance Arbitrary Status where
     arbitrary = arbitraryBoundedEnum

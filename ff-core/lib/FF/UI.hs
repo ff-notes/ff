@@ -20,9 +20,9 @@ import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Storage (rawDocId)
-import           FF.Types (ContactView(..), ModeMap, NoteView (..),
-                           Sample (..), SampleContact, SampleNote,
-                           TaskMode (..), Tracked (..), omitted)
+import           FF.Types (ContactSample, ContactView (..), ModeMap, NoteSample,
+                           NoteView (..), Sample (..), TaskMode (..),
+                           Tracked (..), omitted)
 
 type Template a = a -> String
 
@@ -38,28 +38,28 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettyContactSamplesOmitted :: SampleContact -> Doc
+prettyContactSamplesOmitted :: ContactSample -> Doc
 prettyContactSamplesOmitted samples = sparsedStack $
     prettyContactSample samples :
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyContactSample :: SampleContact -> Doc
+prettyContactSample :: ContactSample -> Doc
 prettyContactSample = \case
     Sample{total = 0} -> mempty
     Sample{docs} ->
         withHeader "Contacts:" . sparsedStack $
         map ((star <>) . indent 1 . contactViewFull) docs
 
-prettySamplesBySections :: Bool -> ModeMap SampleNote -> Doc
+prettySamplesBySections :: Bool -> ModeMap NoteSample -> Doc
 prettySamplesBySections brief samples = stack' brief $
     [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: Bool -> TaskMode -> SampleNote -> Doc
+prettySample :: Bool -> TaskMode -> NoteSample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
     Sample{total, docs} ->
@@ -109,11 +109,11 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
   where
     meta
         = concat
-            [ ["| id"       <+> string (rawDocId i) | Just i <- [nid]]
-            , ["| start"    <+> pshow @Day start]
-            , ["| end"      <+> pshow @Day e | Just e <- [end]]
+            [ ["| id"    <+> string (rawDocId i) | Just i <- [nid]]
+            , ["| start" <+> pshow @Day start]
+            , ["| end"   <+> pshow @Day e | Just e <- [end]]
             ]
-        ++  [ "| tracking"  <+> strictText trackedUrl
+        ++  [ "| tracking" <+> strictText trackedUrl
             | Just Tracked{..} <- [tracked]
             ]
 

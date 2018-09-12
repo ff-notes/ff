@@ -19,7 +19,7 @@ import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
 import           Data.Aeson (FromJSON (..), ToJSON (..), Value (Object, String),
-                             camelTo2, withText)
+                             camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveJSON,
                                 fieldLabelModifier, mkToJSON)
 import qualified Data.HashMap.Strict as HashMap
@@ -48,17 +48,13 @@ data NoteStatus = TaskStatus Status | Wiki
     deriving (Eq, Show)
 
 instance ToJSON NoteStatus where
-    toJSON = \case
-        TaskStatus s -> toJSON s
-        Wiki -> toJSON Wiki
+    toJSON (TaskStatus a) = toJSON a
+    toJSON _ = String "Wiki"
 
 instance FromJSON NoteStatus where
-    parseJSON = withText "NoteStatus" $ \case
-        "Wiki"     -> parseJSON "Wiki"
-        "Active"   -> TaskStatus <$> parseJSON "Active"
-        "Archived" -> TaskStatus <$> parseJSON "Archived"
-        "Deleted"  -> TaskStatus <$> parseJSON "Deleted"
-        _          -> fail "Not NoteStatus type"
+    parseJSON v = case v of
+        "Wiki" -> pure Wiki
+        _ -> TaskStatus <$> parseJSON v
 
 data Tracked = Tracked
     { trackedProvider   :: Text
@@ -141,9 +137,10 @@ data Sample a = Sample
     }
     deriving (Eq, Show)
 
-type SampleContact = Sample ContactView
+type ContactSample = Sample ContactView
 
-type SampleNote = Sample NoteView
+type NoteSample = Sample NoteView
+
 
 emptySample :: Sample a
 emptySample = Sample {docs = [], total = 0}
@@ -176,9 +173,10 @@ instance Ord TaskMode where
     m1         <= m2         = taskModeOrder m1 <= taskModeOrder m2
 
 taskMode :: Day -> NoteView -> TaskMode
-taskMode today NoteView { start, end } = case end of
-    Nothing | start <= today -> Actual
-            | otherwise      -> starting start today
+taskMode today NoteView{start, end} = case end of
+    Nothing
+        | start <= today -> Actual
+        | otherwise      -> starting start today
     Just e -> case compare e today of
         LT -> overdue today e
         EQ -> EndToday

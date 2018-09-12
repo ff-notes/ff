@@ -28,8 +28,8 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Limit, ModeMap, NoteStatus (..), NoteView (..),
-                           SampleNote, Status (..), Tracked (..))
+import           FF.Types (Limit, ModeMap, NoteSample, NoteStatus (..),
+                           NoteView (..), Status (..), Tracked (..))
 
 getIssues
     :: Maybe Text
@@ -67,7 +67,7 @@ getIssues mAddress mlimit issueState = do
     pure (address, response)
 
 getOpenIssueSamples
-    :: Maybe Text -> Maybe Limit -> Day -> ExceptT Text IO (ModeMap SampleNote)
+    :: Maybe Text -> Maybe Limit -> Day -> ExceptT Text IO (ModeMap NoteSample)
 getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
@@ -78,7 +78,7 @@ getIssueViews mAddress mlimit = do
     pure $ noteViewList address mlimit issues
 
 sampleMap
-    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap SampleNote
+    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap NoteSample
 sampleMap address mlimit today issues =
     takeSamples mlimit
         . splitModes today

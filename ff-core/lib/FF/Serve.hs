@@ -31,8 +31,8 @@ import           FF (getSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
 import           FF.Storage (runStorage)
 import qualified FF.Storage as Storage
-import           FF.Types (ModeMap, NoteId, NoteView (..), Sample (..),
-                           SampleNote, TaskMode (..), Tracked (..), omitted)
+import           FF.Types (ModeMap, NoteId, NoteSample, NoteView (..),
+                           Sample (..), TaskMode (..), Tracked (..), omitted)
 import           FF.UI (sampleLabel)
 
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
@@ -47,14 +47,14 @@ cmdServe h ui = liftIO $ do
   where
     opts = def{verbose = 0, settings = defaultSettings & setHost "::1"}
 
-prettyHtmlSamplesBySections :: ModeMap SampleNote -> Html
+prettyHtmlSamplesBySections :: ModeMap NoteSample -> Html
 prettyHtmlSamplesBySections samples = do
     for_ (Map.assocs samples) $ uncurry prettyHtmlSample
     when (numOmitted > 0) $ p $ toHtml numOmitted <> " task(s) omitted"
   where
     numOmitted = sum $ fmap omitted samples
 
-prettyHtmlSample :: TaskMode -> SampleNote -> Html
+prettyHtmlSample :: TaskMode -> NoteSample -> Html
 prettyHtmlSample mode = \case
     Sample{total = 0} -> mempty
     Sample{docs} ->
