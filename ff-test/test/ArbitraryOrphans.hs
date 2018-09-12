@@ -5,7 +5,7 @@ module ArbitraryOrphans
 where
 
 import           CRDT.Arbitrary ()
-import           Test.QuickCheck (Arbitrary (..), arbitraryBoundedEnum)
+import           Test.QuickCheck (Arbitrary (..), arbitraryBoundedEnum, oneof)
 
 import           FF.Config (Config (..), ConfigUI (..))
 import           FF.Types (Note (..), NoteStatus (..), Status (..),
@@ -22,7 +22,7 @@ instance Arbitrary Note where
         <$> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary <*> arbitrary
 
 instance Arbitrary NoteStatus where
-    arbitrary = TaskStatus <$> arbitrary
+    arbitrary = oneof [TaskStatus <$> arbitrary, arbitrary]
 
 instance Arbitrary Status where
     arbitrary = arbitraryBoundedEnum

@@ -48,21 +48,17 @@ data NoteStatus = TaskStatus Status | Wiki
     deriving (Eq, Show)
 
 instance ToJSON NoteStatus where
-    toJSON ns = String $ Text.pack st
-      where
-        st = case ns of
-            TaskStatus s -> show s
-            _ -> show Wiki
+    toJSON = \case
+        TaskStatus s -> toJSON s
+        Wiki -> toJSON Wiki
 
 instance FromJSON NoteStatus where
-    parseJSON = withText "NoteStatus" $ \x -> do
-        let s = case x of
-                "Wiki"     -> Wiki
-                "Active"   -> TaskStatus Active
-                "Archived" -> TaskStatus Archived
-                "Deleted"  -> TaskStatus Deleted
-                _          -> error "Not NoteStatus type"
-        return s
+    parseJSON = withText "NoteStatus" $ \case
+        "Wiki"     -> parseJSON "Wiki"
+        "Active"   -> TaskStatus <$> parseJSON "Active"
+        "Archived" -> TaskStatus <$> parseJSON "Archived"
+        "Deleted"  -> TaskStatus <$> parseJSON "Deleted"
+        _          -> fail "Not NoteStatus type"
 
 data Tracked = Tracked
     { trackedProvider   :: Text
