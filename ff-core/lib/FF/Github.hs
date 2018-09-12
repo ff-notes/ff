@@ -7,7 +7,8 @@ module FF.Github
     ( getIssueViews
     , getOpenIssueSamples
     , sampleMap
-    ) where
+    )
+where
 
 import           Control.Error (failWith)
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
@@ -27,8 +28,8 @@ import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           System.Process (readProcess)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Limit, ModeMap, NoteView (..), Sample (..),
-                           Status (..), Tracked (..))
+import           FF.Types (Limit, ModeMap, NoteSample, NoteStatus (..),
+                           NoteView (..), Status (..), Tracked (..))
 
 getIssues
     :: Maybe Text
@@ -38,60 +39,61 @@ getIssues
 getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
-        Nothing -> do
-            packed <- liftIO $ Text.pack <$>
-                readProcess "git" ["remote", "get-url", "--push", "origin"] ""
-            failWith "Sorry, only github repository expected." $
-                Text.stripPrefix "https://github.com/" packed
+        Nothing      -> do
+            packed <- liftIO $ Text.pack <$> readProcess
+                "git"
+                ["remote", "get-url", "--push", "origin"]
+                ""
+            failWith "Sorry, only github repository expected."
+                $   Text.stripPrefix "https://github.com/" packed
                 >>= Text.stripSuffix ".git\n"
     (owner, repo) <- case Text.splitOn "/" address of
         [owner, repo] | not $ Text.null owner, not $ Text.null repo ->
             pure (owner, repo)
-        _ -> throwError $
-            "Something is wrong with " <> address <>
-            ". Please, check correctness of input. Right format is OWNER/REPO"
-    response <- withExceptT (Text.pack . show) $ ExceptT $
-        executeRequest' $ issuesForRepoR
-            (mkOwnerName owner)
-            (mkRepoName repo)
-            issueState
-            (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
+        _ ->
+            throwError
+                $ "Something is wrong with "
+                <> address
+                <> ". Please, check correctness of input. Right format is OWNER/REPO"
+    response <-
+        withExceptT (Text.pack . show)
+        $ ExceptT
+        $ executeRequest'
+        $ issuesForRepoR
+              (mkOwnerName owner)
+              (mkRepoName repo)
+              issueState
+              (maybe FetchAll (FetchAtLeast . fromIntegral) mlimit)
     pure (address, response)
 
 getOpenIssueSamples
-    :: Maybe Text
-    -> Maybe Limit
-    -> Day
-    -> ExceptT Text IO (ModeMap Sample)
+    :: Maybe Text -> Maybe Limit -> Day -> ExceptT Text IO (ModeMap NoteSample)
 getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
 
-getIssueViews
-    :: Maybe Text
-    -> Maybe Limit
-    -> ExceptT Text IO [NoteView]
+getIssueViews :: Maybe Text -> Maybe Limit -> ExceptT Text IO [NoteView]
 getIssueViews mAddress mlimit = do
     (address, issues) <- getIssues mAddress mlimit stateAll
     pure $ noteViewList address mlimit issues
 
 sampleMap
-    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap Sample
+    :: Foldable t => Text -> Maybe Limit -> Day -> t Issue -> ModeMap NoteSample
 sampleMap address mlimit today issues =
     takeSamples mlimit
-    . splitModes today
-    . map (issueToNoteView address)
-    . maybe id (take . fromIntegral) mlimit
-    $ toList issues
+        . splitModes today
+        . map (issueToNoteView address)
+        . maybe id (take . fromIntegral) mlimit
+        $ toList issues
 
 noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [NoteView]
 noteViewList address mlimit issues =
     map (issueToNoteView address)
-    . maybe id (take . fromIntegral) mlimit
-    $ toList issues
+        . maybe id (take . fromIntegral) mlimit
+        $ toList issues
 
 issueToNoteView :: Text -> Issue -> NoteView
-issueToNoteView address Issue{..} = NoteView
+issueToNoteView address Issue {..} = NoteView
     { nid     = Nothing
     , status  = toStatus issueState
     , text    = issueTitle <> body
@@ -106,18 +108,19 @@ issueToNoteView address Issue{..} = NoteView
     }
   where
     trackedExternalId = Text.pack $ show issueNumber
-    trackedUrl = case issueHtmlUrl of
+    trackedUrl        = case issueHtmlUrl of
         Just (URL url) -> url
-        Nothing        ->
+        Nothing ->
             "https://github.com/" <> address <> "/issues/" <> trackedExternalId
     end = case issueMilestone of
-        Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
-        _                                                      -> Nothing
+        Just Milestone { milestoneDueOn = Just UTCTime { utctDay } } ->
+            Just utctDay
+        _ -> Nothing
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
 
-toStatus :: IssueState -> Status
+toStatus :: IssueState -> NoteStatus
 toStatus = \case
-    StateOpen   -> Active
-    StateClosed -> Archived
+    StateOpen   -> TaskStatus Active
+    StateClosed -> TaskStatus Archived

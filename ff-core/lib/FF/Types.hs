@@ -18,7 +18,8 @@ import qualified CRDT.Cv.RGA as RGA
 import           CRDT.LamportClock (Clock)
 import           CRDT.LWW (LWW)
 import qualified CRDT.LWW as LWW
-import           Data.Aeson (ToJSON (..), Value (Object), camelTo2)
+import           Data.Aeson (FromJSON (..), ToJSON (..), Value (Object),
+                             camelTo2)
 import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveJSON,
                                 fieldLabelModifier, mkToJSON)
 import qualified Data.HashMap.Strict as HashMap
@@ -38,10 +39,23 @@ import           FF.CrdtAesonInstances ()
 import           FF.Storage (Collection, DocId, collectionName)
 import           FF.Types.Internal (noteJsonOptions)
 
-data Status = Active | Archived | Deleted | Wiki
+data Status = Active | Archived | Deleted
     deriving (Bounded, Enum, Eq, Show)
 
 deriveJSON defaultOptions ''Status
+
+data NoteStatus = TaskStatus Status | Wiki
+    deriving (Eq, Show)
+
+instance ToJSON NoteStatus where
+    toJSON = \case
+        TaskStatus a -> toJSON a
+        Wiki         -> "Wiki"
+
+instance FromJSON NoteStatus where
+    parseJSON v = case v of
+        "Wiki" -> pure Wiki
+        _ -> TaskStatus <$> parseJSON v
 
 data Tracked = Tracked
     { trackedProvider   :: Text
@@ -53,8 +67,16 @@ data Tracked = Tracked
 
 deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Tracked
 
+data Contact = Contact
+    { contactStatus :: LWW Status
+    , contactName   :: RgaString
+    }
+    deriving (Eq, Show, Generic)
+
+deriveJSON defaultOptions{fieldLabelModifier = camelTo2 '_' . drop 7} ''Contact
+
 data Note = Note
-    { noteStatus  :: LWW Status
+    { noteStatus  :: LWW NoteStatus
     , noteText    :: RgaString
     , noteStart   :: LWW Day
     , noteEnd     :: LWW (Maybe Day)
@@ -64,10 +86,17 @@ data Note = Note
 
 type NoteId = DocId Note
 
+type ContactId = DocId Contact
+
 instance Semigroup Note where
     (<>) = gmappend
 
 instance Semilattice Note
+
+instance Semigroup Contact where
+    (<>) = gmappend
+
+instance Semilattice Contact
 
 deriveFromJSON noteJsonOptions ''Note
 
@@ -83,9 +112,12 @@ instance ToJSON Note where
 instance Collection Note where
     collectionName = "note"
 
+instance Collection Contact where
+    collectionName = "contact"
+
 data NoteView = NoteView
     { nid     :: Maybe NoteId
-    , status  :: Status
+    , status  :: NoteStatus
     , text    :: Text
     , start   :: Day
     , end     :: Maybe Day
@@ -93,18 +125,29 @@ data NoteView = NoteView
     }
     deriving (Eq, Show)
 
-data Sample = Sample
-    { notes :: [NoteView]
+data ContactView = ContactView
+    { contactViewId     :: ContactId
+    , contactViewStatus :: Status
+    , contactViewName   :: Text
+    }
+    deriving (Eq, Show)
+
+data Sample a = Sample
+    { docs  :: [a]
     , total :: Natural
     }
     deriving (Eq, Show)
 
-emptySample :: Sample
-emptySample = Sample {notes = [], total = 0}
+type ContactSample = Sample ContactView
+
+type NoteSample = Sample NoteView
+
+emptySample :: Sample a
+emptySample = Sample {docs = [], total = 0}
 
 -- | Number of notes omitted from the sample.
-omitted :: Sample -> Natural
-omitted Sample { notes, total } = total - genericLength notes
+omitted :: Sample a -> Natural
+omitted Sample { docs, total } = total - genericLength docs
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
@@ -137,8 +180,8 @@ taskMode today NoteView{start, end} = case end of
     Just e -> case compare e today of
         LT -> overdue today e
         EQ -> EndToday
-        GT  | start <= today -> endSoon  e today
-            | otherwise      -> starting start today
+        GT | start <= today -> endSoon e today
+           | otherwise      -> starting start today
   where
     overdue  = helper Overdue
     endSoon  = helper EndSoon
@@ -154,10 +197,17 @@ noteView :: NoteId -> Note -> NoteView
 noteView nid Note {..} = NoteView
     { nid     = Just nid
     , status  = LWW.query noteStatus
-    , text    = Text.pack $ RGA.toString noteText
+    , text    = rgaToText noteText
     , start   = LWW.query noteStart
     , end     = LWW.query noteEnd
     , tracked = Max.query <$> noteTracked
+    }
+
+contactView :: ContactId -> Contact -> ContactView
+contactView contactId Contact {..} = ContactView
+    { contactViewId     = contactId
+    , contactViewStatus = LWW.query contactStatus
+    , contactViewName   = rgaToText contactName
     }
 
 type Limit = Natural

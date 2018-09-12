@@ -38,14 +38,15 @@ import           Test.Tasty.HUnit (testCase, (@?=))
 import           Test.Tasty.QuickCheck (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
-import           FF (cmdNew, getSamples)
+import           FF (cmdNewNote, getSamples)
 import           FF.Config (Config, ConfigUI (..))
 import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (DocId (DocId))
 import           FF.Test (TestDB, runStorageSim)
-import           FF.Types (Limit, Note (..), NoteView (..), Sample (..),
-                           Status (Active), TaskMode (Overdue), Tracked (..))
+import           FF.Types (Limit, Note (..), NoteStatus (..), NoteView (..),
+                           Sample (..), Status (Active), TaskMode (Overdue),
+                           Tracked (..))
 import           FF.Upgrade (upgradeDatabase)
 
 import           ArbitraryOrphans ()
@@ -69,9 +70,9 @@ case_smoke = do
         Map.singleton
             (Overdue 365478)
             Sample
-                { notes = pure NoteView
+                { docs = pure NoteView
                     { nid     = Just $ DocId "1"
-                    , status  = Active
+                    , status  = TaskStatus Active
                     , text    = "helloworld"
                     , start   = fromGregorian 22 11 24
                     , end     = Just $ fromGregorian 17 06 19
@@ -109,7 +110,7 @@ prop_new (NoContainNul newText) newStart newEnd =
   where
     test = do
         (nv, fs') <-
-            runStorageSim mempty $ cmdNew New{newText, newStart, newEnd, newWiki = False} today
+            runStorageSim mempty $ cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
         pure $ conjoin
             [ case nv of
                 NoteView{text, start, end} ->
@@ -184,9 +185,9 @@ case_repo =
     ideal = Map.singleton
         (Overdue 10)
         Sample
-            { notes = pure NoteView
+            { docs = pure NoteView
                 { nid     = Nothing
-                , status  = Active
+                , status  = TaskStatus Active
                 , text    = "import issues (GitHub -> ff)"
                 , start   = fromGregorian 2018 06 21
                 , end     = Just $ fromGregorian 2018 06 15

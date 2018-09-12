@@ -14,14 +14,15 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day)
 import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
-                                            stack, star, strictText, string,
-                                            (<+/>), (<+>), (</>))
+                                            spread, stack, star, strictText,
+                                            string, (<+/>), (<+>), (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF.Storage (rawDocId)
-import           FF.Types (ModeMap, NoteView (..), Sample (..),
-                           TaskMode (..), Tracked (..), omitted)
+import           FF.Types (ContactSample, ContactView (..), ModeMap, NoteSample,
+                           NoteView (..), Sample (..), TaskMode (..),
+                           Tracked (..), omitted)
 
 type Template a = a -> String
 
@@ -37,25 +38,39 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettySamplesBySections :: Bool -> ModeMap Sample -> Doc
+prettyContactSamplesOmitted :: ContactSample -> Doc
+prettyContactSamplesOmitted samples = sparsedStack $
+    prettyContactSample samples :
+    [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
+  where
+    numOmitted = omitted samples
+
+prettyContactSample :: ContactSample -> Doc
+prettyContactSample = \case
+    Sample{total = 0} -> mempty
+    Sample{docs} ->
+        withHeader "Contacts:" . sparsedStack $
+        map ((star <>) . indent 1 . contactViewFull) docs
+
+prettySamplesBySections :: Bool -> ModeMap NoteSample -> Doc
 prettySamplesBySections brief samples = stack' brief $
     [prettySample brief mode sample | (mode, sample) <- Map.assocs samples] ++
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: Bool -> TaskMode -> Sample -> Doc
+prettySample :: Bool -> TaskMode -> NoteSample -> Doc
 prettySample brief mode = \case
     Sample{total = 0} -> mempty
-    Sample{total, notes} ->
+    Sample{total, docs} ->
         withHeader (sampleLabel mode) . stack' brief $
-            map ((star <>) . indent 1 . noteView) notes
+            map ((star <>) . indent 1 . noteView) docs
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= total
                 ]
       where
         toSeeAllLabel = "To see all " <> show total <> " task(s), run:"
-        count         = genericLength notes
+        count         = genericLength docs
         noteView = if brief then noteViewBrief else noteViewFull
   where
     cmdToSeeAll = \case
@@ -101,6 +116,11 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
         ++  [ "| tracking" <+> strictText trackedUrl
             | Just Tracked{..} <- [tracked]
             ]
+
+contactViewFull :: ContactView -> Doc
+contactViewFull ContactView{..} = spread [strictText contactViewName, meta]
+  where
+    meta = "| id" <+> string (rawDocId contactViewId)
 
 wrapLines :: Text -> Doc
 wrapLines =

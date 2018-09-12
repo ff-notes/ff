@@ -6,6 +6,7 @@ module FF.Options
     ( Cmd (..)
     , CmdAction (..)
     , Config (..)
+    , Contact (..)
     , DataDir (..)
     , Edit (..)
     , New (..)
@@ -29,7 +30,7 @@ import           Options.Applicative (auto, command, completer, execParser,
 import           FF.Storage (DocId (DocId), Storage, listDocuments, rawDocId,
                              runStorage)
 import qualified FF.Storage as Storage
-import           FF.Types (Limit, NoteId)
+import           FF.Types (Limit, NoteId, ContactId)
 
 data Cmd
     = CmdConfig (Maybe Config)
@@ -38,6 +39,7 @@ data Cmd
 
 data CmdAction
     = CmdAgenda     (Maybe Limit)
+    | CmdContact    (Maybe Contact)
     | CmdDelete     NoteId
     | CmdDone       NoteId
     | CmdEdit       Edit
@@ -60,6 +62,8 @@ data Track = Track
     , trackLimit   :: Maybe Limit
     }
 
+data Contact = Add Text | Delete ContactId
+
 data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
@@ -78,10 +82,10 @@ data Edit = Edit
     deriving (Show)
 
 data New = New
-    { newText   :: Text
-    , newStart  :: Maybe Day
-    , newEnd    :: Maybe Day
-    , newWiki   :: Bool
+    { newText    :: Text
+    , newStart   :: Maybe Day
+    , newEnd     :: Maybe Day
+    , newWiki    :: Bool
     }
 
 data Search = Search
@@ -95,9 +99,9 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     parser   = Options <$> brief <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
-        [ action  "add"       iCmdAdd
-        , action  "agenda"    iCmdAgenda
+        [ action  "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
+        , action  "contact"   iCmdContact
         , action  "delete"    iCmdDelete
         , action  "done"      iCmdDone
         , action  "edit"      iCmdEdit
@@ -112,10 +116,10 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
       where
         action s = command s . fmap CmdAction
 
-    iCmdAdd       = i cmdNew        "add a new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i cmdConfig     "show/edit configuration"
+    iCmdContact   = i cmdContact    "show contacts"
     iCmdDelete    = i cmdDelete     "delete a task"
     iCmdDone      = i cmdDone       "mark a task done (archive)"
     iCmdEdit      = i cmdEdit       "edit a task or a note"
@@ -129,6 +133,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
                                     \ recent format"
 
     cmdAgenda    = CmdAgenda    <$> optional limit
+    cmdContact   = CmdContact   <$> optional contact
     cmdDelete    = CmdDelete    <$> noteid
     cmdDone      = CmdDone      <$> noteid
     cmdEdit      = CmdEdit      <$> edit
@@ -156,7 +161,18 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     repo = strOption $
         long "repo" <> short 'r' <> metavar "USER/REPO" <>
         help "User or organization/repository"
-    new = New <$> text <*> optional start <*> optional end <*> wiki
+    contact = subparser $ command "add" iAdd <> command "delete" iDelete
+      where
+        iAdd = i pAdd "Add contact"
+        iDelete = i pDelete "Delete contact"
+        pAdd = Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
+        pDelete = Delete . DocId <$> strArgument
+            (metavar "CONTACT_ID" <> help "contact id" <> completer completeContactIds)
+    new = New
+        <$> text
+        <*> optional start
+        <*> optional end
+        <*> wiki
     edit = Edit
         <$> noteid
         <*> optional textOption
@@ -202,3 +218,6 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     completeNoteIds = listIOCompleter $
         map rawDocId <$> runStorage h (listDocuments :: Storage [NoteId])
+
+    completeContactIds = listIOCompleter $
+        map rawDocId <$> runStorage h (listDocuments :: Storage [ContactId])
