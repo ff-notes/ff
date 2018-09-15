@@ -4,6 +4,7 @@ copyright:
 
 library:
   dependencies:
+    # global
     - aeson
     - aeson-pretty
     - blaze-html
@@ -32,6 +33,9 @@ library:
     - vector
     - warp
     - yaml
+
+    # organization
+    - ron
   source-dirs: lib
   other-modules:
     - FF.Types.Internal

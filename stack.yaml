@@ -7,11 +7,18 @@ packages:
 
 extra-deps:
   # crdt-test:
-    - QuickCheck-GenT-0.2.0
+  - QuickCheck-GenT-0.2.0
+
   # ff:
-    - crdt-10.3
+  - crdt-10.3
+  - git: https://github.com/ff-notes/ron.git
+    commit: 'a5e09aa'
+    subdirs: [ron]
+
   # ff:test:
-    - git: https://github.com/cblp/crdt.git
-      commit: 'v10.3'
-      subdirs:
-        - crdt-test
+  - git: https://github.com/cblp/crdt.git
+    commit: 'v10.3'
+    subdirs: [crdt-test]
+
+  # ron:
+  - flat-0.3.2
