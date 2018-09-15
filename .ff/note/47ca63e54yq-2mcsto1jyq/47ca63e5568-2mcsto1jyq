@@ -1,0 +1,39 @@
+{
+  "end": [
+    null,
+    15370203683307860,
+    266187445077842
+  ],
+  "start": [
+    "2018-09-01",
+    15370203683307590,
+    266187445077842
+  ],
+  "status": [
+    "Archived",
+    15370203683306900,
+    266187445077842
+  ],
+  "text": [
+    [
+      15370203683307250,
+      266187445077842,
+      "Add instruction for  completion\n\n\n\n<!-- Reviewable:start -->\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/93)\n<!-- Reviewable:end -->\n"
+    ]
+  ],
+  "text.trace": [
+    "Add instruction for  completion",
+    "",
+    "",
+    "",
+    "<!-- Reviewable:start -->",
+    "This change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/93)",
+    "<!-- Reviewable:end -->"
+  ],
+  "tracked": {
+    "external_id": "93",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/pull/93"
+  }
+}

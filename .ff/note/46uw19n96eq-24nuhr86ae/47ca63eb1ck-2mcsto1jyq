@@ -1,0 +1,44 @@
+{
+  "end": [
+    null,
+    15321153154345520,
+    216273105866966
+  ],
+  "start": [
+    "2018-07-31",
+    15329654898544546,
+    109952946870224
+  ],
+  "status": [
+    "Archived",
+    15370203683542080,
+    266187445077842
+  ],
+  "text": [
+    [
+      15321137210772070,
+      216273105866966,
+      "Contacts"
+    ],
+    [
+      15370203683569580,
+      266187445077842,
+      "\n\nA contact is a document in the _ff_ database.\r\n\r\nIt must contain one text field (RgaText) — for a human name.\r\n\r\nA note must have a field \"assignee\" of type `[Contact]`, containing a reference (id) to a contact object."
+    ]
+  ],
+  "text.trace": [
+    "Contacts",
+    "",
+    "A contact is a document in the _ff_ database.\r",
+    "\r",
+    "It must contain one text field (RgaText) — for a human name.\r",
+    "\r",
+    "A note must have a field \"assignee\" of type `[Contact]`, containing a reference (id) to a contact object."
+  ],
+  "tracked": {
+    "external_id": "22",
+    "provider": "github",
+    "source": "ff-notes/ff",
+    "url": "https://github.com/ff-notes/ff/issues/22"
+  }
+}
