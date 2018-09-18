@@ -1,4 +1,4 @@
-resolver: lts-12.0
+resolver: lts-12.10
 
 packages:
   - ff
@@ -19,6 +19,3 @@ extra-deps:
   - git: https://github.com/cblp/crdt.git
     commit: 'v10.3'
     subdirs: [crdt-test]
-
-  # ron:
-  - flat-0.3.2
