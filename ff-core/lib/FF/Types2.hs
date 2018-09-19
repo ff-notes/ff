@@ -40,6 +40,36 @@ instance ReplicatedAsPayload NoteStatus where
         [AString "Wiki"] -> pure Wiki
         p                -> TaskStatus <$> fromPayload p
 
+{-
+OGDL version from future:
+
+    import Time Day
+    opaque Status
+    opaque NoteStatus
+
+    struct_lww Tracked
+        fields
+            provider    String
+            source      String
+            externalId  String
+            url         String
+
+    struct_lww Contact
+        fields
+            status  Status
+            name    RgaString
+        Haskell field_prefix contact_
+
+    struct_lww Note
+        fields
+            status  NoteStatus
+            text    RgaString
+            start   Day
+            end     Option Day
+            tracked Option TStructLww Tracked
+        Haskell field_prefix note_
+-}
+
 $(let
     status = opaqueAtoms def{oaHaskellType = Just "Status"}
     noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
