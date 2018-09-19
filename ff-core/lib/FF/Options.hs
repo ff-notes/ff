@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE StrictData #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.Options
     ( Cmd (..)
@@ -21,16 +21,18 @@ import           Control.Applicative (optional, (<|>))
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (auto, command, completer, execParser,
-                                      flag', fullDesc, help, helper, info,
-                                      listIOCompleter, long, metavar, option,
-                                      progDesc, short, strArgument, strOption,
-                                      subparser, switch, (<**>))
+import           Options.Applicative (Completer, auto, command, completer,
+                                      execParser, flag', fullDesc, help, helper,
+                                      info, listIOCompleter, long, metavar,
+                                      option, progDesc, short, strArgument,
+                                      strOption, subparser, switch, (<**>))
+import           RON.Storage (Collection, DocId (DocId), listDocuments,
+                              rawDocId)
+import           RON.Storage.IO (runStorage)
+import qualified RON.Storage.IO as Storage
 
-import           FF.Storage (DocId (DocId), Storage, listDocuments, rawDocId,
-                             runStorage)
-import qualified FF.Storage as Storage
-import           FF.Types (Limit, NoteId, ContactId)
+import           FF.Types (ContactId, Limit, Note, NoteId)
+import qualified FF.Types
 
 data Cmd
     = CmdConfig (Maybe Config)
@@ -172,9 +174,11 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
       where
         iAdd = i pAdd "Add contact"
         iDelete = i pDelete "Delete contact"
-        pAdd = Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
+        pAdd =
+            Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
         pDelete = Delete . DocId <$> strArgument
-            (metavar "CONTACT_ID" <> help "contact id" <> completer completeContactIds)
+            (metavar "CONTACT_ID" <> help "contact id"
+            <> completer completeContactIds)
     new = New
         <$> text
         <*> optional start
@@ -193,7 +197,8 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         <*> optional limit
     searchN = switch (long "tasks" <> short 't' <> help "Search among notes")
     searchW = switch (long "wiki" <> short 'w' <> help "Search among wiki")
-    searchC = switch (long "contacts" <> short 'c' <> help "Search among contacts")
+    searchC = switch (long "contacts" <> short 'c'
+                        <> help "Search among contacts")
     noteid = DocId <$> strArgument
         (metavar "ID" <> help "note id" <> completer completeNoteIds)
     text = strArgument $ metavar "TEXT" <> help "note text"
@@ -231,8 +236,10 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 
-    completeNoteIds = listIOCompleter $
-        map rawDocId <$> runStorage h (listDocuments :: Storage [NoteId])
+    completeNoteIds = docIdCompleter @Note
 
-    completeContactIds = listIOCompleter $
-        map rawDocId <$> runStorage h (listDocuments :: Storage [ContactId])
+    completeContactIds = docIdCompleter @FF.Types.Contact
+
+    docIdCompleter :: forall a . Collection a => Completer
+    docIdCompleter =
+        listIOCompleter $ map rawDocId <$> runStorage h (listDocuments @_ @a)

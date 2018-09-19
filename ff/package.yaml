@@ -6,8 +6,10 @@ copyright:
 executable:
   main: Main
   other-modules: Paths_ff
+  ghc-options: -rtsopts
 
 dependencies:
+  # global
   - async
   - base
   - crdt
@@ -23,4 +25,8 @@ dependencies:
   - text
   - time
 
+  # organization
+  - ron-storage
+
+  # project
   - ff-core

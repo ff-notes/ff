@@ -15,40 +15,35 @@ module RON.Storage.IO
     ) where
 
 import           Control.Exception (catch, throwIO)
-import           Control.Monad (filterM, unless)
+import           Control.Monad (filterM, unless, when)
 import           Control.Monad.Except (ExceptT (ExceptT), MonadError,
-                                       catchError, liftEither, runExceptT,
-                                       throwError)
+                                       runExceptT, throwError)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (ReaderT (ReaderT), ask, runReaderT)
 import           Control.Monad.Trans (lift)
 import           Data.Bits (shiftL)
 import qualified Data.ByteString.Lazy as BSL
-import           Data.Coerce (coerce)
 import           Data.IORef (IORef, newIORef)
 import           Data.Maybe (fromMaybe, listToMaybe)
-import           Data.Traversable (for)
 import           Data.Word (Word64)
 import           Network.Info (MAC (MAC), getNetworkInterfaces, mac)
 import           RON.Event (Clock, EpochClock, EpochTime, Replica, ReplicaId,
                             advance, applicationSpecific, getCurrentEpochTime,
-                            getEventUuid, getEvents, getPid, runEpochClock)
-import           RON.Text (parseStateFrame, serializeStateFrame)
-import           RON.Types (Object (Object), objectFrame, objectId)
-import qualified RON.UUID as UUID
+                            getEvents, getPid, runEpochClock)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                                   listDirectory, removeFile)
+                                   doesPathExist, listDirectory, removeFile,
+                                   renameDirectory)
 import           System.FilePath ((</>))
 import           System.IO.Error (isDoesNotExistError)
 
 import           RON.Storage (Collection, DocId (DocId), MonadStorage,
-                              collectionName, createVersion, deleteVersion,
-                              fallbackParse, listCollections, listDocuments,
-                              listVersions, readVersion)
+                              changeDocId, collectionName, deleteVersion,
+                              listCollections, listDocuments, listVersions,
+                              loadVersionContent, saveVersionContent)
 
 -- | Environment is the dataDir
 newtype StorageT clock a = Storage (ExceptT String (ReaderT FilePath clock) a)
-    deriving (Applicative, Functor, Monad, MonadIO)
+    deriving (Applicative, Functor, Monad, MonadError String, MonadIO)
 
 runStorageT :: FilePath -> StorageT m a -> m (Either String a)
 runStorageT dataDir (Storage except) =
@@ -61,10 +56,6 @@ instance Clock m => Clock (StorageT m) where
     getEvents = Storage . lift . lift . getEvents
     advance   = Storage . lift . lift . advance
 
-instance Monad m => MonadError String (StorageT m) where
-    throwError = Storage . throwError
-    catchError = coerce . catchError
-
 instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
         dataDir <- ask
@@ -73,51 +64,38 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
             >>= filterM (doesDirectoryExist . (dataDir </>))
 
     listDocuments :: forall doc. Collection doc => StorageT m [DocId doc]
-    listDocuments = do
-        docdirs <- listDirectoryIfExists (collectionName @doc)
-        for docdirs $
-            fmap DocId . liftEither . maybe (Left "Bad UUID") Right .
-            UUID.decodeBase32
+    listDocuments = map DocId <$> listDirectoryIfExists (collectionName @doc)
 
-    listVersions (docId :: DocId doc) = do
-        files <- listDirectoryIfExists $ docDir docId
-        Storage $
-            for files $ \file -> do
-                let path = docDir docId </> file
-                case UUID.decodeBase32 file of
-                    Just uuid -> pure uuid
-                    Nothing ->
-                        throwError $
-                        "Directory name " ++ path ++ " is not a UUID"
+    listVersions = listDirectoryIfExists . docDir
 
-    createVersion obj@Object{objectFrame} = do
-        version <- getEventUuid
+    saveVersionContent docid version content =
         Storage $ do
             dataDir <- ask
-            let docdir = dataDir </> objectDir obj
-            let file = docdir </> UUID.encodeBase32 version
+            let docdir = dataDir </> docDir docid
             liftIO $ do
                 createDirectoryIfMissing True docdir
-                BSL.writeFile file $ serializeStateFrame objectFrame
+                BSL.writeFile (docdir </> version) content
 
-    readVersion docId@(DocId objectId) version = Storage $ do
+    loadVersionContent docid version = Storage $ do
         dataDir <- ask
-        contents <- liftIO $
-            BSL.readFile $
-            dataDir </> docDir docId </> UUID.encodeBase32 version
-        case parseStateFrame contents of
-            Right objectFrame -> pure Object{objectId, objectFrame}
-            Left ronError     -> case fallbackParse objectId contents of
-                Right object        -> pure object
-                Left _fallbackError -> throwError ronError
+        liftIO $ BSL.readFile $ dataDir </> docDir docid </> version
 
-    deleteVersion docId version = Storage $ do
+    deleteVersion docid version = Storage $ do
         dataDir <- ask
         liftIO $ do
-            let file = dataDir </> docDir docId </> UUID.encodeBase32 version
+            let file = dataDir </> docDir docid </> version
             removeFile file
             `catch` \e ->
                 unless (isDoesNotExistError e) $ throwIO e
+
+    changeDocId old new = Storage $ do
+        db <- ask
+        let oldPath = db </> docDir old
+            newPath = db </> docDir new
+        newPathExists <- liftIO $ doesPathExist newPath
+        when newPathExists $
+            throwError "Internal error: new document id is already taken"
+        liftIO $ renameDirectory oldPath newPath
 
 data Handle = Handle
     { hClock    :: IORef EpochTime
@@ -148,10 +126,7 @@ listDirectoryIfExists relpath = Storage $ do
         if exists then listDirectory dir else pure []
 
 docDir :: forall a . Collection a => DocId a -> FilePath
-docDir (DocId docId) = collectionName @a </> UUID.encodeBase32 docId
-
-objectDir :: forall a . Collection a => Object a -> FilePath
-objectDir Object{objectId} = docDir (DocId objectId :: DocId a)
+docDir (DocId dir) = collectionName @a </> dir
 
 -- MAC address
 

@@ -1,29 +1,29 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module RON.Storage.Test (TestDB, runStorageSim) where
 
-import           Control.Monad.Except (ExceptT, MonadError, runExceptT,
-                                       throwError)
+import           Control.Monad.Except (ExceptT, MonadError, runExceptT)
 import           Control.Monad.State.Strict (StateT, get, gets, modify,
                                              runStateT)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
+import           Data.Functor.Compose (Compose (Compose), getCompose)
 import           Data.Map.Strict (Map, (!), (!?))
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromMaybe)
-import           RON.Event (Clock, Replica, applicationSpecific, getEventUuid)
+import           RON.Event (Clock, Replica, applicationSpecific)
 import           RON.Event.Simulation (ReplicaSim, runNetworkSim, runReplicaSim)
-import           RON.Text (parseStateFrame, serializeStateFrame)
-import           RON.Types (Object (Object), UUID, objectFrame, objectId)
 
 import           RON.Storage (Collection, CollectionName, DocId (DocId),
-                              MonadStorage, collectionName, createVersion,
-                              deleteVersion, fallbackParse, listCollections,
-                              listDocuments, listVersions, readVersion)
+                              MonadStorage, Version, changeDocId,
+                              collectionName, deleteVersion, listCollections,
+                              listDocuments, listVersions, loadVersionContent,
+                              saveVersionContent)
 
 type ByteStringL = BSL.ByteString
 
@@ -31,9 +31,7 @@ type TestDB = Map CollectionName (Map DocumentId (Map Version Document))
 
 type Document = [ByteStringL]
 
-type DocumentId = UUID
-
-type Version = UUID
+type DocumentId = FilePath
 
 -- * Storage simulation
 
@@ -59,27 +57,20 @@ instance MonadStorage StorageSim where
         db <- get
         pure $ Map.keys $ db !. collectionName @a !. doc
 
-    createVersion (Object{objectId, objectFrame} :: Object a) = do
-        version <- getEventUuid
-        let document = BSLC.lines $ serializeStateFrame objectFrame
+    saveVersionContent (DocId docid :: DocId a) version content = do
+        let document = BSLC.lines content
         let insertDocumentVersion =
                 Just . Map.insertWith (<>) version document . fromMaybe mempty
-        let alterDocument = Just .
-                Map.alter insertDocumentVersion objectId . fromMaybe mempty
+        let alterDocument
+                = Just
+                . Map.alter insertDocumentVersion docid
+                . fromMaybe mempty
         let alterCollection = Map.alter alterDocument (collectionName @a)
         StorageSim $ modify alterCollection
 
-    readVersion (DocId objectId :: DocId a) version = StorageSim $ do
+    loadVersionContent (DocId dir :: DocId a) version = StorageSim $ do
         db <- get
-        let contents =
-                BSLC.unlines $ db !. collectionName @a !. objectId ! version
-        case parseStateFrame contents of
-            Right objectFrame -> pure Object{objectId, objectFrame}
-            Left ronError     -> case fallbackParse objectId contents of
-                Right object       -> pure object
-                Left fallbackError -> throwError $ case BSLC.head contents of
-                    '{' -> fallbackError
-                    _   -> ronError
+        pure $ BSLC.unlines $ db !. collectionName @a !. dir ! version
 
     deleteVersion (DocId doc :: DocId a) version
         = StorageSim
@@ -88,5 +79,16 @@ instance MonadStorage StorageSim where
         . (`Map.adjust` doc)
         $ Map.delete version
 
+    changeDocId (DocId old :: DocId a) (DocId new :: DocId a) = StorageSim $
+        modify $ (`Map.adjust` collectionName @a) $ \collection ->
+            maybe collection (uncurry $ Map.insert new) $
+            mapTake old collection
+
 (!.) :: Ord a => Map a (Map b c) -> a -> Map b c
 m !. a = fromMaybe Map.empty $ m !? a
+
+mapTake :: Ord k => k -> Map k a -> Maybe (a, Map k a)
+mapTake k = getCompose . Map.alterF (Compose . f) k where
+    f = \case
+        Nothing -> Nothing
+        Just a  -> Just (a, Nothing)
