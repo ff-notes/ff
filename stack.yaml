@@ -4,6 +4,7 @@ packages:
   - ff
   - ff-core
   - ff-test
+  - ron-storage-fs
 
   # - ../ron/ron
 
