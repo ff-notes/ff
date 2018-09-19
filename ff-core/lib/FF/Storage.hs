@@ -47,7 +47,7 @@ newtype DocId doc = DocId FilePath
 rawDocId :: DocId doc -> FilePath
 rawDocId (DocId name) = name
 
--- Environment is the dataDir
+-- | Environment is the dataDir
 newtype StorageT clock a = Storage (ReaderT FilePath clock a)
     deriving (Applicative, Clock, Functor, Monad, MonadIO, Process)
 
@@ -65,7 +65,6 @@ data Document a = Document
     , versions :: NonEmpty Version
     }
 
--- | Environment is the dataDir
 class Clock m => MonadStorage m where
     listCollections :: m [CollectionName]
 
