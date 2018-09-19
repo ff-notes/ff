@@ -1,5 +1,3 @@
-{-# OPTIONS -Wno-orphans #-}
-
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLists #-}
@@ -9,9 +7,9 @@
 module FF.Types2 where
 
 import qualified Data.Text as Text
-import           Data.Time (Day, fromGregorian, toGregorian)
 import           RON.Data (Replicated (..), ReplicatedAsPayload (..),
                            payloadEncoding)
+import           RON.Data.Time (Day, day)
 import           RON.Schema (Declaration (..), OpaqueAnnotations (..),
                              RonType (..), StructAnnotations (..),
                              StructLww (..), TAtom (..), def, field,
@@ -43,7 +41,6 @@ instance ReplicatedAsPayload NoteStatus where
         p                -> TaskStatus <$> fromPayload p
 
 $(let
-    day = opaqueAtoms def{oaHaskellType = Just "Day"}
     status = opaqueAtoms def{oaHaskellType = Just "Status"}
     noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
     tracked = StructLww "Tracked"
@@ -65,18 +62,3 @@ $(let
         ]
         def{saHaskellFieldPrefix = "note_"}
     in mkReplicated [DStructLww tracked, DStructLww contact, DStructLww note])
-
--- * Orphans
-
-instance Replicated Day where encoding = payloadEncoding
-
-instance ReplicatedAsPayload Day where
-    toPayload day =
-        map AInteger [fromIntegral y, fromIntegral m, fromIntegral d]
-      where
-        (y, m, d) = toGregorian day
-
-    fromPayload = \case
-        [AInteger y, AInteger m, AInteger d] -> pure $
-            fromGregorian (fromIntegral y) (fromIntegral m) (fromIntegral d)
-        _ -> Left "bad Day"
