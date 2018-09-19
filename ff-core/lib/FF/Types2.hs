@@ -66,7 +66,7 @@ OGDL version from future:
             text    RgaString
             start   Day
             end     Option Day
-            tracked Option TStructLww Tracked
+            tracked Option Tracked
         Haskell field_prefix note_
 -}
 
