@@ -5,6 +5,8 @@ packages:
   - ff-core
   - ff-test
 
+  # - ../ron/ron
+
 extra-deps:
   # crdt-test:
   - QuickCheck-GenT-0.2.0
@@ -12,7 +14,7 @@ extra-deps:
   # ff:
   - crdt-10.3
   - git: https://github.com/ff-notes/ron.git
-    commit: 'a5e09aa'
+    commit: 'cd23f53'
     subdirs: [ron]
 
   # ff:test:

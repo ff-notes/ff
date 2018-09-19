@@ -12,10 +12,10 @@ import qualified Data.Text as Text
 import           Data.Time (Day, fromGregorian, toGregorian)
 import           RON.Data (Replicated (..), ReplicatedAsPayload (..),
                            payloadEncoding)
-import           RON.Schema (AliasAnnotations (..), Declaration (..),
+import           RON.Schema (Declaration (..), OpaqueAnnotations (..),
                              RonType (..), StructAnnotations (..),
-                             StructLww (..), TAtom (..), alias, def, field,
-                             option, rgaString)
+                             StructLww (..), TAtom (..), def, field,
+                             opaqueAtoms, rgaString)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Types (Atom (..))
 import           Text.Read (readEither)
@@ -43,11 +43,9 @@ instance ReplicatedAsPayload NoteStatus where
         p                -> TaskStatus <$> fromPayload p
 
 $(let
-    day = alias (TAtomTuple [TAInteger, TAInteger, TAInteger])
-        def{aaHaskellType = Just "Day"}
-    status = alias (TAtom TAString) def{aaHaskellType = Just "Status"}
-    noteStatus =
-        alias (TAtom TAString) def{aaHaskellType = Just "NoteStatus"}
+    day = opaqueAtoms def{oaHaskellType = Just "Day"}
+    status = opaqueAtoms def{oaHaskellType = Just "Status"}
+    noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
     tracked = StructLww "Tracked"
         [ ("provider",   field $ TAtom TAString)
         , ("source",     field $ TAtom TAString)
@@ -62,8 +60,8 @@ $(let
         [ ("status",  field noteStatus)
         , ("text",    field rgaString)
         , ("start",   field day)
-        , ("end",     field $ option day)
-        , ("tracked", field $ option $ TStructLww tracked)
+        , ("end",     field $ TOption day)
+        , ("tracked", field $ TOption $ TStructLww tracked)
         ]
         def{saHaskellFieldPrefix = "note_"}
     in mkReplicated [DStructLww tracked, DStructLww contact, DStructLww note])
