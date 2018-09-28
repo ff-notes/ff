@@ -6,7 +6,7 @@
 
 module FF.Types2 where
 
-import qualified Data.Text as Text
+import           Data.Maybe (fromJust)
 import           RON.Data (Replicated (..), ReplicatedAsPayload (..),
                            payloadEncoding)
 import           RON.Data.Time (Day, day)
@@ -15,37 +15,54 @@ import           RON.Schema (Declaration (..), OpaqueAnnotations (..),
                              StructLww (..), TAtom (..), def, field,
                              opaqueAtoms, rgaString)
 import           RON.Schema.TH (mkReplicated)
-import           RON.Types (Atom (..))
-import           Text.Read (readEither)
+import           RON.Types (Atom (..), UUID)
+import qualified RON.UUID as UUID
 
 data Status = Active | Archived | Deleted
     deriving (Bounded, Enum, Eq, Read, Show)
 
+active, archived, deleted :: UUID
+active   = fromJust $ UUID.mkName "Active"
+archived = fromJust $ UUID.mkName "Archived"
+deleted  = fromJust $ UUID.mkName "Deleted"
+
 instance Replicated Status where encoding = payloadEncoding
 
 instance ReplicatedAsPayload Status where
-    toPayload = toPayload . Text.pack . show
-    fromPayload atoms = readEither =<< fmap Text.unpack (fromPayload atoms)
+    toPayload = toPayload . \case
+        Active   -> active
+        Archived -> archived
+        Deleted  -> deleted
+
+    fromPayload = \case
+        [AUuid u]
+            | u == active   -> pure Active
+            | u == archived -> pure Archived
+            | u == deleted  -> pure Deleted
+        _ -> fail "Expected single UUID"
 
 data NoteStatus = TaskStatus Status | Wiki
     deriving (Eq, Show)
+
+wiki :: UUID
+wiki = fromJust $ UUID.mkName "Wiki"
 
 instance Replicated NoteStatus where encoding = payloadEncoding
 
 instance ReplicatedAsPayload NoteStatus where
     toPayload = \case
         TaskStatus status -> toPayload status
-        Wiki              -> [AString "Wiki"]
+        Wiki              -> toPayload wiki
     fromPayload = \case
-        [AString "Wiki"] -> pure Wiki
-        p                -> TaskStatus <$> fromPayload p
+        [AUuid u] | u == wiki -> pure Wiki
+        p                     -> TaskStatus <$> fromPayload p
 
 {-
 OGDL version from future:
 
     import Time Day
-    opaque Status
-    opaque NoteStatus
+    opaque Status  -- TODO enum
+    opaque NoteStatus  -- TODO transparent enum?
 
     struct_lww Tracked
         fields
