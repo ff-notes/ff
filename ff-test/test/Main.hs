@@ -1,3 +1,6 @@
+{-# OPTIONS -Wno-orphans #-}
+
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -12,61 +15,62 @@
 module Main (main) where
 
 import           Control.Error ((?:))
-import           CRDT.Laws (cvrdtLaws)
+import           Control.Monad.Fail (MonadFail)
+import qualified Control.Monad.Fail as MonadFail
 import           Data.Aeson (FromJSON, ToJSON,
                              Value (Array, Number, Object, String), decode,
                              encode, object, parseJSON, toJSON, (.=))
-import           Data.Aeson.Types (Parser, parseEither)
+import           Data.Aeson.Types (parseEither)
 import           Data.Foldable (toList)
 import           Data.HashMap.Strict ((!))
 import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.String.Interpolate.IsString (i)
-import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time (Day, UTCTime (..), fromGregorian)
 import qualified Data.Vector as Vector
+import           GHC.Stack (HasCallStack, withFrozenCallStack)
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
-import           Test.QuickCheck (Arbitrary, Property, arbitrary, conjoin,
-                                  counterexample, property, (===), (==>))
-import           Test.QuickCheck.Instances ()
+import           Hedgehog (Gen, MonadTest, Property, PropertyT, annotateShow,
+                           failure, forAll, property, (===))
+import qualified Hedgehog.Gen as Gen
+import           Hedgehog.Internal.Property (failWith)
+import qualified Hedgehog.Range as Range
 import           Test.Tasty (TestTree, testGroup)
-import           Test.Tasty.HUnit (testCase, (@?=))
-import           Test.Tasty.QuickCheck (testProperty)
+import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNewNote, getSamples)
-import           FF.Config (Config, ConfigUI (..))
+import           FF.Config (ConfigUI (..))
 import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Storage (DocId (DocId))
 import           FF.Test (TestDB, runStorageSim)
-import           FF.Types (Limit, Note (..), NoteStatus (..), NoteView (..),
-                           Sample (..), Status (Active), TaskMode (Overdue),
-                           Tracked (..))
+import           FF.Types (Limit, NoteStatus (..), NoteView (..), Sample (..),
+                           Status (Active), TaskMode (Overdue), Tracked (..))
 import           FF.Upgrade (upgradeDatabase)
 
-import           ArbitraryOrphans ()
+import qualified Gen
 
 main :: IO ()
 main = $defaultMainGenerator
 
-case_not_exist :: IO ()
-case_not_exist = do
+prop_not_exist :: Property
+prop_not_exist = property $ do
     (agenda, fs') <-
         either fail pure $ runStorageSim fs $ getSamples ui agendaLimit today
-    agenda @?= Map.empty
-    fs' @?= fs
+    agenda === Map.empty
+    fs' === fs
     where fs = Map.empty
 
-case_smoke :: IO ()
-case_smoke = do
+prop_smoke :: Property
+prop_smoke = property $ do
     (agenda, fs') <-
         either fail pure $ runStorageSim fs123 $ getSamples ui agendaLimit today
-    agenda @?=
+    agenda ===
         Map.singleton
             (Overdue 365478)
             Sample
@@ -80,7 +84,7 @@ case_smoke = do
                     }
                 , total = 1
                 }
-    fs' @?= fs123
+    fs' === fs123
 
 fs123 :: TestDB
 fs123 = Map.singleton "note" $ Map.singleton "1" $ Map.fromList
@@ -104,83 +108,74 @@ agendaLimit = Just 10
 today :: Day
 today = fromGregorian 1018 02 10
 
-prop_new :: NoContainNul -> Maybe Day -> Maybe Day -> Property
-prop_new (NoContainNul newText) newStart newEnd =
-    newStart <= newEnd && Just today <= newEnd ==> expectRight test
-  where
-    test = do
-        (nv, fs') <-
-            runStorageSim mempty $ cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
-        pure $ conjoin
-            [ case nv of
-                NoteView{text, start, end} ->
-                    conjoin
-                        [ text  === newText
-                        , start === (newStart ?: today)
-                        , end   === newEnd
-                        ]
-            , case fs' of
-                (toList -> [toList -> [toList -> [decode -> Just (Object note)]]]) -> conjoin
-                    [ note ! "status"
-                        === array ["Active", Number 17091260, Number 314159]
-                    , case note ! "text" of
-                        Array (toList ->
-                                [Array (toList ->
-                                    [Number _, Number 314159, String text])])
-                            | not $ Text.null newText
-                            -> text === newText
-                        Array (toList -> []) | Text.null newText -> ok
-                        text -> failProp $ "text = " ++ show text
-                    , case note ! "start" of
-                        Array (toList -> [start, Number _, Number 314159]) ->
-                            start === toJSON (newStart ?: today)
-                        start -> failProp $ "start = " ++ show start
-                    , case note ! "end" of
-                        Array (toList -> [end, Number _, Number 314159]) ->
-                            end === toJSON newEnd
-                        end -> failProp $ "end = " ++ show end
-                    ]
-                _ -> failProp $ "expected singleton dir " ++ show fs'
-            ]
+prop_new :: Property
+prop_new = property $ do
+    newText  <-
+        forAll $
+        Gen.text (Range.linear 0 10000) $ Gen.filter (/= '\0') Gen.unicode
+    newStart <- forAll $ Gen.maybe Gen.day
+    newEnd   <-
+        forAll $
+        Gen.filter (\newEnd -> newStart <= newEnd && Just today <= newEnd) $
+        Gen.maybe Gen.day
+    (nv, fs') <-
+        evalEitherS $
+        runStorageSim mempty $
+        cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
+    case nv of
+        NoteView{text, start, end} -> do
+            text  === newText
+            start === (newStart ?: today)
+            end   === newEnd
+    case fs' of
+        (toList -> [toList -> [toList -> [decode -> Just (Object note)]]]) -> do
+            note ! "status"
+                === array ["Active", Number 17091260, Number 314159]
+            case note ! "text" of
+                Array (toList ->
+                        [Array (toList ->
+                            [Number _, Number 314159, String text])])
+                        | not $ Text.null newText ->
+                    text === newText
+                Array (toList -> []) -> "" === newText
+                _ -> failure
+            let start = note ! "start"
+            Array (toList -> [start', Number _, Number 314159]) <- pure start
+            start' === toJSON (newStart ?: today)
+            let end = note ! "end"
+            Array (toList -> [end', Number _, Number 314159]) <- pure end
+            end' === toJSON newEnd
+        _ -> do
+            annotateShow fs'
+            failure
 
--- expectJust :: Maybe Property -> Property
--- expectJust = fromMaybe . counterexample "got Nothing" $ property False
-
-expectRight :: Either String Property -> Property
-expectRight = either failProp id
-
-failProp :: String -> Property
-failProp s = counterexample s $ property False
-
-ok :: Property
-ok = property ()
+evalEitherS :: (MonadTest m, HasCallStack) => Either String a -> m a
+evalEitherS = \case
+    Left  x -> withFrozenCallStack $ failWith Nothing x
+    Right a -> pure a
 
 jsonRoundtrip
-    :: forall a . (Show a, Eq a, FromJSON a, ToJSON a) => a -> Property
-jsonRoundtrip j =
-    let res = parseEither (parseJSON :: Value -> Parser a) $ toJSON j in
-    case res of
-        Left l -> counterexample l $ property False
-        Right j' -> j === j'
+    :: forall a . (Show a, Eq a, FromJSON a, ToJSON a) => Gen a -> Property
+jsonRoundtrip genA = property $ do
+    a <- forAll genA
+    a' <- evalEitherS $ parseEither parseJSON $ toJSON a
+    a === a'
 
 test_JSON_Tests :: [TestTree]
 test_JSON_Tests =
-    [ testProperty "Config" $ jsonRoundtrip @Config
-    , testProperty "Note"   $ jsonRoundtrip @Note
+    [ testProperty "Config" $ jsonRoundtrip Gen.config
+    -- , testProperty "Note"   $ jsonRoundtrip Gen.note
     ]
 
 ui :: ConfigUI
 ui = ConfigUI {shuffle = False}
 
-newtype NoContainNul = NoContainNul Text
-    deriving Show
+-- instance Arbitrary NoContainNul where
+--     arbitrary = NoContainNul . Text.filter ('\NUL' /=) <$> arbitrary
 
-instance Arbitrary NoContainNul where
-    arbitrary = NoContainNul . Text.filter ('\NUL' /=) <$> arbitrary
-
-case_repo :: IO ()
-case_repo =
-    Github.sampleMap "ff-notes/ff" limit todayForIssues issues @?= ideal
+prop_repo :: Property
+prop_repo = property $
+    Github.sampleMap "ff-notes/ff" limit todayForIssues issues === ideal
   where
     ideal = Map.singleton
         (Overdue 10)
@@ -251,20 +246,21 @@ issues = pure Issue
         , simpleUserUrl = URL "https://api.github.com/users/cblp"
         }
 
-test_CvRDT_Note :: [TestTree]
-test_CvRDT_Note = cvrdtLaws @Note
+-- TODO(cblp, 2018-10-01) enable back
+-- test_CvRDT_Note :: [TestTree]
+-- test_CvRDT_Note = cvrdtLaws @Note
 
-case_json2ron :: IO ()
-case_json2ron = do
+prop_json2ron :: Property
+prop_json2ron = property $ do
 
     -- read JSON, merge, write RON
     do  ((), db') <- either fail pure $ runStorageSim fs123 upgradeDatabase
-        db' @?= fs123merged
+        db' === fs123merged
 
     -- idempotency
     do  ((), db') <-
             either fail pure $ runStorageSim fs123merged upgradeDatabase
-        db' @?= fs123merged
+        db' === fs123merged
 
   where
     fs123merged = Map.singleton "note" $ Map.singleton "1" $
@@ -283,3 +279,6 @@ infixr 0 -:
 
 array :: [Value] -> Value
 array = Array . Vector.fromList
+
+instance Monad m => MonadFail (PropertyT m) where
+    fail = fail  -- MonadFail.fail via Monad.fail
