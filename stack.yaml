@@ -9,16 +9,8 @@ packages:
   # - ../ron/ron
 
 extra-deps:
-  # crdt-test:
-  - QuickCheck-GenT-0.2.0
-
   # ff:
   - crdt-10.3
   - git: https://github.com/ff-notes/ron.git
     commit: '4da2335'
     subdirs: [ron]
-
-  # ff:test:
-  - git: https://github.com/cblp/crdt.git
-    commit: 'v10.3'
-    subdirs: [crdt-test]
