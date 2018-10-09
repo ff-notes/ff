@@ -10,6 +10,7 @@ and this project adheres to
 - Add wiki notes
 - Add completion installation instruction
 - Add contacts
+- Add command to show wiki notes
 
 ## [0.6] - 2018-08-07
 ### Added
