@@ -3,7 +3,6 @@
 .hsenv
 .HTF/
 .stack-work/
-.vscode/
 *.aux
 *.chi
 *.chs.h
