@@ -38,19 +38,50 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettyContactSamplesOmitted :: ContactSample -> Doc
-prettyContactSamplesOmitted samples = sparsedStack $
-    prettyContactSample samples :
+prettyNotesWikiContacts
+    :: Bool
+    -> ModeMap NoteSample
+    -> NoteSample
+    -> ContactSample
+    -> Doc
+prettyNotesWikiContacts brief notes wiki contacts = ns </> ws </> cs
+  where
+    ns = prettySamplesBySections brief notes
+    ws = prettyWikiSamplesOmitted brief wiki
+    cs = prettyContactSamplesOmitted brief contacts
+
+prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc
+prettyContactSamplesOmitted brief samples = sparsedStack $
+    prettyContactSample brief samples :
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyContactSample :: ContactSample -> Doc
-prettyContactSample = \case
+prettyContactSample :: Bool -> ContactSample -> Doc
+prettyContactSample brief = \case
     Sample{total = 0} -> mempty
     Sample{docs} ->
-        withHeader "Contacts:" . sparsedStack $
-        map ((star <>) . indent 1 . contactViewFull) docs
+        withHeader "Contacts:" . stacking $
+        map ((star <>) . indent 1 . contactView) docs
+  where
+    stacking = if brief then stack else sparsedStack
+
+prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc
+prettyWikiSamplesOmitted brief samples = sparsedStack $
+    prettyWikiSample brief samples :
+    [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
+  where
+    numOmitted = omitted samples
+
+prettyWikiSample :: Bool -> NoteSample -> Doc
+prettyWikiSample brief = \case
+    Sample{total = 0} -> mempty
+    Sample{docs} ->
+        withHeader "Wiki notes:" . stacking $
+        map ((star <>) . indent 1 . noteView) docs
+  where
+    stacking = if brief then stack else sparsedStack
+    noteView = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections :: Bool -> ModeMap NoteSample -> Doc
 prettySamplesBySections brief samples = stack' brief $
@@ -117,8 +148,8 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
             | Just Tracked{..} <- [tracked]
             ]
 
-contactViewFull :: ContactView -> Doc
-contactViewFull ContactView{..} = spread [strictText contactViewName, meta]
+contactView :: ContactView -> Doc
+contactView ContactView{..} = spread [strictText contactViewName, meta]
   where
     meta = "| id" <+> string (rawDocId contactViewId)
 

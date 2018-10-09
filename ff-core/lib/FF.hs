@@ -6,6 +6,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE ExplicitForAll #-}
 
 module FF
     ( cmdDeleteNote
@@ -15,7 +16,9 @@ module FF
     , cmdNewNote
     , cmdNewContact
     , cmdPostpone
-    , cmdSearch
+    , cmdSearchContacts
+    , cmdSearchNote
+    , cmdSearchWiki
     , cmdUnarchive
     , getContactSamples
     , getSamples
@@ -60,8 +63,8 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (Document (..), MonadStorage, Storage, create,
-                             listDocuments, load, modify)
+import           FF.Storage (DocId(..), Document (..), MonadStorage, Storage,
+                             create, listDocuments, load, modify)
 import           FF.Types (Contact (..), ContactId, ContactSample,
                            ContactView (..), Limit, ModeMap, Note (..), NoteId,
                            NoteSample, NoteStatus (..), NoteView (..),
@@ -82,6 +85,13 @@ loadActiveContacts :: MonadStorage m => m [ContactView]
 loadActiveContacts =
     filter (\ContactView { contactViewStatus } -> contactViewStatus == Active) <$> loadAllContacts
 
+filterContacts :: (Text -> Bool) -> [ContactView] -> [ContactView]
+filterContacts predicate notes =
+    [ n | n <- notes
+    , predicate (contactViewName n)
+    || (\(DocId x) -> predicate (Text.pack x)) (contactViewId n)
+    ]
+
 getContactSamples :: MonadStorage m => m ContactSample
 getContactSamples = getContactSamplesWith $ const True
 
@@ -91,8 +101,8 @@ getContactSamplesWith
     -> m ContactSample
 getContactSamplesWith predicate = do
     activeContacts <- loadActiveContacts
-    pure . (\ys -> Sample ys $ genericLength ys) .
-        filter (predicate . contactViewName) $ activeContacts
+    pure . (\ys -> Sample ys $ genericLength ys) $
+        filterContacts predicate activeContacts
 
 loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
@@ -121,6 +131,13 @@ loadWikiNotes :: MonadStorage m => m [NoteView]
 loadWikiNotes =
     filter (\NoteView { status } -> status == Wiki) <$> loadAllNotes
 
+filterNotes :: (Text -> Bool) -> [NoteView] -> [NoteView]
+filterNotes predicate notes =
+    [ n | n <- notes
+    , predicate (text n)
+    || (\(Just (DocId x)) -> predicate (Text.pack x)) (nid n)
+    ]
+
 getSamples
     :: MonadStorage m
     => ConfigUI
@@ -144,7 +161,7 @@ getSamplesWith predicate ConfigUI { shuffle } limit today = do
         takeSamples limit .
         (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
-        filter (predicate . text) activeNotes
+        filterNotes predicate activeNotes
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
@@ -153,7 +170,7 @@ getWikiSamples
     => ConfigUI
     -> Maybe Limit
     -> Day  -- ^ today
-    -> m (ModeMap NoteSample)
+    -> m NoteSample
 getWikiSamples = getWikiSamplesWith $ const True
 
 getWikiSamplesWith
@@ -161,19 +178,17 @@ getWikiSamplesWith
     => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
     -> Maybe Limit
-    -> Day             -- ^ today
-    -> m (ModeMap NoteSample)
-getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
+    -> Day  -- ^ today
+    -> m NoteSample
+getWikiSamplesWith predicate _ limit _ = do
     wikiNotes <- loadWikiNotes
-    -- in sorting by nid no business-logic is involved,
-    -- it's just for determinism
-    pure .
-        takeSamples limit .
-        (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
-        splitModes today $
-        filter (predicate . text) wikiNotes
+    let fn = filterNotes predicate wikiNotes
+    let wiki = case limit of
+            Nothing -> fn
+            Just l -> take (fromIntegral l) fn
+    pure $ toSample wiki
   where
-    gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+    toSample = (\ys -> Sample ys $ genericLength ys)
 
 shuffleItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleItems gen = (`evalState` gen) . traverse shuf
@@ -273,14 +288,29 @@ cmdDeleteContact cid = modifyAndViewContact cid $ \contact@Contact {..} -> do
         , contactName   = contactName'
         }
 
-cmdSearch
+cmdSearchNote
     :: Text
     -> Maybe Limit
     -> Day  -- ^ today
     -> Storage (ModeMap NoteSample)
-cmdSearch substr = getSamplesWith
+cmdSearchNote substr = getSamplesWith
     (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
     ConfigUI {shuffle = False}
+
+cmdSearchWiki
+    :: Text
+    -> Maybe Limit
+    -> Day  -- ^ today
+    -> Storage NoteSample
+cmdSearchWiki substr = getWikiSamplesWith
+    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
+    ConfigUI {shuffle = False}
+
+cmdSearchContacts
+    :: Text
+    -> Storage ContactSample
+cmdSearchContacts substr = getContactSamplesWith
+    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
 
 cmdDeleteNote :: NoteId -> Storage NoteView
 cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do

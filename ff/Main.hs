@@ -31,9 +31,10 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
-                     cmdUnarchive, getContactSamples, getSamples, getUtcToday,
-                     getWikiSamples, updateTrackedNotes)
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearchContacts,
+                     cmdSearchNote, cmdSearchWiki, cmdUnarchive,
+                     getContactSamples, getSamples, getUtcToday, getWikiSamples,
+                     updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -122,7 +123,7 @@ runCmdAction h ui cmd brief = do
         CmdAgenda mlimit -> do
             nvs <- getSamples ui mlimit today
             pprint $ UI.prettySamplesBySections brief nvs
-        CmdContact contact -> cmdContact contact
+        CmdContact contact -> cmdContact brief contact
         CmdDelete noteId -> do
             nv <- cmdDeleteNote noteId
             pprint $ withHeader "deleted:" $ UI.noteViewFull nv
@@ -139,8 +140,10 @@ runCmdAction h ui cmd brief = do
             nv <- cmdPostpone noteId
             pprint $ withHeader "postponed:" $ UI.noteViewFull nv
         CmdSearch Search {..} -> do
-            nvs <- cmdSearch searchText searchLimit today
-            pprint $ UI.prettySamplesBySections brief nvs
+            notes <- cmdSearchNote searchText searchLimit today
+            wiki <- cmdSearchWiki searchText searchLimit today
+            contacts <- cmdSearchContacts searchText
+            pprint $ UI.prettyNotesWikiContacts brief notes wiki contacts
         CmdServe -> cmdServe h ui
         CmdTrack track ->
             cmdTrack track today brief
@@ -152,7 +155,7 @@ runCmdAction h ui cmd brief = do
             liftIO $ putStrLn "upgraded"
         CmdWiki mlimit -> do
             nvs <- getWikiSamples ui mlimit today
-            pprint $ UI.prettySamplesBySections brief nvs
+            pprint $ UI.prettyWikiSamplesOmitted brief nvs
 
 cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today brief =
@@ -178,17 +181,17 @@ cmdTrack Track {..} today brief =
                 exitFailure
             Right issues -> pure issues
 
-cmdContact :: Maybe Contact -> Storage ()
-cmdContact = \case
+cmdContact :: Bool -> Maybe Contact -> Storage ()
+cmdContact brief = \case
     Just (Add name) -> do
         cv <- cmdNewContact name
-        pprint $ withHeader "added:" $ UI.contactViewFull cv
+        pprint $ withHeader "added:" $ UI.contactView cv
     Just (Delete cid) -> do
         cv <- cmdDeleteContact cid
-        pprint $ withHeader "deleted:" $ UI.contactViewFull cv
+        pprint $ withHeader "deleted:" $ UI.contactView cv
     Nothing -> do
         cvs <- getContactSamples
-        pprint $ UI.prettyContactSamplesOmitted cvs
+        pprint $ UI.prettyContactSamplesOmitted brief cvs
 
 -- Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
