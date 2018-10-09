@@ -20,6 +20,7 @@ module FF
     , getContactSamples
     , getSamples
     , getUtcToday
+    , getWikiSamples
     , loadActiveNotes
     , loadAllNotes
     , newNote
@@ -116,6 +117,10 @@ loadActiveNotes :: MonadStorage m => m [NoteView]
 loadActiveNotes =
     filter (\NoteView { status } -> status == TaskStatus Active) <$> loadAllNotes
 
+loadWikiNotes :: MonadStorage m => m [NoteView]
+loadWikiNotes =
+    filter (\NoteView { status } -> status == Wiki) <$> loadAllNotes
+
 getSamples
     :: MonadStorage m
     => ConfigUI
@@ -140,6 +145,33 @@ getSamplesWith predicate ConfigUI { shuffle } limit today = do
         (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
         filter (predicate . text) activeNotes
+  where
+    gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+
+getWikiSamples
+    :: MonadStorage m
+    => ConfigUI
+    -> Maybe Limit
+    -> Day  -- ^ today
+    -> m (ModeMap NoteSample)
+getWikiSamples = getWikiSamplesWith $ const True
+
+getWikiSamplesWith
+    :: MonadStorage m
+    => (Text -> Bool)  -- ^ predicate to filter notes by text
+    -> ConfigUI
+    -> Maybe Limit
+    -> Day             -- ^ today
+    -> m (ModeMap NoteSample)
+getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
+    wikiNotes <- loadWikiNotes
+    -- in sorting by nid no business-logic is involved,
+    -- it's just for determinism
+    pure .
+        takeSamples limit .
+        (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
+        splitModes today $
+        filter (predicate . text) wikiNotes
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
@@ -210,12 +242,12 @@ cmdNewNote New { newText, newStart, newEnd, newWiki } today = do
     case newEnd of
         Just end -> assertStartBeforeEnd newStart' end
         _        -> pure ()
-    (status, end) <-
+    (status, end, start) <-
         if newWiki then case newEnd of
-            Nothing -> pure (Wiki, Nothing)
+            Nothing -> pure (Wiki, Nothing, today)
             Just _  -> fail "Wiki note has no end date."
-        else pure (TaskStatus Active, newEnd)
-    note <- newNote status newText newStart' end
+        else pure (TaskStatus Active, newEnd, newStart')
+    note <- newNote status newText start end
     nid  <- create note
     pure $ noteView nid note
 

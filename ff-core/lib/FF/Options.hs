@@ -50,6 +50,7 @@ data CmdAction
     | CmdTrack      Track
     | CmdUnarchive  NoteId
     | CmdUpgrade
+    | CmdWiki       (Maybe Limit)
 
 data Options = Options
     { optionBrief :: Bool
@@ -112,6 +113,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
+        , action  "wiki"      iCmdWiki
         ]
       where
         action s = command s . fmap CmdAction
@@ -131,6 +133,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
                                     \ recent format"
+    iCmdWiki      = i cmdWiki       "show all wiki notes"
 
     cmdAgenda    = CmdAgenda    <$> optional limit
     cmdContact   = CmdContact   <$> optional contact
@@ -144,6 +147,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
     cmdUpgrade   = pure CmdUpgrade
+    cmdWiki      = CmdWiki      <$> optional limit
 
     wiki = switch
         (long "wiki" <> short 'w' <>

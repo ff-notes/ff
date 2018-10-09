@@ -33,7 +33,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
                      cmdUnarchive, getContactSamples, getSamples, getUtcToday,
-                     updateTrackedNotes)
+                     getWikiSamples, updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -150,6 +150,9 @@ runCmdAction h ui cmd brief = do
         CmdUpgrade -> do
             upgradeDatabase
             liftIO $ putStrLn "upgraded"
+        CmdWiki mlimit -> do
+            nvs <- getWikiSamples ui mlimit today
+            pprint $ UI.prettySamplesBySections brief nvs
 
 cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today brief =
