@@ -180,15 +180,24 @@ getWikiSamplesWith
     -> Maybe Limit
     -> Day  -- ^ today
     -> m NoteSample
-getWikiSamplesWith predicate _ limit _ = do
+getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
     wikiNotes <- loadWikiNotes
     let fn = filterNotes predicate wikiNotes
     let wiki = case limit of
             Nothing -> fn
             Just l -> take (fromIntegral l) fn
-    pure $ toSample wiki
+    pure . toSample $
+        (if shuffle then shuffleItems2 gen else (sortOn $ start &&& nid)) wiki
   where
     toSample ys = Sample ys $ genericLength ys
+    gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+
+shuffleItems2 :: StdGen -> [b] -> [b]
+shuffleItems2 gen = (`evalState` gen) . shuf
+  where
+    shuf xs = do
+        g <- state split
+        pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
 
 shuffleItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleItems gen = (`evalState` gen) . traverse shuf
