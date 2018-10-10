@@ -11,8 +11,7 @@ and this project adheres to
 - Add completion installation instruction
 - Add contacts
 - Add command to show wiki notes
-- Search notes by id
-- Search among notes, wiki and contacts
+- Search among notes, wiki and contacts. All or narrow.
 
 ## [0.6] - 2018-08-07
 ### Added

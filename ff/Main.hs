@@ -31,9 +31,9 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdUnarchive,
-                     getContactSamples, getNoteSamples, getUtcToday, getWikiSamples,
-                     updateTrackedNotes)
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
+                     cmdUnarchive, getContactSamples, getNoteSamples,
+                     getUtcToday, getWikiSamples, updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -141,7 +141,7 @@ runCmdAction h ui cmd brief = do
         CmdSearch Search {..} -> do
             (notes, wiki, contacts) <- cmdSearch searchText searchLimit today
             pprint $ UI.prettyNotesWikiContacts
-                brief notes wiki contacts searchNote searchWiki searchContact
+                brief notes wiki contacts searchTasks searchWiki searchContacts
         CmdServe -> cmdServe h ui
         CmdTrack track ->
             cmdTrack track today brief
@@ -183,10 +183,10 @@ cmdContact :: Bool -> Maybe Contact -> Storage ()
 cmdContact brief = \case
     Just (Add name) -> do
         cv <- cmdNewContact name
-        pprint $ withHeader "added:" $ UI.contactView cv
+        pprint $ withHeader "added:" $ UI.contactViewFull cv
     Just (Delete cid) -> do
         cv <- cmdDeleteContact cid
-        pprint $ withHeader "deleted:" $ UI.contactView cv
+        pprint $ withHeader "deleted:" $ UI.contactViewFull cv
     Nothing -> do
         cvs <- getContactSamples
         pprint $ UI.prettyContactSamplesOmitted brief cvs

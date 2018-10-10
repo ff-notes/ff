@@ -43,7 +43,7 @@ prettyNotesWikiContacts
     -> ModeMap NoteSample
     -> NoteSample
     -> ContactSample
-    -> Bool  -- ^ search among notes
+    -> Bool  -- ^ search among tasks
     -> Bool  -- ^ search among wiki notes
     -> Bool  -- ^ search among contacts
     -> Doc
@@ -73,7 +73,7 @@ prettyContactSample brief = \case
     Sample{total = 0} -> mempty
     Sample{docs} ->
         withHeader "Contacts:" . stacking $
-        map ((star <>) . indent 1 . contactView) docs
+        map ((star <>) . indent 1 . contactViewFull) docs
   where
     stacking = if brief then stack else sparsedStack
 
@@ -159,8 +159,8 @@ noteViewFull NoteView{..} = sparsedStack [wrapLines text, sep meta]
             | Just Tracked{..} <- [tracked]
             ]
 
-contactView :: ContactView -> Doc
-contactView ContactView{..} = spread [strictText contactViewName, meta]
+contactViewFull :: ContactView -> Doc
+contactViewFull ContactView{..} = spread [strictText contactViewName, meta]
   where
     meta = "| id" <+> string (rawDocId contactViewId)
 

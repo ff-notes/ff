@@ -60,8 +60,9 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (DocId (..), Document (..), MonadStorage, Storage,
-                             create, listDocuments, load, modify)
+import           FF.Storage (DocId (..), Document (..),
+                             MonadStorage, Storage, create, listDocuments, load,
+                             modify)
 import           FF.Types (Contact (..), ContactId, ContactSample,
                            ContactView (..), Limit, ModeMap, Note (..), NoteId,
                            NoteSample, NoteStatus (..), NoteView (..),
@@ -82,11 +83,10 @@ loadActiveContacts :: MonadStorage m => m [ContactView]
 loadActiveContacts =
     filter (\ContactView { contactViewStatus } -> contactViewStatus == Active) <$> loadAllContacts
 
-filterContacts :: (Text -> Bool) -> [ContactView] -> [ContactView]
-filterContacts predicate notes =
+filteredContacts :: (Text -> Bool) -> [ContactView] -> [ContactView]
+filteredContacts predicate notes =
     [ n | n@ContactView{contactViewId = DocId x, contactViewName} <- notes
-    , predicate contactViewName
-    || predicate (Text.pack x)
+    , predicate contactViewName || predicate (Text.pack x)
     ]
 
 getContactSamples :: MonadStorage m => m ContactSample
@@ -99,7 +99,7 @@ getContactSamplesWith
 getContactSamplesWith predicate = do
     activeContacts <- loadActiveContacts
     pure . (\ys -> Sample ys $ genericLength ys) $
-        filterContacts predicate activeContacts
+        filteredContacts predicate activeContacts
 
 loadAllNotes :: MonadStorage m => m [NoteView]
 loadAllNotes = do
@@ -128,11 +128,10 @@ loadWikiNotes :: MonadStorage m => m [NoteView]
 loadWikiNotes =
     filter (\NoteView { status } -> status == Wiki) <$> loadAllNotes
 
-filterNotes :: (Text -> Bool) -> [NoteView] -> [NoteView]
-filterNotes predicate notes =
+filteredNotes :: (Text -> Bool) -> [NoteView] -> [NoteView]
+filteredNotes predicate notes =
     [ n | n@NoteView {nid = Just (DocId i), text} <- notes
-    , predicate text
-    || predicate (Text.pack i)
+    , predicate text || predicate (Text.pack i)
     ]
 
 getNoteSamples
@@ -158,7 +157,7 @@ getNoteSamplesWith predicate ConfigUI { shuffle } limit today = do
         takeSamples limit .
         (if shuffle then shuffleTraverseItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
-        filterNotes predicate activeNotes
+        filteredNotes predicate activeNotes
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
@@ -179,11 +178,13 @@ getWikiSamplesWith
     -> m NoteSample
 getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
     wikiNotes <- loadWikiNotes
-    let fn = filterNotes predicate wikiNotes
+    let fn = filteredNotes predicate wikiNotes
     let wiki = case limit of
             Nothing -> fn
             Just l -> take (fromIntegral l) fn
     pure . toSample $
+    -- in sorting by nid no business-logic is involved,
+    -- it's just for determinism
         (if shuffle then shuffleItems gen else sortOn $ start &&& nid) wiki
   where
     toSample ys = Sample ys $ genericLength ys
