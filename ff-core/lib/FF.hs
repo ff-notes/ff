@@ -87,9 +87,9 @@ loadActiveContacts =
 
 filterContacts :: (Text -> Bool) -> [ContactView] -> [ContactView]
 filterContacts predicate notes =
-    [ n | n <- notes
-    , predicate (contactViewName n)
-    || (\(DocId x) -> predicate (Text.pack x)) (contactViewId n)
+    [ n | n@ContactView{contactViewId = DocId x, contactViewName} <- notes
+    , predicate contactViewName
+    || predicate (Text.pack x)
     ]
 
 getContactSamples :: MonadStorage m => m ContactSample
@@ -119,7 +119,7 @@ loadTrackedNotes = do
     mnotes <- for docs load
     pure
         [ (noteId, value)
-        | (noteId, Right Document{value = value @ Note{noteTracked = Just _}})
+        | (noteId, Right Document{value = value@Note{noteTracked = Just _}})
             <- zip docs mnotes
         ]
 
@@ -133,9 +133,9 @@ loadWikiNotes =
 
 filterNotes :: (Text -> Bool) -> [NoteView] -> [NoteView]
 filterNotes predicate notes =
-    [ n | n <- notes
-    , predicate (text n)
-    || (\(Just (DocId x)) -> predicate (Text.pack x)) (nid n)
+    [ n | n@NoteView {nid = Just (DocId i), text} <- notes
+    , predicate text
+    || predicate (Text.pack i)
     ]
 
 getSamples
@@ -188,7 +188,7 @@ getWikiSamplesWith predicate _ limit _ = do
             Just l -> take (fromIntegral l) fn
     pure $ toSample wiki
   where
-    toSample = (\ys -> Sample ys $ genericLength ys)
+    toSample ys = Sample ys $ genericLength ys
 
 shuffleItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleItems gen = (`evalState` gen) . traverse shuf
@@ -224,7 +224,7 @@ updateTrackedNote oldNotes NoteView{..} =
             note <- newNote' status text start end tracked
             void $ create note
         Just (n, _) ->
-            void $ modify n $ \note @ Note{..} -> do
+            void $ modify n $ \note@Note{..} -> do
                 noteStatus' <- lwwAssignIfDiffer status noteStatus
                 noteText'   <- rgaEditText text noteText
                 pure note{noteStatus = noteStatus', noteText = noteText'}
@@ -361,7 +361,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
             (Just start, Just (Just end), _       ) -> Just (start, end)
             _ -> Nothing
     update :: Note -> Storage Note
-    update note @ Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
+    update note@Note{noteStatus = (LWW.query -> noteStatus), noteEnd, noteStart, noteText} = do
         (start, end) <- case noteStatus of
             Wiki -> case (editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
