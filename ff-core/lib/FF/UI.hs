@@ -39,12 +39,23 @@ pshow :: Show a => a -> Doc
 pshow = string . show
 
 prettyNotesWikiContacts
-    :: Bool
+    :: Bool  -- ^ brief output
     -> ModeMap NoteSample
     -> NoteSample
     -> ContactSample
+    -> Bool  -- ^ search among notes
+    -> Bool  -- ^ search among wiki notes
+    -> Bool  -- ^ search among contacts
     -> Doc
-prettyNotesWikiContacts brief notes wiki contacts = ns </> ws </> cs
+prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
+    case (amongN, amongW, amongC) of
+        (True, False, False) -> ns
+        (False, True, False) -> ws
+        (False, False, True) -> cs
+        (True, True, False)  -> ns </> ws
+        (False, True, True)  -> ws </> cs
+        (True, False, True)  -> ns </> cs
+        (_,_,_)              -> ns </> ws </> cs
   where
     ns = prettySamplesBySections brief notes
     ws = prettyWikiSamplesOmitted brief wiki

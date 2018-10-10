@@ -12,6 +12,7 @@ and this project adheres to
 - Add contacts
 - Add command to show wiki notes
 - Search notes by id
+- Search among notes, wiki and contacts
 
 ## [0.6] - 2018-08-07
 ### Added

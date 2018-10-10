@@ -6,7 +6,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ExplicitForAll #-}
 
 module FF
     ( cmdDeleteNote
@@ -16,12 +15,10 @@ module FF
     , cmdNewNote
     , cmdNewContact
     , cmdPostpone
-    , cmdSearchContacts
-    , cmdSearchNote
-    , cmdSearchWiki
+    , cmdSearch
     , cmdUnarchive
     , getContactSamples
-    , getSamples
+    , getNoteSamples
     , getUtcToday
     , getWikiSamples
     , loadActiveNotes
@@ -63,7 +60,7 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (ConfigUI (..))
 import           FF.Options (Edit (..), New (..))
-import           FF.Storage (DocId(..), Document (..), MonadStorage, Storage,
+import           FF.Storage (DocId (..), Document (..), MonadStorage, Storage,
                              create, listDocuments, load, modify)
 import           FF.Types (Contact (..), ContactId, ContactSample,
                            ContactView (..), Limit, ModeMap, Note (..), NoteId,
@@ -138,28 +135,28 @@ filterNotes predicate notes =
     || predicate (Text.pack i)
     ]
 
-getSamples
+getNoteSamples
     :: MonadStorage m
     => ConfigUI
     -> Maybe Limit
     -> Day  -- ^ today
     -> m (ModeMap NoteSample)
-getSamples = getSamplesWith $ const True
+getNoteSamples = getNoteSamplesWith $ const True
 
-getSamplesWith
+getNoteSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
     -> Maybe Limit
     -> Day             -- ^ today
     -> m (ModeMap NoteSample)
-getSamplesWith predicate ConfigUI { shuffle } limit today = do
+getNoteSamplesWith predicate ConfigUI { shuffle } limit today = do
     activeNotes <- loadActiveNotes
     -- in sorting by nid no business-logic is involved,
     -- it's just for determinism
     pure .
         takeSamples limit .
-        (if shuffle then shuffleItems gen else fmap (sortOn $ start &&& nid)) .
+        (if shuffle then shuffleTraverseItems gen else fmap (sortOn $ start &&& nid)) .
         splitModes today $
         filterNotes predicate activeNotes
   where
@@ -178,7 +175,7 @@ getWikiSamplesWith
     => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
     -> Maybe Limit
-    -> Day  -- ^ today
+    -> Day             -- ^ today
     -> m NoteSample
 getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
     wikiNotes <- loadWikiNotes
@@ -187,20 +184,20 @@ getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
             Nothing -> fn
             Just l -> take (fromIntegral l) fn
     pure . toSample $
-        (if shuffle then shuffleItems2 gen else (sortOn $ start &&& nid)) wiki
+        (if shuffle then shuffleItems gen else (sortOn $ start &&& nid)) wiki
   where
     toSample ys = Sample ys $ genericLength ys
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
 
-shuffleItems2 :: StdGen -> [b] -> [b]
-shuffleItems2 gen = (`evalState` gen) . shuf
+shuffleItems :: StdGen -> [b] -> [b]
+shuffleItems gen = (`evalState` gen) . shuf
   where
     shuf xs = do
         g <- state split
         pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
 
-shuffleItems :: Traversable t => StdGen -> t [b] -> t [b]
-shuffleItems gen = (`evalState` gen) . traverse shuf
+shuffleTraverseItems :: Traversable t => StdGen -> t [b] -> t [b]
+shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
   where
     shuf xs = do
         g <- state split
@@ -297,29 +294,19 @@ cmdDeleteContact cid = modifyAndViewContact cid $ \contact@Contact {..} -> do
         , contactName   = contactName'
         }
 
-cmdSearchNote
-    :: Text
+cmdSearch
+    :: Text  -- ^ query
     -> Maybe Limit
     -> Day  -- ^ today
-    -> Storage (ModeMap NoteSample)
-cmdSearchNote substr = getSamplesWith
-    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
-    ConfigUI {shuffle = False}
-
-cmdSearchWiki
-    :: Text
-    -> Maybe Limit
-    -> Day  -- ^ today
-    -> Storage NoteSample
-cmdSearchWiki substr = getWikiSamplesWith
-    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
-    ConfigUI {shuffle = False}
-
-cmdSearchContacts
-    :: Text
-    -> Storage ContactSample
-cmdSearchContacts substr = getContactSamplesWith
-    (Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold)
+    -> Storage (ModeMap NoteSample, NoteSample, ContactSample)
+cmdSearch substr limit today = do
+    notes <- getNoteSamplesWith predicate ui limit today
+    wiki <- getWikiSamplesWith predicate ui limit today
+    contacts <- getContactSamplesWith predicate
+    pure (notes, wiki, contacts)
+  where
+    predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+    ui = ConfigUI {shuffle = False}
 
 cmdDeleteNote :: NoteId -> Storage NoteView
 cmdDeleteNote nid = modifyAndView nid $ \note@Note {..} -> do

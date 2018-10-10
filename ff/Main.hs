@@ -31,9 +31,8 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearchContacts,
-                     cmdSearchNote, cmdSearchWiki, cmdUnarchive,
-                     getContactSamples, getSamples, getUtcToday, getWikiSamples,
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdUnarchive,
+                     getContactSamples, getNoteSamples, getUtcToday, getWikiSamples,
                      updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
@@ -121,7 +120,7 @@ runCmdAction h ui cmd brief = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
-            nvs <- getSamples ui mlimit today
+            nvs <- getNoteSamples ui mlimit today
             pprint $ UI.prettySamplesBySections brief nvs
         CmdContact contact -> cmdContact brief contact
         CmdDelete noteId -> do
@@ -140,10 +139,9 @@ runCmdAction h ui cmd brief = do
             nv <- cmdPostpone noteId
             pprint $ withHeader "postponed:" $ UI.noteViewFull nv
         CmdSearch Search {..} -> do
-            notes <- cmdSearchNote searchText searchLimit today
-            wiki <- cmdSearchWiki searchText searchLimit today
-            contacts <- cmdSearchContacts searchText
-            pprint $ UI.prettyNotesWikiContacts brief notes wiki contacts
+            (notes, wiki, contacts) <- cmdSearch searchText searchLimit today
+            pprint $ UI.prettyNotesWikiContacts
+                brief notes wiki contacts searchNote searchWiki searchContact
         CmdServe -> cmdServe h ui
         CmdTrack track ->
             cmdTrack track today brief
