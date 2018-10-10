@@ -184,7 +184,7 @@ getWikiSamplesWith predicate ConfigUI { shuffle } limit today = do
             Nothing -> fn
             Just l -> take (fromIntegral l) fn
     pure . toSample $
-        (if shuffle then shuffleItems gen else (sortOn $ start &&& nid)) wiki
+        (if shuffle then shuffleItems gen else sortOn $ start &&& nid) wiki
   where
     toSample ys = Sample ys $ genericLength ys
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
