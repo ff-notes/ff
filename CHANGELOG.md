@@ -11,6 +11,7 @@ and this project adheres to
 - Add completion installation instruction
 - Add contacts
 - Add command to show wiki notes
+- Search among tasks, wiki, and/or contacts
 
 ## [0.6] - 2018-08-07
 ### Added

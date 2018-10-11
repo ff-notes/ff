@@ -27,7 +27,7 @@ import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
 import           Text.Blaze.Html5.Attributes (class_, href)
 import           Web.Scotty (get, html, scottyOpts, settings, verbose)
 
-import           FF (getSamples, getUtcToday)
+import           FF (getNoteSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
 import           FF.Storage (runStorage)
 import qualified FF.Storage as Storage
@@ -40,7 +40,7 @@ cmdServe h ui = liftIO $ do
     hPutStrLn stderr "serving at http://localhost:3000/"
     scottyOpts opts $ get "/" $ do
         today <- getUtcToday
-        nvs <- liftIO $ runStorage h $ getSamples ui Nothing today
+        nvs <- liftIO $ runStorage h $ getNoteSamples ui Nothing today
         html $ renderHtml $ do
             style ".metaItem { color: #ccc; }"
             prettyHtmlSamplesBySections nvs

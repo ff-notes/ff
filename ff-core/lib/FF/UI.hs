@@ -38,19 +38,61 @@ indentation = 2
 pshow :: Show a => a -> Doc
 pshow = string . show
 
-prettyContactSamplesOmitted :: ContactSample -> Doc
-prettyContactSamplesOmitted samples = sparsedStack $
-    prettyContactSample samples :
+prettyNotesWikiContacts
+    :: Bool  -- ^ brief output
+    -> ModeMap NoteSample
+    -> NoteSample
+    -> ContactSample
+    -> Bool  -- ^ search among tasks
+    -> Bool  -- ^ search among wiki notes
+    -> Bool  -- ^ search among contacts
+    -> Doc
+prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
+    case (amongN, amongW, amongC) of
+        (True, False, False) -> ns
+        (False, True, False) -> ws
+        (False, False, True) -> cs
+        (True, True, False)  -> ns </> ws
+        (False, True, True)  -> ws </> cs
+        (True, False, True)  -> ns </> cs
+        (_,_,_)              -> ns </> ws </> cs
+  where
+    ns = prettySamplesBySections brief notes
+    ws = prettyWikiSamplesOmitted brief wiki
+    cs = prettyContactSamplesOmitted brief contacts
+
+prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc
+prettyContactSamplesOmitted brief samples = sparsedStack $
+    prettyContactSample brief samples :
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyContactSample :: ContactSample -> Doc
-prettyContactSample = \case
+prettyContactSample :: Bool -> ContactSample -> Doc
+prettyContactSample brief = \case
     Sample{total = 0} -> mempty
     Sample{docs} ->
-        withHeader "Contacts:" . sparsedStack $
+        withHeader "Contacts:" . stacking $
         map ((star <>) . indent 1 . contactViewFull) docs
+  where
+    stacking = if brief then stack else sparsedStack
+
+prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc
+prettyWikiSamplesOmitted brief samples = sparsedStack $
+    prettyWikiSample brief samples :
+    [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
+  where
+    numOmitted = omitted samples
+
+prettyWikiSample :: Bool -> NoteSample -> Doc
+prettyWikiSample brief = \case
+    Sample{total = 0} -> mempty
+    Sample{docs} ->
+        withHeader "Wiki notes:" . stacking $
+        map ((star <>) . indent 1 . noteView) docs
+  where
+    stacking = if brief then stack else sparsedStack
+    noteView = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections :: Bool -> ModeMap NoteSample -> Doc
 prettySamplesBySections brief samples = stack' brief $

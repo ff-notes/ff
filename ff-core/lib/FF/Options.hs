@@ -90,8 +90,11 @@ data New = New
     }
 
 data Search = Search
-    { searchText  :: Text
-    , searchLimit :: Maybe Limit
+    { searchText     :: Text
+    , searchTasks    :: Bool  -- ^ search among tasks
+    , searchWiki     :: Bool  -- ^ search among wiki notes
+    , searchContacts :: Bool  -- ^ search among contacts
+    , searchLimit    :: Maybe Limit
     }
 
 parseOptions :: Storage.Handle -> IO Options
@@ -182,7 +185,15 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         <*> optional textOption
         <*> optional start
         <*> optional maybeEnd
-    search = Search <$> strArgument (metavar "TEXT") <*> optional limit
+    search = Search
+        <$> strArgument (metavar "TEXT")
+        <*> searchN
+        <*> searchW
+        <*> searchC
+        <*> optional limit
+    searchN = switch (long "tasks" <> short 't' <> help "Search among notes")
+    searchW = switch (long "wiki" <> short 'w' <> help "Search among wiki")
+    searchC = switch (long "contacts" <> short 'c' <> help "Search among contacts")
     noteid = DocId <$> strArgument
         (metavar "ID" <> help "note id" <> completer completeNoteIds)
     text = strArgument $ metavar "TEXT" <> help "note text"
