@@ -1,13 +1,10 @@
-{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module RON.Storage.IO
     ( Handle
@@ -19,10 +16,11 @@ module RON.Storage.IO
 
 import           Control.Exception (catch, throwIO)
 import           Control.Monad (filterM, unless)
-import           Control.Monad.Except (ExceptT (..), MonadError (..),
-                                       liftEither, runExceptT, throwError)
+import           Control.Monad.Except (ExceptT (ExceptT), MonadError,
+                                       catchError, liftEither, runExceptT,
+                                       throwError)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.Reader (ReaderT (..), ask)
+import           Control.Monad.Reader (ReaderT (ReaderT), ask, runReaderT)
 import           Control.Monad.Trans (lift)
 import           Data.Bits (shiftL)
 import qualified Data.ByteString.Lazy as BSL
@@ -32,18 +30,21 @@ import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Traversable (for)
 import           Data.Word (Word64)
 import           Network.Info (MAC (MAC), getNetworkInterfaces, mac)
-import           RON.Event (Clock (..), EpochClock, EpochTime, Replica (..),
-                            ReplicaId, applicationSpecific, getCurrentEpochTime,
-                            getEventUuid, runEpochClock)
+import           RON.Event (Clock, EpochClock, EpochTime, Replica, ReplicaId,
+                            advance, applicationSpecific, getCurrentEpochTime,
+                            getEventUuid, getEvents, getPid, runEpochClock)
 import           RON.Text (parseStateFrame, serializeStateFrame)
-import           RON.Types (Object (..))
+import           RON.Types (Object (Object), objectFrame, objectId)
 import qualified RON.UUID as UUID
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    listDirectory, removeFile)
 import           System.FilePath ((</>))
 import           System.IO.Error (isDoesNotExistError)
 
-import           RON.Storage (Collection (..), DocId (..), MonadStorage (..))
+import           RON.Storage (Collection, DocId (DocId), MonadStorage,
+                              collectionName, createVersion, deleteVersion,
+                              fallbackParse, listCollections, listDocuments,
+                              listVersions, readVersion)
 
 -- | Environment is the dataDir
 newtype StorageT clock a = Storage (ExceptT String (ReaderT FilePath clock) a)
@@ -131,7 +132,7 @@ newHandle hDataDir = do
     time <- getCurrentEpochTime
     hClock <- newIORef time
     hReplica <- applicationSpecific <$> getMacAddress
-    pure Handle{..}
+    pure Handle{hDataDir, hClock, hReplica}
 
 runStorage :: Handle -> Storage a -> IO a
 runStorage Handle{hReplica, hDataDir, hClock} action = do
@@ -150,7 +151,7 @@ docDir :: forall a . Collection a => DocId a -> FilePath
 docDir (DocId docId) = collectionName @a </> UUID.encodeBase32 docId
 
 objectDir :: forall a . Collection a => Object a -> FilePath
-objectDir Object{objectId} = docDir $ DocId @a objectId
+objectDir Object{objectId} = docDir (DocId objectId :: DocId a)
 
 -- MAC address
 
