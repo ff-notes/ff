@@ -9,9 +9,9 @@
 
 module RON.Storage.Test (TestDB, runStorageSim) where
 
-import           Control.Lens (at, non, (.=), (<>=))
 import           Control.Monad.Except (ExceptT, MonadError (..), runExceptT)
-import           Control.Monad.State.Strict (StateT, get, gets, runStateT)
+import           Control.Monad.State.Strict (StateT, get, gets, modify,
+                                             runStateT)
 import qualified Data.ByteString.Lazy as BSL
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import           Data.Map.Strict (Map, (!), (!?))
@@ -61,10 +61,13 @@ instance MonadStorage StorageSim where
 
     createVersion (Object{objectId, objectFrame} :: Object a) = do
         version <- getEventUuid
-        StorageSim $
-            at (collectionName @a) . non mempty . at objectId . non mempty
-            . at version . non mempty
-            <>= BSLC.lines (serializeStateFrame objectFrame)
+        let document = BSLC.lines $ serializeStateFrame objectFrame
+        let insertDocumentVersion =
+                Just . Map.insertWith (<>) version document . fromMaybe mempty
+        let alterDocument = Just .
+                Map.alter insertDocumentVersion objectId . fromMaybe mempty
+        let alterCollection = Map.alter alterDocument (collectionName @a)
+        StorageSim $ modify alterCollection
 
     readVersion (DocId objectId :: DocId a) version = StorageSim $ do
         db <- get
@@ -78,9 +81,12 @@ instance MonadStorage StorageSim where
                     '{' -> fallbackError
                     _   -> ronError
 
-    deleteVersion (DocId doc :: DocId a) version = StorageSim $
-        at (collectionName @a) . non mempty . at doc . non mempty
-        . at version .= Nothing
+    deleteVersion (DocId doc :: DocId a) version
+        = StorageSim
+        . modify
+        . (`Map.adjust` collectionName @a)
+        . (`Map.adjust` doc)
+        $ Map.delete version
 
 (!.) :: Ord a => Map a (Map b c) -> a -> Map b c
 m !. a = fromMaybe Map.empty $ m !? a
