@@ -24,7 +24,7 @@ import           Control.Monad.Except (ExceptT (..), MonadError (..),
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (ReaderT (..), ask)
 import           Control.Monad.Trans (lift)
-import qualified Data.Binary as Binary
+import           Data.Bits (shiftL)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Coerce (coerce)
 import           Data.IORef (IORef, newIORef)
@@ -163,5 +163,10 @@ getMacAddress = decodeMac <$> getMac where
         .   filter (/= minBound)
         .   map mac
         <$> getNetworkInterfaces
-    decodeMac (MAC b5 b4 b3 b2 b1 b0) =
-        Binary.decode $ BSL.pack [0, 0, b5, b4, b3, b2, b1, b0]
+    decodeMac (MAC b5 b4 b3 b2 b1 b0)
+        = fromIntegral b5 `shiftL` 40
+        + fromIntegral b4 `shiftL` 32
+        + fromIntegral b3 `shiftL` 24
+        + fromIntegral b2 `shiftL` 16
+        + fromIntegral b1 `shiftL` 8
+        + fromIntegral b0
