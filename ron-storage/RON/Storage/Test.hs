@@ -1,15 +1,13 @@
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module RON.Storage.Test (TestDB, runStorageSim) where
 
-import           Control.Monad.Except (ExceptT, MonadError (..), runExceptT)
+import           Control.Monad.Except (ExceptT, MonadError, runExceptT,
+                                       throwError)
 import           Control.Monad.State.Strict (StateT, get, gets, modify,
                                              runStateT)
 import qualified Data.ByteString.Lazy as BSL
@@ -20,10 +18,12 @@ import           Data.Maybe (fromMaybe)
 import           RON.Event (Clock, Replica, applicationSpecific, getEventUuid)
 import           RON.Event.Simulation (ReplicaSim, runNetworkSim, runReplicaSim)
 import           RON.Text (parseStateFrame, serializeStateFrame)
-import           RON.Types (Object (..), UUID)
+import           RON.Types (Object (Object), UUID, objectFrame, objectId)
 
-import           RON.Storage (Collection, CollectionName, DocId (..),
-                              MonadStorage (..), collectionName, fallbackParse)
+import           RON.Storage (Collection, CollectionName, DocId (DocId),
+                              MonadStorage, collectionName, createVersion,
+                              deleteVersion, fallbackParse, listCollections,
+                              listDocuments, listVersions, readVersion)
 
 type ByteStringL = BSL.ByteString
 
