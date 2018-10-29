@@ -4,7 +4,7 @@ packages:
   - ff
   - ff-core
   - ff-test
-  - ron-storage-fs
+  - ron-storage
 
 extra-deps:
   # ff:

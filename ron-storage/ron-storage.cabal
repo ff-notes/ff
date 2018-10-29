@@ -1,4 +1,4 @@
-name: ron-storage-fs
+name: ron-storage
 version: 0
 
 build-type: Simple
