@@ -13,7 +13,7 @@ import           RON.Data.Time (Day, day)
 import           RON.Schema (Declaration (..), OpaqueAnnotations (..),
                              RonType (..), StructAnnotations (..),
                              StructLww (..), TAtom (..), def, field,
-                             opaqueAtoms, rgaString)
+                             opaqueAtoms, option, rgaString, structLww)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Types (Atom (..), UUID)
 import qualified RON.UUID as UUID
@@ -105,8 +105,8 @@ $(let
         [ ("status",  field noteStatus)
         , ("text",    field rgaString)
         , ("start",   field day)
-        , ("end",     field $ TOption day)
-        , ("tracked", field $ TOption $ TStructLww tracked)
+        , ("end",     field $ option day)
+        , ("tracked", field $ option $ structLww tracked)
         ]
         def{saHaskellFieldPrefix = "note_"}
     in mkReplicated [DStructLww tracked, DStructLww contact, DStructLww note])
