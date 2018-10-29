@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 module RON.Storage
     ( Collection (..)
@@ -67,11 +66,10 @@ data Document a = Document
     , versions :: NonEmpty Version
     }
 
-load :: forall a m . (Collection a, MonadStorage m) => DocId a -> m (Document a)
-load docId = loadRetry 3
+load :: (Collection a, MonadStorage m) => DocId a -> m (Document a)
+load docId = loadRetry (3 :: Int)
   where
-    -- loadRetry :: Int -> m (Document a)
-    loadRetry (n :: Int)
+    loadRetry n
         | n > 0 = do
             versions0 <- listVersions docId
             case versions0 of
