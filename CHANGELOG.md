@@ -20,7 +20,7 @@ and this project adheres to
   - Prohibit editing text and status of tracked notes, allow editing dates
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
-- `ff upgrade` -- tool to upgrade database format
+- `ff upgrade` -- tool to upgrade database format.
   Notes are always written in the latest format on save.
   This command upgrades formats of all documents in database to the latest.
 
