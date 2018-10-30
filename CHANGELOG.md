@@ -6,11 +6,12 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
 - Track issue content
-- Add wiki notes
-- Add completion installation instruction
-- Add contacts
-- Add command to show wiki notes
+- Wiki notes
+- Completion of ids
+- Contacts
+- Command to show wiki notes
 - Search among tasks, wiki, and/or contacts
 
 ## [0.6] - 2018-08-07
@@ -20,6 +21,8 @@ and this project adheres to
 - Option to view notes briefly and compactly (`--brief`)
 - Web UI (command `ff serve`)
 - `ff upgrade` -- tool to upgrade database format
+  Notes are always written in the latest format on save.
+  This command upgrades formats of all documents in database to the latest.
 
 ### Fixed
 - Treat document without versions as non-existent
