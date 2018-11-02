@@ -43,8 +43,6 @@ runStorageSim db (StorageSim action) =
     runNetworkSim $ runReplicaSim (applicationSpecific 34) $
     runExceptT $ runStateT action db
 
--- TODO(2018-10-26, cblp) move common implementation between Storage and
--- StorageSim to common functions
 instance MonadStorage StorageSim where
     listCollections = StorageSim $ gets Map.keys
 
