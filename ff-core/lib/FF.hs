@@ -205,14 +205,6 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
-loadTrackedNotes :: MonadStorage m => m (HashMap Track NoteId)
-loadTrackedNotes = do
-    notes <- listDocuments
-    fmap (HashMap.fromList . catMaybes) . for notes $ \noteId -> do
-        Document{value = obj} <- loadDocument noteId
-        mTrack <- (`evalStateT` obj) note_track_read
-        pure $ (, noteId) <$> mTrack
-
 updateTrackedNote
     :: MonadStorage m
     => HashMap Track NoteId
@@ -235,7 +227,13 @@ updateTrackedNotes :: [Note] -> Storage ()
 updateTrackedNotes newNotes = do
     -- TODO(2018-10-22, cblp) index notes by track in the database and select
     -- specific note by its track
-    oldNotes <- loadTrackedNotes
+    notes <- listDocuments
+    oldNotes <-
+        fmap (HashMap.fromList . catMaybes) .
+        for notes $ \noteId -> do
+            Document{value = obj} <- loadDocument noteId
+            mTrack <- (`evalStateT` obj) note_track_read
+            pure $ (, noteId) <$> mTrack
     for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
