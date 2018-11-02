@@ -251,6 +251,6 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         map (show @UUID) . mapMaybe decodeDocId
         <$> runStorage h (listDocuments @_ @a)
 
-    readDocId :: ReadM (DocId a)
-    readDocId =
-        eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack
+readDocId :: ReadM (DocId a)
+readDocId =
+    eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack
