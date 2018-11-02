@@ -20,14 +20,14 @@ import           RON.Event (Clock, Replica, applicationSpecific)
 import           RON.Event.Simulation (ReplicaSim, runNetworkSim, runReplicaSim)
 
 import           RON.Storage (Collection, CollectionName, DocId (DocId),
-                              MonadStorage, Version, changeDocId,
+                              DocVersion, MonadStorage, changeDocId,
                               collectionName, deleteVersion, listCollections,
                               listDocuments, listVersions, loadVersionContent,
                               saveVersionContent)
 
 type ByteStringL = BSL.ByteString
 
-type TestDB = Map CollectionName (Map DocumentId (Map Version Document))
+type TestDB = Map CollectionName (Map DocumentId (Map DocVersion Document))
 
 type Document = [ByteStringL]
 

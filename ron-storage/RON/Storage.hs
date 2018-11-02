@@ -10,8 +10,8 @@ module RON.Storage
     , CollectionName
     , DocId (..)
     , Document (..)
+    , DocVersion
     , MonadStorage (..)
-    , Version
     , createVersion
     , decodeDocId
     , loadDocument
@@ -38,7 +38,7 @@ import           RON.Text (parseStateFrame, serializeStateFrame)
 import           RON.Types (Object (Object), UUID, objectFrame, objectId)
 import qualified RON.UUID as UUID
 
-type Version = FilePath
+type DocVersion = FilePath
 
 newtype DocId a = DocId FilePath
 
@@ -62,15 +62,15 @@ class (Clock m, MonadError String m) => MonadStorage m where
     listDocuments :: Collection a => m [DocId a]
 
     -- | Must return @[]@ for non-existent document
-    listVersions :: Collection a => DocId a -> m [Version]
+    listVersions :: Collection a => DocId a -> m [DocVersion]
 
     -- | Must create collection and document if not exist
     saveVersionContent
-        :: Collection a => DocId a -> Version -> ByteString -> m ()
+        :: Collection a => DocId a -> DocVersion -> ByteString -> m ()
 
-    loadVersionContent :: Collection a => DocId a -> Version -> m ByteString
+    loadVersionContent :: Collection a => DocId a -> DocVersion -> m ByteString
 
-    deleteVersion :: Collection a => DocId a -> Version -> m ()
+    deleteVersion :: Collection a => DocId a -> DocVersion -> m ()
 
     changeDocId :: Collection a => DocId a -> DocId a -> m ()
 
@@ -81,7 +81,7 @@ decodeDocId file = do
     pure uuid
 
 readVersion
-    :: MonadStorage m => Collection a => DocId a -> Version -> m (Object a)
+    :: MonadStorage m => Collection a => DocId a -> DocVersion -> m (Object a)
 readVersion docid@(DocId dir) version = do
     objectId <-
         liftEither $
@@ -99,7 +99,7 @@ readVersion docid@(DocId dir) version = do
 data Document a = Document
     { value    :: Object a
         -- ^ merged value
-    , versions :: NonEmpty Version
+    , versions :: NonEmpty DocVersion
     }
     deriving Show
 
