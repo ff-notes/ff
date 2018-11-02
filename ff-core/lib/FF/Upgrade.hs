@@ -29,8 +29,8 @@ upgradeCollection = do
         modify docid' $ pure ()
 
 upgradeDocId :: (Collection a, MonadStorage m) => DocId a -> m (DocId a)
-upgradeDocId docid@(DocId file) = do
-    let mu = decodeDocId file
+upgradeDocId docid = do
+    let mu = decodeDocId docid
     case mu of
         Just _  -> pure docid
         Nothing -> do

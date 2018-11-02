@@ -18,18 +18,24 @@ module FF.Options
     ) where
 
 import           Control.Applicative (optional, (<|>))
+import qualified Data.ByteString.Lazy.Char8 as BSLC
+import           Data.Maybe (mapMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Completer, auto, command, completer,
-                                      execParser, flag', fullDesc, help, helper,
-                                      info, listIOCompleter, long, metavar,
-                                      option, progDesc, short, strArgument,
-                                      strOption, subparser, switch, (<**>))
-import           RON.Storage (Collection, DocId (DocId), listDocuments,
-                              rawDocId)
+import           Options.Applicative (Completer, ReadM, argument, auto, command,
+                                      completer, eitherReader, execParser,
+                                      flag', fullDesc, help, helper, info,
+                                      listIOCompleter, long, metavar, option,
+                                      progDesc, short, strArgument, strOption,
+                                      subparser, switch, (<**>))
+import           RON.Storage (Collection, DocId (DocId), decodeDocId,
+                              listDocuments)
 import           RON.Storage.IO (runStorage)
 import qualified RON.Storage.IO as Storage
+import           RON.Text.Parse (parseUuid)
+import           RON.Types (UUID)
+import qualified RON.UUID as UUID
 
 import           FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
@@ -176,7 +182,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         iDelete = i pDelete "Delete contact"
         pAdd =
             Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
-        pDelete = Delete . DocId <$> strArgument
+        pDelete = Delete <$> argument readDocId
             (metavar "CONTACT_ID" <> help "contact id"
             <> completer completeContactIds)
     new = New
@@ -199,7 +205,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     searchW = switch (long "wiki" <> short 'w' <> help "Search among wiki")
     searchC = switch (long "contacts" <> short 'c'
                         <> help "Search among contacts")
-    noteid = DocId <$> strArgument
+    noteid = argument readDocId
         (metavar "ID" <> help "note id" <> completer completeNoteIds)
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"
@@ -241,5 +247,10 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     completeContactIds = docIdCompleter @FF.Types.Contact
 
     docIdCompleter :: forall a . Collection a => Completer
-    docIdCompleter =
-        listIOCompleter $ map rawDocId <$> runStorage h (listDocuments @_ @a)
+    docIdCompleter = listIOCompleter $
+        map (show @UUID) . mapMaybe decodeDocId
+        <$> runStorage h (listDocuments @_ @a)
+
+    readDocId :: ReadM (DocId a)
+    readDocId =
+        eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack

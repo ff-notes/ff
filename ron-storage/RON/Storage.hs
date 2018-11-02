@@ -17,7 +17,6 @@ module RON.Storage
     , decodeDocId
     , loadDocument
     , modify
-    , rawDocId
     , readVersion
     ) where
 
@@ -45,9 +44,6 @@ newtype DocId a = DocId FilePath
 instance Collection a => Show (DocId a) where
     show (DocId file) = collectionName @a </> file
 
-rawDocId :: DocId doc -> FilePath
-rawDocId (DocId file) = file
-
 type CollectionName = FilePath
 
 class ReplicatedAsObject a => Collection a where
@@ -74,8 +70,8 @@ class (Clock m, MonadError String m) => MonadStorage m where
 
     changeDocId :: Collection a => DocId a -> DocId a -> m ()
 
-decodeDocId :: FilePath -> Maybe UUID
-decodeDocId file = do
+decodeDocId :: DocId a -> Maybe UUID
+decodeDocId (DocId file) = do
     uuid <- UUID.decodeBase32 file
     guard $ UUID.encodeBase32 uuid == file
     pure uuid
@@ -83,10 +79,11 @@ decodeDocId file = do
 readVersion
     :: MonadStorage m
     => Collection a => DocId a -> DocVersion -> m (Object a, IsTouched)
-readVersion docid@(DocId dir) version = do
+readVersion docid version = do
     objectId <-
         liftEither $
-        maybe (Left $ "Bad Base32 UUID " ++ show dir) Right $ decodeDocId dir
+        maybe (Left $ "Bad Base32 UUID " ++ show docid) Right $
+        decodeDocId docid
     contents <- loadVersionContent docid version
     case parseStateFrame contents of
         Right objectFrame ->
