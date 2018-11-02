@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0)
 and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
@@ -13,6 +13,9 @@ and this project adheres to
 - Contacts
 - Command to show wiki notes
 - Search among tasks, wiki, and/or contacts
+
+### Changed
+- Now using RON as the primary format
 
 ## [0.6] - 2018-08-07
 ### Added
