@@ -316,8 +316,8 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
   where
     checkStartEnd = do
         start <- note_start_read
-        mend  <- note_end_read
-        let newStartEnd = case (editStart, editEnd, mend) of
+        mEnd  <- note_end_read
+        let newStartEnd = case (editStart, editEnd, mEnd) of
                 (Just eStart, Nothing        , Just end) -> Just (eStart, end)
                 (Nothing    , Just (Just end), _       ) -> Just (start,  end)
                 (Just eStart, Just (Just end), _       ) -> Just (eStart, end)
@@ -342,8 +342,8 @@ cmdPostpone nid = modifyAndView nid $ do
     start <- note_start_read
     let start' = addDays 1 $ max today start
     note_start_assign start'
-    mend <- note_end_read
-    case mend of
+    mEnd <- note_end_read
+    case mEnd of
         Just end | end < start' -> note_end_assign $ Just start'
         _                       -> pure ()
 
