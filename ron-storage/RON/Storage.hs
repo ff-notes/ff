@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 
 module RON.Storage
@@ -28,7 +29,6 @@ import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import           Data.Foldable (for_)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Maybe (fromMaybe)
 import           Data.Traversable (for)
 import           System.FilePath ((</>))
 
@@ -81,25 +81,33 @@ decodeDocId file = do
     pure uuid
 
 readVersion
-    :: MonadStorage m => Collection a => DocId a -> DocVersion -> m (Object a)
+    :: MonadStorage m
+    => Collection a => DocId a -> DocVersion -> m (Object a, IsTouched)
 readVersion docid@(DocId dir) version = do
     objectId <-
         liftEither $
         maybe (Left $ "Bad Base32 UUID " ++ show dir) Right $ decodeDocId dir
     contents <- loadVersionContent docid version
     case parseStateFrame contents of
-        Right objectFrame -> pure Object{objectId, objectFrame}
-        Left ronError     -> case fallbackParse objectId contents of
-            Right object       -> pure object
+        Right objectFrame ->
+            pure (Object{objectId, objectFrame}, IsTouched False)
+        Left ronError -> case fallbackParse objectId contents of
+            Right object       -> pure (object, IsTouched True)
             Left fallbackError -> throwError $ case BSLC.head contents of
                 '{' -> fallbackError
                 _   -> ronError
 
+-- | Was fixed during loading.
+-- It it was fixed during loading it must be saved to the storage.
+newtype IsTouched = IsTouched Bool
+    deriving Show
+
 -- | Result of DB reading
 data Document a = Document
-    { value    :: Object a
-        -- ^ merged value
-    , versions :: NonEmpty DocVersion
+    { value     :: Object a
+        -- ^ Merged value.
+    , versions  :: NonEmpty DocVersion
+    , isTouched :: IsTouched
     }
     deriving Show
 
@@ -113,7 +121,8 @@ loadDocument docid = loadRetry (3 :: Int)
                 []   -> throwError $ "Empty document " ++ show docid
                 v:vs -> do
                     let versions = v :| vs
-                    let wrapDoc value = Document{value, versions}
+                    let wrapDoc (value, isTouched) =
+                            Document{value, versions, isTouched}
                     e1 <-
                         for versions $ \ver -> do
                             let ctx =   "document "  ++ show docid
@@ -125,13 +134,18 @@ loadDocument docid = loadRetry (3 :: Int)
         | otherwise = throwError "Maximum retries exceeded"
 
 -- | Validation-like version of 'sconcat'.
-vsconcat :: NonEmpty (Either String (Object a)) -> Either String (Object a)
+vsconcat
+    :: NonEmpty (Either String (Object a, IsTouched))
+    -> Either String (Object a, IsTouched)
 vsconcat = foldr1 vappend
   where
     vappend    (Left  e1)    (Left  e2) = Left $ e1 ++ "\n" ++ e2
-    vappend e1@(Left  _ )     _         = e1
-    vappend    (Right a1)    (Right a2) = reduceObject' a1 a2
-    vappend     _         e2@(Left  _ ) = e2
+    vappend e1@(Left  _ )    (Right _ ) = e1
+    vappend    (Right _ ) e2@(Left  _ ) = e2
+    vappend    (Right r1)    (Right r2) =
+        (, IsTouched (t1 || t2)) <$> reduceObject' a1 a2 where
+        (a1, IsTouched t1) = r1
+        (a2, IsTouched t2) = r2
 
 try :: MonadError e m => m a -> m (Either e a)
 try ma = (Right <$> ma) `catchError` (pure . Left)
@@ -146,16 +160,28 @@ modify
     :: (Collection a, MonadStorage m)
     => DocId a -> StateT (Object a) m () -> m (Object a)
 modify docid f = do
-    Document{value = docOld, versions} <- loadDocument docid
-    docNew <- execStateT f docOld
-    when (docNew /= docOld || length versions /= 1) $ do
-        createVersion (Just docid) docNew
-        for_ versions $ deleteVersion docid
-    pure docNew
+    oldDoc <- loadDocument docid
+    newObj <- execStateT f $ value oldDoc
+    createVersion (Just (docid, oldDoc)) newObj
+    pure newObj
 
 createVersion
-    :: (Collection a, MonadStorage m) => Maybe (DocId a) -> Object a -> m ()
-createVersion mDocid Object{objectId, objectFrame} = do
-    version <- UUID.encodeBase32 <$> getEventUuid
-    let docid = fromMaybe (DocId $ UUID.encodeBase32 objectId) mDocid
-    saveVersionContent docid version (serializeStateFrame objectFrame)
+    :: forall a m
+    . (Collection a, MonadStorage m)
+    => Maybe (DocId a, Document a) -> Object a -> m ()
+createVersion mDoc newObj =
+    case mDoc of
+        Nothing -> save (DocId @a $ UUID.encodeBase32 objectId) []
+        Just (docid, oldDoc) -> do
+            let Document
+                    {value = oldObj, versions, isTouched = IsTouched isTouched}
+                    = oldDoc
+            when (newObj /= oldObj || length versions /= 1 || isTouched) $
+                save docid versions
+  where
+    Object{objectId, objectFrame} = newObj
+
+    save docid oldVersions = do
+        newVersion <- UUID.encodeBase32 <$> getEventUuid
+        saveVersionContent docid newVersion (serializeStateFrame objectFrame)
+        for_ oldVersions $ deleteVersion docid

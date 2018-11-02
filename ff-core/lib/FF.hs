@@ -5,6 +5,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
 module FF
@@ -30,13 +31,11 @@ module FF
 
 import           Control.Arrow ((&&&))
 import           Control.Monad.Except (MonadError, liftEither, throwError)
-import           Control.Monad.Extra (unless, when, whenJust)
+import           Control.Monad.Extra (unless, void, when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
-                                             evalStateT, execStateT, gets,
-                                             state)
+                                             evalStateT, gets, state)
 import           Data.Foldable (asum, for_)
-import           Data.Functor (($>))
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           Data.List (genericLength, sortOn)
@@ -98,14 +97,6 @@ getContactSamplesWith predicate = do
     activeContacts <- loadActiveContacts
     pure . (\ys -> Sample ys $ genericLength ys) $
         filter (predicate . Text.pack . contact_name . entityVal) activeContacts
-
-loadTrackedNotes :: MonadStorage m => m [(NoteId, Object Note)]
-loadTrackedNotes = do
-    docs <- listDocuments
-    fmap catMaybes . for docs $ \docId -> do
-        Document{value = obj} <- loadDocument docId
-        mTrack <- (`evalStateT` obj) note_track_read
-        pure $ mTrack $> (docId, obj)
 
 loadActiveNotes :: MonadStorage m => m [Entity Note]
 loadActiveNotes =
@@ -214,39 +205,38 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
         | a <= b    = 0
         | otherwise = a - b
 
+loadTrackedNotes :: MonadStorage m => m (HashMap Track NoteId)
+loadTrackedNotes = do
+    notes <- listDocuments
+    fmap (HashMap.fromList . catMaybes) . for notes $ \noteId -> do
+        Document{value = obj} <- loadDocument noteId
+        mTrack <- (`evalStateT` obj) note_track_read
+        pure $ (, noteId) <$> mTrack
+
 updateTrackedNote
     :: MonadStorage m
-    => HashMap Track (NoteId, Object Note)
+    => HashMap Track NoteId
         -- ^ selection of all aready tracked notes
     -> Note  -- ^ external note to insert
     -> m ()
 updateTrackedNote oldNotes note = case note of
-    Note{note_track = Just track} -> do
-        (mNoteid, obj) <- case HashMap.lookup track oldNotes of
-            Nothing -> do
-                obj <- newObject note
-                pure (Nothing, obj)
-            Just (noteid, oldNote) -> do
-                newNote <- (`execStateT` oldNote) $ do
-                    note_status_assignIfDiffer note_status
-                    note_text_zoom $ RGA.edit note_text
-                pure (Just noteid, newNote)
-        createVersion mNoteid obj
+    Note{note_track = Just track} -> case HashMap.lookup track oldNotes of
+        Nothing -> do
+            obj <- newObject note
+            createVersion Nothing obj
+        Just noteid -> void $ modify noteid $ do
+            note_status_assignIfDiffer note_status
+            note_text_zoom $ RGA.edit note_text
     _ -> throwError "External note is expected to be supplied with tracking"
   where
     Note{note_status, note_text} = note
 
 updateTrackedNotes :: [Note] -> Storage ()
-updateTrackedNotes nvNews = do
+updateTrackedNotes newNotes = do
     -- TODO(2018-10-22, cblp) index notes by track in the database and select
     -- specific note by its track
     oldNotes <- loadTrackedNotes
-    oldNotesWithTrack <- for oldNotes $ \note@(_, oldNote) -> do
-        track <- (`evalStateT` oldNote) note_track_read
-        pure (track, note)
-    let oldNotesByTrack = HashMap.fromList
-            [(track, note) | (Just track, note) <- oldNotesWithTrack]
-    for_ nvNews $ updateTrackedNote oldNotesByTrack
+    for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
 cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
