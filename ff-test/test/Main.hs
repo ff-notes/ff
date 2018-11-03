@@ -57,34 +57,35 @@ prop_not_exist = property $ do
         either fail pure $
         runStorageSim fs $
         getNoteSamples ui agendaLimit today
-    agenda === Map.empty
-    fs' === fs
+    Map.empty === agenda
+    fs === fs'
   where
     fs = Map.empty
 
 prop_smoke :: Property
 prop_smoke = property $ do
-    (agenda, fs') <-
+    (agenda', fs') <-
         either fail pure $
         runStorageSim fs123 $
         getNoteSamples ui agendaLimit today
-    agenda ===
-        Map.singleton
-            (Overdue 365478)
-            Sample
-                { sample_items =
-                    [Entity
-                        (event 77 77)
-                        Note
-                            { note_status = TaskStatus Active
-                            , note_text   = "helloworld"
-                            , note_start  = fromGregorian 22 11 24
-                            , note_end    = Just $ fromGregorian 17 06 19
-                            , note_track  = Nothing
-                            }]
-                , sample_total = 1
-                }
-    fs' === fs123
+    agenda === agenda'
+    fs123  === fs'
+  where
+    agenda = Map.singleton
+        (Overdue 365478)
+        Sample
+            { sample_items =
+                [Entity
+                    (event 77 77)
+                    Note
+                        { note_status = TaskStatus Active
+                        , note_text   = "helloworld"
+                        , note_start  = fromGregorian 22 11 24
+                        , note_end    = Just $ fromGregorian 17 06 19
+                        , note_track  = Nothing
+                        }]
+            , sample_total = 1
+            }
 
 fs123 :: TestDB
 fs123 =
@@ -127,16 +128,7 @@ today :: Day
 today = fromGregorian 1018 02 10
 
 prop_new :: Property
-prop_new = property $ do
-    (note, fs') <-
-        evalEitherS $ runStorageSim mempty $
-        cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
-    let Note{note_text, note_start, note_end} = entityVal note
-    note_text  === Text.unpack newText
-    note_start === fromMaybe today newStart
-    note_end   === newEnd
-    fs'        === fs
-  where
+prop_new = let
     newText  = "Мир"
     newStart = Just $ fromGregorian 2154 5 6
     newEnd   = Just $ fromGregorian 3150 1 2
@@ -144,18 +136,28 @@ prop_new = property $ do
         Map.singleton "note" $ Map.singleton "B000000000005-2000000000012" $
         Map.singleton "B000000000006-2000000000012" $
         map encodeUtf8
-            [ "*lww #B/0000000005+000000000Y @B/0000000005+000000000Y :0 !"
-            ,   "\t@B/0000000005+000000000Y :end >some =3150 =1 =2 ,"
-            ,   "\t@B/0000000005+000000000Y :start =2154 =5 =6 ,"
-            ,   "\t@B/0000000005+000000000Y :status >Active ,"
-            ,   "\t@B/0000000005+000000000Y :text >B/0000000004+000000000Y ,"
-            ,   "\t@B/0000000005+000000000Y :track >none ,"
-            , "*rga #B/0000000004+000000000Y @B/0000000003+000000000Y :0 !"
-            ,   "\t@B/0000000001+000000000Y :0 'М' ,"
-            ,   "\t@B/0000000002+000000000Y :0 'и' ,"
-            ,   "\t@B/0000000003+000000000Y :0 'р' ,"
+            [ "*lww #B/0000000005+000000000Y @` !"
+            ,   "\t:end >some =3150 =1 =2 ,"
+            ,   "\t:start =2154 =5 =6 ,"
+            ,   "\t:status >Active ,"
+            ,   "\t:text >)4 ,"
+            ,   "\t:track >none ,"
+            , "*rga #)4 @)3 :0 !"
+            ,   "\t@)1 'М' ,"
+            ,   "\t@)2 'и' ,"
+            ,   "\t@)3 'р' ,"
             , "."
             ]
+    in
+    property $ do
+        (note, fs') <-
+            evalEitherS $ runStorageSim mempty $
+            cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
+        let Note{note_text, note_start, note_end} = entityVal note
+        Text.unpack newText      === note_text
+        fromMaybe today newStart === note_start
+        newEnd                   === note_end
+        fs                       === fs'
 
 evalEitherS :: (MonadTest m, HasCallStack) => Either String a -> m a
 evalEitherS = \case
@@ -190,7 +192,7 @@ ui = ConfigUI {shuffle = False}
 
 prop_repo :: Property
 prop_repo = property $
-    Github.sampleMap "ff-notes/ff" limit todayForIssues issues === ideal
+    ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues
   where
     ideal = Map.singleton
         (Overdue 10)
@@ -265,12 +267,12 @@ prop_json2ron = property $ do
 
     -- read JSON, merge, write RON
     do  ((), db') <- either fail pure $ runStorageSim fs123json upgradeDatabase
-        db' === fs123merged
+        fs123merged === db'
 
     -- idempotency
     do  ((), db') <-
             either fail pure $ runStorageSim fs123merged upgradeDatabase
-        db' === fs123merged
+        fs123merged === db'
 
 fs123json :: TestDB
 fs123json =
@@ -294,23 +296,23 @@ fs123merged :: TestDB
 fs123merged =
     Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
     Map.singleton "B000000000001-2000000000012"
-        [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U :0 !"
+        [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U !"
         ,   "\t@B/6n7T8JWK0K+000000000L :end >some =17 =6 =19 ,"
         ,   "\t@B/6n7T8JWK0P+000000000Q :start =22 =11 =24 ,"
         ,   "\t@B/6n7T8JWK0T+000000000U :status >Active ,"
-        ,   "\t@000000004K$000000000o :text >000000004L$000000000o ,"
-        ,   "\t@000000004K$000000000o :track >none ,"
-        , "*rga #000000004L$000000000o @B/6n7T8JWK0A+0000000007 :0 !"
-        ,   "\t@B/6n7T8JWK06+0000000007 :0 'h' ,"
-        ,   "\t@B/6n7T8JWK07+0000000007 :0 'e' ,"
-        ,   "\t@B/6n7T8JWK08+0000000007 :0 'l' ,"
-        ,   "\t@B/6n7T8JWK09+0000000007 :0 'l' ,"
-        ,   "\t@B/6n7T8JWK0A+0000000007 :0 'o' ,"
-        ,   "\t@B/6n7T8JWK04+0000000005 :0 'w' ,"
-        ,   "\t@B/6n7T8JWK05+0000000005 :0 'o' ,"
-        ,   "\t@B/6n7T8JWK06+0000000005 :0 'r' ,"
-        ,   "\t@B/6n7T8JWK07+0000000005 :0 'l' ,"
-        ,   "\t@B/6n7T8JWK08+0000000005 :0 'd' ,"
+        ,   "\t@` :text >)L ,"
+        ,   "\t:track >none ,"
+        , "*rga #)L @B/6n7T8JWK0A+0000000007 :0 !"
+        ,   "\t@)6 'h' ,"
+        ,   "\t@)7 'e' ,"
+        ,   "\t@)8 'l' ,"
+        ,   "\t@)9 'l' ,"
+        ,   "\t@)A 'o' ,"
+        ,   "\t@B/6n7T8JWK04+0000000005 'w' ,"
+        ,   "\t@)5 'o' ,"
+        ,   "\t@)6 'r' ,"
+        ,   "\t@)7 'l' ,"
+        ,   "\t@)8 'd' ,"
         , "."
         ]
 
