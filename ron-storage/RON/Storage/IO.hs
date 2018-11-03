@@ -27,9 +27,9 @@ import           Data.IORef (IORef, newIORef)
 import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Word (Word64)
 import           Network.Info (MAC (MAC), getNetworkInterfaces, mac)
-import           RON.Event (Clock, EpochClock, EpochTime, Replica, ReplicaId,
-                            advance, applicationSpecific, getCurrentEpochTime,
-                            getEvents, getPid, runEpochClock)
+import           RON.Epoch (EpochClock, getCurrentEpochTime, runEpochClock)
+import           RON.Event (Clock, EpochTime, Replica, ReplicaId, advance,
+                            applicationSpecific, getEvents, getPid)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
                                    doesPathExist, listDirectory, removeFile,
                                    renameDirectory)

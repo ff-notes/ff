@@ -42,8 +42,8 @@ import           RON.Data.Internal (mkStateChunk)
 import           RON.Data.LWW (lwwType)
 import           RON.Data.RGA (RgaRaw, rgaType)
 import           RON.Data.Time (day)
-import           RON.Event (Event (Event), applicationSpecific, encodeEvent,
-                            localEpochTimeFromUnix)
+import           RON.Epoch (localEpochTimeFromUnix)
+import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema (Declaration (DStructLww), StructLww (StructLww),
                              atomString, def, field, oaHaskellType, opaqueAtoms,
                              option, rgaString, saHaskellDeriving,
