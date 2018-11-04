@@ -32,7 +32,11 @@ upgradeDocId :: (Collection a, MonadStorage m) => DocId a -> m (DocId a)
 upgradeDocId docid = do
     let mu = decodeDocId docid
     case mu of
-        Just _  -> pure docid
+        Just (True, _) -> pure docid
+        Just (False, uuid) -> do
+            let docid' = DocId $ UUID.encodeBase32 uuid
+            changeDocId docid docid'
+            pure docid'
         Nothing -> do
             docid' <- DocId . UUID.encodeBase32 <$> getEventUuid
             changeDocId docid docid'

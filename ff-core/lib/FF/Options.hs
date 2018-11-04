@@ -23,7 +23,7 @@ import           Data.Maybe (mapMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Completer, ReadM, argument, auto, command,
+import           Options.Applicative (Completer, argument, auto, command,
                                       completer, eitherReader, execParser,
                                       flag', fullDesc, help, helper, info,
                                       listIOCompleter, long, metavar, option,
@@ -248,9 +248,12 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     docIdCompleter :: forall a . Collection a => Completer
     docIdCompleter = listIOCompleter $
-        map (show @UUID) . mapMaybe decodeDocId
+        map (show @UUID) . mapMaybe decodeDocId'
         <$> runStorage h (listDocuments @_ @a)
 
-readDocId :: ReadM (DocId a)
-readDocId =
-    eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack
+    decodeDocId' docid = do
+        (True, uuid) <- decodeDocId docid
+        pure uuid
+
+    readDocId =
+        eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack

@@ -20,7 +20,7 @@ module RON.Storage
     , readVersion
     ) where
 
-import           Control.Monad (guard, when)
+import           Control.Monad (unless, when)
 import           Control.Monad.Except (MonadError, catchError, liftEither,
                                        throwError)
 import           Control.Monad.State.Strict (StateT, execStateT)
@@ -70,20 +70,22 @@ class (Clock m, MonadError String m) => MonadStorage m where
 
     changeDocId :: Collection a => DocId a -> DocId a -> m ()
 
-decodeDocId :: DocId a -> Maybe UUID
+decodeDocId
+    :: DocId a
+    -> Maybe (Bool, UUID)  -- ^ Bool = is UUID valid
 decodeDocId (DocId file) = do
     uuid <- UUID.decodeBase32 file
-    guard $ UUID.encodeBase32 uuid == file
-    pure uuid
+    pure (UUID.encodeBase32 uuid == file, uuid)
 
 readVersion
     :: MonadStorage m
     => Collection a => DocId a -> DocVersion -> m (Object a, IsTouched)
 readVersion docid version = do
-    objectId <-
+    (isObjectIdValid, objectId) <-
         liftEither $
         maybe (Left $ "Bad Base32 UUID " ++ show docid) Right $
         decodeDocId docid
+    unless isObjectIdValid $ throwError $ "Not a Base32 UUID " ++ show docid
     contents <- loadVersionContent docid version
     case parseStateFrame contents of
         Right objectFrame ->
