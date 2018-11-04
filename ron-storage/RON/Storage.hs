@@ -18,6 +18,7 @@ module RON.Storage
     , loadDocument
     , modify
     , readVersion
+    , uuidToFileName
     ) where
 
 import           Control.Monad (unless, when)
@@ -26,6 +27,7 @@ import           Control.Monad.Except (MonadError, catchError, liftEither,
 import           Control.Monad.State.Strict (StateT, execStateT)
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
+import           Data.Char (toLower)
 import           Data.Foldable (for_)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Traversable (for)
@@ -75,7 +77,7 @@ decodeDocId
     -> Maybe (Bool, UUID)  -- ^ Bool = is UUID valid
 decodeDocId (DocId file) = do
     uuid <- UUID.decodeBase32 file
-    pure (UUID.encodeBase32 uuid == file, uuid)
+    pure (uuidToFileName uuid == file, uuid)
 
 readVersion
     :: MonadStorage m
@@ -170,7 +172,7 @@ createVersion
     => Maybe (DocId a, Document a) -> Object a -> m ()
 createVersion mDoc newObj =
     case mDoc of
-        Nothing -> save (DocId @a $ UUID.encodeBase32 objectId) []
+        Nothing -> save (DocId @a $ uuidToFileName objectId) []
         Just (docid, oldDoc) -> do
             let Document
                     {value = oldObj, versions, isTouched = IsTouched isTouched}
@@ -181,6 +183,9 @@ createVersion mDoc newObj =
     Object{objectId, objectFrame} = newObj
 
     save docid oldVersions = do
-        newVersion <- UUID.encodeBase32 <$> getEventUuid
+        newVersion <- uuidToFileName <$> getEventUuid
         saveVersionContent docid newVersion (serializeStateFrame objectFrame)
         for_ oldVersions $ deleteVersion docid
+
+uuidToFileName :: UUID -> FilePath
+uuidToFileName = map toLower . UUID.encodeBase32

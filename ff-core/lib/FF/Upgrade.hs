@@ -9,8 +9,7 @@ import           Data.Foldable (for_)
 import           RON.Event (getEventUuid)
 import           RON.Storage (Collection, DocId (DocId), MonadStorage,
                               changeDocId, decodeDocId, listCollections,
-                              listDocuments, modify)
-import qualified RON.UUID as UUID
+                              listDocuments, modify, uuidToFileName)
 
 import           FF.Types (Note)
 
@@ -34,10 +33,10 @@ upgradeDocId docid = do
     case mu of
         Just (True, _) -> pure docid
         Just (False, uuid) -> do
-            let docid' = DocId $ UUID.encodeBase32 uuid
+            let docid' = DocId $ uuidToFileName uuid
             changeDocId docid docid'
             pure docid'
         Nothing -> do
-            docid' <- DocId . UUID.encodeBase32 <$> getEventUuid
+            docid' <- DocId . uuidToFileName <$> getEventUuid
             changeDocId docid docid'
             pure docid'

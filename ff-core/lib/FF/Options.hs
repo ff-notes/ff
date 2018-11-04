@@ -30,12 +30,11 @@ import           Options.Applicative (Completer, argument, auto, command,
                                       progDesc, short, strArgument, strOption,
                                       subparser, switch, (<**>))
 import           RON.Storage (Collection, DocId (DocId), decodeDocId,
-                              listDocuments)
+                              listDocuments, uuidToFileName)
 import           RON.Storage.IO (runStorage)
 import qualified RON.Storage.IO as Storage
 import           RON.Text.Parse (parseUuid)
 import           RON.Types (UUID)
-import qualified RON.UUID as UUID
 
 import           FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
@@ -256,4 +255,4 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         pure uuid
 
     readDocId =
-        eitherReader $ fmap (DocId . UUID.encodeBase32) . parseUuid . BSLC.pack
+        eitherReader $ fmap (DocId . uuidToFileName) . parseUuid . BSLC.pack

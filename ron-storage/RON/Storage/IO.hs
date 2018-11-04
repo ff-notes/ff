@@ -94,7 +94,12 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
             newPath = db </> docDir new
         newPathExists <- liftIO $ doesPathExist newPath
         when newPathExists $
-            throwError "Internal error: new document id is already taken"
+            throwError $ unwords
+                [ "changeDocId"
+                , show old, "[", oldPath, "]"
+                , show new, "[", newPath, "]"
+                , ": internal error: new document id is already taken"
+                ]
         liftIO $ renameDirectory oldPath newPath
 
 data Handle = Handle
