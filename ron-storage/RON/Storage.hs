@@ -27,7 +27,6 @@ import           Control.Monad.Except (MonadError, catchError, liftEither,
 import           Control.Monad.State.Strict (StateT, execStateT)
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
-import           Data.Char (toLower)
 import           Data.Foldable (for_)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Traversable (for)
@@ -188,4 +187,4 @@ createVersion mDoc newObj =
         for_ oldVersions $ deleteVersion docid
 
 uuidToFileName :: UUID -> FilePath
-uuidToFileName = map toLower . UUID.encodeBase32
+uuidToFileName = UUID.encodeBase32

@@ -89,7 +89,7 @@ prop_smoke = property $ do
 
 fs123 :: TestDB
 fs123 =
-    Map.singleton "note" $ Map.singleton "b00000000002d-200000000002d" $
+    Map.singleton "note" $ Map.singleton "B00000000002D-200000000002D" $
     Map.fromList
         [ "event 2 93" -: BSLC.lines [i|
             *lww #B/000000001D+000000001D !
@@ -133,8 +133,8 @@ prop_new = let
     newStart = Just $ fromGregorian 2154 5 6
     newEnd   = Just $ fromGregorian 3150 1 2
     fs =
-        Map.singleton "note" $ Map.singleton "b000000000005-2000000000012" $
-        Map.singleton "b000000000006-2000000000012" $
+        Map.singleton "note" $ Map.singleton "B000000000005-2000000000012" $
+        Map.singleton "B000000000006-2000000000012" $
         map encodeUtf8
             [ "*lww #B/0000000005+000000000Y @` !"
             ,   "\t:end >some =3150 =1 =2"
@@ -276,7 +276,7 @@ prop_json2ron = property $ do
 
 fs123json :: TestDB
 fs123json =
-    Map.singleton "note" $ Map.singleton "000000000008k-000000000001j" $
+    Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
     Map.fromList
         [ "event 2 72" -: BSLC.lines [i|{
             "end"   : ["17-06-19", 20, 21],
@@ -294,8 +294,8 @@ fs123json =
 
 fs123merged :: TestDB
 fs123merged =
-    Map.singleton "note" $ Map.singleton "000000000008k-000000000001j" $
-    Map.singleton "b000000000001-2000000000012"
+    Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
+    Map.singleton "B000000000001-2000000000012"
         [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U !"
         ,   "\t@B/6n7T8JWK0K+000000000L :end >some =17 =6 =19"
         ,   "\t@B/6n7T8JWK0P+000000000Q :start =22 =11 =24"

@@ -30,9 +30,9 @@ import           Network.Info (MAC (MAC), getNetworkInterfaces, mac)
 import           RON.Epoch (EpochClock, getCurrentEpochTime, runEpochClock)
 import           RON.Event (Clock, EpochTime, Replica, ReplicaId, advance,
                             applicationSpecific, getEvents, getPid)
-import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
-                                   doesPathExist, listDirectory, removeFile,
-                                   renameDirectory)
+import           System.Directory (canonicalizePath, createDirectoryIfMissing,
+                                   doesDirectoryExist, doesPathExist,
+                                   listDirectory, removeFile, renameDirectory)
 import           System.FilePath ((</>))
 import           System.IO.Error (isDoesNotExistError)
 
@@ -92,15 +92,19 @@ instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
         db <- ask
         let oldPath = db </> docDir old
             newPath = db </> docDir new
-        newPathExists <- liftIO $ doesPathExist newPath
-        when newPathExists $
-            throwError $ unwords
-                [ "changeDocId"
-                , show old, "[", oldPath, "]"
-                , show new, "[", newPath, "]"
-                , ": internal error: new document id is already taken"
-                ]
-        liftIO $ renameDirectory oldPath newPath
+        oldPathCanon <- liftIO $ canonicalizePath oldPath
+        newPathCanon <- liftIO $ canonicalizePath newPath
+        when (newPathCanon /= oldPathCanon) $ do
+            newPathExists <- liftIO $ doesPathExist newPath
+            when newPathExists $
+                throwError $ unwords
+                    [ "changeDocId"
+                    , show old, "[", oldPath, "->", oldPathCanon, "]"
+                    , show new, "[", newPath, "->", newPathCanon, "]"
+                    , ": internal error: new document id is already taken"
+                    ]
+        when (newPath /= oldPath) $
+            liftIO $ renameDirectory oldPath newPath
 
 data Handle = Handle
     { hClock    :: IORef EpochTime
