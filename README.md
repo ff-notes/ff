@@ -123,3 +123,7 @@ Archived tasks don't appear in an agenda:
     Actual:
         * learn Haskell
           id 459h2tqxutq-24nuhr86ae, start 2018-01-14
+
+### How to contact us?
+
+We have a telegram chat [ff-dev](https://t.me/ff_dev) where you can ask your questions.
