@@ -49,7 +49,7 @@ import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
 import           Data.Traversable (for)
 import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
-import           RON.Event (Clock)
+import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
                               MonadStorage, createVersion, listDocuments,
                               loadDocument, modify)
@@ -380,7 +380,7 @@ assertStartBeforeEnd start end =
     unless (start <= end) $ throwError "task cannot end before it is started"
 
 note_status_assignIfDiffer
-    :: (Clock m, MonadError String m, MonadState (Object Note) m)
+    :: (ReplicaClock m, MonadError String m, MonadState (Object Note) m)
     => NoteStatus -> m ()
 note_status_assignIfDiffer newStatus = do
     curStatus <- note_status_read

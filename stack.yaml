@@ -9,6 +9,4 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-  - git: https://github.com/ff-notes/ron.git
-    commit: '3c52229'
-    subdirs: [ron]
+  - ron-0.1

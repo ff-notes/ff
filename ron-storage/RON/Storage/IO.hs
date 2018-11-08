@@ -20,7 +20,7 @@ import           Control.Monad.Except (ExceptT (ExceptT), MonadError,
                                        runExceptT, throwError)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.Reader (ReaderT (ReaderT), ask, runReaderT)
-import           Control.Monad.Trans (lift)
+import           Control.Monad.Trans (MonadTrans, lift)
 import           Data.Bits (shiftL)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.IORef (IORef, newIORef)
@@ -28,7 +28,7 @@ import           Data.Maybe (fromMaybe, listToMaybe)
 import           Data.Word (Word64)
 import           Network.Info (MAC (MAC), getNetworkInterfaces, mac)
 import           RON.Epoch (EpochClock, getCurrentEpochTime, runEpochClock)
-import           RON.Event (Clock, EpochTime, Replica, ReplicaId, advance,
+import           RON.Event (EpochTime, ReplicaClock, ReplicaId, advance,
                             applicationSpecific, getEvents, getPid)
 import           System.Directory (canonicalizePath, createDirectoryIfMissing,
                                    doesDirectoryExist, doesPathExist,
@@ -49,14 +49,15 @@ runStorageT :: FilePath -> StorageT m a -> m (Either String a)
 runStorageT dataDir (Storage except) =
     (`runReaderT` dataDir) $ runExceptT except
 
-instance Replica m => Replica (StorageT m) where
-    getPid = Storage $ lift $ lift getPid
+instance MonadTrans StorageT where
+    lift = Storage . lift . lift
 
-instance Clock m => Clock (StorageT m) where
-    getEvents = Storage . lift . lift . getEvents
-    advance   = Storage . lift . lift . advance
+instance ReplicaClock m => ReplicaClock (StorageT m) where
+    getPid    = lift getPid
+    getEvents = lift . getEvents
+    advance   = lift . advance
 
-instance (Clock m, MonadIO m) => MonadStorage (StorageT m) where
+instance (ReplicaClock m, MonadIO m) => MonadStorage (StorageT m) where
     listCollections = Storage $ do
         dataDir <- ask
         liftIO $

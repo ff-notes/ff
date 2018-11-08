@@ -32,8 +32,8 @@ import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Traversable (for)
 import           System.FilePath ((</>))
 
-import           RON.Data (ReplicatedAsObject, reduceObject')
-import           RON.Event (Clock, getEventUuid)
+import           RON.Data (ReplicatedAsObject, reduceObject)
+import           RON.Event (ReplicaClock, getEventUuid)
 import           RON.Text (parseStateFrame, serializeStateFrame)
 import           RON.Types (Object (Object), UUID, objectFrame, objectId)
 import qualified RON.UUID as UUID
@@ -52,7 +52,7 @@ class ReplicatedAsObject a => Collection a where
     fallbackParse :: UUID -> ByteString -> Either String (Object a)
 
 -- | TODO rename list -> getList
-class (Clock m, MonadError String m) => MonadStorage m where
+class (ReplicaClock m, MonadError String m) => MonadStorage m where
     listCollections :: m [CollectionName]
 
     -- | Must return @[]@ for non-existent collection
@@ -143,7 +143,7 @@ vsconcat = foldr1 vappend
     vappend e1@(Left  _ )    (Right _ ) = e1
     vappend    (Right _ ) e2@(Left  _ ) = e2
     vappend    (Right r1)    (Right r2) =
-        (, IsTouched (t1 || t2)) <$> reduceObject' a1 a2 where
+        (, IsTouched (t1 || t2)) <$> reduceObject a1 a2 where
         (a1, IsTouched t1) = r1
         (a2, IsTouched t2) = r2
 
