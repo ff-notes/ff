@@ -51,8 +51,8 @@ import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
-                              MonadStorage, createVersion, listDocuments,
-                              loadDocument, modify)
+                              MonadStorage, listDocuments, loadDocument, modify,
+                              saveDocument)
 import           RON.Storage.IO (Storage)
 import           RON.Types (Object, objectId)
 import           System.Directory (findExecutable)
@@ -215,7 +215,7 @@ updateTrackedNote oldNotes note = case note of
     Note{note_track = Just track} -> case HashMap.lookup track oldNotes of
         Nothing -> do
             obj <- newObject note
-            createVersion Nothing obj
+            saveDocument obj
         Just noteid -> void $ modify noteid $ do
             note_status_assignIfDiffer note_status
             note_text_zoom $ RGA.edit note_text
@@ -253,7 +253,7 @@ cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
             , note_track = Nothing
             }
     obj <- newObject note
-    createVersion Nothing obj
+    saveDocument obj
     pure $ Entity (objectId obj) note
 
 cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
@@ -261,7 +261,7 @@ cmdNewContact name = do
     let contact =
             Contact{contact_name = Text.unpack name, contact_status = Active}
     obj <- newObject contact
-    createVersion Nothing obj
+    saveDocument obj
     pure $ Entity (objectId obj) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)

@@ -18,6 +18,7 @@ module RON.Storage
     , loadDocument
     , modify
     , readVersion
+    , saveDocument
     , uuidToFileName
     ) where
 
@@ -191,3 +192,6 @@ createVersion mDoc newObj =
 
 uuidToFileName :: UUID -> FilePath
 uuidToFileName = UUID.encodeBase32
+
+saveDocument :: (Collection a, MonadStorage m) => Object a -> m ()
+saveDocument = createVersion Nothing
