@@ -48,8 +48,11 @@ instance Collection a => Show (DocId a) where
 type CollectionName = FilePath
 
 class ReplicatedAsObject a => Collection a where
+
     collectionName :: CollectionName
+
     fallbackParse :: UUID -> ByteString -> Either String (Object a)
+    fallbackParse _ _ = Left "no fallback parser implemented"
 
 -- | TODO rename list -> getList
 class (ReplicaClock m, MonadError String m) => MonadStorage m where
