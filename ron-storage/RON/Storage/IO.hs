@@ -37,11 +37,7 @@ import           System.Directory (canonicalizePath, createDirectoryIfMissing,
 import           System.FilePath ((</>))
 import           System.IO.Error (isDoesNotExistError)
 
-import           RON.Storage (Collection, DocId (DocId), MonadStorage,
-                              changeDocId, collectionName, deleteVersion,
-                              listCollections, listDocuments, listVersions,
-                              loadVersionContent, saveVersionContent)
-import qualified RON.Storage as X
+import           RON.Storage as X
 
 -- | Environment is the dataDir
 newtype StorageT clock a = Storage (ExceptT String (ReaderT FilePath clock) a)
