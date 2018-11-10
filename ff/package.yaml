@@ -26,7 +26,7 @@ dependencies:
   - time
 
   # organization
-  - ron-storage
+  - ron
 
   # project
   - ff-core

@@ -28,7 +28,6 @@ tests:
 
       # organization
       - ron
-      - ron-storage
 
     main: Main
     source-dirs: test

@@ -37,7 +37,6 @@ library:
 
     # organization
     - ron
-    - ron-storage
   source-dirs: lib
 
 tests:
