@@ -6,13 +6,14 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module RON.Storage.IO
-    ( Handle
-    , Storage
-    , newHandle
-    , runStorage
-    , runStorageT
-    ) where
+module RON.Storage.IO (
+    module X,
+    Handle,
+    Storage,
+    newHandle,
+    runStorage,
+    runStorageT,
+) where
 
 import           Control.Exception (catch, throwIO)
 import           Control.Monad (filterM, unless, when)
@@ -40,6 +41,7 @@ import           RON.Storage (Collection, DocId (DocId), MonadStorage,
                               changeDocId, collectionName, deleteVersion,
                               listCollections, listDocuments, listVersions,
                               loadVersionContent, saveVersionContent)
+import qualified RON.Storage as X
 
 -- | Environment is the dataDir
 newtype StorageT clock a = Storage (ExceptT String (ReaderT FilePath clock) a)
