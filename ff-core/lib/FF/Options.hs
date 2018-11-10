@@ -54,6 +54,7 @@ data CmdAction
     | CmdPostpone   NoteId
     | CmdSearch     Search
     | CmdServe
+    | CmdShow       NoteId
     | CmdTrack      Track
     | CmdUnarchive  NoteId
     | CmdUpgrade
@@ -120,6 +121,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "serve"     iCmdServe
+        , action  "show"      iCmdShow
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
@@ -139,6 +141,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdServe     = i cmdServe      "serve web UI"
+    iCmdShow      = i cmdShow       "show note by id"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
@@ -154,6 +157,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     cmdPostpone  = CmdPostpone  <$> noteid
     cmdSearch    = CmdSearch    <$> search
     cmdServe     = pure CmdServe
+    cmdShow      = CmdShow      <$> noteid
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
     cmdUpgrade   = pure CmdUpgrade
