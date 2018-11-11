@@ -17,6 +17,7 @@ module FF
     , cmdNewContact
     , cmdPostpone
     , cmdSearch
+    , cmdShow
     , cmdUnarchive
     , getContactSamples
     , getNoteSamples
@@ -282,6 +283,12 @@ cmdSearch substr limit today = do
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
     ui = ConfigUI {shuffle = False}
+
+cmdShow :: NoteId -> Storage (Entity Note)
+cmdShow nid = do
+    Document{value = obj} <- loadDocument nid
+    entityVal <- liftEither $ getObject obj
+    pure $ Entity (objectId obj) entityVal
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do

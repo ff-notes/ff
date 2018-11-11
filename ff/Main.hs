@@ -34,7 +34,7 @@ import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
-                     cmdUnarchive, getContactSamples, getNoteSamples,
+                     cmdShow, cmdUnarchive, getContactSamples, getNoteSamples,
                      getUtcToday, getWikiSamples, updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
@@ -143,6 +143,9 @@ runCmdAction h ui cmd brief = do
             pprint $ UI.prettyNotesWikiContacts
                 brief notes wiki contacts searchTasks searchWiki searchContacts
         CmdServe -> cmdServe h ui
+        CmdShow noteId -> do
+            note <- cmdShow noteId
+            pprint $ UI.noteViewFull note
         CmdTrack track ->
             cmdTrack track today brief
         CmdUnarchive noteId -> do
