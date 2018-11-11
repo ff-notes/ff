@@ -286,9 +286,9 @@ cmdSearch substr limit today = do
 
 cmdShow :: NoteId -> Storage (Entity Note)
 cmdShow nid = do
-                Document{value = obj} <- loadDocument nid
-                entityVal <- liftEither $ getObject obj
-                pure $ Entity (objectId obj) entityVal
+    Document{value = obj} <- loadDocument nid
+    entityVal <- liftEither $ getObject obj
+    pure $ Entity (objectId obj) entityVal
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do
