@@ -18,6 +18,7 @@ and this project adheres to
 
 ### Changed
 - Now using RON as the primary format
+- UI: display UUIDs without quotes
 
 ## [0.6] - 2018-08-07
 ### Added

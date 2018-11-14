@@ -24,11 +24,14 @@ import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy.Encoding as TextL
 import           Data.Time (Day)
+import           RON.Text.Serialize (serializeUuid)
 import           RON.Types (UUID)
-import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep, space,
-                                            spread, stack, star, strictText,
-                                            string, (<+/>), (<+>), (</>))
+import           Text.PrettyPrint.Mainland (Doc, hang, indent, sep,
+                                            space, spread, stack, star,
+                                            strictText, string, (<+/>), (<+>),
+                                            (</>))
 import qualified Text.PrettyPrint.Mainland as Pretty
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
@@ -47,6 +50,9 @@ indentation = 2
 
 pshow :: Show a => a -> Doc
 pshow = string . show
+
+prettyUuid :: UUID -> Doc
+prettyUuid = Pretty.lazyText . TextL.decodeUtf8 . serializeUuid
 
 prettyNotesWikiContacts
     :: Bool  -- ^ brief output
@@ -72,7 +78,7 @@ prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
     cs = prettyContactSamplesOmitted brief contacts
 
 prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc
-prettyContactSamplesOmitted brief samples = sparsedStack $
+prettyContactSamplesOmitted brief samples = stack' brief $
     prettyContactSample brief samples :
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
@@ -82,13 +88,11 @@ prettyContactSample :: Bool -> ContactSample -> Doc
 prettyContactSample brief = \case
     Sample{sample_total = 0} -> mempty
     Sample{sample_items} ->
-        withHeader "Contacts:" . stacking $
+        withHeader "Contacts:" . stack' brief $
         map ((star <>) . indent 1 . contactViewFull) sample_items
-  where
-    stacking = if brief then stack else sparsedStack
 
 prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc
-prettyWikiSamplesOmitted brief samples = sparsedStack $
+prettyWikiSamplesOmitted brief samples = stack' brief $
     prettyWikiSample brief samples :
     [Pretty.text $ show numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
@@ -99,10 +103,9 @@ prettyWikiSample brief = \case
     Sample{sample_total = 0} -> mempty
     Sample{sample_items} ->
         withHeader "Wiki notes:" .
-        stacking $
+        stack' brief $
         map ((star <>) . indent 1 . noteView) sample_items
   where
-    stacking = if brief then stack else sparsedStack
     noteView = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections
@@ -151,7 +154,7 @@ sampleLabel = \case
 noteViewBrief :: Foldable f => EntityF f Note -> Doc
 noteViewBrief (EntityF fEntityId Note{..}) = title <+/> meta
   where
-    meta = foldMap (\i -> "| id" <+> pshow @UUID i) fEntityId
+    meta = foldMap (\i -> "| id" <+> prettyUuid i) fEntityId
     title
         = stack
         . map (sep . map strictText . Text.split isSpace)
@@ -165,7 +168,7 @@ noteViewFull (EntityF fEntityId Note{..}) =
   where
     meta
         = concat
-            [ ["| id"    <+> pshow @UUID eid | eid <- toList fEntityId]
+            [ ["| id"    <+> prettyUuid eid | eid <- toList fEntityId]
             , ["| start" <+> pshow @Day note_start]
             , ["| end"   <+> pshow @Day e | Just e <- [note_end]]
             ]
@@ -177,7 +180,7 @@ contactViewFull :: Entity Contact -> Doc
 contactViewFull (Entity entityId Contact{..}) =
     spread [string contact_name, meta]
   where
-    meta = "| id" <+> pshow @UUID entityId
+    meta = "| id" <+> prettyUuid entityId
 
 wrapLines :: Text -> Doc
 wrapLines =
