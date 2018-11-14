@@ -6,6 +6,11 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- `ff show` command to show specific id
+
+### Changed
+- UI: display UUIDs without quotes
 
 ## [0.7] - 2018-11-03
 ### Added
@@ -18,7 +23,6 @@ and this project adheres to
 
 ### Changed
 - Now using RON as the primary format
-- UI: display UUIDs without quotes
 
 ## [0.6] - 2018-08-07
 ### Added
