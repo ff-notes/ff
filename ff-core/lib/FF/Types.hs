@@ -130,6 +130,15 @@ EDN version from future:
         end     (Option Day)
         track   (Option Track)
     ]
+
+-- helper:
+parseEdnList :: ByteStringL -> Either String EDNList
+parseEdnList input
+    | BSLC.all isSpace input = pure []
+    | otherwise     =
+        case parseBSL input of
+            Done rest value -> (value :) <$> parseEdnList rest
+            failure         -> Left $ show failure
 -}
 
 $(let
