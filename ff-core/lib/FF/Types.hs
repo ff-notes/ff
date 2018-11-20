@@ -96,7 +96,7 @@ instance ReplicatedAsPayload NoteStatus where
         p                     -> TaskStatus <$> fromPayload p
 
 {-
-EDN version from future:
+EDN version from future (https://github.com/ff-notes/ron/issues/9):
 
     ron_schema [2 0]
 

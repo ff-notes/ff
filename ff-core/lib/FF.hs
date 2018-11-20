@@ -52,8 +52,8 @@ import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
-                              MonadStorage, listDocuments, loadDocument, modify,
-                              saveDocument)
+                              MonadStorage, createDocument, getDocuments,
+                              loadDocument, modify)
 import           RON.Storage.IO (Storage)
 import           RON.Types (Object, objectId)
 import           System.Directory (findExecutable)
@@ -77,7 +77,7 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity,
 
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
 loadAll = do
-    docs <- listDocuments
+    docs <- getDocuments
     for docs $ \docId -> do
         Document{value = obj} <- loadDocument docId
         entityVal <- liftEither $ getObject obj
@@ -216,7 +216,7 @@ updateTrackedNote oldNotes note = case note of
     Note{note_track = Just track} -> case HashMap.lookup track oldNotes of
         Nothing -> do
             obj <- newObject note
-            saveDocument obj
+            createDocument obj
         Just noteid -> void $ modify noteid $ do
             note_status_assignIfDiffer note_status
             note_text_zoom $ RGA.edit note_text
@@ -228,7 +228,7 @@ updateTrackedNotes :: [Note] -> Storage ()
 updateTrackedNotes newNotes = do
     -- TODO(2018-10-22, cblp) index notes by track in the database and select
     -- specific note by its track
-    notes <- listDocuments
+    notes <- getDocuments
     oldNotes <-
         fmap (HashMap.fromList . catMaybes) .
         for notes $ \noteId -> do
@@ -254,7 +254,7 @@ cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
             , note_track = Nothing
             }
     obj <- newObject note
-    saveDocument obj
+    createDocument obj
     pure $ Entity (objectId obj) note
 
 cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
@@ -262,7 +262,7 @@ cmdNewContact name = do
     let contact =
             Contact{contact_name = Text.unpack name, contact_status = Active}
     obj <- newObject contact
-    saveDocument obj
+    createDocument obj
     pure $ Entity (objectId obj) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)

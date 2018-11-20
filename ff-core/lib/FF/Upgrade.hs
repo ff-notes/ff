@@ -8,21 +8,22 @@ module FF.Upgrade (upgradeDatabase) where
 import           Data.Foldable (for_)
 import           RON.Event (getEventUuid)
 import           RON.Storage (Collection, DocId (DocId), MonadStorage,
-                              changeDocId, decodeDocId, listCollections,
-                              listDocuments, modify, uuidToFileName)
+                              changeDocId, decodeDocId, getCollections,
+                              getDocuments, modify)
+import qualified RON.UUID as UUID
 
 import           FF.Types (Note)
 
 upgradeDatabase :: MonadStorage m => m ()
 upgradeDatabase = do
-    collections <- listCollections
+    collections <- getCollections
     for_ collections $ \case
         "note"      -> upgradeCollection @Note
         collection  -> fail $ "unsupported type " ++ show collection
 
 upgradeCollection :: forall a m . (Collection a, MonadStorage m) => m ()
 upgradeCollection = do
-    docs <- listDocuments @_ @a
+    docs <- getDocuments @_ @a
     for_ docs $ \docid -> do
         docid' <- upgradeDocId docid
         modify docid' $ pure ()
@@ -33,10 +34,10 @@ upgradeDocId docid = do
     case mu of
         Just (True, _) -> pure docid
         Just (False, uuid) -> do
-            let docid' = DocId $ uuidToFileName uuid
+            let docid' = DocId $ UUID.encodeBase32 uuid
             changeDocId docid docid'
             pure docid'
         Nothing -> do
-            docid' <- DocId . uuidToFileName <$> getEventUuid
+            docid' <- DocId . UUID.encodeBase32 <$> getEventUuid
             changeDocId docid docid'
             pure docid'
