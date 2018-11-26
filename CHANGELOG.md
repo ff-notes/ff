@@ -12,6 +12,9 @@ and this project adheres to
 ### Changed
 - UI: display UUIDs without quotes
 
+### Fixed
+- Restore missed `ff add` command
+
 ## [0.7] - 2018-11-03
 ### Added
 - Track issue content

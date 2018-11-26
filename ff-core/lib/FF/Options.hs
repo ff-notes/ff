@@ -112,7 +112,8 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     parser   = Options <$> brief <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
-        [ action  "agenda"    iCmdAgenda
+        [ action  "add"       iCmdAdd
+        , action  "agenda"    iCmdAgenda
         , command "config"    iCmdConfig
         , action  "contact"   iCmdContact
         , action  "delete"    iCmdDelete
@@ -131,6 +132,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
       where
         action s = command s . fmap CmdAction
 
+    iCmdAdd       = i cmdNew        "add new task or note"
     iCmdAgenda    = i cmdAgenda     "show what you can do right now\
                                     \ [default action]"
     iCmdConfig    = i cmdConfig     "show/edit configuration"
