@@ -28,10 +28,10 @@ import           Hedgehog.Internal.Property (failWith)
 import           RON.Data (ReplicatedAsObject, getObject, newObject)
 import           RON.Event (Event (..), LocalTime (TEpoch), applicationSpecific,
                             encodeEvent)
-import           RON.Internal.Word (ls60)
 import           RON.Storage.Test (TestDB, runStorageSim)
 import           RON.Text (parseObject, serializeObject)
 import           RON.Types (UUID)
+import           RON.Util.Word (ls60)
 import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
@@ -133,19 +133,19 @@ prop_new = let
     newStart = Just $ fromGregorian 2154 5 6
     newEnd   = Just $ fromGregorian 3150 1 2
     fs =
-        Map.singleton "note" $ Map.singleton "B000000000005-2000000000012" $
-        Map.singleton "B000000000006-2000000000012" $
+        Map.singleton "note" $ Map.singleton "B000000000038-2000000000012" $
+        Map.singleton "B00000000003P-2000000000012" $
         map encodeUtf8
-            [ "*lww #B/0000000005+000000000Y @` !"
+            [ "*lww #B/000000001d+000000000Y @` !"
             ,   "\t:end >some =3150 =1 =2"
             ,   "\t:start =2154 =5 =6"
             ,   "\t:status >Active"
-            ,   "\t:text >)4"
+            ,   "\t:text >)B"
             ,   "\t:track >none"
-            , "*rga #)4 @)3 :0 !"
-            ,   "\t@)1 'М'"
-            ,   "\t@)2 'и'"
-            ,   "\t@)3 'р'"
+            , "*rga #)B @]0d :0 !"
+            ,   "\t@)b 'М'"
+            ,   "\t@)c 'и'"
+            ,   "\t@)d 'р'"
             , "."
             ]
     in
@@ -295,7 +295,7 @@ fs123json =
 fs123merged :: TestDB
 fs123merged =
     Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
-    Map.singleton "B000000000001-2000000000012"
+    Map.singleton "B000000000014-2000000000012"
         [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U !"
         ,   "\t@B/6n7T8JWK0K+000000000L :end >some =17 =6 =19"
         ,   "\t@B/6n7T8JWK0P+000000000Q :start =22 =11 =24"

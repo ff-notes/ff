@@ -36,9 +36,8 @@ import           Data.Time (Day, diffDays)
 import           GHC.Generics (Generic)
 import           Numeric.Natural (Natural)
 import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
-                           fromPayload, payloadEncoding, stateFromChunk,
-                           stateToChunk, toPayload)
-import           RON.Data.Internal (mkStateChunk)
+                           fromPayload, mkStateChunk, payloadEncoding,
+                           stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
 import           RON.Data.RGA (RgaRaw, rgaType)
 import           RON.Data.Time (day)
@@ -46,8 +45,7 @@ import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema (Declaration (DStructLww), StructLww (StructLww),
                              atomString, def, field, oaHaskellType, opaqueAtoms,
-                             option, rgaString, saHaskellDeriving,
-                             saHaskellFieldPrefix, structLww)
+                             option, rgaString, saHaskellFieldPrefix, structLww)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
 import           RON.Types (Atom (AUuid), Object (Object), Op (Op), UUID,
@@ -95,52 +93,6 @@ instance ReplicatedAsPayload NoteStatus where
         [AUuid u] | u == wiki -> pure Wiki
         p                     -> TaskStatus <$> fromPayload p
 
-{-
-EDN version from future (https://github.com/ff-notes/ron/issues/9):
-
-    ron_schema [2 0]
-
-    import Time Day
-
-    opaque Status  ; TODO enum
-    opaque NoteStatus  ; TODO transparent enum?
-
-    struct_lww Track
-        #Haskell [field_prefix: "track", titlecase]
-    [
-        provider    String
-        source      String
-        externalId  String
-        url         String
-    ]
-
-    struct_lww Contact
-        #Haskell [field_prefix: "contact", titlecase]
-    [
-        status  Status
-        name    RgaString
-    ]
-
-    struct_lww Note
-        #Haskell [field_prefix: "note_"]
-    [
-        status  NoteStatus
-        text    RgaString
-        start   Day
-        end     (Option Day)
-        track   (Option Track)
-    ]
-
--- helper:
-parseEdnList :: ByteStringL -> Either String EDNList
-parseEdnList input
-    | BSLC.all isSpace input = pure []
-    | otherwise     =
-        case parseBSL input of
-            Done rest value -> (value :) <$> parseEdnList rest
-            failure         -> Left $ show failure
--}
-
 $(let
     status = opaqueAtoms def{oaHaskellType = Just "Status"}
     noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
@@ -150,14 +102,10 @@ $(let
         , ("externalId", field atomString)
         , ("url",        field atomString)
         ]
-        def { saHaskellDeriving    = ["Eq", "Generic", "Hashable", "Show"]
-            , saHaskellFieldPrefix = "track_"
-            }
+        def{saHaskellFieldPrefix = "track_"}
     contact = StructLww "Contact"
         [("status", field status), ("name", field rgaString)]
-        def { saHaskellDeriving    = ["Eq", "Show"]
-            , saHaskellFieldPrefix = "contact_"
-            }
+        def{saHaskellFieldPrefix = "contact_"}
     note = StructLww "Note"
         [ ("status",  field noteStatus)
         , ("text",    field rgaString)
@@ -165,8 +113,19 @@ $(let
         , ("end",     field $ option day)
         , ("track",   field $ option $ structLww track)
         ]
-        def{saHaskellDeriving = ["Eq", "Show"], saHaskellFieldPrefix = "note_"}
+        def{saHaskellFieldPrefix = "note_"}
     in mkReplicated [DStructLww track, DStructLww contact, DStructLww note])
+
+deriving instance Eq   Contact
+deriving instance Show Contact
+
+deriving instance Eq   Note
+deriving instance Show Note
+
+deriving instance Eq       Track
+deriving instance Generic  Track
+deriving instance Hashable Track
+deriving instance Show     Track
 
 type NoteId = DocId Note
 
@@ -319,7 +278,9 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
 timeFromV1 :: CRDT.LamportTime -> UUID
 timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =
     encodeEvent $
-    Event (localEpochTimeFromUnix unixTime) (applicationSpecific pid)
+    Event
+        (localEpochTimeFromUnix $ fromIntegral unixTime)
+        (applicationSpecific pid)
 
 rgaFromV1 :: CRDT.RgaString -> RgaRaw
 rgaFromV1 (CRDT.RGA oldRga) = stateFromChunk

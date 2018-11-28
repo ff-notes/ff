@@ -8,4 +8,5 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-  - ron-0.2
+  # - ron-0.2
+  - ../ron/ron
