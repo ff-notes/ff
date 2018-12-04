@@ -278,8 +278,8 @@ cmdSearch
 cmdSearch substr limit today = do
     notes <- getNoteSamplesWith predicate ui limit today
     wiki <- getWikiSamplesWith predicate ui limit today
-    contacts <- getContactSamplesWith predicate
-    pure (notes, wiki, contacts)
+    contact_s <- getContactSamplesWith predicate
+    pure (notes, wiki, contact_s)
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
     ui = ConfigUI {shuffle = False}

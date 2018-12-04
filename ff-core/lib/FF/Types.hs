@@ -3,14 +3,11 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
 
 module FF.Types where
 
@@ -46,7 +43,7 @@ import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema (Declaration (DStructLww), StructLww (StructLww),
                              atomString, def, field, oaHaskellType, opaqueAtoms,
                              option, rgaString, saHaskellFieldPrefix, structLww)
-import           RON.Schema.TH (mkReplicated)
+import           RON.Schema.TH (mkReplicated')
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
 import           RON.Types (Atom (AUuid), Object (Object), Op (Op), UUID,
                             objectFrame, objectId)
@@ -97,24 +94,26 @@ $(let
     status = opaqueAtoms def{oaHaskellType = Just "Status"}
     noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
     track = StructLww "Track"
-        [ ("provider",   field atomString)
-        , ("source",     field atomString)
-        , ("externalId", field atomString)
-        , ("url",        field atomString)
-        ]
+        (Map.fromList
+            [ ("provider",   field atomString)
+            , ("source",     field atomString)
+            , ("externalId", field atomString)
+            , ("url",        field atomString)
+            ])
         def{saHaskellFieldPrefix = "track_"}
     contact = StructLww "Contact"
-        [("status", field status), ("name", field rgaString)]
+        (Map.fromList [("status", field status), ("name", field rgaString)])
         def{saHaskellFieldPrefix = "contact_"}
     note = StructLww "Note"
-        [ ("status",  field noteStatus)
-        , ("text",    field rgaString)
-        , ("start",   field day)
-        , ("end",     field $ option day)
-        , ("track",   field $ option $ structLww track)
-        ]
+        (Map.fromList
+            [ ("status",  field noteStatus)
+            , ("text",    field rgaString)
+            , ("start",   field day)
+            , ("end",     field $ option day)
+            , ("track",   field $ option $ structLww track)
+            ])
         def{saHaskellFieldPrefix = "note_"}
-    in mkReplicated [DStructLww track, DStructLww contact, DStructLww note])
+    in mkReplicated' [DStructLww track, DStructLww contact, DStructLww note])
 
 deriving instance Eq   Contact
 deriving instance Show Contact
@@ -154,7 +153,8 @@ emptySample = Sample{sample_items = [], sample_total = 0}
 
 -- | Number of notes omitted from the sample.
 omitted :: Sample a -> Natural
-omitted Sample{..} = sample_total - genericLength sample_items
+omitted Sample{sample_total, sample_items} =
+    sample_total - genericLength sample_items
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
