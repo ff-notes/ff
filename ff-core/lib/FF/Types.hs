@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -37,13 +38,10 @@ import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
                            stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
 import           RON.Data.RGA (RgaRaw, rgaType)
-import           RON.Data.Time (day)
+import           RON.Data.Time ()
 import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
-import           RON.Schema (Declaration (DStructLww), StructLww (StructLww),
-                             atomString, def, field, oaHaskellType, opaqueAtoms,
-                             option, rgaString, saHaskellFieldPrefix, structLww)
-import           RON.Schema.TH (mkReplicated')
+import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
 import           RON.Types (Atom (AUuid), Object (Object), Op (Op), UUID,
                             objectFrame, objectId)
@@ -90,30 +88,36 @@ instance ReplicatedAsPayload NoteStatus where
         [AUuid u] | u == wiki -> pure Wiki
         p                     -> TaskStatus <$> fromPayload p
 
-$(let
-    status = opaqueAtoms def{oaHaskellType = Just "Status"}
-    noteStatus = opaqueAtoms def{oaHaskellType = Just "NoteStatus"}
-    track = StructLww "Track"
-        (Map.fromList
-            [ ("provider",   field atomString)
-            , ("source",     field atomString)
-            , ("externalId", field atomString)
-            , ("url",        field atomString)
-            ])
-        def{saHaskellFieldPrefix = "track_"}
-    contact = StructLww "Contact"
-        (Map.fromList [("status", field status), ("name", field rgaString)])
-        def{saHaskellFieldPrefix = "contact_"}
-    note = StructLww "Note"
-        (Map.fromList
-            [ ("status",  field noteStatus)
-            , ("text",    field rgaString)
-            , ("start",   field day)
-            , ("end",     field $ option day)
-            , ("track",   field $ option $ structLww track)
-            ])
-        def{saHaskellFieldPrefix = "note_"}
-    in mkReplicated' [DStructLww track, DStructLww contact, DStructLww note])
+[mkReplicated|
+    (opaque atoms Day) ; TODO(2018-12-05, cblp) (import Time Day)
+
+    (opaque atoms Status)
+        ; TODO(2018-12-05, cblp) (enum Status Active Archived Deleted)
+
+    (opaque atoms NoteStatus)
+        ; TODO(2018-12-05, cblp)
+        ; (enum NoteStatus (extends Status #haskell TaskStatus) Wiki)
+
+    (struct_lww Contact
+        #haskell {field_prefix "contact_"}
+        status  Status
+        name    RgaString)
+
+    (struct_lww Track
+        #haskell {field_prefix "track_"}
+        provider    AtomString
+        source      AtomString
+        externalId  AtomString
+        url         AtomString)
+
+    (struct_lww Note
+        #haskell {field_prefix "note_"}
+        status  NoteStatus
+        text    RgaString
+        start   Day
+        end     (Option Day)
+        track   (Option Track))
+|]
 
 deriving instance Eq   Contact
 deriving instance Show Contact

@@ -10,7 +10,7 @@ extra-deps:
   - crdt-10.3
   # - ron-0.2
   - git: https://github.com/ff-notes/ron.git
-    commit: 'dab1c7e'  # 0.2+ EDN Schema
+    commit: 'cdeba04'  # 0.2+ EDN Schema
     subdirs: [ron]
 
   # ron:
