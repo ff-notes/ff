@@ -10,7 +10,7 @@ extra-deps:
   - crdt-10.3
   # - ron-0.3
   - git: https://github.com/ff-notes/ron.git
-    commit: 'efa53ab'  # v0.3 + enum
+    commit: '12d1590'  # v0.3 + enum
     subdirs: [ron]
 
   # ron:

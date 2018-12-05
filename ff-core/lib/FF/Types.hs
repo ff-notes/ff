@@ -48,9 +48,6 @@ import qualified RON.UUID as UUID
 
 import           FF.CrdtAesonInstances ()
 
-data Status = Active | Archived | Deleted
-    deriving (Bounded, Enum, Eq, Show)
-
 active, archived, deleted :: UUID
 active   = fromJust $ UUID.mkName "Active"
 archived = fromJust $ UUID.mkName "Archived"
@@ -88,12 +85,11 @@ instance ReplicatedAsPayload NoteStatus where
         p                     -> TaskStatus <$> fromPayload p
 
 [mkReplicated|
-    (opaque atoms Status)
-        ; TODO(2018-12-05, cblp) (enum Status Active Archived Deleted)
+    (enum Status
+        Active Archived Deleted)
 
     (opaque atoms NoteStatus)
-        ; TODO(2018-12-05, cblp)
-        ; (enum NoteStatus (extends Status #haskell TaskStatus) Wiki)
+        ; TODO(2018-12-05, cblp) (enum NoteStatus (extends Status) Wiki)
 
     (struct_lww Contact
         #haskell {field_prefix "contact_"}
@@ -121,6 +117,11 @@ deriving instance Show Contact
 
 deriving instance Eq   Note
 deriving instance Show Note
+
+deriving instance Bounded Status
+deriving instance Enum    Status
+deriving instance Eq      Status
+deriving instance Show    Status
 
 deriving instance Eq       Track
 deriving instance Generic  Track
@@ -255,7 +256,7 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
                             , Op startTime'  startName  $ toPayload start
                             , Op statusTime' statusName $ toPayload status
                             , Op objectId    textName   $ toPayload textId
-                            , Op objectId    trackName  trackPayload
+                            , Op objectId    trackName    trackPayload
                             ]
                         )
                     ,   ((rgaType, textId), stateToChunk $ rgaFromV1 text)
