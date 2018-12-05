@@ -38,7 +38,6 @@ import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
                            stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
 import           RON.Data.RGA (RgaRaw, rgaType)
-import           RON.Data.Time ()
 import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema.TH (mkReplicated)
@@ -89,8 +88,6 @@ instance ReplicatedAsPayload NoteStatus where
         p                     -> TaskStatus <$> fromPayload p
 
 [mkReplicated|
-    (opaque atoms Day) ; TODO(2018-12-05, cblp) (import Time Day)
-
     (opaque atoms Status)
         ; TODO(2018-12-05, cblp) (enum Status Active Archived Deleted)
 
@@ -105,10 +102,10 @@ instance ReplicatedAsPayload NoteStatus where
 
     (struct_lww Track
         #haskell {field_prefix "track_"}
-        provider    AtomString
-        source      AtomString
-        externalId  AtomString
-        url         AtomString)
+        provider    String
+        source      String
+        externalId  String
+        url         String)
 
     (struct_lww Note
         #haskell {field_prefix "note_"}
