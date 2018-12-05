@@ -48,26 +48,6 @@ import qualified RON.UUID as UUID
 
 import           FF.CrdtAesonInstances ()
 
-active, archived, deleted :: UUID
-active   = fromJust $ UUID.mkName "Active"
-archived = fromJust $ UUID.mkName "Archived"
-deleted  = fromJust $ UUID.mkName "Deleted"
-
-instance Replicated Status where encoding = payloadEncoding
-
-instance ReplicatedAsPayload Status where
-    toPayload = toPayload . \case
-        Active   -> active
-        Archived -> archived
-        Deleted  -> deleted
-
-    fromPayload = \case
-        [AUuid u]
-            | u == active   -> pure Active
-            | u == archived -> pure Archived
-            | u == deleted  -> pure Deleted
-        _ -> fail "Expected single UUID"
-
 data NoteStatus = TaskStatus Status | Wiki
     deriving (Eq, Show)
 
