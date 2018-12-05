@@ -8,10 +8,10 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-  # - ron-0.2
-  - git: https://github.com/ff-notes/ron.git
-    commit: 'cdeba04'  # 0.2+ EDN Schema
-    subdirs: [ron]
+  - ron-0.3
+  # - git: https://github.com/ff-notes/ron.git
+  #   commit: 'v0.3'
+  #   subdirs: [ron]
 
   # ron:
   - hedn-0.1.9.1@sha256:01d77f74d211e1187d94e67dd880e3131d0552a5184c7f067b5e686f94b250c7
