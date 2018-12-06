@@ -31,7 +31,8 @@ module FF
     ) where
 
 import           Control.Arrow ((&&&))
-import           Control.Monad.Except (MonadError, liftEither, throwError)
+import           Control.Monad.Except (MonadError, catchError, liftEither,
+                                       throwError)
 import           Control.Monad.Extra (unless, void, when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
@@ -55,7 +56,9 @@ import           RON.Storage (Collection, DocId (..), Document (..),
                               MonadStorage, createDocument, getDocuments,
                               loadDocument, modify)
 import           RON.Storage.IO (Storage)
+import           RON.Text.Serialize (serializeUuid)
 import           RON.Types (Object, objectId)
+import           RON.UUID (decodeBase32)
 import           System.Directory (findExecutable)
 import           System.Environment (getEnv)
 import           System.Exit (ExitCode (..))
@@ -266,7 +269,7 @@ cmdNewContact name = do
     pure $ Entity (objectId obj) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
-cmdDeleteContact cid = modifyAndView cid $ do
+cmdDeleteContact cid = notFounfError cid "delete" $ modifyAndView cid $ do
     contact_status_assign Deleted
     contact_name_zoom $   RGA.editText ""
 
@@ -286,12 +289,12 @@ cmdSearch substr limit today = do
 
 cmdShow :: NoteId -> Storage (Entity Note)
 cmdShow nid = do
-    Document{value = obj} <- loadDocument nid
+    Document{value = obj} <- notFounfError nid "show" (loadDocument nid)
     entityVal <- liftEither $ getObject obj
     pure $ Entity (objectId obj) entityVal
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
-cmdDeleteNote nid = modifyAndView nid $ do
+cmdDeleteNote nid = notFounfError nid "delete" $ modifyAndView nid $ do
     assertNoteIsNative
     note_status_assign $ TaskStatus Deleted
     note_text_zoom     $ RGA.editText ""
@@ -299,24 +302,24 @@ cmdDeleteNote nid = modifyAndView nid $ do
     note_end_assign      Nothing
 
 cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
-cmdDone nid = modifyAndView nid $ do
+cmdDone nid = notFounfError nid "archive" $ modifyAndView nid $ do
     assertNoteIsNative
     note_status_assign $ TaskStatus Archived
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
-cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
+cmdUnarchive nid = notFounfError nid "unarchive" $ modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage (Entity Note)
 cmdEdit Edit{..} = case (editText, editStart, editEnd) of
     (Nothing, Nothing, Nothing) ->
-        modifyAndView editId $ do
+        notFounfError editId "edit" $ modifyAndView editId $ do
             assertNoteIsNative
             note_text_zoom $ do
                 text <- liftEither =<< gets RGA.getText
                 text' <- liftIO $ runExternalEditor text
                 RGA.editText text'
     _ ->
-        modifyAndView editId $ do
+        notFounfError editId "edit" $ modifyAndView editId $ do
             whenJust editText $ const assertNoteIsNative
             checkStartEnd
             update
@@ -344,7 +347,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
         whenJust editText $ \t -> note_text_zoom $ RGA.editText t
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
-cmdPostpone nid = modifyAndView nid $ do
+cmdPostpone nid = notFounfError nid "postpone" $ modifyAndView nid $ do
     today <- getUtcToday
     start <- note_start_read
     let start' = addDays 1 $ max today start
@@ -402,3 +405,12 @@ assertNoteIsNative = do
     tracking <- note_track_read
     whenJust tracking $ \_ ->
         throwError "Oh, no! It is tracked note. Not for modifying. Sorry :("
+
+-- | Show NoteId as it was inputted by user.
+showNoteId :: DocId a -> String
+showNoteId (DocId path) = concat [show (serializeUuid uid) | Just uid <- [decodeBase32 path]]
+
+-- | Catch an error when note id not found.
+notFounfError :: MonadError String m => DocId b -> String -> m a -> m a
+notFounfError docId str storage = storage `catchError`
+    (\_ -> throwError ("Nothing to " <> str <> ". The document with id " <> showNoteId docId <> " not found!"))

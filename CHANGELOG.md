@@ -8,6 +8,7 @@ and this project adheres to
 ## [Unreleased]
 ### Added
 - `ff show` command to show specific id
+- Proper error messeges, when id not found.
 
 ### Changed
 - UI: display UUIDs without quotes
