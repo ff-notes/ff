@@ -37,6 +37,7 @@ import           Control.Monad.Extra (unless, void, when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
                                              evalStateT, gets, state)
+import           Data.ByteString.Lazy.Char8 (unpack)
 import           Data.Foldable (asum, for_)
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
@@ -412,11 +413,14 @@ assertNoteIsNative = do
 -- | Show NoteId as it was inputted by user.
 showDocId :: DocId a -> String
 showDocId (DocId path) = case decodeBase32 path of
-    Nothing -> "Undecoded id"
-    Just uid -> show (serializeUuid uid)
+    Nothing -> path
+    Just uid -> unpack $ serializeUuid uid
 
 -- | Catch an error when note id not found.
-notFoundError :: MonadError String m => DocId b -> String -> m a -> m a
-notFoundError docId str storage = storage `catchError`
-    (\_ -> throwError
-        $ "Nothing to " <> str <> ". The document with id " <> showDocId docId <> " not found!")
+notFoundError :: (Collection b, MonadStorage m) => DocId b -> String -> m a -> m a
+notFoundError docId str storage = storage `catchError` arbiter
+  where
+    arbiter err
+        | err == "Empty document " <> show docId = throwError
+            $ "Nothing to " <> str <> ". The document with id " <> showDocId docId <> " not found!"
+        | otherwise = throwError err
