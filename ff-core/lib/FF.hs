@@ -418,4 +418,5 @@ showDocId (DocId path) = case decodeBase32 path of
 -- | Catch an error when note id not found.
 notFoundError :: MonadError String m => DocId b -> String -> m a -> m a
 notFoundError docId str storage = storage `catchError`
-    (\_ -> throwError ("Nothing to " <> str <> ". The document with id " <> showDocId docId <> " not found!"))
+    (\_ -> throwError
+        $ "Nothing to " <> str <> ". The document with id " <> showDocId docId <> " not found!")
