@@ -269,7 +269,7 @@ cmdNewContact name = do
     pure $ Entity (objectId obj) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
-cmdDeleteContact cid = notFounfError cid "delete" $ modifyAndView cid $ do
+cmdDeleteContact cid = modifyAndView cid "delete" $ do
     contact_status_assign Deleted
     contact_name_zoom $   RGA.editText ""
 
@@ -289,12 +289,12 @@ cmdSearch substr limit today = do
 
 cmdShow :: NoteId -> Storage (Entity Note)
 cmdShow nid = do
-    Document{value = obj} <- notFounfError nid "show" (loadDocument nid)
+    Document{value = obj} <- notFoundError nid "show" (loadDocument nid)
     entityVal <- liftEither $ getObject obj
     pure $ Entity (objectId obj) entityVal
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
-cmdDeleteNote nid = notFounfError nid "delete" $ modifyAndView nid $ do
+cmdDeleteNote nid = modifyAndView nid "delete" $ do
     assertNoteIsNative
     note_status_assign $ TaskStatus Deleted
     note_text_zoom     $ RGA.editText ""
@@ -302,24 +302,24 @@ cmdDeleteNote nid = notFounfError nid "delete" $ modifyAndView nid $ do
     note_end_assign      Nothing
 
 cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
-cmdDone nid = notFounfError nid "archive" $ modifyAndView nid $ do
+cmdDone nid = modifyAndView nid "archive" $ do
     assertNoteIsNative
     note_status_assign $ TaskStatus Archived
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
-cmdUnarchive nid = notFounfError nid "unarchive" $ modifyAndView nid $ note_status_assign $ TaskStatus Active
+cmdUnarchive nid = modifyAndView nid "unarchive" $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage (Entity Note)
 cmdEdit Edit{..} = case (editText, editStart, editEnd) of
     (Nothing, Nothing, Nothing) ->
-        notFounfError editId "edit" $ modifyAndView editId $ do
+        modifyAndView editId "edit" $ do
             assertNoteIsNative
             note_text_zoom $ do
                 text <- liftEither =<< gets RGA.getText
                 text' <- liftIO $ runExternalEditor text
                 RGA.editText text'
     _ ->
-        notFounfError editId "edit" $ modifyAndView editId $ do
+        modifyAndView editId "edit" $ do
             whenJust editText $ const assertNoteIsNative
             checkStartEnd
             update
@@ -347,7 +347,7 @@ cmdEdit Edit{..} = case (editText, editStart, editEnd) of
         whenJust editText $ \t -> note_text_zoom $ RGA.editText t
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
-cmdPostpone nid = notFounfError nid "postpone" $ modifyAndView nid $ do
+cmdPostpone nid = modifyAndView nid "postpone" $ do
     today <- getUtcToday
     start <- note_start_read
     let start' = addDays 1 $ max today start
@@ -359,9 +359,12 @@ cmdPostpone nid = notFounfError nid "postpone" $ modifyAndView nid $ do
 
 modifyAndView
     :: (Collection a, MonadStorage m)
-    => DocId a -> StateT (Object a) m () -> m (Entity a)
-modifyAndView docid f = do
-    obj <- modify docid f
+    => DocId a
+    -> String                  -- ^ Command name to show in error message.
+    -> StateT (Object a) m ()
+    -> m (Entity a)
+modifyAndView docid str f = do
+    obj <- notFoundError docid str $ modify docid f
     entityVal <- liftEither $ getObject obj
     pure $ Entity (objectId obj) entityVal
 
@@ -407,10 +410,12 @@ assertNoteIsNative = do
         throwError "Oh, no! It is tracked note. Not for modifying. Sorry :("
 
 -- | Show NoteId as it was inputted by user.
-showNoteId :: DocId a -> String
-showNoteId (DocId path) = concat [show (serializeUuid uid) | Just uid <- [decodeBase32 path]]
+showDocId :: DocId a -> String
+showDocId (DocId path) = case decodeBase32 path of
+    Nothing -> "Undecoded id"
+    Just uid -> show (serializeUuid uid)
 
 -- | Catch an error when note id not found.
-notFounfError :: MonadError String m => DocId b -> String -> m a -> m a
-notFounfError docId str storage = storage `catchError`
-    (\_ -> throwError ("Nothing to " <> str <> ". The document with id " <> showNoteId docId <> " not found!"))
+notFoundError :: MonadError String m => DocId b -> String -> m a -> m a
+notFoundError docId str storage = storage `catchError`
+    (\_ -> throwError ("Nothing to " <> str <> ". The document with id " <> showDocId docId <> " not found!"))
