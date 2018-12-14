@@ -8,6 +8,7 @@ and this project adheres to
 ## [Unreleased]
 ### Added
 - `ff show` command to show specific id
+- Option to specify work directory.
 
 ### Changed
 - UI: display UUIDs without quotes

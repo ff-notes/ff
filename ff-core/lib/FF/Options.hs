@@ -62,8 +62,9 @@ data CmdAction
     | CmdWiki       (Maybe Limit)
 
 data Options = Options
-    { optionBrief :: Bool
-    , optionCmd   :: Cmd
+    { optionBrief     :: Bool
+    , optionCustomDir :: Maybe FilePath
+    , optionCmd       :: Cmd
     }
 
 data Track = Track
@@ -109,7 +110,7 @@ data Search = Search
 parseOptions :: Storage.Handle -> IO Options
 parseOptions h = execParser $ i parser "A note taker and task tracker"
   where
-    parser   = Options <$> brief <*>
+    parser   = Options <$> brief <*> customDir <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
@@ -225,13 +226,19 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     dateOption m = option auto $ metavar "DATE" <> m
 
+    customDir = optional $ strOption
+        $ long "data-dir"
+        <> short 'C'
+        <> metavar "DIRECTORY"
+        <> help "Path to the data dir"
+
     cmdConfig = fmap CmdConfig . optional $
         subparser $ command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
-            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
+            pJust = DataDirJust <$> strArgument (metavar "DIRECTORY" <> help "path")
             pYandexDisk = flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")

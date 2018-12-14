@@ -57,8 +57,9 @@ main :: IO ()
 main = do
     cfg@Config{ui} <- loadConfig
     dataDir <- getDataDir cfg
-    h <- Storage.newHandle dataDir
-    Options {..}      <- parseOptions h
+    h' <- Storage.newHandle dataDir
+    Options {..} <- parseOptions h'
+    h <- maybe (pure h') Storage.newHandle optionCustomDir
     case optionCmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> runStorage h $ runCmdAction h ui action optionBrief
