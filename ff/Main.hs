@@ -56,9 +56,13 @@ import           Paths_ff (version)
 main :: IO ()
 main = do
     cfg@Config{ui} <- loadConfig
-    dataDir <- getDataDir cfg
-    h <- Storage.newHandle dataDir
-    Options {..}      <- parseOptions h
+    fakeHandle <- Storage.newHandle ""
+    Options {..} <- parseOptions fakeHandle
+    h <- case optionCustomDir of
+        Nothing -> do
+            configDir <- getDataDir cfg
+            Storage.newHandle configDir
+        Just customDir -> Storage.newHandle customDir
     case optionCmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> runStorage h $ runCmdAction h ui action optionBrief
