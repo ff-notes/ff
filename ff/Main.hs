@@ -59,7 +59,7 @@ main = do
     dataDir <- getDataDir cfg
     h' <- Storage.newHandle dataDir
     Options {..} <- parseOptions h'
-    h <- maybe h' Storage.newHandle optionCustomDir
+    h <- maybe (pure h') Storage.newHandle optionCustomDir
     case optionCmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> runStorage h $ runCmdAction h ui action optionBrief

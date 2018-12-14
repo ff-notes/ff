@@ -229,7 +229,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
     customDir = optional $ strOption
         $ long "data-dir"
         <> short 'C'
-        <> metavar "CUSTOM_DATA_DIR"
+        <> metavar "DIRECTORY"
         <> help "Path to the data dir"
 
     cmdConfig = fmap CmdConfig . optional $
@@ -238,7 +238,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
           where
-            pJust = DataDirJust <$> strArgument (metavar "DIR" <> help "path")
+            pJust = DataDirJust <$> strArgument (metavar "DIRECTORY" <> help "path")
             pYandexDisk = flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
