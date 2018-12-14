@@ -226,8 +226,11 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    customDir = optional $ strOption $
-        long "dir" <> short 'd' <> metavar "DIR" <> help "path"
+    customDir = optional $ strOption
+        $ long "data-dir"
+        <> short 'C'
+        <> metavar "CUSTOM_DATA_DIR"
+        <> help "Path to the data dir"
 
     cmdConfig = fmap CmdConfig . optional $
         subparser $ command "dataDir" iDataDir <> command "ui" iUi
