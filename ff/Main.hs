@@ -128,9 +128,10 @@ runCmdAction h ui cmd brief = do
             for_ notes $ \noteId -> do
                 note <- cmdDeleteNote noteId
                 pprint $ withHeader "deleted:" $ UI.noteViewFull note
-        CmdDone noteId -> do
-            note <- cmdDone noteId
-            pprint $ withHeader "archived:" $ UI.noteViewFull note
+        CmdDone notes ->
+            for_ notes $ \noteId -> do
+                note <- cmdDone noteId
+                pprint $ withHeader "archived:" $ UI.noteViewFull note
         CmdEdit edit -> do
             note <- cmdEdit edit
             pprint $ withHeader "edited:" $ UI.noteViewFull note

@@ -51,7 +51,7 @@ data CmdAction
     = CmdAgenda     (Maybe Limit)
     | CmdContact    (Maybe Contact)
     | CmdDelete     [NoteId]
-    | CmdDone       NoteId
+    | CmdDone       [NoteId]
     | CmdEdit       Edit
     | CmdNew        New
     | CmdPostpone   NoteId
@@ -163,7 +163,7 @@ parseOptions h =
     cmdAgenda    = CmdAgenda    <$> optional limit
     cmdContact   = CmdContact   <$> optional contact
     cmdDelete    = CmdDelete    <$> some noteid
-    cmdDone      = CmdDone      <$> noteid
+    cmdDone      = CmdDone      <$> some noteid
     cmdEdit      = CmdEdit      <$> edit
     cmdNew       = CmdNew       <$> new
     cmdPostpone  = CmdPostpone  <$> noteid
