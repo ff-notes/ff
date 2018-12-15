@@ -17,16 +17,18 @@ module FF.Options (
     parseOptions,
 ) where
 
-import           Control.Applicative (optional, (<|>))
+import           Control.Applicative (optional, some, (<|>))
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import           Data.Maybe (mapMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
 import           Options.Applicative (Completer, argument, auto, command,
-                                      completer, eitherReader, execParser,
-                                      flag', fullDesc, help, helper, info,
-                                      listIOCompleter, long, metavar, option,
+                                      completer, customExecParser, defaultPrefs,
+                                      eitherReader, flag', fullDesc, help,
+                                      helper, info, listIOCompleter, long,
+                                      metavar, option, prefDisambiguate,
+                                      prefMultiSuffix, prefShowHelpOnError,
                                       progDesc, short, strArgument, strOption,
                                       subparser, switch, (<**>))
 import           RON.Storage (Collection, DocId (DocId), decodeDocId,
@@ -48,7 +50,7 @@ data Cmd
 data CmdAction
     = CmdAgenda     (Maybe Limit)
     | CmdContact    (Maybe Contact)
-    | CmdDelete     NoteId
+    | CmdDelete     [NoteId]
     | CmdDone       NoteId
     | CmdEdit       Edit
     | CmdNew        New
@@ -108,8 +110,14 @@ data Search = Search
     }
 
 parseOptions :: Storage.Handle -> IO Options
-parseOptions h = execParser $ i parser "A note taker and task tracker"
+parseOptions h =
+    customExecParser prefs $ i parser "A note taker and task tracker"
   where
+    prefs = defaultPrefs
+        { prefDisambiguate    = True
+        , prefMultiSuffix     = "..."
+        , prefShowHelpOnError = True
+        }
     parser   = Options <$> brief <*> customDir <*>
         (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
@@ -154,7 +162,7 @@ parseOptions h = execParser $ i parser "A note taker and task tracker"
 
     cmdAgenda    = CmdAgenda    <$> optional limit
     cmdContact   = CmdContact   <$> optional contact
-    cmdDelete    = CmdDelete    <$> noteid
+    cmdDelete    = CmdDelete    <$> some noteid
     cmdDone      = CmdDone      <$> noteid
     cmdEdit      = CmdEdit      <$> edit
     cmdNew       = CmdNew       <$> new

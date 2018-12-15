@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- CLI: allow multiple notes in subcommand `delete`.
 
 ## [0.8] - 2018-12-15
 ### Added

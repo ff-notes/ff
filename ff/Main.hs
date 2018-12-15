@@ -13,7 +13,7 @@ import           Control.Monad (forever, guard)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Either.Extra (fromEither)
-import           Data.Foldable (asum)
+import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
 import           Data.Proxy (Proxy (..))
 import           Data.Text.IO (hPutStrLn)
@@ -33,8 +33,8 @@ import           Text.PrettyPrint.Mainland (prettyLazyText)
 import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
-                     cmdShow, cmdUnarchive, getContactSamples, getNoteSamples,
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
+                     cmdUnarchive, getContactSamples, getNoteSamples,
                      getUtcToday, getWikiSamples, updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
@@ -124,9 +124,10 @@ runCmdAction h ui cmd brief = do
             notes <- getNoteSamples ui mlimit today
             pprint $ UI.prettySamplesBySections brief notes
         CmdContact contact -> cmdContact brief contact
-        CmdDelete noteId -> do
-            note <- cmdDeleteNote noteId
-            pprint $ withHeader "deleted:" $ UI.noteViewFull note
+        CmdDelete notes ->
+            for_ notes $ \noteId -> do
+                note <- cmdDeleteNote noteId
+                pprint $ withHeader "deleted:" $ UI.noteViewFull note
         CmdDone noteId -> do
             note <- cmdDone noteId
             pprint $ withHeader "archived:" $ UI.noteViewFull note
