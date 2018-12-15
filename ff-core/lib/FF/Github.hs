@@ -2,15 +2,15 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
 
-module FF.Github
-    ( getIssueViews
-    , getOpenIssueSamples
-    , sampleMap
-    )
-where
+module FF.Github (
+    getIssueViews,
+    getOpenIssueSamples,
+    sampleMap,
+) where
 
-import           Control.Error (failWith)
+import           Control.Monad ((>=>))
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
@@ -40,21 +40,26 @@ getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
         Nothing      -> do
-            packed <- liftIO $ Text.pack <$> readProcess
-                "git"
-                ["remote", "get-url", "--push", "origin"]
-                ""
-            failWith "Sorry, only github repository expected."
-                $   Text.stripPrefix "https://github.com/" packed
-                >>= Text.stripSuffix ".git\n"
+            url <- liftIO $ Text.strip . Text.pack <$>
+                readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            case url of
+                (stripPrefixSuffix "https://github.com/" ".git" -> Just repo) ->
+                    pure repo
+                (stripPrefixSuffix "git@github.com:" ".git" -> Just repo) ->
+                    pure repo
+                _ -> fail
+                    $   "Sorry, only github repository expected, but you have "
+                    <>  Text.unpack url
     (owner, repo) <- case Text.splitOn "/" address of
         [owner, repo] | not $ Text.null owner, not $ Text.null repo ->
             pure (owner, repo)
         _ ->
-            throwError
-                $ "Something is wrong with "
-                <> address
-                <> ". Please, check correctness of input. Right format is OWNER/REPO"
+            throwError $ mconcat
+                [ "Something is wrong with "
+                , address
+                , ". Please, check correctness of input."
+                , " Right format is OWNER/REPO"
+                ]
     response <-
         withExceptT (Text.pack . show)
         $ ExceptT
@@ -125,3 +130,7 @@ toStatus :: IssueState -> NoteStatus
 toStatus = \case
     StateOpen   -> TaskStatus Active
     StateClosed -> TaskStatus Archived
+
+stripPrefixSuffix :: Text -> Text -> Text -> Maybe Text
+stripPrefixSuffix prefix suffix =
+    Text.stripPrefix prefix >=> Text.stripSuffix suffix

@@ -7,14 +7,15 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
-- `ff show` command to show specific id
+- `ff show` command to show specific id.
 - Option to specify work directory.
+- External task tracking: support ssh URLs to GitHub.
 
 ### Changed
-- UI: display UUIDs without quotes
+- UI: display UUIDs without quotes.
 
 ### Fixed
-- Restore missed `ff add` command
+- Restore missed `ff add` command.
 
 ## [0.7] - 2018-11-03
 ### Added
