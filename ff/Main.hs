@@ -153,9 +153,10 @@ runCmdAction h ui cmd brief = do
             pprint $ UI.prettyNotes brief notes
         CmdTrack track ->
             cmdTrack track today brief
-        CmdUnarchive noteId -> do
-            note <- cmdUnarchive noteId
-            pprint . withHeader "unarchived:" $ UI.noteViewFull note
+        CmdUnarchive notes ->
+            for_ notes $ \noteId -> do
+                note <- cmdUnarchive noteId
+                pprint . withHeader "unarchived:" $ UI.noteViewFull note
         CmdUpgrade -> do
             upgradeDatabase
             liftIO $ putStrLn "upgraded"

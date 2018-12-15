@@ -59,7 +59,7 @@ data CmdAction
     | CmdServe
     | CmdShow       [NoteId]
     | CmdTrack      Track
-    | CmdUnarchive  NoteId
+    | CmdUnarchive  [NoteId]
     | CmdUpgrade
     | CmdWiki       (Maybe Limit)
 
@@ -171,7 +171,7 @@ parseOptions h =
     cmdServe     = pure CmdServe
     cmdShow      = CmdShow      <$> some noteid
     cmdTrack     = CmdTrack     <$> track
-    cmdUnarchive = CmdUnarchive <$> noteid
+    cmdUnarchive = CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
     cmdWiki      = CmdWiki      <$> optional limit
 

@@ -7,7 +7,8 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
-- CLI: allow multiple notes in subcommands `delete`, `done`, `postpone`, `show`.
+- CLI: allow multiple notes in subcommands `delete`, `done`, `postpone`, `show`,
+  `unarchive`.
 
 ## [0.8] - 2018-12-15
 ### Added
