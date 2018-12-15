@@ -6,9 +6,11 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.8] - 2018-12-15
 ### Added
-- `ff show` command to show specific id.
-- Option to specify work directory.
+- `ff show` command to show a specific note.
+- Option to specify the work directory.
 - External task tracking: support ssh URLs to GitHub.
 
 ### Changed
@@ -113,7 +115,8 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.7...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.8...HEAD
+[0.7]: https://github.com/ff-notes/ff/compare/v0.7...v0.8
 [0.7]: https://github.com/ff-notes/ff/compare/v0.6...v0.7
 [0.6]: https://github.com/ff-notes/ff/compare/v0.5...v0.6
 [0.5]: https://github.com/ff-notes/ff/compare/v0.4...v0.5
