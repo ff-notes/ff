@@ -9,13 +9,14 @@ module FF.UI (
     contactViewFull,
     noteViewFull,
     prettyContactSamplesOmitted,
+    prettyNotes,
     prettyNotesWikiContacts,
     prettySamplesBySections,
     prettyWikiSamplesOmitted,
     sampleFmap,
     sampleLabel,
     withHeader,
-    ) where
+) where
 
 import           Data.Char (isSpace)
 import           Data.Foldable (toList)
@@ -98,15 +99,19 @@ prettyWikiSamplesOmitted brief samples = stack' brief $
   where
     numOmitted = omitted samples
 
+prettyNotes :: Foldable f => Bool -> [EntityF f Note] -> Doc
+prettyNotes brief = stack' brief . map ((star <>) . indent 1 . noteView brief)
+
 prettyWikiSample :: Bool -> NoteSample -> Doc
 prettyWikiSample brief = \case
     Sample{sample_total = 0} -> mempty
     Sample{sample_items} ->
         withHeader "Wiki notes:" .
         stack' brief $
-        map ((star <>) . indent 1 . noteView) sample_items
-  where
-    noteView = if brief then noteViewBrief else noteViewFull
+        map ((star <>) . indent 1 . noteView brief) sample_items
+
+noteView :: Foldable f => Bool -> EntityF f Note -> Doc
+noteView brief = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections
     :: Foldable f => Bool -> ModeMap (Sample (EntityF f Note)) -> Doc
@@ -121,14 +126,13 @@ prettySample brief mode = \case
     Sample{sample_total = 0} -> mempty
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack' brief $
-            map ((star <>) . indent 1 . noteView) sample_items
+            map ((star <>) . indent 1 . noteView brief) sample_items
             ++  [ toSeeAllLabel .= Pretty.text (cmdToSeeAll mode)
                 | count /= sample_total
                 ]
       where
         toSeeAllLabel = "To see all " <> show sample_total <> " task(s), run:"
         count         = genericLength sample_items
-        noteView      = if brief then noteViewBrief else noteViewFull
   where
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"

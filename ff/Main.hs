@@ -20,6 +20,7 @@ import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Lazy (toStrict)
 import qualified Data.Text.Lazy as Text
 import           Data.Time (Day)
+import           Data.Traversable (for)
 import           RON.Storage.IO (Storage, runStorage)
 import qualified RON.Storage.IO as Storage
 import qualified System.Console.Terminal.Size as Terminal
@@ -147,9 +148,9 @@ runCmdAction h ui cmd brief = do
             pprint $ UI.prettyNotesWikiContacts
                 brief notes wiki contacts searchTasks searchWiki searchContacts
         CmdServe -> cmdServe h ui
-        CmdShow noteId -> do
-            note <- cmdShow noteId
-            pprint $ UI.noteViewFull note
+        CmdShow noteIds -> do
+            notes <- for noteIds cmdShow
+            pprint $ UI.prettyNotes brief notes
         CmdTrack track ->
             cmdTrack track today brief
         CmdUnarchive noteId -> do

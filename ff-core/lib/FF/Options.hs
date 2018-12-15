@@ -57,7 +57,7 @@ data CmdAction
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdServe
-    | CmdShow       NoteId
+    | CmdShow       [NoteId]
     | CmdTrack      Track
     | CmdUnarchive  NoteId
     | CmdUpgrade
@@ -169,7 +169,7 @@ parseOptions h =
     cmdPostpone  = CmdPostpone  <$> some noteid
     cmdSearch    = CmdSearch    <$> search
     cmdServe     = pure CmdServe
-    cmdShow      = CmdShow      <$> noteid
+    cmdShow      = CmdShow      <$> some noteid
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> noteid
     cmdUpgrade   = pure CmdUpgrade
