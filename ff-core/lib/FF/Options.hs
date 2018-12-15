@@ -84,7 +84,7 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 data Shuffle = Shuffle | Sort
 
 data Edit = Edit
-    { editId    :: NoteId
+    { editIds   :: [NoteId]
     , editText  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
@@ -205,9 +205,15 @@ parseOptions h =
         <*> optional start
         <*> optional end
         <*> wiki
-    edit = Edit
-        <$> noteid
+    edit = editTextOfSingleItem <|> editAttrsOfMultipleItems
+    editTextOfSingleItem = Edit
+        <$> ((:[]) <$> noteid)
         <*> optional textOption
+        <*> pure Nothing
+        <*> pure Nothing
+    editAttrsOfMultipleItems = Edit
+        <$> some noteid
+        <*> pure Nothing
         <*> optional start
         <*> optional maybeEnd
     search = Search

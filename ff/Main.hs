@@ -134,8 +134,8 @@ runCmdAction h ui cmd brief = do
                 note <- cmdDone noteId
                 pprint $ withHeader "archived:" $ UI.noteViewFull note
         CmdEdit edit -> do
-            note <- cmdEdit edit
-            pprint $ withHeader "edited:" $ UI.noteViewFull note
+            notes <- cmdEdit edit
+            pprint $ withHeader "edited:" $ UI.prettyNotes brief notes
         CmdNew new -> do
             note <- cmdNewNote new today
             pprint $ withHeader "added:" $ UI.noteViewFull note

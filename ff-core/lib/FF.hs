@@ -306,20 +306,21 @@ cmdDone nid = modifyAndView nid $ do
 cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
-cmdEdit :: Edit -> Storage (Entity Note)
-cmdEdit Edit{..} = case (editText, editStart, editEnd) of
-    (Nothing, Nothing, Nothing) ->
-        modifyAndView editId $ do
+cmdEdit :: Edit -> Storage [Entity Note]
+cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
+    ([editId], Nothing, Nothing, Nothing) ->
+        fmap (:[]) $ modifyAndView editId $ do
             assertNoteIsNative
             note_text_zoom $ do
                 text <- liftEither =<< gets RGA.getText
                 text' <- liftIO $ runExternalEditor text
                 RGA.editText text'
     _ ->
-        modifyAndView editId $ do
-            whenJust editText $ const assertNoteIsNative
-            checkStartEnd
-            update
+        for editIds $ \editId ->
+            modifyAndView editId $ do
+                whenJust editText $ const assertNoteIsNative
+                checkStartEnd
+                update
   where
     checkStartEnd = do
         start <- note_start_read
