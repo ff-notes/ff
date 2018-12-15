@@ -7,7 +7,7 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
-- CLI: allow multiple notes in subcommands `delete`, `done`.
+- CLI: allow multiple notes in subcommands `delete`, `done`, `postpone`.
 
 ## [0.8] - 2018-12-15
 ### Added

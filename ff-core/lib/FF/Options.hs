@@ -54,7 +54,7 @@ data CmdAction
     | CmdDone       [NoteId]
     | CmdEdit       Edit
     | CmdNew        New
-    | CmdPostpone   NoteId
+    | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdServe
     | CmdShow       NoteId
@@ -166,7 +166,7 @@ parseOptions h =
     cmdDone      = CmdDone      <$> some noteid
     cmdEdit      = CmdEdit      <$> edit
     cmdNew       = CmdNew       <$> new
-    cmdPostpone  = CmdPostpone  <$> noteid
+    cmdPostpone  = CmdPostpone  <$> some noteid
     cmdSearch    = CmdSearch    <$> search
     cmdServe     = pure CmdServe
     cmdShow      = CmdShow      <$> noteid

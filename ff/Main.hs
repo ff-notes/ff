@@ -138,9 +138,10 @@ runCmdAction h ui cmd brief = do
         CmdNew new -> do
             note <- cmdNewNote new today
             pprint $ withHeader "added:" $ UI.noteViewFull note
-        CmdPostpone noteId -> do
-            note <- cmdPostpone noteId
-            pprint $ withHeader "postponed:" $ UI.noteViewFull note
+        CmdPostpone notes ->
+            for_ notes $ \noteId -> do
+                note <- cmdPostpone noteId
+                pprint $ withHeader "postponed:" $ UI.noteViewFull note
         CmdSearch Search {..} -> do
             (notes, wiki, contacts) <- cmdSearch searchText searchLimit today
             pprint $ UI.prettyNotesWikiContacts
