@@ -8,27 +8,27 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
 
-module FF
-    ( cmdDeleteNote
-    , cmdDeleteContact
-    , cmdDone
-    , cmdEdit
-    , cmdNewNote
-    , cmdNewContact
-    , cmdPostpone
-    , cmdSearch
-    , cmdShow
-    , cmdUnarchive
-    , getContactSamples
-    , getNoteSamples
-    , getUtcToday
-    , getWikiSamples
-    , loadActiveNotes
-    , loadAll
-    , splitModes
-    , takeSamples
-    , updateTrackedNotes
-    ) where
+module FF (
+    cmdDeleteNote,
+    cmdDeleteContact,
+    cmdDone,
+    cmdEdit,
+    cmdNewNote,
+    cmdNewContact,
+    cmdPostpone,
+    cmdSearch,
+    cmdShow,
+    cmdUnarchive,
+    getContactSamples,
+    getNoteSamples,
+    getUtcToday,
+    getWikiSamples,
+    loadActiveNotes,
+    loadAll,
+    splitModes,
+    takeSamples,
+    updateTrackedNotes,
+) where
 
 import           Control.Arrow ((&&&))
 import           Control.Monad.Except (MonadError, liftEither, throwError)
