@@ -9,6 +9,7 @@ and this project adheres to
 ### Added
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
   `show`, `unarchive`.
+- Restored `ff-qt` -- experimental Qt GUI -- with minimal set of features.
 
 ### Changed
 - Show useful message when nothing to show.

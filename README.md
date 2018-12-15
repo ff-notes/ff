@@ -2,8 +2,6 @@
 
 A distributed note taker and task manager.
 
-[TOC]
-
 ## What's the big deal?
 
 1.  𝑓𝑓 synchronizes via any file sync application, like git, Yandex.Disk,
@@ -30,6 +28,14 @@ Feel free to open a ticket if you want to extend support.
     $ cd ff
     $ stack install ff
 
+## Install experimental GUI
+
+    $ stack install ff-qt
+
+You may need to install pre-requisites
+
+    # apt install qt5-default
+
 ### Completion for commands and options
 
 #### Ubuntu 18.04
@@ -47,11 +53,11 @@ Feel free to open a ticket if you want to extend support.
     $ ff --help
     Usage: ff ([COMMAND] | [-l|--limit ARG])
       A note taker and task tracker
-    
+
     Available options:
       -l,--limit ARG           limit
       -h,--help                Show this help text
-    
+
     Available commands:
       add                      add a new task or note
       agenda                   show what you can do right now [default action]

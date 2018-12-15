@@ -14,7 +14,8 @@ cache:
 addons:
   apt:
     packages:
-      - libgmp-dev
+      - libgmp-dev  # GHC
+      - qt5-default  # ff-qt
 
 before_install:
   # Download and unpack the stack executable
