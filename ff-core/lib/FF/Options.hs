@@ -2,20 +2,20 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.Options
-    ( Cmd (..)
-    , CmdAction (..)
-    , Config (..)
-    , Contact (..)
-    , DataDir (..)
-    , Edit (..)
-    , New (..)
-    , Options (..)
-    , Search (..)
-    , Shuffle (..)
-    , Track (..)
-    , parseOptions
-    ) where
+module FF.Options (
+    Cmd (..),
+    CmdAction (..),
+    Config (..),
+    Contact (..),
+    DataDir (..),
+    Edit (..),
+    New (..),
+    Options (..),
+    Search (..),
+    Shuffle (..),
+    Track (..),
+    parseOptions,
+) where
 
 import           Control.Applicative (optional, (<|>))
 import qualified Data.ByteString.Lazy.Char8 as BSLC
