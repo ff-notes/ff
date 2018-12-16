@@ -18,9 +18,9 @@ library:
     - filepath
     - github
     - hashable
-    - mainland-pretty
     - mtl
     - optparse-applicative
+    - prettyprinter
     - process
     - random
     - scotty
