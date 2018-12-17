@@ -15,7 +15,6 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
-import           Data.Proxy (Proxy (..))
 import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
@@ -23,8 +22,11 @@ import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
 import           Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import           Data.Time (Day)
 import           Data.Traversable (for)
+import           Data.Version (showVersion)
+import           Development.GitRev (gitDirty, gitHash)
 import           RON.Storage.IO (Storage, runStorage)
 import qualified RON.Storage.IO as Storage
+import qualified RON.UUID as UUID
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getCurrentDirectory,
                                    getHomeDirectory)
@@ -45,13 +47,11 @@ import           FF.Options (Cmd (..), CmdAction (..), Contact (..),
                              Shuffle (..), Track (..), parseOptions)
 import qualified FF.Options as Options
 import           FF.Serve (cmdServe)
-import           FF.Types (EntityF (..))
+import           FF.Types (Entity (..))
 import           FF.UI (sampleFmap, withHeader)
 import qualified FF.UI as UI
 import           FF.Upgrade (upgradeDatabase)
 
-import           Data.Version (showVersion)
-import           Development.GitRev (gitDirty, gitHash)
 import           Paths_ff (version)
 
 main :: IO ()
@@ -170,7 +170,7 @@ cmdTrack Track {..} today brief =
         samples <- run $ getOpenIssueSamples trackAddress trackLimit today
         pprint $
             UI.prettySamplesBySections brief $
-            fmap (sampleFmap $ EntityF Proxy) samples
+            fmap (sampleFmap $ Entity UUID.zero) samples
     else do
         notes <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTrackedNotes notes

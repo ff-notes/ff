@@ -23,7 +23,6 @@ import           Data.Aeson.TH (defaultOptions, deriveFromJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.ByteString.Lazy (ByteString)
 import           Data.Functor (($>))
-import           Data.Functor.Identity (Identity (Identity))
 import           Data.Hashable (Hashable)
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
@@ -181,17 +180,8 @@ type ModeMap = Map TaskMode
 
 type Limit = Natural
 
-data EntityF f a = EntityF{entityId :: f UUID, entityVal :: a}
-deriving instance (Eq a, Eq (f UUID)) => Eq (EntityF f a)
-deriving instance (Show a, Show (f UUID)) => Show (EntityF f a)
-
--- TODO(2018-10-26, cblp) remove redundant morphism, on `track --dry-run` show
--- temporary UUIDs.
-type Entity = EntityF Identity
-
-pattern Entity :: UUID -> a -> Entity a
-pattern Entity uuid a = EntityF (Identity uuid) a
-{-# COMPLETE Entity #-}
+data Entity a = Entity{entityId :: UUID, entityVal :: a}
+    deriving (Eq, Show)
 
 type EntitySample a = Sample (Entity a)
 
