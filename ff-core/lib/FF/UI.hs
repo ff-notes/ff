@@ -129,7 +129,7 @@ prettySample brief mode = \case
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView brief) sample_items
-            ++  [ toSeeAllLabel .= (cmdToSeeAll mode)
+            ++  [ toSeeAllLabel .= cmdToSeeAll mode
                 | count /= sample_total
                 ]
       where
