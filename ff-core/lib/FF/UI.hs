@@ -37,7 +37,10 @@ import           FF.Types (Contact (..), ContactSample, Entity, pattern Entity,
                            EntityF (..), ModeMap, Note (..), NoteSample,
                            Sample (..), TaskMode (..), Track (..), omitted)
 
-withHeader :: Pretty ann => Text -> Doc ann -> Doc ann
+(.=) :: Text -> Text -> Doc ann
+label .= value = hang indentation $ fillSep [pretty label, pretty value]
+
+withHeader :: Text -> Doc ann -> Doc ann
 withHeader header value = hang indentation $ vsep [pretty header, value]
 
 indentation :: Int
@@ -47,8 +50,7 @@ prettyUuid :: UUID -> Doc ann
 prettyUuid = pretty . TextL.decodeUtf8 . serializeUuid
 
 prettyNotesWikiContacts
-    :: Pretty ann
-    => Bool  -- ^ brief output
+    :: Bool  -- ^ brief output
     -> ModeMap NoteSample
     -> NoteSample
     -> ContactSample
@@ -70,21 +72,21 @@ prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
     ws = prettyWikiSamplesOmitted brief wiki
     cs = prettyContactSamplesOmitted brief contacts
 
-prettyContactSamplesOmitted :: Pretty ann => Bool -> ContactSample -> Doc ann
+prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc ann
 prettyContactSamplesOmitted brief samples = stack' brief $
     prettyContactSample True samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyContactSample :: Pretty ann => Bool -> ContactSample -> Doc ann
+prettyContactSample :: Bool -> ContactSample -> Doc ann
 prettyContactSample brief = \case
     Sample{sample_total = 0} -> "No contacts to show."
     Sample{sample_items} ->
         withHeader "Contacts:" . stack' brief $
         map ((star <>) . indent 1 . contactViewFull) sample_items
 
-prettyWikiSamplesOmitted :: Pretty ann => Bool -> NoteSample -> Doc ann
+prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc ann
 prettyWikiSamplesOmitted brief samples = stack' brief $
     prettyWikiSample brief samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
@@ -94,7 +96,7 @@ prettyWikiSamplesOmitted brief samples = stack' brief $
 prettyNotes :: Foldable f => Bool -> [EntityF f Note] -> Doc ann
 prettyNotes brief = stack' brief . map ((star <>) . indent 1 . noteView brief)
 
-prettyWikiSample :: Pretty ann => Bool -> NoteSample -> Doc ann
+prettyWikiSample :: Bool -> NoteSample -> Doc ann
 prettyWikiSample brief = \case
     Sample{sample_total = 0} -> "No wiki to show."
     Sample{sample_items} ->
@@ -106,7 +108,7 @@ noteView :: Foldable f => Bool -> EntityF f Note -> Doc ann
 noteView brief = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections
-    :: (Pretty ann, Foldable f)
+    :: Foldable f
     => Bool
     -> ModeMap (Sample (EntityF f Note))
     -> Doc ann
@@ -117,7 +119,7 @@ prettySamplesBySections brief samples = stack' brief
     numOmitted = sum $ fmap omitted samples
 
 prettySample
-    :: (Pretty ann, Foldable f)
+    :: Foldable f
     => Bool
     -> TaskMode
     -> Sample (EntityF f Note)
@@ -127,11 +129,12 @@ prettySample brief mode = \case
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView brief) sample_items
-            ++  [ cmdToSeeAll mode
+            ++  [ toSeeAllLabel .= (cmdToSeeAll mode)
                 | count /= sample_total
                 ]
       where
-        count = genericLength sample_items
+        toSeeAllLabel = "To see all " <> Text.pack (show sample_total) <> " task(s), run:"
+        count         = genericLength sample_items
   where
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"
@@ -159,7 +162,7 @@ noteViewBrief (EntityF fEntityId Note{..}) = fillSep [title, meta]
   where
     meta = foldMap (\i -> "| id" <+> prettyUuid i) fEntityId
     title
-        = vsep
+        = mconcat
         . map (fillSep . map pretty . Text.split isSpace)
         . take 1
         . Text.lines

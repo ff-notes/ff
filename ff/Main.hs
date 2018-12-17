@@ -18,6 +18,9 @@ import           Data.Functor (($>))
 import           Data.Proxy (Proxy (..))
 import           Data.Text (Text)
 import           Data.Text.IO (hPutStrLn)
+import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
+                                            PageWidth (..), layoutSmart)
+import           Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import           Data.Time (Day)
 import           Data.Traversable (for)
 import           RON.Storage.IO (Storage, runStorage)
@@ -29,9 +32,6 @@ import           System.Exit (exitFailure)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPutChar, hPutStr, stderr)
 import           System.Pager (printOrPage)
-import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
-                                            PageWidth (..), layoutSmart)
-import           Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
