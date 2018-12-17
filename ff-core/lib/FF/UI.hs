@@ -74,7 +74,7 @@ prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
 
 prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc ann
 prettyContactSamplesOmitted brief samples = stack' brief $
-    prettyContactSample True samples :
+    prettyContactSample brief samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
@@ -173,7 +173,7 @@ noteViewFull (EntityF fEntityId Note{..}) =
     sparsedStack [wrapLines $ Text.pack note_text, sep meta]
   where
     meta
-        = concat
+        = mconcat
             [ ["| id"    <+> prettyUuid eid | eid <- toList fEntityId]
             , ["| start" <+> viaShow @Day note_start]
             , ["| end"   <+> viaShow @Day e | Just e <- [note_end]]

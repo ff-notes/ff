@@ -16,7 +16,6 @@ import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
 import           Data.Proxy (Proxy (..))
-import           Data.Text (Text)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
                                             PageWidth (..), layoutSmart)
@@ -212,8 +211,9 @@ runCmdVersion = putStrLn $ concat
     , if $(gitDirty) then ", dirty" else ""
     ]
 
-pprint :: MonadIO io => Doc Text -> io ()
+pprint :: MonadIO io => Doc ann -> io ()
 pprint doc = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
     printOrPage . renderStrict
         $ layoutSmart (LayoutOptions (AvailablePerLine width 1)) doc
+    putStrLn ""
