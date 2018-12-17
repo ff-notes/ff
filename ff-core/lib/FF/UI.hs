@@ -87,7 +87,7 @@ prettyContactSamplesOmitted brief samples = stack' brief $
 
 prettyContactSample :: Bool -> ContactSample -> Doc
 prettyContactSample brief = \case
-    Sample{sample_total = 0} -> mempty
+    Sample{sample_total = 0} -> "No contacts to show"
     Sample{sample_items} ->
         withHeader "Contacts:" . stack' brief $
         map ((star <>) . indent 1 . contactViewFull) sample_items
@@ -104,7 +104,7 @@ prettyNotes brief = stack' brief . map ((star <>) . indent 1 . noteView brief)
 
 prettyWikiSample :: Bool -> NoteSample -> Doc
 prettyWikiSample brief = \case
-    Sample{sample_total = 0} -> mempty
+    Sample{sample_total = 0} -> "No wikis to show"
     Sample{sample_items} ->
         withHeader "Wiki notes:" .
         stack' brief $
@@ -123,7 +123,7 @@ prettySamplesBySections brief samples = stack' brief
 
 prettySample :: Foldable f => Bool -> TaskMode -> Sample (EntityF f Note) -> Doc
 prettySample brief mode = \case
-    Sample{sample_total = 0} -> mempty
+    Sample{sample_total = 0} -> "No notes to show"
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView brief) sample_items
