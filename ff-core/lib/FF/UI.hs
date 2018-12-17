@@ -26,9 +26,9 @@ import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy.Encoding as TextL
-import           Data.Text.Prettyprint.Doc (Doc, Pretty (..), annotate, fillSep,
-                                            hang, indent, sep, space, viaShow,
-                                            vsep, (<+>))
+import           Data.Text.Prettyprint.Doc (Doc, Pretty (..), fillSep, hang,
+                                            indent, sep, space, viaShow, vsep,
+                                            (<+>))
 import           Data.Time (Day)
 import           RON.Text.Serialize (serializeUuid)
 import           RON.Types (UUID)
@@ -37,24 +37,25 @@ import           FF.Types (Contact (..), ContactSample, Entity, pattern Entity,
                            EntityF (..), ModeMap, Note (..), NoteSample,
                            Sample (..), TaskMode (..), Track (..), omitted)
 
-withHeader :: Text -> Doc Text -> Doc Text
+withHeader :: Pretty ann => Text -> Doc ann -> Doc ann
 withHeader header value = hang indentation $ vsep [pretty header, value]
 
 indentation :: Int
 indentation = 2
 
-prettyUuid :: UUID -> Doc Text
+prettyUuid :: UUID -> Doc ann
 prettyUuid = pretty . TextL.decodeUtf8 . serializeUuid
 
 prettyNotesWikiContacts
-    :: Bool  -- ^ brief output
+    :: Pretty ann
+    => Bool  -- ^ brief output
     -> ModeMap NoteSample
     -> NoteSample
     -> ContactSample
     -> Bool  -- ^ search among tasks
     -> Bool  -- ^ search among wiki notes
     -> Bool  -- ^ search among contacts
-    -> Doc Text
+    -> Doc ann
 prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
     case (amongN, amongW, amongC) of
         (True,  False, False) -> ns
@@ -69,31 +70,31 @@ prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
     ws = prettyWikiSamplesOmitted brief wiki
     cs = prettyContactSamplesOmitted brief contacts
 
-prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc Text
-prettyContactSamplesOmitted _ samples = vsep $
+prettyContactSamplesOmitted :: Pretty ann => Bool -> ContactSample -> Doc ann
+prettyContactSamplesOmitted brief samples = stack' brief $
     prettyContactSample True samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyContactSample :: Bool -> ContactSample -> Doc Text
-prettyContactSample _ = \case
+prettyContactSample :: Pretty ann => Bool -> ContactSample -> Doc ann
+prettyContactSample brief = \case
     Sample{sample_total = 0} -> "No contacts to show."
     Sample{sample_items} ->
-        withHeader "Contacts:" . vsep $
+        withHeader "Contacts:" . stack' brief $
         map ((star <>) . indent 1 . contactViewFull) sample_items
 
-prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc Text
+prettyWikiSamplesOmitted :: Pretty ann => Bool -> NoteSample -> Doc ann
 prettyWikiSamplesOmitted brief samples = stack' brief $
     prettyWikiSample brief samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
 
-prettyNotes :: Foldable f => Bool -> [EntityF f Note] -> Doc Text
+prettyNotes :: Foldable f => Bool -> [EntityF f Note] -> Doc ann
 prettyNotes brief = stack' brief . map ((star <>) . indent 1 . noteView brief)
 
-prettyWikiSample :: Bool -> NoteSample -> Doc Text
+prettyWikiSample :: Pretty ann => Bool -> NoteSample -> Doc ann
 prettyWikiSample brief = \case
     Sample{sample_total = 0} -> "No wiki to show."
     Sample{sample_items} ->
@@ -101,29 +102,36 @@ prettyWikiSample brief = \case
         stack' brief $
         map ((star <>) . indent 1 . noteView brief) sample_items
 
-noteView :: Foldable f => Bool -> EntityF f Note -> Doc Text
+noteView :: Foldable f => Bool -> EntityF f Note -> Doc ann
 noteView brief = if brief then noteViewBrief else noteViewFull
 
 prettySamplesBySections
-    :: Foldable f  => Bool -> ModeMap (Sample (EntityF f Note)) -> Doc Text
+    :: (Pretty ann, Foldable f)
+    => Bool
+    -> ModeMap (Sample (EntityF f Note))
+    -> Doc ann
 prettySamplesBySections brief samples = stack' brief
     $   [prettySample brief mode sample | (mode, sample) <- Map.assocs samples]
     ++  [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: Foldable f => Bool -> TaskMode -> Sample (EntityF f Note) -> Doc Text
+prettySample
+    :: (Pretty ann, Foldable f)
+    => Bool
+    -> TaskMode
+    -> Sample (EntityF f Note)
+    -> Doc ann
 prettySample brief mode = \case
     Sample{sample_total = 0} -> "No notes to show."
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack' brief $
             map ((star <>) . indent 1 . noteView brief) sample_items
-            ++  [ annotate toSeeAllLabel (cmdToSeeAll mode)
+            ++  [ cmdToSeeAll mode
                 | count /= sample_total
                 ]
       where
-        toSeeAllLabel = "To see all " <> Text.pack (show sample_total) <> " task(s), run:"
-        count         = genericLength sample_items
+        count = genericLength sample_items
   where
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"
@@ -146,18 +154,18 @@ sampleLabel = \case
         1 -> "Starting tomorrow:"
         _ -> "Starting in " <> Text.pack (show n) <> " days:"
 
-noteViewBrief :: Foldable f => EntityF f Note -> Doc Text
+noteViewBrief :: Foldable f => EntityF f Note -> Doc ann
 noteViewBrief (EntityF fEntityId Note{..}) = fillSep [title, meta]
   where
     meta = foldMap (\i -> "| id" <+> prettyUuid i) fEntityId
     title
-        = fillSep
+        = vsep
         . map (fillSep . map pretty . Text.split isSpace)
         . take 1
         . Text.lines
         $ Text.pack note_text
 
-noteViewFull :: Foldable f => EntityF f Note -> Doc Text
+noteViewFull :: Foldable f => EntityF f Note -> Doc ann
 noteViewFull (EntityF fEntityId Note{..}) =
     sparsedStack [wrapLines $ Text.pack note_text, sep meta]
   where
@@ -171,20 +179,20 @@ noteViewFull (EntityF fEntityId Note{..}) =
             | Just Track{..} <- [note_track]
             ]
 
-contactViewFull :: Entity Contact -> Doc Text
+contactViewFull :: Entity Contact -> Doc ann
 contactViewFull (Entity entityId Contact{..}) =
     sep [pretty contact_name, meta]
   where
     meta = "| id" <+> prettyUuid entityId
 
-wrapLines :: Text -> Doc Text
+wrapLines :: Text -> Doc ann
 wrapLines =
     vsep . map (fillSep . map pretty . Text.split isSpace) . Text.splitOn "\n"
 
-sparsedStack :: [Doc Text] -> Doc Text
+sparsedStack :: [Doc ann] -> Doc ann
 sparsedStack = vsep . intersperse space
 
-stack' :: Bool -> [Doc Text] -> Doc Text
+stack' :: Bool -> [Doc ann] -> Doc ann
 stack' brief
     | brief     = vsep
     | otherwise = sparsedStack
