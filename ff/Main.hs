@@ -16,6 +16,7 @@ import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
 import           Data.Proxy (Proxy (..))
+import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
                                             PageWidth (..), layoutSmart)
@@ -214,6 +215,5 @@ runCmdVersion = putStrLn $ concat
 pprint :: MonadIO io => Doc ann -> io ()
 pprint doc = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
-    printOrPage . renderStrict
+    printOrPage . (`snoc` '\n') . renderStrict
         $ layoutSmart (LayoutOptions (AvailablePerLine width 1)) doc
-    putStrLn ""
