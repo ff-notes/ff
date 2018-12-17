@@ -16,9 +16,11 @@ import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
 import           Data.Proxy (Proxy (..))
+import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
-import           Data.Text.Lazy (toStrict)
-import qualified Data.Text.Lazy as Text
+import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
+                                            PageWidth (..), layoutSmart)
+import           Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
 import           Data.Time (Day)
 import           Data.Traversable (for)
 import           RON.Storage.IO (Storage, runStorage)
@@ -30,8 +32,6 @@ import           System.Exit (exitFailure)
 import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
 import           System.IO (hPutChar, hPutStr, stderr)
 import           System.Pager (printOrPage)
-import           Text.PrettyPrint.Mainland (prettyLazyText)
-import           Text.PrettyPrint.Mainland.Class (Pretty, ppr)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
@@ -212,7 +212,8 @@ runCmdVersion = putStrLn $ concat
     , if $(gitDirty) then ", dirty" else ""
     ]
 
-pprint :: (Pretty a, MonadIO io) => a -> io ()
-pprint a = liftIO $ do
+pprint :: MonadIO io => Doc ann -> io ()
+pprint doc = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
-    printOrPage . toStrict . (`Text.snoc` '\n') . prettyLazyText width $ ppr a
+    printOrPage . (`snoc` '\n') . renderStrict
+        $ layoutSmart (LayoutOptions (AvailablePerLine width 1)) doc

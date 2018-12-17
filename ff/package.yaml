@@ -17,9 +17,9 @@ dependencies:
   - extra
   - filepath
   - gitrev
-  - mainland-pretty
   - mtl
   - pager
+  - prettyprinter
   - stm
   - terminal-size
   - text

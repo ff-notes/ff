@@ -10,6 +10,9 @@ and this project adheres to
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
   `show`, `unarchive`.
 
+### Changed
+- Use modern prettyprinter.
+
 ## [0.8] - 2018-12-15
 ### Added
 - `ff show` command to show a specific note.
