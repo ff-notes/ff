@@ -11,6 +11,7 @@ and this project adheres to
   `show`, `unarchive`.
 
 ### Changed
+- Show useful message when nothing to show.
 - Use modern prettyprinter.
 
 ## [0.8] - 2018-12-15
