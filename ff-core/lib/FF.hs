@@ -20,6 +20,7 @@ module FF (
     cmdShow,
     cmdUnarchive,
     getContactSamples,
+    getDataDir,
     getNoteSamples,
     getUtcToday,
     getWikiSamples,
@@ -56,15 +57,18 @@ import           RON.Storage (Collection, DocId (..), Document (..),
                               loadDocument, modify)
 import           RON.Storage.IO (Storage)
 import           RON.Types (Object, objectId)
-import           System.Directory (findExecutable)
+import           System.Directory (doesDirectoryExist, findExecutable,
+                                   getCurrentDirectory)
 import           System.Environment (getEnv)
 import           System.Exit (ExitCode (..))
+import           System.FilePath (normalise, splitDirectories, (</>))
 import           System.IO (hClose)
 import           System.IO.Temp (withSystemTempFile)
 import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
 
-import           FF.Config (ConfigUI (..))
+import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
+                            shuffle)
 import           FF.Options (Edit (..), New (..))
 import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            Limit, ModeMap, Note (..), NoteId, NoteSample,
@@ -403,3 +407,25 @@ assertNoteIsNative = do
     tracking <- note_track_read
     whenJust tracking $ \_ ->
         throwError "Oh, no! It is tracked note. Not for modifying. Sorry :("
+
+getDataDir :: Config -> IO FilePath
+getDataDir cfg = do
+    cur <- getCurrentDirectory
+    mDataDirFromVcs <- findVcs $ parents cur
+    case mDataDirFromVcs of
+        Just dataDir -> pure dataDir
+        Nothing      -> checkDataDir cfg
+  where
+    parents = reverse . scanl1 (</>) . splitDirectories . normalise
+    findVcs []         = pure Nothing
+    findVcs (dir:dirs) = do
+        isDirVcs <- doesDirectoryExist (dir </> ".git")
+        if isDirVcs then
+            pure . Just $ dir </> ".ff"
+        else
+            findVcs dirs
+
+checkDataDir :: Monad m => Config -> m FilePath
+checkDataDir Config{dataDir} = case dataDir of
+    Just dir -> pure dir
+    Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"

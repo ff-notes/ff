@@ -28,17 +28,17 @@ import           RON.Storage.IO (Storage, runStorage)
 import qualified RON.Storage.IO as Storage
 import qualified RON.UUID as UUID
 import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, getCurrentDirectory,
-                                   getHomeDirectory)
+import           System.Directory (doesDirectoryExist, getHomeDirectory)
 import           System.Exit (exitFailure)
-import           System.FilePath (FilePath, normalise, splitDirectories, (</>))
+import           System.FilePath ((</>))
 import           System.IO (hPutChar, hPutStr, stderr)
 import           System.Pager (printOrPage)
 
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
-                     cmdUnarchive, getContactSamples, getNoteSamples,
-                     getUtcToday, getWikiSamples, updateTrackedNotes)
+                     cmdUnarchive, getContactSamples, getDataDir,
+                     getNoteSamples, getUtcToday, getWikiSamples,
+                     updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -65,23 +65,6 @@ main = do
         CmdConfig param  -> runCmdConfig cfg param
         CmdAction action -> runStorage h $ runCmdAction h ui action optionBrief
         CmdVersion       -> runCmdVersion
-
-getDataDir :: Config -> IO FilePath
-getDataDir cfg = do
-    cur <- getCurrentDirectory
-    mDataDirFromVcs <- findVcs $ parents cur
-    case mDataDirFromVcs of
-        Just dataDir -> pure dataDir
-        Nothing      -> checkDataDir cfg
-  where
-    parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findVcs []         = pure Nothing
-    findVcs (dir:dirs) = do
-        isDirVcs <- doesDirectoryExist (dir </> ".git")
-        if isDirVcs then
-            pure . Just $ dir </> ".ff"
-        else
-            findVcs dirs
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
@@ -111,11 +94,6 @@ runCmdConfig cfg@Config { dataDir, ui } = \case
     saveDataDir dir = saveConfig cfg { dataDir = Just dir } $> Just dir
     saveShuffle shuffle' = saveConfig cfg { ui = ui' } $> ui'
         where ui' = ConfigUI {shuffle = shuffle'}
-
-checkDataDir :: Monad m => Config -> m FilePath
-checkDataDir Config { dataDir } = case dataDir of
-    Just dir -> pure dir
-    Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
 
 runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Storage ()
 runCmdAction h ui cmd brief = do
