@@ -9,6 +9,7 @@ import           Data.Foldable (traverse_)
 import           Data.Time (Day, toGregorian)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           QAbstractButton (setText)
 import           QAbstractSpinBox (setReadOnly)
 import           QApplication (QApplication, new)
 import           QBoxLayout (addLayout, addStretch, addWidget, insertWidget)
@@ -26,14 +27,17 @@ import           QLayout (QLayoutConstPtr, count)
 import qualified QLayout
 import           QMainWindow (QMainWindow, new, restoreState, saveState,
                               setCentralWidget)
+import           QMenu (addNewAction)
+import qualified QMenu
 import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
 import           QTabWidget (QTabWidget, addTab, new)
-import           Qtah.Core (QtArrowType (DownArrow))
 import           Qtah.Event (onEvent)
 import           QToolBox (QToolBox, QToolBoxPtr, addItem, indexOf, new,
                            setItemText)
-import           QToolButton (QToolButton, setArrowType)
+import           QToolButton (QToolButton,
+                              QToolButtonToolButtonPopupMode (InstantPopup),
+                              setMenu, setPopupMode)
 import qualified QToolButton
 import           QVariant (newWithByteArray, toByteArray)
 import           QVBoxLayout (QVBoxLayout, newWithParent)
@@ -197,5 +201,10 @@ sectionSize layout = pred <$> count layout
 newTaskActionsButton :: IO QToolButton
 newTaskActionsButton = do
     this <- QToolButton.new
-    setArrowType this DownArrow
+    setText this "⋮"
+    setPopupMode this InstantPopup
+    setMenu this =<< do
+        menu <- QMenu.new
+        _ <- addNewAction menu "Postpone"
+        pure menu
     pure this

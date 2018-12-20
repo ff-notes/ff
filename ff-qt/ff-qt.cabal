@@ -56,6 +56,7 @@ library ff-qt-qtah
         Graphics.UI.Qtah.Widgets.QLayout              as QLayout,
         Graphics.UI.Qtah.Widgets.QLayoutItem          as QLayoutItem,
         Graphics.UI.Qtah.Widgets.QMainWindow          as QMainWindow,
+        Graphics.UI.Qtah.Widgets.QMenu                as QMenu,
         Graphics.UI.Qtah.Widgets.QPushButton          as QPushButton,
         Graphics.UI.Qtah.Widgets.QStyledItemDelegate  as QStyledItemDelegate,
         Graphics.UI.Qtah.Widgets.QTabWidget           as QTabWidget,
