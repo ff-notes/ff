@@ -41,8 +41,8 @@ import           RON.Storage.IO (runStorage)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
-import           FF (getUtcToday, loadActiveNotes)
-import           FF.Config (Config (Config, dataDir), loadConfig)
+import           FF (getDataDir, getUtcToday, loadActiveNotes)
+import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), TaskMode (Actual, EndSoon, EndToday, Overdue, Starting),
                            entityVal, note_end, note_start, note_text, taskMode)
 
@@ -61,8 +61,9 @@ taskMode' = \case
 
 main :: IO ()
 main = do
-    Config { dataDir = Just dataDir } <- loadConfig
-    h <- Storage.newHandle dataDir
+    cfg     <- loadConfig
+    dataDir <- getDataDir cfg
+    h       <- Storage.newHandle dataDir
     withApp $ \_ -> do
         setOrganizationDomain   "ff.cblp.su"
         setOrganizationName     "ff"
