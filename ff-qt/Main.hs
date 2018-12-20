@@ -29,9 +29,12 @@ import           QMainWindow (QMainWindow, new, restoreState, saveState,
 import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
 import           QTabWidget (QTabWidget, addTab, new)
+import           Qtah.Core (QtArrowType (DownArrow))
 import           Qtah.Event (onEvent)
 import           QToolBox (QToolBox, QToolBoxPtr, addItem, indexOf, new,
                            setItemText)
+import           QToolButton (QToolButton, setArrowType)
+import qualified QToolButton
 import           QVariant (newWithByteArray, toByteArray)
 import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
@@ -180,11 +183,19 @@ newNoteWidget Entity{entityVal = Note{note_text, note_start, note_end}} = do
         addLayout box =<< do
             fieldsBox <- QHBoxLayout.new
             addLayout fieldsBox =<< newDateWidget "Start:" note_start
-            whenJust note_end $ addLayout fieldsBox <=< newDateWidget "Deadline:"
+            whenJust note_end $
+                addLayout fieldsBox <=< newDateWidget "Deadline:"
             addStretch fieldsBox
+            addWidget fieldsBox =<< newTaskActionsButton
             pure fieldsBox
     pure this
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int
 sectionSize layout = pred <$> count layout
+
+newTaskActionsButton :: IO QToolButton
+newTaskActionsButton = do
+    this <- QToolButton.new
+    setArrowType this DownArrow
+    pure this
