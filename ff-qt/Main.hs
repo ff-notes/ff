@@ -48,17 +48,6 @@ import           FF.Types (Entity (Entity), Note (Note), TaskMode (Actual, EndSo
 
 import           Paths_ff_qt (version)
 
-data TaskMode' = Overdue' | EndToday' | EndSoon' | Actual' | Starting'
-    deriving (Eq, Ord)
-
-taskMode' :: TaskMode -> TaskMode'
-taskMode' = \case
-    Overdue  _ -> Overdue'
-    EndToday   -> EndToday'
-    EndSoon  _ -> EndSoon'
-    Actual     -> Actual'
-    Starting _ -> Starting'
-
 main :: IO ()
 main = do
     cfg     <- loadConfig
@@ -113,14 +102,14 @@ newMainWindow h = do
 addTab_ :: QWidgetPtr widget => QTabWidget -> String -> widget -> IO ()
 addTab_ tabs name widget = void $ addTab tabs widget name
 
-sectionLabel :: TaskMode' -> Int -> String
+sectionLabel :: TaskMode -> Int -> String
 sectionLabel mode n = let
     label = case mode of
-        Overdue'  -> "Overdue"
-        EndToday' -> "Due today"
-        EndSoon'  -> "Due soon"
-        Actual'   -> "Actual"
-        Starting' -> "Starting soon"
+        Overdue  _ -> "Overdue"
+        EndToday   -> "Due today"
+        EndSoon  _ -> "Due soon"
+        Actual     -> "Actual"
+        Starting _ -> "Starting soon"
     in concat [label, " (", show n, ")"]
 
 newAgendaWidget :: Storage.Handle -> IO QToolBox
@@ -130,21 +119,21 @@ newAgendaWidget h = do
         -- TODO set the first item as current
         pure False
     modeSections <- do
-        od <- newSection this Overdue'
-        et <- newSection this EndToday'
-        es <- newSection this EndSoon'
-        ac <- newSection this Actual'
-        st <- newSection this Starting'
+        od <- newSection this $ Overdue  undefined
+        et <- newSection this   EndToday
+        es <- newSection this $ EndSoon  undefined
+        ac <- newSection this   Actual
+        st <- newSection this $ Starting undefined
         pure $ \case
-            Overdue'  -> od
-            EndToday' -> et
-            EndSoon'  -> es
-            Actual'   -> ac
-            Starting' -> st
+            Overdue  _ -> od
+            EndToday   -> et
+            EndSoon  _ -> es
+            Actual     -> ac
+            Starting _ -> st
     runStorage h loadActiveNotes >>= traverse_ (addNote this modeSections)
     pure this
 
-newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode' -> IO QVBoxLayout
+newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
 newSection this section = do
     widget <- QWidget.new
     _      <- addItem this widget label
@@ -154,11 +143,11 @@ newSection this section = do
   where
     label = sectionLabel section 0
 
-addNote :: QToolBox -> (TaskMode' -> QVBoxLayout) -> Entity Note -> IO ()
+addNote :: QToolBox -> (TaskMode -> QVBoxLayout) -> Entity Note -> IO ()
 addNote this modeSections eNote@Entity{entityVal=note} = do
     today    <- getUtcToday
     noteItem <- newNoteWidget eNote
-    let mode    = taskMode' $ taskMode today note
+    let mode    = taskMode today note
     let section = modeSections mode
     noteCount <- sectionSize section
     insertWidget section noteCount noteItem
