@@ -6,6 +6,7 @@ module Main (main) where
 
 import           Control.Monad.Extra (void, whenJust, (<=<))
 import           Data.Foldable (traverse_)
+import           Data.Functor (($>))
 import           Data.Time (Day, toGregorian)
 import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
@@ -25,8 +26,8 @@ import           QHBoxLayout (QHBoxLayout, new)
 import           QLabel (newWithText)
 import           QLayout (QLayoutConstPtr, count)
 import qualified QLayout
-import           QMainWindow (QMainWindow, new, restoreState, saveState,
-                              setCentralWidget)
+import           QMainWindow (QMainWindow, QMainWindowPtr, new, restoreState,
+                              saveState, setCentralWidget)
 import           QMenu (addNewAction)
 import qualified QMenu
 import           QSettings (new, setValue, value)
@@ -81,30 +82,26 @@ newMainWindow h = do
         addTab_ tabs "Agenda" =<< newAgendaWidget h
         pure tabs
     setWindowTitle this "ff"
-
-    -- https://wiki.qt.io/Saving_Window_Size_State
-    void $ onEvent this $ \(_ :: QShowEvent) -> do
-        withScopedPtr QSettings.new $ \settings -> do
-            void
-                $   value settings "mainWindowGeometry"
-                >>= toByteArray
-                >>= restoreGeometry this
-            void
-                $   value settings "mainWindowState"
-                >>= toByteArray
-                >>= restoreState this
-        pure False
-    void $ onEvent this $ \(_ :: QCloseEvent) -> do
-        withScopedPtr QSettings.new $ \settings -> do
-            setValue settings "mainWindowGeometry"
-                =<< QVariant.newWithByteArray
-                =<< saveGeometry this
-            setValue settings "mainWindowState"
-                =<< QVariant.newWithByteArray
-                =<< saveState this
-        pure False
-
+    installWindowStateSaver this
     pure this
+
+-- | https://wiki.qt.io/Saving_Window_Size_State
+installWindowStateSaver :: QMainWindowPtr window => window -> IO ()
+installWindowStateSaver this = do
+    onEvent_ $ \(_ :: QShowEvent) ->
+        withScopedPtr QSettings.new $ \settings -> do
+            value' settings "mainWindowGeometry" >>= restoreGeometry_
+            value' settings "mainWindowState"    >>= restoreState_
+    onEvent_ $ \(_ :: QCloseEvent) ->
+        withScopedPtr QSettings.new $ \settings -> do
+            setValue' settings "mainWindowGeometry" =<< saveGeometry this
+            setValue' settings "mainWindowState"    =<< saveState this
+  where
+    onEvent_ handler = void $ onEvent this $ ($> False) . handler
+    restoreGeometry_ = void . restoreGeometry this
+    restoreState_    = void . restoreState    this
+    value'    settings key = value    settings key >>= toByteArray
+    setValue' settings key = setValue settings key <=< QVariant.newWithByteArray
 
 addTab_ :: QWidgetPtr widget => QTabWidget -> String -> widget -> IO ()
 addTab_ tabs name widget = void $ addTab tabs widget name
@@ -159,7 +156,7 @@ addNote this modeSections eNote@Entity{entityVal=note} = do
     noteCount <- sectionSize section
     insertWidget section noteCount noteItem
     sectionWidget <- QLayout.parentWidget section
-    sectionIndex <- indexOf this sectionWidget
+    sectionIndex  <- indexOf this sectionWidget
     setItemText this sectionIndex (sectionLabel mode $ noteCount + 1)
 
 newDateWidget :: String -> Day -> IO QHBoxLayout
@@ -168,8 +165,7 @@ newDateWidget label date = do
     addWidget box =<< QLabel.newWithText label
     addWidget box =<< do
         dateEdit <-
-            QDateEdit.newWithDate
-                =<< QDate.newWithYmd (fromInteger y) m d
+            QDateEdit.newWithDate =<< QDate.newWithYmd (fromInteger y) m d
         setCalendarPopup dateEdit True
         setReadOnly      dateEdit True
         pure dateEdit
