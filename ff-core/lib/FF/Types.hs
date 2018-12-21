@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -123,7 +124,7 @@ data Sample a = Sample
     { sample_items :: [a]
     , sample_total :: Natural
     }
-    deriving (Eq, Show)
+    deriving (Eq, Functor, Show)
 
 type ContactSample = EntitySample Contact
 

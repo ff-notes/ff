@@ -37,7 +37,7 @@ import           System.Pager (printOrPage)
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
                      cmdUnarchive, getContactSamples, getDataDir,
-                     getNoteSamples, getUtcToday, getWikiSamples,
+                     getTaskSamples, getUtcToday, getWikiSamples,
                      updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
@@ -48,8 +48,9 @@ import           FF.Options (Cmd (..), CmdAction (..), Contact (..),
 import qualified FF.Options as Options
 import           FF.Serve (cmdServe)
 import           FF.Types (Entity (..))
-import           FF.UI (sampleFmap, withHeader)
-import qualified FF.UI as UI
+import           FF.UI (prettyContact, prettyContactSample, prettyNote,
+                        prettyNoteList, prettyTaskSections,
+                        prettyTasksWikisContacts, prettyWikiSample, withHeader)
 import           FF.Upgrade (upgradeDatabase)
 
 import           Paths_ff (version)
@@ -96,59 +97,61 @@ runCmdConfig cfg@Config { dataDir, ui } = \case
         where ui' = ConfigUI {shuffle = shuffle'}
 
 runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Storage ()
-runCmdAction h ui cmd brief = do
+runCmdAction h ui cmd isBrief = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
-            notes <- getNoteSamples ui mlimit today
-            pprint $ UI.prettySamplesBySections brief notes
-        CmdContact contact -> cmdContact brief contact
+            notes <- getTaskSamples ui mlimit today
+            pprint $ prettyTaskSections isBrief notes
+        CmdContact contact -> cmdContact isBrief contact
         CmdDelete notes ->
             for_ notes $ \noteId -> do
                 note <- cmdDeleteNote noteId
-                pprint $ withHeader "deleted:" $ UI.noteViewFull note
+                pprint $ withHeader "deleted:" $ prettyNote isBrief note
         CmdDone notes ->
             for_ notes $ \noteId -> do
                 note <- cmdDone noteId
-                pprint $ withHeader "archived:" $ UI.noteViewFull note
+                pprint $ withHeader "archived:" $ prettyNote isBrief note
         CmdEdit edit -> do
             notes <- cmdEdit edit
-            pprint $ withHeader "edited:" $ UI.prettyNotes brief notes
+            pprint $ withHeader "edited:" $ prettyNoteList isBrief notes
         CmdNew new -> do
             note <- cmdNewNote new today
-            pprint $ withHeader "added:" $ UI.noteViewFull note
+            pprint $ withHeader "added:" $ prettyNote isBrief note
         CmdPostpone notes ->
             for_ notes $ \noteId -> do
                 note <- cmdPostpone noteId
-                pprint $ withHeader "postponed:" $ UI.noteViewFull note
+                pprint $ withHeader "postponed:" $ prettyNote isBrief note
         CmdSearch Search {..} -> do
-            (notes, wiki, contacts) <- cmdSearch searchText searchLimit today
-            pprint $ UI.prettyNotesWikiContacts
-                brief notes wiki contacts searchTasks searchWiki searchContacts
+            (tasks, wikis, contacts) <-
+                cmdSearch searchText ui searchLimit today
+            pprint $
+                prettyTasksWikisContacts
+                    isBrief
+                    tasks wikis contacts
+                    searchTasks searchWiki searchContacts
         CmdServe -> cmdServe h ui
         CmdShow noteIds -> do
             notes <- for noteIds cmdShow
-            pprint $ UI.prettyNotes brief notes
+            pprint $ prettyNoteList isBrief notes
         CmdTrack track ->
-            cmdTrack track today brief
-        CmdUnarchive notes ->
-            for_ notes $ \noteId -> do
-                note <- cmdUnarchive noteId
-                pprint . withHeader "unarchived:" $ UI.noteViewFull note
+            cmdTrack track today isBrief
+        CmdUnarchive tasks ->
+            for_ tasks $ \taskId -> do
+                task <- cmdUnarchive taskId
+                pprint . withHeader "unarchived:" $ prettyNote isBrief task
         CmdUpgrade -> do
             upgradeDatabase
             liftIO $ putStrLn "upgraded"
         CmdWiki mlimit -> do
-            notes <- getWikiSamples ui mlimit today
-            pprint $ UI.prettyWikiSamplesOmitted brief notes
+            wikis <- getWikiSamples ui mlimit today
+            pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: Track -> Day -> Bool -> Storage ()
-cmdTrack Track {..} today brief =
+cmdTrack Track {..} today isBrief =
     if trackDryrun then liftIO $ do
         samples <- run $ getOpenIssueSamples trackAddress trackLimit today
-        pprint $
-            UI.prettySamplesBySections brief $
-            fmap (sampleFmap $ Entity UUID.zero) samples
+        pprint $ prettyTaskSections isBrief $ (Entity UUID.zero <$>) <$> samples
     else do
         notes <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTrackedNotes notes
@@ -170,18 +173,18 @@ cmdTrack Track {..} today brief =
             Right issues -> pure issues
 
 cmdContact :: Bool -> Maybe Contact -> Storage ()
-cmdContact brief = \case
+cmdContact isBrief = \case
     Just (Add name) -> do
         contact <- cmdNewContact name
-        pprint $ withHeader "added:" $ UI.contactViewFull contact
+        pprint $ withHeader "added:" $ prettyContact isBrief contact
     Just (Delete cid) -> do
         contact <- cmdDeleteContact cid
-        pprint $ withHeader "deleted:" $ UI.contactViewFull contact
+        pprint $ withHeader "deleted:" $ prettyContact isBrief contact
     Nothing -> do
         contacts <- getContactSamples
-        pprint $ UI.prettyContactSamplesOmitted brief contacts
+        pprint $ prettyContactSample isBrief contacts
 
--- Template taken from stack:
+-- | Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdVersion :: IO ()
 runCmdVersion = putStrLn $ concat

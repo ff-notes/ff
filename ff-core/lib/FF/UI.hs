@@ -6,14 +6,13 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.UI (
-    contactViewFull,
-    noteViewFull,
-    prettyContactSamplesOmitted,
-    prettyNotes,
-    prettyNotesWikiContacts,
-    prettySamplesBySections,
-    prettyWikiSamplesOmitted,
-    sampleFmap,
+    prettyContact,
+    prettyContactSample,
+    prettyNote,
+    prettyNoteList,
+    prettyTaskSections,
+    prettyTasksWikisContacts,
+    prettyWikiSample,
     sampleLabel,
     withHeader,
 ) where
@@ -34,11 +33,8 @@ import           RON.Types (UUID)
 import qualified RON.UUID as UUID
 
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
-                           Note (..), NoteSample, Sample (..), TaskMode (..),
-                           Track (..), omitted)
-
-(.=) :: Text -> Text -> Doc ann
-label .= value = hang indentation $ fillSep [pretty label, pretty value]
+                           Note (..), NoteSample, NoteStatus (Wiki),
+                           Sample (..), TaskMode (..), Track (..), omitted)
 
 withHeader :: Text -> Doc ann -> Doc ann
 withHeader header value = hang indentation $ vsep [pretty header, value]
@@ -49,82 +45,115 @@ indentation = 2
 prettyUuid :: UUID -> Doc ann
 prettyUuid = pretty . TextL.decodeUtf8 . serializeUuid
 
-prettyNotesWikiContacts
-    :: Bool  -- ^ brief output
-    -> ModeMap NoteSample
-    -> NoteSample
-    -> ContactSample
-    -> Bool  -- ^ search among tasks
-    -> Bool  -- ^ search among wiki notes
-    -> Bool  -- ^ search among contacts
+prettyTasksWikisContacts
+    :: Bool                 -- ^ is output brief
+    -> ModeMap NoteSample   -- ^ tasks
+    -> NoteSample           -- ^ wikis
+    -> ContactSample        -- ^ contacts
+    -> Bool                 -- ^ does search involve tasks
+    -> Bool                 -- ^ does search involve wikis
+    -> Bool                 -- ^ does search involve contacts
     -> Doc ann
-prettyNotesWikiContacts brief notes wiki contacts amongN amongW amongC =
-    case (amongN, amongW, amongC) of
-        (True,  False, False) -> ns
+prettyTasksWikisContacts
+        isBrief tasks wiki contacts involveTasks involveWikis involveContacts =
+    case (involveTasks, involveWikis, involveContacts) of
+        (True,  False, False) -> ts
         (False, True,  False) -> ws
         (False, False, True ) -> cs
-        (True,  True,  False) -> vsep [ns, ws]
+        (True,  True,  False) -> vsep [ts, ws]
         (False, True,  True ) -> vsep [ws, cs]
-        (True,  False, True ) -> vsep [ns, cs]
-        (_,     _,     _    ) -> vsep [ns, ws, cs]
+        (True,  False, True ) -> vsep [ts, cs]
+        (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ns = prettySamplesBySections brief notes
-    ws = prettyWikiSamplesOmitted brief wiki
-    cs = prettyContactSamplesOmitted brief contacts
-
-prettyContactSamplesOmitted :: Bool -> ContactSample -> Doc ann
-prettyContactSamplesOmitted brief samples = stack' brief $
-    prettyContactSample brief samples :
-    [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
-  where
-    numOmitted = omitted samples
+    ts = prettyTaskSections isBrief tasks
+    ws = prettyWikiSample        isBrief wiki
+    cs = prettyContactSample     isBrief contacts
 
 prettyContactSample :: Bool -> ContactSample -> Doc ann
-prettyContactSample brief = \case
-    Sample{sample_total = 0} -> "No contacts to show"
-    Sample{sample_items} ->
-        withHeader "Contacts:" . stack' brief $
-        map ((star <>) . indent 1 . contactViewFull) sample_items
-
-prettyWikiSamplesOmitted :: Bool -> NoteSample -> Doc ann
-prettyWikiSamplesOmitted brief samples = stack' brief $
-    prettyWikiSample brief samples :
+prettyContactSample isBrief samples = stack isBrief $
+    prettyContactSample' samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = omitted samples
-
-prettyNotes :: Bool -> [Entity Note] -> Doc ann
-prettyNotes brief = stack' brief . map ((star <>) . indent 1 . noteView brief)
+    prettyContactSample' = \case
+        Sample{sample_total = 0} -> "No contacts to show"
+        Sample{sample_items} ->
+            withHeader "Contacts:" . stack isBrief $
+            map ((star <>) . indent 1 . prettyContact isBrief) sample_items
 
 prettyWikiSample :: Bool -> NoteSample -> Doc ann
-prettyWikiSample brief = \case
-    Sample{sample_total = 0} -> "No wikis to show"
-    Sample{sample_items} ->
-        withHeader "Wiki notes:" .
-        stack' brief $
-        map ((star <>) . indent 1 . noteView brief) sample_items
+prettyWikiSample isBrief samples = stack isBrief $
+    prettyWikiSample' samples :
+    [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
+  where
+    numOmitted = omitted samples
+    prettyWikiSample' = \case
+        Sample{sample_total = 0} -> "No wikis to show"
+        Sample{sample_items} ->
+            withHeader "Wiki:" .
+            stack isBrief $
+            map ((star <>) . indent 1 . prettyNote isBrief) sample_items
 
-noteView :: Bool -> Entity Note -> Doc ann
-noteView brief = if brief then noteViewBrief else noteViewFull
+prettyNoteList :: Bool -> [Entity Note] -> Doc ann
+prettyNoteList isBrief =
+    stack isBrief . map ((star <>) . indent 1 . prettyNote isBrief)
 
-prettySamplesBySections :: Bool -> ModeMap (Sample (Entity Note)) -> Doc ann
-prettySamplesBySections brief samples = stack' brief
-    $   [prettySample brief mode sample | (mode, sample) <- Map.assocs samples]
+-- | For both tasks and wikis
+prettyNote
+    :: Bool  -- ^ is brief
+    -> Entity Note
+    -> Doc ann
+prettyNote isBrief (Entity entityId Note{..}) = case isBrief of
+    True -> fillSep [title note_text, meta] where
+        meta = "| id" <+> prettyUuid entityId
+    False -> sparsedStack [wrapLines $ Text.pack note_text, sep meta] where
+        meta
+            = mconcat
+                [   [ "| id"    <+> prettyUuid entityId
+                    | entityId /= UUID.zero
+                    ]
+                ,   [ "| start" <+> viaShow @Day note_start
+                    | note_status /= Wiki
+                    ]
+                ,   [ "| end"   <+> viaShow @Day end
+                    | note_status /= Wiki
+                    , Just end <- [note_end]
+                    ]
+                ]
+            ++  [ "| tracking" <+> pretty track_url
+                | Just Track{..} <- [note_track]
+                ]
+
+title :: String -> Doc ann
+title
+    = mconcat
+    . map (fillSep . map pretty . Text.split isSpace)
+    . take 1
+    . Text.lines
+    . Text.pack
+
+prettyTaskSections :: Bool -> ModeMap (Sample (Entity Note)) -> Doc ann
+prettyTaskSections isBrief samples = stack isBrief
+    $   [ prettyTaskSample isBrief mode sample
+        | (mode, sample) <- Map.assocs samples
+        ]
     ++  [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
-prettySample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc ann
-prettySample brief mode = \case
+prettyTaskSample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc ann
+prettyTaskSample isBrief mode = \case
     Sample{sample_total = 0} -> "No notes to show"
     Sample{sample_total, sample_items} ->
-        withHeader (sampleLabel mode) . stack' brief $
-            map ((star <>) . indent 1 . noteView brief) sample_items
-            ++  [ toSeeAllLabel .= cmdToSeeAll mode
+        withHeader (sampleLabel mode) . stack isBrief $
+            map ((star <>) . indent 1 . prettyNote isBrief) sample_items
+            ++  [ hang indentation $
+                    fillSep [pretty toSeeAllLabel, cmdToSeeAll mode]
                 | count /= sample_total
                 ]
       where
-        toSeeAllLabel = "To see all " <> Text.pack (show sample_total) <> " task(s), run:"
+        toSeeAllLabel =
+            "To see all " <> Text.pack (show sample_total) <> " task(s), run:"
         count         = genericLength sample_items
   where
     cmdToSeeAll = \case
@@ -148,33 +177,8 @@ sampleLabel = \case
         1 -> "Starting tomorrow:"
         _ -> "Starting in " <> Text.pack (show n) <> " days:"
 
-noteViewBrief :: Entity Note -> Doc ann
-noteViewBrief (Entity entityId Note{..}) = fillSep [title, meta]
-  where
-    meta = "| id" <+> prettyUuid entityId
-    title
-        = mconcat
-        . map (fillSep . map pretty . Text.split isSpace)
-        . take 1
-        . Text.lines
-        $ Text.pack note_text
-
-noteViewFull :: Entity Note -> Doc ann
-noteViewFull (Entity entityId Note{..}) =
-    sparsedStack [wrapLines $ Text.pack note_text, sep meta]
-  where
-    meta
-        = mconcat
-            [ ["| id"    <+> prettyUuid entityId | entityId /= UUID.zero]
-            , ["| start" <+> viaShow @Day note_start]
-            , ["| end"   <+> viaShow @Day e | Just e <- [note_end]]
-            ]
-        ++  [ "| tracking" <+> pretty track_url
-            | Just Track{..} <- [note_track]
-            ]
-
-contactViewFull :: Entity Contact -> Doc ann
-contactViewFull (Entity entityId Contact{..}) =
+prettyContact :: Bool -> Entity Contact -> Doc ann
+prettyContact _isBrief (Entity entityId Contact{..}) =
     sep [pretty contact_name, meta]
   where
     meta = "| id" <+> prettyUuid entityId
@@ -186,14 +190,13 @@ wrapLines =
 sparsedStack :: [Doc ann] -> Doc ann
 sparsedStack = vsep . intersperse space
 
-stack' :: Bool -> [Doc ann] -> Doc ann
-stack' brief
-    | brief     = vsep
-    | otherwise = sparsedStack
-
-sampleFmap :: (a -> b) -> Sample a -> Sample b
-sampleFmap f sample@Sample{sample_items} =
-    sample{sample_items = map f sample_items}
+stack
+    :: Bool  -- ^ is brief
+    -> [Doc ann]
+    -> Doc ann
+stack = \case
+    True  -> vsep
+    False -> sparsedStack
 
 star :: Doc ann
 star = "*"

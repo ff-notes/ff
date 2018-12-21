@@ -5,9 +5,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.Serve
-    ( cmdServe
-    ) where
+module FF.Serve (
+    cmdServe,
+) where
 
 import           Prelude hiding (div, span)
 
@@ -31,7 +31,7 @@ import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
 import           Text.Blaze.Html5.Attributes (class_, href)
 import           Web.Scotty (get, html, scottyOpts, settings, verbose)
 
-import           FF (getNoteSamples, getUtcToday)
+import           FF (getTaskSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
 import           FF.Types (pattern Entity, ModeMap, Note (..), NoteSample,
                            Sample (..), TaskMode (..), Track (..), omitted)
@@ -42,7 +42,7 @@ cmdServe h ui = liftIO $ do
     hPutStrLn stderr "serving at http://localhost:3000/"
     scottyOpts opts $ get "/" $ do
         today <- getUtcToday
-        nvs <- liftIO $ runStorage h $ getNoteSamples ui Nothing today
+        nvs <- liftIO $ runStorage h $ getTaskSamples ui Nothing today
         html $ renderHtml $ do
             style ".metaItem { color: #ccc; }"
             prettyHtmlSamplesBySections nvs

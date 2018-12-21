@@ -36,7 +36,7 @@ import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
-import           FF (cmdNewNote, getNoteSamples)
+import           FF (cmdNewNote, getTaskSamples)
 import           FF.Config (ConfigUI (..))
 import qualified FF.Github as Github
 import           FF.Options (New (..))
@@ -56,7 +56,7 @@ prop_not_exist = property $ do
     (agenda, fs') <-
         either fail pure $
         runStorageSim fs $
-        getNoteSamples ui agendaLimit today
+        getTaskSamples ui agendaLimit today
     Map.empty === agenda
     fs === fs'
   where
@@ -67,7 +67,7 @@ prop_smoke = property $ do
     (agenda', fs') <-
         either fail pure $
         runStorageSim fs123 $
-        getNoteSamples ui agendaLimit today
+        getTaskSamples ui agendaLimit today
     agenda === agenda'
     fs123  === fs'
   where

@@ -21,10 +21,10 @@ module FF (
     cmdUnarchive,
     getContactSamples,
     getDataDir,
-    getNoteSamples,
+    getTaskSamples,
     getUtcToday,
     getWikiSamples,
-    loadActiveNotes,
+    loadActiveTasks,
     loadAll,
     splitModes,
     takeSamples,
@@ -103,35 +103,35 @@ getContactSamplesWith predicate = do
     pure . (\ys -> Sample ys $ genericLength ys) $
         filter (predicate . Text.pack . contact_name . entityVal) activeContacts
 
-loadActiveNotes :: MonadStorage m => m [Entity Note]
-loadActiveNotes =
+loadActiveTasks :: MonadStorage m => m [Entity Note]
+loadActiveTasks =
     filter ((TaskStatus Active ==) . note_status . entityVal) <$> loadAll
 
-loadWikiNotes :: MonadStorage m => m [Entity Note]
-loadWikiNotes = filter ((Wiki ==) . note_status . entityVal) <$> loadAll
+loadWikis :: MonadStorage m => m [Entity Note]
+loadWikis = filter ((Wiki ==) . note_status . entityVal) <$> loadAll
 
-getNoteSamples
+getTaskSamples
     :: MonadStorage m
     => ConfigUI
     -> Maybe Limit
     -> Day  -- ^ today
     -> m (ModeMap NoteSample)
-getNoteSamples = getNoteSamplesWith $ const True
+getTaskSamples = getTaskSamplesWith $ const True
 
-getNoteSamplesWith
+getTaskSamplesWith
     :: MonadStorage m
     => (Text -> Bool)  -- ^ predicate to filter notes by text
     -> ConfigUI
     -> Maybe Limit
     -> Day             -- ^ today
     -> m (ModeMap NoteSample)
-getNoteSamplesWith predicate ConfigUI{shuffle} limit today = do
-    activeNotes <- loadActiveNotes
+getTaskSamplesWith predicate ConfigUI{shuffle} limit today = do
+    activeTasks <- loadActiveTasks
     pure .
         takeSamples limit .
         shuffleOrSort .
         splitModesBy entityVal today $
-        filter (predicate . Text.pack . note_text . entityVal) activeNotes
+        filter (predicate . Text.pack . note_text . entityVal) activeTasks
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
     shuffleOrSort
@@ -151,19 +151,18 @@ getWikiSamples = getWikiSamplesWith $ const True
 
 getWikiSamplesWith
     :: MonadStorage m
-    => (Text -> Bool)  -- ^ predicate to filter notes by text
+    => (Text -> Bool)  -- ^ predicate to filter tasks by text
     -> ConfigUI
     -> Maybe Limit
     -> Day             -- ^ today
     -> m NoteSample
 getWikiSamplesWith predicate ConfigUI{shuffle} limit today = do
-    wikiNotes <- loadWikiNotes
-    let filteredNotes =
-            filter (predicate . Text.pack . note_text . entityVal) wikiNotes
-    let wikis = case limit of
-            Nothing -> filteredNotes
-            Just l -> take (fromIntegral l) filteredNotes
-    pure . toSample $ shuffleOrSort wikis
+    wikis0 <- loadWikis
+    let wikis1 = filter (predicate . Text.pack . note_text . entityVal) wikis0
+    let wikis2 = case limit of
+            Nothing -> wikis1
+            Just l -> take (fromIntegral l) wikis1
+    pure . toSample $ shuffleOrSort wikis2
   where
     toSample ys = Sample ys $ genericLength ys
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
@@ -172,7 +171,7 @@ getWikiSamplesWith predicate ConfigUI{shuffle} limit today = do
         | otherwise =
             -- in sorting by entityId no business-logic is involved,
             -- it's just for determinism
-            sortOn $ note_start . entityVal &&& entityId
+            sortOn entityId
 
 shuffleItems :: StdGen -> [b] -> [b]
 shuffleItems gen = (`evalState` gen) . shuf
@@ -189,9 +188,8 @@ shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
         pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
 
 splitModesBy :: (note -> Note) -> Day -> [note] -> ModeMap [note]
-splitModesBy f today = Map.unionsWith (++) . map singleton
-  where
-    singleton note = Map.singleton (taskMode today $ f note) [note]
+splitModesBy f today = Map.unionsWith (++) . map singleton where
+    singleton task = Map.singleton (taskMode today $ f task) [task]
 
 splitModes :: Day -> [Note] -> ModeMap [Note]
 splitModes = splitModesBy id
@@ -248,7 +246,7 @@ cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
     (note_status, note_end, note_start) <-
         if newWiki then case newEnd of
             Nothing -> pure (Wiki, Nothing, today)
-            Just _  -> throwError "Wiki note has no end date."
+            Just _  -> throwError "A wiki must have no end date."
         else pure (TaskStatus Active, newEnd, newStart')
     let note = Note
             { note_end
@@ -276,17 +274,18 @@ cmdDeleteContact cid = modifyAndView cid $ do
 
 cmdSearch
     :: Text  -- ^ query
+    -> ConfigUI
     -> Maybe Limit
     -> Day  -- ^ today
     -> Storage (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr limit today = do
-    notes <- getNoteSamplesWith predicate ui limit today
-    wiki <- getWikiSamplesWith predicate ui limit today
-    contact_s <- getContactSamplesWith predicate
-    pure (notes, wiki, contact_s)
+cmdSearch substr ui limit today = do
+    -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
+    tasks    <- getTaskSamplesWith    predicate ui limit today
+    wikis    <- getWikiSamplesWith    predicate ui limit today
+    contacts <- getContactSamplesWith predicate
+    pure (tasks, wikis, contacts)
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
-    ui = ConfigUI {shuffle = False}
 
 cmdShow :: NoteId -> Storage (Entity Note)
 cmdShow nid = do
@@ -344,8 +343,8 @@ cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _ -> throwError "Wiki dates are immutable"
             _ -> pure (editStart, editEnd)
-        whenJust end $ \d -> note_end_assign d
-        whenJust start $ \d -> note_start_assign d
+        whenJust end      $ \d -> note_end_assign   d
+        whenJust start    $ \d -> note_start_assign d
         whenJust editText $ \t -> note_text_zoom $ RGA.editText t
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
@@ -406,7 +405,7 @@ assertNoteIsNative = do
     -- `some`
     tracking <- note_track_read
     whenJust tracking $ \_ ->
-        throwError "Oh, no! It is tracked note. Not for modifying. Sorry :("
+        throwError "A tracked note must be modified in its source."
 
 getDataDir :: Config -> IO FilePath
 getDataDir cfg = do

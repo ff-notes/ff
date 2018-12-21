@@ -49,7 +49,7 @@ import           RON.Storage.IO (runStorage)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
-import           FF (getDataDir, getUtcToday, loadActiveNotes)
+import           FF (getDataDir, getUtcToday, loadActiveTasks)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), TaskMode (Actual, EndSoon, EndToday, Overdue, Starting),
                            entityVal, note_end, note_start, note_text, taskMode)
@@ -134,7 +134,7 @@ newAgendaWidget h = do
             EndSoon  _ -> es
             Actual     -> ac
             Starting _ -> st
-    runStorage h loadActiveNotes >>= traverse_ (addNote this modeSections)
+    runStorage h loadActiveTasks >>= traverse_ (addNote this modeSections)
     pure this
 
 newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
