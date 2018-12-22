@@ -7,10 +7,9 @@ module FF.Upgrade (upgradeDatabase) where
 
 import           Data.Foldable (for_)
 import           RON.Event (getEventUuid)
-import           RON.Storage (Collection, DocId (DocId), MonadStorage,
-                              changeDocId, decodeDocId, getCollections,
+import           RON.Storage (Collection, DocId, MonadStorage, changeDocId,
+                              decodeDocId, docIdFromUuid, getCollections,
                               getDocuments, modify)
-import qualified RON.UUID as UUID
 
 import           FF.Types (Note)
 
@@ -34,10 +33,10 @@ upgradeDocId docid = do
     case mu of
         Just (True, _) -> pure docid
         Just (False, uuid) -> do
-            let docid' = DocId $ UUID.encodeBase32 uuid
+            let docid' = docIdFromUuid uuid
             changeDocId docid docid'
             pure docid'
         Nothing -> do
-            docid' <- DocId . UUID.encodeBase32 <$> getEventUuid
+            docid' <- docIdFromUuid <$> getEventUuid
             changeDocId docid docid'
             pure docid'

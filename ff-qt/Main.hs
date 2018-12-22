@@ -12,6 +12,7 @@ import           Data.Version (showVersion)
 import           Foreign.Hoppy.Runtime (withScopedPtr)
 import           QAbstractButton (setText)
 import           QAbstractSpinBox (setReadOnly)
+import           QAction (triggeredSignal)
 import           QApplication (QApplication, new)
 import           QBoxLayout (addLayout, addStretch, addWidget, insertWidget)
 import           QCloseEvent (QCloseEvent)
@@ -28,12 +29,14 @@ import           QLayout (QLayoutConstPtr, count)
 import qualified QLayout
 import           QMainWindow (QMainWindow, QMainWindowPtr, new, restoreState,
                               saveState, setCentralWidget)
-import           QMenu (addNewAction)
+import           QMenu (QMenu, addNewAction)
 import qualified QMenu
 import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
+import           QString (QStringValue)
 import           QTabWidget (QTabWidget, addTab, new)
 import           Qtah.Event (onEvent)
+import           Qtah.Signal (connect_)
 import           QToolBox (QToolBox, QToolBoxPtr, addItem, indexOf, new,
                            setItemText)
 import           QToolButton (QToolButton,
@@ -45,14 +48,15 @@ import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
                           setWindowTitle)
 import qualified QWidget
-import           RON.Storage.IO (runStorage)
+import           RON.Storage.IO (docIdFromUuid, runStorage)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
 import           FF (getDataDir, getUtcToday, loadActiveTasks)
 import           FF.Config (loadConfig)
-import           FF.Types (Entity (Entity), Note (Note), TaskMode (Actual, EndSoon, EndToday, Overdue, Starting),
-                           entityVal, note_end, note_start, note_text, taskMode)
+import           FF.Types (Entity (Entity), Note (Note), NoteId, TaskMode (Actual, EndSoon, EndToday, Overdue, Starting),
+                           entityId, entityVal, note_end, note_start, note_text,
+                           taskMode)
 
 import           Paths_ff_qt (version)
 
@@ -134,7 +138,7 @@ newAgendaWidget h = do
             EndSoon  _ -> es
             Actual     -> ac
             Starting _ -> st
-    runStorage h loadActiveTasks >>= traverse_ (addNote this modeSections)
+    runStorage h loadActiveTasks >>= traverse_ (addTask this modeSections)
     pure this
 
 newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
@@ -147,17 +151,17 @@ newSection this section = do
   where
     label = sectionLabel section 0
 
-addNote :: QToolBox -> (TaskMode -> QVBoxLayout) -> Entity Note -> IO ()
-addNote this modeSections eNote@Entity{entityVal=note} = do
+addTask :: QToolBox -> (TaskMode -> QVBoxLayout) -> Entity Note -> IO ()
+addTask this modeSections eTask@Entity{entityVal=task} = do
     today    <- getUtcToday
-    noteItem <- newNoteWidget eNote
-    let mode    = taskMode today note
+    taskItem <- newTaskWidget eTask
+    let mode    = taskMode today task
     let section = modeSections mode
-    noteCount <- sectionSize section
-    insertWidget section noteCount noteItem
+    taskCount <- sectionSize section
+    insertWidget section taskCount taskItem
     sectionWidget <- QLayout.parentWidget section
     sectionIndex  <- indexOf this sectionWidget
-    setItemText this sectionIndex (sectionLabel mode $ noteCount + 1)
+    setItemText this sectionIndex (sectionLabel mode $ taskCount + 1)
 
 newDateWidget :: String -> Day -> IO QHBoxLayout
 newDateWidget label date = do
@@ -173,11 +177,11 @@ newDateWidget label date = do
   where
     (y, m, d) = toGregorian date
 
-newNoteWidget :: Entity Note -> IO QFrame
-newNoteWidget Entity{entityVal = Note{note_text, note_start, note_end}} = do
+newTaskWidget :: Entity Note -> IO QFrame
+newTaskWidget Entity{entityId, entityVal} = do
     this <- QFrame.new
     setFrameShape this StyledPanel
-    do
+    do  -- box
         box <- QVBoxLayout.newWithParent this
         addWidget box =<< QLabel.newWithText note_text
         addLayout box =<< do
@@ -186,21 +190,29 @@ newNoteWidget Entity{entityVal = Note{note_text, note_start, note_end}} = do
             whenJust note_end $
                 addLayout fieldsBox <=< newDateWidget "Deadline:"
             addStretch fieldsBox
-            addWidget fieldsBox =<< newTaskActionsButton
+            addWidget fieldsBox =<< newTaskActionsButton taskId
             pure fieldsBox
     pure this
+  where
+    Note{note_text, note_start, note_end} = entityVal
+    taskId = docIdFromUuid entityId
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int
 sectionSize layout = pred <$> count layout
 
-newTaskActionsButton :: IO QToolButton
-newTaskActionsButton = do
+newTaskActionsButton :: NoteId -> IO QToolButton
+newTaskActionsButton taskId = do
     this <- QToolButton.new
     setText this "⋮"
     setPopupMode this InstantPopup
     setMenu this =<< do
         menu <- QMenu.new
-        _ <- addNewAction menu "Postpone"
+        addAction menu "Postpone" $ print taskId
         pure menu
     pure this
+
+addAction :: QStringValue string => QMenu -> string -> IO () -> IO ()
+addAction menu text handler = do
+    action <- addNewAction menu text
+    connect_ action triggeredSignal $ const handler
