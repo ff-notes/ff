@@ -10,10 +10,15 @@ and this project adheres to
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
   `show`, `unarchive`.
 - Restored `ff-qt` -- experimental Qt GUI -- with minimal set of features.
+  - Show agenda.
+  - Postpone.
 
 ### Changed
 - Show useful message when nothing to show.
 - Use modern prettyprinter.
+
+### Removed
+- `ff-serve`
 
 ## [0.8] - 2018-12-15
 ### Added
