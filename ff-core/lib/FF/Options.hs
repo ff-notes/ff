@@ -50,7 +50,6 @@ data CmdAction
     | CmdNew        New
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
-    | CmdServe
     | CmdShow       [NoteId]
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
@@ -125,7 +124,6 @@ parseOptions h =
         , action  "new"       iCmdNew
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
-        , action  "serve"     iCmdServe
         , action  "show"      iCmdShow
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
@@ -146,7 +144,6 @@ parseOptions h =
     iCmdNew       = i cmdNew        "synonym for `add`"
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
-    iCmdServe     = i cmdServe      "serve web UI"
     iCmdShow      = i cmdShow       "show note by id"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
@@ -162,7 +159,6 @@ parseOptions h =
     cmdNew       = CmdNew       <$> new
     cmdPostpone  = CmdPostpone  <$> some noteid
     cmdSearch    = CmdSearch    <$> search
-    cmdServe     = pure CmdServe
     cmdShow      = CmdShow      <$> some noteid
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some noteid

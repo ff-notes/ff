@@ -17,6 +17,8 @@ import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
+import qualified Data.Text.Lazy as TextL
+import qualified Data.Text.Lazy.Encoding as TextL
 import           Data.Time (Day, UTCTime (..))
 import           Data.Vector (Vector)
 import           GitHub (FetchCount (..), Issue (..), IssueRepoMod,
@@ -25,7 +27,7 @@ import           GitHub (FetchCount (..), Issue (..), IssueRepoMod,
                          issueMilestone, issueState, issueTitle, mkOwnerName,
                          mkRepoName, stateAll, stateOpen)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
-import           System.Process (readProcess)
+import           System.Process.Typed (readProcessStdout_, proc)
 
 import           FF (splitModes, takeSamples)
 import           FF.Types (Limit, ModeMap, Note (..), NoteStatus (..), Sample,
@@ -40,8 +42,10 @@ getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
         Nothing      -> do
-            url <- liftIO $ Text.strip . Text.pack <$>
-                readProcess "git" ["remote", "get-url", "--push", "origin"] ""
+            url <- liftIO $
+                fmap (Text.strip . TextL.toStrict . TextL.decodeUtf8) $
+                readProcessStdout_ $
+                proc "git" ["remote", "get-url", "--push", "origin"]
             case url of
                 (stripPrefixSuffix "https://github.com/" ".git" -> Just repo) ->
                     pure repo

@@ -6,14 +6,10 @@ library:
   dependencies:
     # global
     - aeson
-    - aeson-pretty
-    - blaze-html
     - bytestring
     - containers
     - crdt
-    - data-default-class
     - directory
-    - errors
     - extra
     - filepath
     - github
@@ -21,18 +17,13 @@ library:
     - mtl
     - optparse-applicative
     - prettyprinter
-    - process
     - random
-    - scotty
-    - semigroups
-    - stm
     - temporary
     - text
     - time
     - typed-process
     - unordered-containers
     - vector
-    - warp
     - yaml
 
     # organization

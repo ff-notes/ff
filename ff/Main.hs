@@ -45,7 +45,6 @@ import           FF.Options (Cmd (..), CmdAction (..), Contact (..),
                              DataDir (..), Options (..), Search (..),
                              Shuffle (..), Track (..), parseOptions)
 import qualified FF.Options as Options
-import           FF.Serve (cmdServe)
 import           FF.Types (Entity (..))
 import           FF.UI (prettyContact, prettyContactSample, prettyNote,
                         prettyNoteList, prettyTaskSections,
@@ -63,7 +62,7 @@ main = do
     h <- maybe (pure h') Storage.newHandle optionCustomDir
     case optionCmd of
         CmdConfig param  -> runCmdConfig cfg param
-        CmdAction action -> runStorage h $ runCmdAction h ui action optionBrief
+        CmdAction action -> runStorage h $ runCmdAction ui action optionBrief
         CmdVersion       -> runCmdVersion
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
@@ -95,8 +94,8 @@ runCmdConfig cfg@Config { dataDir, ui } = \case
     saveShuffle shuffle' = saveConfig cfg { ui = ui' } $> ui'
         where ui' = ConfigUI {shuffle = shuffle'}
 
-runCmdAction :: Storage.Handle -> ConfigUI -> CmdAction -> Bool -> Storage ()
-runCmdAction h ui cmd isBrief = do
+runCmdAction :: ConfigUI -> CmdAction -> Bool -> Storage ()
+runCmdAction ui cmd isBrief = do
     today <- getUtcToday
     case cmd of
         CmdAgenda mlimit -> do
@@ -129,7 +128,6 @@ runCmdAction h ui cmd isBrief = do
                     isBrief
                     tasks wikis contacts
                     searchTasks searchWiki searchContacts
-        CmdServe -> cmdServe h ui
         CmdShow noteIds -> do
             notes <- for noteIds cmdShow
             pprint $ prettyNoteList isBrief notes
