@@ -118,7 +118,6 @@ instance Collection Note where
 
 instance Collection Contact where
     collectionName = "contact"
-    fallbackParse = parseContactV1
 
 data Sample a = Sample
     { sample_items :: [a]
@@ -181,15 +180,14 @@ type ModeMap = Map TaskMode
 
 type Limit = Natural
 
+-- TODO entityId :: DocId ??? because it is actually provided by the database,
+-- not UUID
 data Entity a = Entity{entityId :: UUID, entityVal :: a}
     deriving (Eq, Show)
 
 type EntitySample a = Sample (Entity a)
 
 -- * Legacy, v1
-
-parseContactV1 :: UUID -> ByteString -> Either String (Object Contact)
-parseContactV1 = undefined
 
 parseNoteV1 :: UUID -> ByteString -> Either String (Object Note)
 parseNoteV1 objectId = eitherDecode >=> parseEither p where
