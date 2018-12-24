@@ -12,7 +12,6 @@ dependencies:
   # global
   - async
   - base
-  - crdt
   - directory
   - extra
   - filepath
@@ -20,7 +19,6 @@ dependencies:
   - mtl
   - pager
   - prettyprinter
-  - stm
   - terminal-size
   - text
   - time
