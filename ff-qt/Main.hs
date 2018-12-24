@@ -1,15 +1,21 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Main (main) where
 
 import           Control.Monad.Extra (void, whenJust, (<=<))
 import           Data.Foldable (traverse_)
 import           Data.Functor (($>))
+import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import           Data.Map.Strict (Map)
+import qualified Data.Map.Strict as Map
 import           Data.Time (Day, toGregorian)
+import           Data.Typeable (cast, typeRep)
 import           Data.Version (showVersion)
-import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           Foreign.Hoppy.Runtime (delete, withScopedPtr)
+import           GHC.Stack (HasCallStack)
 import           QAbstractButton (setText)
 import           QAbstractSpinBox (setReadOnly)
 import           QAction (triggeredSignal)
@@ -25,12 +31,10 @@ import           QDateTimeEdit (setCalendarPopup)
 import           QFrame (QFrame, QFrameShape (StyledPanel), new, setFrameShape)
 import           QHBoxLayout (QHBoxLayout, new)
 import           QLabel (newWithText)
-import           QLayout (QLayoutConstPtr, count)
-import qualified QLayout
+import           QLayout (QLayoutConstPtr, count, parentWidget)
 import           QMainWindow (QMainWindow, QMainWindowPtr, new, restoreState,
                               saveState, setCentralWidget)
-import           QMenu (QMenu, addNewAction)
-import qualified QMenu
+import           QMenu (QMenu, addNewAction, new)
 import           QSettings (new, setValue, value)
 import           QShowEvent (QShowEvent)
 import           QString (QStringValue)
@@ -41,18 +45,21 @@ import           QToolBox (QToolBox, QToolBoxPtr, addItem, indexOf, new,
                            setItemText)
 import           QToolButton (QToolButton,
                               QToolButtonToolButtonPopupMode (InstantPopup),
-                              setMenu, setPopupMode)
-import qualified QToolButton
+                              new, setMenu, setPopupMode)
 import           QVariant (newWithByteArray, toByteArray)
 import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
                           setWindowTitle)
 import qualified QWidget
-import           RON.Storage.IO (docIdFromUuid, runStorage)
+import           RON.Storage.IO (Collection, DocId,
+                                 OnDocumentChanged (OnDocumentChanged),
+                                 docIdFromUuid, runStorage,
+                                 setOnDocumentChanged)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
-import           FF (getDataDir, getUtcToday, loadActiveTasks)
+import           FF (cmdPostpone, getDataDir, getUtcToday, load,
+                     loadActiveTasks)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), NoteId, TaskMode (Actual, EndSoon, EndToday, Overdue, Starting),
                            entityId, entityVal, note_end, note_start, note_text,
@@ -78,12 +85,22 @@ main = do
 withApp :: (QApplication -> IO a) -> IO a
 withApp = withScopedPtr $ getArgs >>= QApplication.new
 
+type AgendaSection = QVBoxLayout
+
+data MainWindow = MainWindow
+    { agendaModeSections :: ! (TaskMode -> AgendaSection)
+    , agendaTaskWidgets  :: ! (IORef (Map NoteId QFrame))
+    , agendaWidget       :: ! QToolBox
+    , mainWindow         :: ! QMainWindow
+    , storage            :: ! Storage.Handle
+    }
+
 newMainWindow :: Storage.Handle -> IO QMainWindow
 newMainWindow h = do
     this <- QMainWindow.new
     setCentralWidget this =<< do
         tabs <- QTabWidget.new
-        addTab_ tabs "Agenda" =<< newAgendaWidget h
+        addTab_ tabs "Agenda" =<< newAgendaWidget this h
         pure tabs
     setWindowTitle this "ff"
     installWindowStateSaver this
@@ -120,13 +137,13 @@ sectionLabel mode n = let
         Starting _ -> "Starting soon"
     in concat [label, " (", show n, ")"]
 
-newAgendaWidget :: Storage.Handle -> IO QToolBox
-newAgendaWidget h = do
+newAgendaWidget :: QMainWindow -> Storage.Handle -> IO QToolBox
+newAgendaWidget qMainWindow h = do
     this <- QToolBox.new
     void $ onEvent this $ \(_ :: QShowEvent) ->
         -- TODO set the first item as current
         pure False
-    modeSections <- do
+    agendaModeSections <- do
         od <- newSection this $ Overdue  undefined
         et <- newSection this   EndToday
         es <- newSection this $ EndSoon  undefined
@@ -138,10 +155,19 @@ newAgendaWidget h = do
             EndSoon  _ -> es
             Actual     -> ac
             Starting _ -> st
-    runStorage h loadActiveTasks >>= traverse_ (addTask this modeSections)
+    agendaTaskWidgets <- newIORef mempty
+    let mainWindow = MainWindow
+            { agendaModeSections
+            , agendaTaskWidgets
+            , agendaWidget = this
+            , mainWindow = qMainWindow
+            , storage = h
+            }
+    runStorage h loadActiveTasks >>= traverse_ (addTask mainWindow)
+    setOnDocumentChanged h $ OnDocumentChanged $ updateView mainWindow
     pure this
 
-newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO QVBoxLayout
+newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO AgendaSection
 newSection this section = do
     widget <- QWidget.new
     _      <- addItem this widget label
@@ -151,17 +177,32 @@ newSection this section = do
   where
     label = sectionLabel section 0
 
-addTask :: QToolBox -> (TaskMode -> QVBoxLayout) -> Entity Note -> IO ()
-addTask this modeSections eTask@Entity{entityVal=task} = do
-    today    <- getUtcToday
-    taskItem <- newTaskWidget eTask
+addTask :: MainWindow -> Entity Note -> IO ()
+addTask mainWindow taskEntity = do
+    today      <- getUtcToday
+    taskWidget <- newTaskWidget h taskEntity
     let mode    = taskMode today task
-    let section = modeSections mode
+    let section = agendaModeSections mode
     taskCount <- sectionSize section
-    insertWidget section taskCount taskItem
+    insertWidget section taskCount taskWidget
     sectionWidget <- QLayout.parentWidget section
-    sectionIndex  <- indexOf this sectionWidget
-    setItemText this sectionIndex (sectionLabel mode $ taskCount + 1)
+    sectionIndex  <- indexOf agendaWidget sectionWidget
+    setItemText agendaWidget sectionIndex (sectionLabel mode $ taskCount + 1)
+
+    mWidget <- Map.lookup taskId' <$> readIORef agendaTaskWidgets
+    whenJust mWidget delete  -- TODO update old section counter
+    modifyIORef agendaTaskWidgets $ Map.insert taskId' taskWidget
+
+  where
+    Entity{entityId=taskId, entityVal=task} = taskEntity
+    taskId' = docIdFromUuid taskId
+    MainWindow
+            { agendaWidget
+            , agendaModeSections
+            , agendaTaskWidgets
+            , storage = h
+            } =
+        mainWindow
 
 newDateWidget :: String -> Day -> IO QHBoxLayout
 newDateWidget label date = do
@@ -177,8 +218,8 @@ newDateWidget label date = do
   where
     (y, m, d) = toGregorian date
 
-newTaskWidget :: Entity Note -> IO QFrame
-newTaskWidget Entity{entityId, entityVal} = do
+newTaskWidget :: Storage.Handle -> Entity Note -> IO QFrame
+newTaskWidget h Entity{entityId, entityVal} = do
     this <- QFrame.new
     setFrameShape this StyledPanel
     do  -- box
@@ -190,7 +231,7 @@ newTaskWidget Entity{entityId, entityVal} = do
             whenJust note_end $
                 addLayout fieldsBox <=< newDateWidget "Deadline:"
             addStretch fieldsBox
-            addWidget fieldsBox =<< newTaskActionsButton taskId
+            addWidget fieldsBox =<< newTaskActionsButton h taskId
             pure fieldsBox
     pure this
   where
@@ -201,18 +242,30 @@ newTaskWidget Entity{entityId, entityVal} = do
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int
 sectionSize layout = pred <$> count layout
 
-newTaskActionsButton :: NoteId -> IO QToolButton
-newTaskActionsButton taskId = do
+newTaskActionsButton :: Storage.Handle -> NoteId -> IO QToolButton
+newTaskActionsButton h taskId = do
     this <- QToolButton.new
     setText this "⋮"
     setPopupMode this InstantPopup
     setMenu this =<< do
         menu <- QMenu.new
-        addAction menu "Postpone" $ print taskId
+        addAction menu "Postpone" $ runStorage h $ cmdPostpone taskId
         pure menu
     pure this
 
-addAction :: QStringValue string => QMenu -> string -> IO () -> IO ()
+addAction :: QStringValue string => QMenu -> string -> IO a -> IO ()
 addAction menu text handler = do
     action <- addNewAction menu text
-    connect_ action triggeredSignal $ const handler
+    connect_ action triggeredSignal $ const $ void handler
+
+updateView :: (HasCallStack, Collection a) => MainWindow -> DocId a -> IO ()
+updateView mainWindow docid = case docid of
+    (cast -> Just noteId) -> updateTask mainWindow noteId
+    _ -> error $ show (typeRep docid, docid)
+
+updateTask :: MainWindow -> NoteId -> IO ()
+updateTask mainWindow noteId = do
+    note <- runStorage h $ load noteId
+    addTask   mainWindow note
+  where
+    MainWindow{storage = h} = mainWindow

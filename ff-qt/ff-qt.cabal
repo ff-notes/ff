@@ -8,6 +8,7 @@ executable ff-qt
     build-depends:
         -- global
         base,
+        containers,
         extra,
         hoppy-runtime,
         ron,
