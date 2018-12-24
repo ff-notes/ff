@@ -180,9 +180,7 @@ type ModeMap = Map TaskMode
 
 type Limit = Natural
 
--- TODO entityId :: DocId ??? because it is actually provided by the database,
--- not UUID
-data Entity a = Entity{entityId :: UUID, entityVal :: a}
+data Entity a = Entity{entityId :: DocId a, entityVal :: a}
     deriving (Eq, Show)
 
 type EntitySample a = Sample (Entity a)

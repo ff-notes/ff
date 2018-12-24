@@ -54,8 +54,8 @@ import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
-                              MonadStorage, createDocument, getDocuments,
-                              loadDocument, modify)
+                              MonadStorage, createDocument, docIdFromUuid,
+                              getDocuments, loadDocument, modify)
 import           RON.Storage.IO (Storage)
 import           RON.Types (Object, objectId)
 import           System.Directory (doesDirectoryExist, findExecutable,
@@ -81,10 +81,10 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            taskMode)
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
-load docId = do
-    Document{value = obj} <- loadDocument docId
+load docid = do
+    Document{value = obj} <- loadDocument docid
     entityVal <- liftEither $ getObject obj
-    pure $ Entity (objectId obj) entityVal
+    pure $ Entity docid entityVal
 
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
 loadAll = getDocuments >>= traverse load
@@ -259,7 +259,7 @@ cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
             }
     obj <- newObject note
     createDocument obj
-    pure $ Entity (objectId obj) note
+    pure $ Entity (docIdFromUuid $ objectId obj) note
 
 cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
 cmdNewContact name = do
@@ -267,7 +267,7 @@ cmdNewContact name = do
             Contact{contact_name = Text.unpack name, contact_status = Active}
     obj <- newObject contact
     createDocument obj
-    pure $ Entity (objectId obj) contact
+    pure $ Entity (docIdFromUuid $ objectId obj) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
@@ -363,7 +363,7 @@ modifyAndView
 modifyAndView docid f = do
     obj <- modify docid f
     entityVal <- liftEither $ getObject obj
-    pure $ Entity (objectId obj) entityVal
+    pure $ Entity docid entityVal
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime

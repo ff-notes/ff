@@ -17,7 +17,6 @@ import           Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time (Day, UTCTime (..), fromGregorian)
-import           Data.Word (Word64)
 import           GHC.Stack (HasCallStack, withFrozenCallStack)
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
@@ -26,12 +25,9 @@ import           GitHub.Data.Name (Name (..))
 import           Hedgehog (Gen, MonadTest, Property, forAll, property, (===))
 import           Hedgehog.Internal.Property (failWith)
 import           RON.Data (ReplicatedAsObject, getObject, newObject)
-import           RON.Event (Event (..), LocalTime (TEpoch), applicationSpecific,
-                            encodeEvent)
+import           RON.Storage (DocId (DocId))
 import           RON.Storage.Test (TestDB, runStorageSim)
 import           RON.Text (parseObject, serializeObject)
-import           RON.Types (UUID)
-import           RON.Util.Word (ls60)
 import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
@@ -76,7 +72,7 @@ prop_smoke = property $ do
         Sample
             { sample_items =
                 [Entity
-                    (event 77 77)
+                    (DocId "B00000000002D-200000000002D")
                     Note
                         { note_status = TaskStatus Active
                         , note_text   = "helloworld"
@@ -320,5 +316,5 @@ fs123merged =
 a -: b = (a, b)
 infixr 0 -:
 
-event :: Word64 -> Word64 -> UUID
-event x y = encodeEvent $ Event (TEpoch $ ls60 x) $ applicationSpecific y
+-- event :: Word64 -> Word64 -> UUID
+-- event x y = encodeEvent $ Event (TEpoch $ ls60 x) $ applicationSpecific y

@@ -53,8 +53,7 @@ import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
 import qualified QWidget
 import           RON.Storage.IO (Collection, DocId,
                                  OnDocumentChanged (OnDocumentChanged),
-                                 docIdFromUuid, runStorage,
-                                 setOnDocumentChanged)
+                                 runStorage, setOnDocumentChanged)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
@@ -189,13 +188,12 @@ addTask mainWindow taskEntity = do
     sectionIndex  <- indexOf agendaWidget sectionWidget
     setItemText agendaWidget sectionIndex (sectionLabel mode $ taskCount + 1)
 
-    mWidget <- Map.lookup taskId' <$> readIORef agendaTaskWidgets
+    mWidget <- Map.lookup taskId <$> readIORef agendaTaskWidgets
     whenJust mWidget delete  -- TODO update old section counter
-    modifyIORef agendaTaskWidgets $ Map.insert taskId' taskWidget
+    modifyIORef agendaTaskWidgets $ Map.insert taskId taskWidget
 
   where
     Entity{entityId=taskId, entityVal=task} = taskEntity
-    taskId' = docIdFromUuid taskId
     MainWindow
             { agendaWidget
             , agendaModeSections
@@ -231,12 +229,11 @@ newTaskWidget h Entity{entityId, entityVal} = do
             whenJust note_end $
                 addLayout fieldsBox <=< newDateWidget "Deadline:"
             addStretch fieldsBox
-            addWidget fieldsBox =<< newTaskActionsButton h taskId
+            addWidget fieldsBox =<< newTaskActionsButton h entityId
             pure fieldsBox
     pure this
   where
     Note{note_text, note_start, note_end} = entityVal
-    taskId = docIdFromUuid entityId
 
 -- Because last item is always a stretch.
 sectionSize :: QLayoutConstPtr layout => layout -> IO Int

@@ -18,24 +18,20 @@ module FF.Options (
 ) where
 
 import           Control.Applicative (optional, some, (<|>))
-import qualified Data.ByteString.Lazy.Char8 as BSLC
-import           Data.Maybe (mapMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
 import           Options.Applicative (Completer, argument, auto, command,
                                       completer, customExecParser, defaultPrefs,
-                                      eitherReader, flag', fullDesc, help,
-                                      helper, info, listIOCompleter, long,
-                                      metavar, option, prefDisambiguate,
-                                      prefMultiSuffix, prefShowHelpOnError,
-                                      progDesc, short, strArgument, strOption,
-                                      subparser, switch, (<**>))
-import           RON.Storage.IO (Collection, decodeDocId, docIdFromUuid,
-                                 getDocuments, runStorage)
+                                      flag', fullDesc, help, helper, info,
+                                      listIOCompleter, long, metavar, option,
+                                      prefDisambiguate, prefMultiSuffix,
+                                      prefShowHelpOnError, progDesc, short, str,
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
+import           RON.Storage.IO (Collection, DocId (DocId), getDocuments,
+                                 runStorage)
 import qualified RON.Storage.IO as Storage
-import           RON.Text.Parse (parseUuid)
-import           RON.Types (UUID)
 
 import           FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
@@ -272,12 +268,9 @@ parseOptions h =
     completeContactIds = docIdCompleter @FF.Types.Contact
 
     docIdCompleter :: forall a . Collection a => Completer
-    docIdCompleter = listIOCompleter $
-        map (show @UUID) . mapMaybe decodeDocId'
-        <$> runStorage h (getDocuments @_ @a)
+    docIdCompleter =
+        listIOCompleter $ map unDocId <$> runStorage h (getDocuments @_ @a)
 
-    decodeDocId' docid = do
-        (True, uuid) <- decodeDocId docid
-        pure uuid
+    unDocId (DocId name) = name
 
-    readDocId = eitherReader $ fmap docIdFromUuid . parseUuid . BSLC.pack
+    readDocId = DocId <$> str

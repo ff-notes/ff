@@ -23,14 +23,10 @@ import qualified Data.Map.Strict as Map
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.Lazy.Encoding as TextL
-import           Data.Text.Prettyprint.Doc (Doc, Pretty (..), fillSep, hang,
-                                            indent, sep, space, viaShow, vsep,
-                                            (<+>))
+import           Data.Text.Prettyprint.Doc (Doc, fillSep, hang, indent, pretty,
+                                            sep, space, viaShow, vsep, (<+>))
 import           Data.Time (Day)
-import           RON.Text.Serialize (serializeUuid)
-import           RON.Types (UUID)
-import qualified RON.UUID as UUID
+import           RON.Storage (DocId (DocId))
 
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
                            Note (..), NoteSample, NoteStatus (Wiki),
@@ -42,8 +38,8 @@ withHeader header value = hang indentation $ vsep [pretty header, value]
 indentation :: Int
 indentation = 2
 
-prettyUuid :: UUID -> Doc ann
-prettyUuid = pretty . TextL.decodeUtf8 . serializeUuid
+prettyDocId :: DocId a -> Doc ann
+prettyDocId (DocId name) = pretty name
 
 prettyTasksWikisContacts
     :: Bool                 -- ^ is output brief
@@ -105,17 +101,17 @@ prettyNote
     -> Doc ann
 prettyNote isBrief (Entity entityId Note{..}) = case isBrief of
     True -> fillSep [title note_text, meta] where
-        meta = "| id" <+> prettyUuid entityId
+        meta = "| id" <+> prettyDocId entityId
     False -> sparsedStack [wrapLines $ Text.pack note_text, sep meta] where
         meta
             = mconcat
-                [   [ "| id"    <+> prettyUuid entityId
-                    | entityId /= UUID.zero
+                [   [ "| id" <+> prettyDocId entityId
+                    | entityId /= DocId ""
                     ]
                 ,   [ "| start" <+> viaShow @Day note_start
                     | note_status /= Wiki
                     ]
-                ,   [ "| end"   <+> viaShow @Day end
+                ,   [ "| end" <+> viaShow @Day end
                     | note_status /= Wiki
                     , Just end <- [note_end]
                     ]
@@ -181,7 +177,7 @@ prettyContact :: Bool -> Entity Contact -> Doc ann
 prettyContact _isBrief (Entity entityId Contact{..}) =
     sep [pretty contact_name, meta]
   where
-    meta = "| id" <+> prettyUuid entityId
+    meta = "| id" <+> prettyDocId entityId
 
 wrapLines :: Text -> Doc ann
 wrapLines =

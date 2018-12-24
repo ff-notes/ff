@@ -23,7 +23,6 @@ import           Data.Time (Day)
 import           Network.Wai.Handler.Warp (defaultSettings, setHost)
 import           RON.Storage.IO (runStorage)
 import qualified RON.Storage.IO as Storage
-import           RON.Types (UUID)
 import           System.IO (hPutStrLn, stderr)
 import           Text.Blaze.Html.Renderer.Text (renderHtml)
 import           Text.Blaze.Html5 (Html, a, br, div, h1, li, p, section, span,
@@ -33,8 +32,9 @@ import           Web.Scotty (get, html, scottyOpts, settings, verbose)
 
 import           FF (getTaskSamples, getUtcToday)
 import           FF.Config (ConfigUI (..))
-import           FF.Types (pattern Entity, ModeMap, Note (..), NoteSample,
-                           Sample (..), TaskMode (..), Track (..), omitted)
+import           FF.Types (pattern Entity, ModeMap, Note (..), NoteId,
+                           NoteSample, Sample (..), TaskMode (..), Track (..),
+                           omitted)
 import           FF.UI (sampleLabel)
 
 cmdServe :: MonadIO m => Storage.Handle -> ConfigUI -> m ()
@@ -75,7 +75,7 @@ prettyHtmlSample mode = \case
                     intersperse br $
                     strong (toHtml header) : map toHtml body
         div $ do
-            metaItem "id" $ toHtml $ show @UUID entityId
+            metaItem "id" $ toHtml $ show @NoteId entityId
             metaItem "start" $ toHtml $ show @Day note_start
             whenJust note_track $ \Track{..} ->
                 metaItem "tracking" $

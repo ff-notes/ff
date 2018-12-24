@@ -24,9 +24,8 @@ import           Data.Time (Day)
 import           Data.Traversable (for)
 import           Data.Version (showVersion)
 import           Development.GitRev (gitDirty, gitHash)
-import           RON.Storage.IO (Storage, runStorage)
+import           RON.Storage.IO (DocId (DocId), Storage, runStorage)
 import qualified RON.Storage.IO as Storage
-import qualified RON.UUID as UUID
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getHomeDirectory)
 import           System.Exit (exitFailure)
@@ -151,7 +150,7 @@ cmdTrack :: Track -> Day -> Bool -> Storage ()
 cmdTrack Track {..} today isBrief =
     if trackDryrun then liftIO $ do
         samples <- run $ getOpenIssueSamples trackAddress trackLimit today
-        pprint $ prettyTaskSections isBrief $ (Entity UUID.zero <$>) <$> samples
+        pprint $ prettyTaskSections isBrief $ (Entity (DocId "") <$>) <$> samples
     else do
         notes <- liftIO $ run $ getIssueViews trackAddress trackLimit
         updateTrackedNotes notes
@@ -197,4 +196,4 @@ pprint :: MonadIO io => Doc ann -> io ()
 pprint doc = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
     printOrPage . (`snoc` '\n') . renderStrict
-        $ layoutSmart (LayoutOptions (AvailablePerLine width 1)) doc
+        $ layoutSmart (LayoutOptions (AvailablePerLine width 1) {- TODO record style -}) doc
