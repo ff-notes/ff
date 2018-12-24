@@ -24,6 +24,7 @@ module FF (
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    load,
     loadActiveTasks,
     loadAll,
     splitModes,
@@ -79,13 +80,14 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            note_status_read, note_text_zoom, note_track_read,
                            taskMode)
 
+load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
+load docId = do
+    Document{value = obj} <- loadDocument docId
+    entityVal <- liftEither $ getObject obj
+    pure $ Entity (objectId obj) entityVal
+
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
-loadAll = do
-    docs <- getDocuments
-    for docs $ \docId -> do
-        Document{value = obj} <- loadDocument docId
-        entityVal <- liftEither $ getObject obj
-        pure $ Entity (objectId obj) entityVal
+loadAll = getDocuments >>= traverse load
 
 loadActiveContacts :: MonadStorage m => m [Entity Contact]
 loadActiveContacts =
