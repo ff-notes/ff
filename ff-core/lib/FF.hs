@@ -290,10 +290,7 @@ cmdSearch substr ui limit today = do
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
 cmdShow :: NoteId -> Storage (Entity Note)
-cmdShow nid = do
-    Document{value = obj} <- loadDocument nid
-    entityVal <- liftEither $ getObject obj
-    pure $ Entity (objectId obj) entityVal
+cmdShow = load
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do
