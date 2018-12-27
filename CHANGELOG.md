@@ -6,7 +6,7 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
-- Colorized output.
+- Added сolorized output.
 
 ### Added
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
