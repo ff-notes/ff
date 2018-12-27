@@ -12,6 +12,7 @@ and this project adheres to
 - Restored `ff-qt` -- experimental Qt GUI -- with minimal set of features.
   - Show agenda.
   - Postpone.
+- Added сolorized output.
 
 ### Changed
 - Show useful message when nothing to show.
