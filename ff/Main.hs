@@ -19,7 +19,8 @@ import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
                                             PageWidth (..), layoutSmart)
-import           Data.Text.Prettyprint.Doc.Render.Text (renderStrict)
+import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
+                                                            renderStrict)
 import           Data.Time (Day)
 import           Data.Traversable (for)
 import           Data.Version (showVersion)
@@ -190,7 +191,7 @@ runCmdVersion = putStrLn $ concat
     , if $(gitDirty) then ", dirty" else ""
     ]
 
-pprint :: MonadIO io => Doc ann -> io ()
+pprint :: MonadIO io => Doc AnsiStyle -> io ()
 pprint doc = liftIO $ do
     width <- maybe 80 Terminal.width <$> Terminal.size
     printOrPage . (`snoc` '\n') . renderStrict

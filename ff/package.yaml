@@ -19,6 +19,7 @@ dependencies:
   - mtl
   - pager
   - prettyprinter
+  - prettyprinter-ansi-terminal
   - terminal-size
   - text
   - time
