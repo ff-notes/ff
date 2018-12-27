@@ -6,14 +6,13 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
-- Added сolorized output.
-
 ### Added
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
   `show`, `unarchive`.
 - Restored `ff-qt` -- experimental Qt GUI -- with minimal set of features.
   - Show agenda.
   - Postpone.
+- Added сolorized output.
 
 ### Changed
 - Show useful message when nothing to show.
