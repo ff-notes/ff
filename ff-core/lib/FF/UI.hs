@@ -37,12 +37,13 @@ import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
                            Sample (..), TaskMode (..), Track (..), omitted)
 
 withHeader :: Text -> Doc AnsiStyle -> Doc AnsiStyle
-withHeader header value = hang indentation $ vsep [yellowStyle $ pretty header, value]
+withHeader header value =
+    hang indentation $ vsep [yellow $ pretty header, value]
 
 indentation :: Int
 indentation = 2
 
-prettyDocId :: DocId a -> Doc AnsiStyle
+prettyDocId :: DocId a -> Doc ann
 prettyDocId (DocId name) = pretty name
 
 prettyTasksWikisContacts
@@ -65,9 +66,9 @@ prettyTasksWikisContacts
         (True,  False, True ) -> vsep [ts, cs]
         (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ts = prettyTaskSections isBrief tasks
-    ws = prettyWikiSample        isBrief wiki
-    cs = prettyContactSample     isBrief contacts
+    ts = prettyTaskSections  isBrief tasks
+    ws = prettyWikiSample    isBrief wiki
+    cs = prettyContactSample isBrief contacts
 
 prettyContactSample :: Bool -> ContactSample -> Doc AnsiStyle
 prettyContactSample isBrief samples = stack isBrief $
@@ -76,7 +77,7 @@ prettyContactSample isBrief samples = stack isBrief $
   where
     numOmitted = omitted samples
     prettyContactSample' = \case
-        Sample{sample_total = 0} -> redStyle "No contacts to show"
+        Sample{sample_total = 0} -> red "No contacts to show"
         Sample{sample_items} ->
             withHeader "Contacts:" . stack isBrief $
             map ((star <>) . indent 1 . prettyContact isBrief) sample_items
@@ -88,7 +89,7 @@ prettyWikiSample isBrief samples = stack isBrief $
   where
     numOmitted = omitted samples
     prettyWikiSample' = \case
-        Sample{sample_total = 0} -> redStyle "No wikis to show"
+        Sample{sample_total = 0} -> red "No wikis to show"
         Sample{sample_items} ->
             withHeader "Wiki:" .
             stack isBrief $
@@ -105,26 +106,26 @@ prettyNote
     -> Doc AnsiStyle
 prettyNote isBrief (Entity entityId Note{..}) = case isBrief of
     True -> fillSep [title note_text, meta] where
-        meta = greenStyle "|" <+> cyanStyle "id" <+> prettyDocId entityId
+        meta = green "|" <+> cyan "id" <+> prettyDocId entityId
     False -> sparsedStack [wrapLines $ Text.pack note_text, sep meta] where
         meta
             = mconcat
-                [   [ greenStyle "|" <+> cyanStyle "id" <+> prettyDocId entityId
+                [   [ green "|" <+> cyan "id" <+> prettyDocId entityId
                     | entityId /= DocId ""
                     ]
-                ,   [ greenStyle "|" <+> cyanStyle "start" <+> viaShow @Day note_start
+                ,   [ green "|" <+> cyan "start" <+> viaShow @Day note_start
                     | note_status /= Wiki
                     ]
-                ,   [ greenStyle "|" <+> cyanStyle "end" <+> viaShow @Day end
+                ,   [ green "|" <+> cyan "end" <+> viaShow @Day end
                     | note_status /= Wiki
                     , Just end <- [note_end]
                     ]
                 ]
-            ++  [ greenStyle "|" <+> cyanStyle "tracking" <+> pretty track_url
+            ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
 
-title :: String -> Doc AnsiStyle
+title :: String -> Doc ann
 title
     = mconcat
     . map (fillSep . map pretty . Text.split isSpace)
@@ -137,25 +138,25 @@ prettyTaskSections isBrief samples = stack isBrief
     $   [ prettyTaskSample isBrief mode sample
         | (mode, sample) <- Map.assocs samples
         ]
-    ++  [magentaStyle (pretty numOmitted) <> yellowStyle " task(s) omitted" | numOmitted > 0]
+    ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
   where
     numOmitted = sum $ fmap omitted samples
 
 prettyTaskSample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc AnsiStyle
 prettyTaskSample isBrief mode = \case
-    Sample{sample_total = 0} -> redStyle "No notes to show"
+    Sample{sample_total = 0} -> red "No notes to show"
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack isBrief $
             map ((star <>) . indent 1 . prettyNote isBrief) sample_items
             ++  [ hang indentation $
-                    fillSep [toSeeAllLabel, blueStyle $ cmdToSeeAll mode]
+                    fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
                 | count /= sample_total
                 ]
       where
         toSeeAllLabel
-            = yellowStyle "To see all"
-           <+> magentaStyle (pretty $ Text.pack $ show sample_total)
-           <+> yellowStyle "task(s), run:"
+            = yellow "To see all"
+           <+> magenta (pretty $ Text.pack $ show sample_total)
+           <+> yellow "task(s), run:"
         count         = genericLength sample_items
   where
     cmdToSeeAll = \case
@@ -183,58 +184,40 @@ prettyContact :: Bool -> Entity Contact -> Doc AnsiStyle
 prettyContact _isBrief (Entity entityId Contact{..}) =
     sep [pretty contact_name, meta]
   where
-    meta = greenStyle "|" <+>  cyanStyle "id" <+> prettyDocId entityId
+    meta = green "|" <+> cyan "id" <+> prettyDocId entityId
 
-wrapLines :: Text -> Doc AnsiStyle
+wrapLines :: Text -> Doc ann
 wrapLines =
     vsep . map (fillSep . map pretty . Text.split isSpace) . Text.splitOn "\n"
 
-sparsedStack :: [Doc AnsiStyle] -> Doc AnsiStyle
+sparsedStack :: [Doc ann] -> Doc ann
 sparsedStack = vsep . intersperse space
 
 stack
     :: Bool  -- ^ is brief
-    -> [Doc AnsiStyle]
-    -> Doc AnsiStyle
+    -> [Doc ann]
+    -> Doc ann
 stack = \case
     True  -> vsep
     False -> sparsedStack
 
 star :: Doc AnsiStyle
-star = greenStyle "*"
+star = green "*"
 
-red :: AnsiStyle
-red = color Red <> bold
+red :: Doc AnsiStyle -> Doc AnsiStyle
+red = annotate $ color Red <> bold
 
-redStyle :: Doc AnsiStyle -> Doc AnsiStyle
-redStyle = annotate red
+green :: Doc AnsiStyle -> Doc AnsiStyle
+green = annotate $ color Green <> bold
 
-blue :: AnsiStyle
-blue = color Blue <> bold
+blue :: Doc AnsiStyle -> Doc AnsiStyle
+blue = annotate $ color Blue <> bold
 
-blueStyle :: Doc AnsiStyle -> Doc AnsiStyle
-blueStyle = annotate blue
+cyan :: Doc AnsiStyle -> Doc AnsiStyle
+cyan = annotate $ color Cyan <> bold
 
-green :: AnsiStyle
-green = color Green <> bold
+magenta :: Doc AnsiStyle -> Doc AnsiStyle
+magenta = annotate $ color Magenta <> bold
 
-greenStyle :: Doc AnsiStyle -> Doc AnsiStyle
-greenStyle = annotate green
-
-cyan :: AnsiStyle
-cyan = color Cyan <> bold
-
-cyanStyle :: Doc AnsiStyle -> Doc AnsiStyle
-cyanStyle = annotate cyan
-
-yellow :: AnsiStyle
-yellow = color Yellow <> bold
-
-yellowStyle :: Doc AnsiStyle -> Doc AnsiStyle
-yellowStyle = annotate yellow
-
-magenta :: AnsiStyle
-magenta = color Magenta <> bold
-
-magentaStyle :: Doc AnsiStyle -> Doc AnsiStyle
-magentaStyle = annotate magenta
+yellow :: Doc AnsiStyle -> Doc AnsiStyle
+yellow = annotate $ color Yellow <> bold
