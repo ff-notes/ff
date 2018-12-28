@@ -80,7 +80,7 @@ prettyContactSample isBrief samples = stack isBrief $
         Sample{sample_total = 0} -> red "No contacts to show"
         Sample{sample_items} ->
             withHeader "Contacts:" . stack isBrief $
-            map ((star <>) . indent 1 . prettyContact isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyContact isBrief) sample_items
 
 prettyWikiSample :: Bool -> NoteSample -> Doc AnsiStyle
 prettyWikiSample isBrief samples = stack isBrief $
@@ -93,11 +93,11 @@ prettyWikiSample isBrief samples = stack isBrief $
         Sample{sample_items} ->
             withHeader "Wiki:" .
             stack isBrief $
-            map ((star <>) . indent 1 . prettyNote isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyNote isBrief) sample_items
 
 prettyNoteList :: Bool -> [Entity Note] -> Doc AnsiStyle
 prettyNoteList isBrief =
-    stack isBrief . map ((star <>) . indent 1 . prettyNote isBrief)
+    stack isBrief . map ((bullet <>) . indent 1 . prettyNote isBrief)
 
 -- | For both tasks and wikis
 prettyNote
@@ -147,7 +147,7 @@ prettyTaskSample isBrief mode = \case
     Sample{sample_total = 0} -> red "No notes to show"
     Sample{sample_total, sample_items} ->
         withHeader (sampleLabel mode) . stack isBrief $
-            map ((star <>) . indent 1 . prettyNote isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyNote isBrief) sample_items
             ++  [ hang indentation $
                     fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
                 | count /= sample_total
@@ -201,8 +201,8 @@ stack = \case
     True  -> vsep
     False -> sparsedStack
 
-star :: Doc AnsiStyle
-star = green "*"
+bullet :: Doc AnsiStyle
+bullet = green "*"
 
 red :: Doc AnsiStyle -> Doc AnsiStyle
 red = annotate $ color Red <> bold
