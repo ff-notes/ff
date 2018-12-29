@@ -31,6 +31,23 @@ Feel free to open a ticket if you want to extend support.
 
 ## Install experimental GUI
 
+### GTK version
+
+#### Prerequisites
+
+Follow https://github.com/haskell-gi/haskell-gi#installation.
+
+#### Program
+
+Mac OS:
+
+    $ export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+    $ stack install ff-gtk
+
+Ubuntu:
+
+    $ stack install ff-gtk
+
 ### Qt version
 
 #### Prerequisites

@@ -1,0 +1,27 @@
+cabal-version:  >= 1.2
+
+name:           ff-gtk
+version:        0
+
+build-type:     Simple
+
+executable ff-gtk
+    build-depends:
+        -- global
+        base,
+        containers,
+        gi-gtk,
+        gi-gtk-declarative,
+        gi-gtk-declarative-app-simple,
+        lens,
+        mtl,
+        pipes,
+        text,
+        vector,
+        -- organization
+        ron-storage,
+        -- project
+        ff-core
+    default-language: Haskell2010
+    ghc-options: -threaded
+    main-is: Main.hs

@@ -3,6 +3,7 @@ resolver: lts-13.20
 packages:
   - ff
   - ff-core
+  - ff-gtk
   - ff-qt
   - ff-test
 
@@ -14,6 +15,10 @@ extra-deps:
   - ron-rdt-0.6
   - ron-schema-0.6
   - ron-storage-0.7
+
+  # ff-gtk:
+  - gi-gtk-declarative-0.4.2
+  - gi-gtk-declarative-app-simple-0.4.1
 
   # ff-test:
   - cmark-0.5.6
