@@ -30,11 +30,21 @@ Feel free to open a ticket if you want to extend support.
 
 ## Install experimental GUI
 
-    $ stack install ff-qt
+### Qt version
 
-You may need to install pre-requisites
+#### Prerequisites
+
+Mac OS:
+
+    $ brew install qt
+
+Ubuntu:
 
     # apt install qt5-default
+
+#### Program
+
+    $ stack install ff-qt
 
 ### Completion for commands and options
 
