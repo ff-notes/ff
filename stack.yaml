@@ -9,8 +9,6 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-  - git: https://github.com/willbasky/pager.git
-    commit: 'd5b0773'  # add `-r` to `less`
 
   # - ron-0.3
   - git: https://github.com/ff-notes/ron.git

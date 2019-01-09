@@ -9,12 +9,13 @@ module Main where
 
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (race)
-import           Control.Monad (forever, guard)
+import           Control.Monad (forever, guard, when)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
+import           Data.Maybe (isNothing)
 import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
@@ -29,6 +30,7 @@ import           RON.Storage.IO (DocId (DocId), Storage, runStorage)
 import qualified RON.Storage.IO as Storage
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getHomeDirectory)
+import           System.Environment (lookupEnv, setEnv)
 import           System.Exit (exitFailure)
 import           System.FilePath ((</>))
 import           System.IO (hPutChar, hPutStr, stderr)
@@ -193,6 +195,10 @@ runCmdVersion = putStrLn $ concat
 
 pprint :: MonadIO io => Doc AnsiStyle -> io ()
 pprint doc = liftIO $ do
+    -- enable colors in `less`
+    lessConf <- lookupEnv "LESS"
+    when (isNothing lessConf) $ setEnv "LESS" "-R"
+
     width <- maybe 80 Terminal.width <$> Terminal.size
     printOrPage . (`snoc` '\n') . renderStrict
         $ layoutSmart (LayoutOptions (AvailablePerLine width 1) {- TODO record style -}) doc
