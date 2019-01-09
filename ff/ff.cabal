@@ -1,0 +1,35 @@
+cabal-version: >= 1.2
+
+name: ff
+version: 0.8
+copyright:
+    2018 Yuriy Syrovetskiy, Nikolay Loginov;
+    2019 Yuriy Syrovetskiy
+
+build-type: Simple
+
+executable ff
+    build-depends:
+        -- global
+        async,
+        base >= 4 && < 4.12,
+        directory,
+        extra,
+        filepath,
+        gitrev,
+        mtl,
+        pager,
+        prettyprinter,
+        prettyprinter-ansi-terminal,
+        terminal-size,
+        text,
+        time,
+
+        -- organization
+        ron,
+
+        -- project
+        ff-core
+    ghc-options: -rtsopts
+    main-is: Main.hs
+    other-modules: Paths_ff
