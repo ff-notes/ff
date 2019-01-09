@@ -9,11 +9,7 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-
-  # - ron-0.3
-  - git: https://github.com/ff-notes/ron.git
-    commit: 'a231ef8'  # v0.3+
-    subdirs: [ron]
+  - ron-0.4
 
   # ron:
   - hedn-0.1.9.1@sha256:01d77f74d211e1187d94e67dd880e3131d0552a5184c7f067b5e686f94b250c7
