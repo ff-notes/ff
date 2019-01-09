@@ -18,5 +18,3 @@ cabal.project.local
 cabal.sandbox.config
 dist
 dist-*
-ff-core.cabal
-ff.cabal

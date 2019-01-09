@@ -1,0 +1,59 @@
+cabal-version: >= 1.10
+
+name: ff-core
+version: 0
+copyright:
+    2018 Yuriy Syrovetskiy, Nikolay Loginov;
+    2019 Yuriy Syrovetskiy
+
+build-type: Simple
+
+library
+    build-depends:
+        -- global
+        aeson,
+        base,
+        bytestring,
+        containers,
+        crdt,
+        directory,
+        extra,
+        filepath,
+        github,
+        hashable,
+        mtl,
+        optparse-applicative,
+        prettyprinter,
+        prettyprinter-ansi-terminal,
+        random,
+        temporary,
+        text,
+        time,
+        typed-process,
+        unordered-containers,
+        vector,
+        yaml,
+
+        -- organization
+        ron
+
+    default-language: Haskell2010
+    exposed-modules:
+        FF
+        FF.Config
+        FF.Github
+        FF.Options
+        FF.Types
+        FF.UI
+        FF.Upgrade
+    other-modules:
+        FF.CrdtAesonInstances
+    hs-source-dirs: lib
+
+test-suite features
+    build-depends:
+        base,
+        blaze-html,
+        interpolate
+    main-is: Features.hs
+    type: exitcode-stdio-1.0
