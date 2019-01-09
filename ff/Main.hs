@@ -18,8 +18,9 @@ import           Data.Functor (($>))
 import           Data.Maybe (isNothing)
 import           Data.Text (snoc)
 import           Data.Text.IO (hPutStrLn)
-import           Data.Text.Prettyprint.Doc (Doc, LayoutOptions (..),
-                                            PageWidth (..), layoutSmart)
+import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
+                                            defaultLayoutOptions,
+                                            layoutPageWidth, layoutSmart)
 import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             renderStrict)
 import           Data.Time (Day)
@@ -200,5 +201,6 @@ pprint doc = liftIO $ do
     when (isNothing lessConf) $ setEnv "LESS" "-R"
 
     width <- maybe 80 Terminal.width <$> Terminal.size
-    printOrPage . (`snoc` '\n') . renderStrict
-        $ layoutSmart (LayoutOptions (AvailablePerLine width 1) {- TODO record style -}) doc
+    let layoutOptions =
+            defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
+    printOrPage . (`snoc` '\n') . renderStrict $ layoutSmart layoutOptions doc
