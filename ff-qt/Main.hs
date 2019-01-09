@@ -228,8 +228,8 @@ newTaskWidget h Entity{entityId, entityVal} = do
             addLayout fieldsBox =<< newDateWidget "Start:" note_start
             whenJust note_end $
                 addLayout fieldsBox <=< newDateWidget "Deadline:"
-            addStretch fieldsBox
             addWidget fieldsBox =<< newTaskActionsButton h entityId
+            addStretch fieldsBox
             pure fieldsBox
     pure this
   where
