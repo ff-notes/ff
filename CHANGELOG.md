@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Changed
+- Moved task actions menu button to the left.
 
 ## [0.9] - 2019-01-09
 ### Added
