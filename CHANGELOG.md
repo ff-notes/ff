@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.9] - 2019-01-09
 ### Added
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,
   `show`, `unarchive`.
@@ -129,8 +131,9 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.8...HEAD
-[0.7]: https://github.com/ff-notes/ff/compare/v0.7...v0.8
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.9...HEAD
+[0.9]: https://github.com/ff-notes/ff/compare/v0.8...v0.9
+[0.8]: https://github.com/ff-notes/ff/compare/v0.7...v0.8
 [0.7]: https://github.com/ff-notes/ff/compare/v0.6...v0.7
 [0.6]: https://github.com/ff-notes/ff/compare/v0.5...v0.6
 [0.5]: https://github.com/ff-notes/ff/compare/v0.4...v0.5

@@ -1,7 +1,7 @@
 cabal-version: >= 1.2
 
 name: ff
-version: 0.8
+version: 0.9
 copyright:
     2018 Yuriy Syrovetskiy, Nikolay Loginov;
     2019 Yuriy Syrovetskiy

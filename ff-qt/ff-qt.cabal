@@ -1,5 +1,5 @@
 name:           ff-qt
-version:        0.8
+version:        0.9
 build-type:     Simple
 cabal-version:  >= 1.10
 
