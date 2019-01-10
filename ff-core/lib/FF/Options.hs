@@ -18,6 +18,8 @@ module FF.Options (
 ) where
 
 import           Control.Applicative (optional, some, (<|>))
+import           Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
@@ -77,7 +79,7 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 data Shuffle = Shuffle | Sort
 
 data Edit = Edit
-    { editIds   :: [NoteId]
+    { editIds   :: NonEmpty NoteId
     , editText  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
@@ -196,7 +198,7 @@ parseOptions h =
         <*> optional end
         <*> wiki
     edit = Edit
-        <$> some noteid
+        <$> (NonEmpty.fromList <$> some noteid)
         <*> optional textOption
         <*> optional start
         <*> optional maybeEnd

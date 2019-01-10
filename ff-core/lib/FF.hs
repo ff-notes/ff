@@ -38,10 +38,11 @@ import           Control.Monad.Extra (unless, void, when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
                                              evalStateT, gets, state)
-import           Data.Foldable (asum, for_)
+import           Data.Foldable (asum, for_, toList)
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           Data.List (genericLength, sortOn)
+import           Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (catMaybes, fromMaybe)
 import           Data.Text (Text)
@@ -310,9 +311,9 @@ cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
 cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
-    ([], _, _, _) -> throwError "Nothing to edit"
-    (_:_:_, Just _, _, _) -> throwError "Can't edit content of multiple notes"
-    ([editId], _, Nothing, Nothing) ->
+    (_ :| _ : _, Just _, _, _) ->
+        throwError "Can't edit content of multiple notes"
+    (editId :| [], _, Nothing, Nothing) ->
         fmap (:[]) $ modifyAndView editId $ do
             assertNoteIsNative
             note_text_zoom $ do
@@ -322,7 +323,7 @@ cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
                     Just text' -> pure text'
                 RGA.editText text'
     _ ->
-        for editIds $ \editId ->
+        fmap toList . for editIds $ \editId ->
             modifyAndView editId $ do
                 whenJust editText $ const assertNoteIsNative
                 checkStartEnd
