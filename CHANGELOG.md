@@ -9,6 +9,9 @@ and this project adheres to
 ### Changed
 - Moved task actions menu button to the left.
 
+### Fixed
+- `ff edit` options parsing.
+
 ## [0.9] - 2019-01-09
 ### Added
 - CLI: allow multiple notes in subcommands `delete`, `done`, `edit`, `postpone`,

@@ -310,19 +310,23 @@ cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
 cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
-    ([editId], Nothing, Nothing, Nothing) ->
+    ([], _, _, _) -> throwError "Nothing to edit"
+    (_:_:_, Just _, _, _) -> throwError "Can't edit content of multiple notes"
+    ([editId], _, Nothing, Nothing) ->
         fmap (:[]) $ modifyAndView editId $ do
             assertNoteIsNative
             note_text_zoom $ do
                 text <- liftEither =<< gets RGA.getText
-                text' <- liftIO $ runExternalEditor text
+                text' <- case editText of
+                    Nothing -> liftIO $ runExternalEditor text
+                    Just text' -> pure text'
                 RGA.editText text'
     _ ->
         for editIds $ \editId ->
             modifyAndView editId $ do
                 whenJust editText $ const assertNoteIsNative
                 checkStartEnd
-                update
+                updateStartEndText
   where
     checkStartEnd = do
         start <- note_start_read
@@ -335,7 +339,7 @@ cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
         whenJust newStartEnd $
             uncurry assertStartBeforeEnd
 
-    update = do
+    updateStartEndText = do
         status <- note_status_read
         (start, end) <- case status of
             Wiki -> case (editStart, editEnd) of

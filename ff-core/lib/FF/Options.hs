@@ -195,29 +195,23 @@ parseOptions h =
         <*> optional start
         <*> optional end
         <*> wiki
-    edit = editTextOfSingleItem <|> editAttrsOfMultipleItems
-    editTextOfSingleItem = Edit
-        <$> ((:[]) <$> noteid)
-        <*> optional textOption
-        <*> pure Nothing
-        <*> pure Nothing
-    editAttrsOfMultipleItems = Edit
+    edit = Edit
         <$> some noteid
-        <*> pure Nothing
+        <*> optional textOption
         <*> optional start
         <*> optional maybeEnd
     search = Search
         <$> strArgument (metavar "TEXT")
-        <*> searchN
+        <*> searchT
         <*> searchW
         <*> searchC
         <*> optional limit
-    searchN = switch (long "tasks" <> short 't' <> help "Search among notes")
-    searchW = switch (long "wiki" <> short 'w' <> help "Search among wiki")
-    searchC = switch (long "contacts" <> short 'c'
-                        <> help "Search among contacts")
-    noteid = argument readDocId
-        (metavar "ID" <> help "note id" <> completer completeNoteIds)
+    searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
+    searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
+    searchC =
+        switch $ long "contacts" <> short 'c' <> help "Search among contacts"
+    noteid = argument readDocId $
+        metavar "ID" <> help "note id" <> completer completeNoteIds
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"
     limit = option auto $ long "limit" <> short 'l' <> help "Number of issues"
