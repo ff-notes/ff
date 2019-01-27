@@ -65,7 +65,7 @@ data Options = Options
     }
 
 data Track = Track
-    { trackDryrun  :: Bool
+    { dryRun       :: Bool
     , trackAddress :: Maybe Text
     , trackLimit   :: Maybe Limit
     }
@@ -170,22 +170,22 @@ parseOptions h =
     cmdUpgrade   = pure CmdUpgrade
     cmdWiki      = CmdWiki      <$> optional limit
 
-    wiki = switch
-        (long "wiki" <> short 'w' <>
-        help "Handle wiki note")
-    briefOption = switch
-        (long "brief" <> short 'b' <>
-        help "List only note titles and ids")
+    wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
+    briefOption = switch $
+        long "brief" <> short 'b' <> help "List only note titles and ids"
     track = Track
-        <$> dryRun
+        <$> dryRunOption
         <*> optional repo
         <*> optional limit
-    dryRun = switch
-        (long "dry-run" <> short 'd' <>
-        help "List only issues, don't set up tracking")
-    repo = strOption $
-        long "repo" <> short 'r' <> metavar "USER/REPO" <>
-        help "User or organization/repository"
+    dryRunOption = switch
+        $  long "dry-run"
+        <> short 'd'
+        <> help "List only issues, don't set up tracking"
+    repo = strOption
+        $  long "repo"
+        <> short 'r'
+        <> metavar "USER/REPO"
+        <> help "User or organization/repository"
     contact = subparser $ command "add" iAdd <> command "delete" iDelete
       where
         iAdd = i pAdd "Add contact"
