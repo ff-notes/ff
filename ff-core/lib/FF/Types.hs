@@ -120,8 +120,8 @@ instance Collection Contact where
     collectionName = "contact"
 
 data Sample a = Sample
-    { sample_items :: [a]
-    , sample_total :: Natural
+    { items :: [a]
+    , total :: Natural
     }
     deriving (Eq, Functor, Show)
 
@@ -130,12 +130,11 @@ type ContactSample = EntitySample Contact
 type NoteSample = EntitySample Note
 
 emptySample :: Sample a
-emptySample = Sample{sample_items = [], sample_total = 0}
+emptySample = Sample{items = [], total = 0}
 
 -- | Number of notes omitted from the sample.
 omitted :: Sample a -> Natural
-omitted Sample{sample_total, sample_items} =
-    sample_total - genericLength sample_items
+omitted Sample{total, items} = total - genericLength items
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode

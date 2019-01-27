@@ -77,10 +77,10 @@ prettyContactSample isBrief samples = stack isBrief $
   where
     numOmitted = omitted samples
     prettyContactSample' = \case
-        Sample{sample_total = 0} -> red "No contacts to show"
-        Sample{sample_items} ->
+        Sample{total = 0} -> red "No contacts to show"
+        Sample{items} ->
             withHeader "Contacts:" . stack isBrief $
-            map ((bullet <>) . indent 1 . prettyContact isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyContact isBrief) items
 
 prettyWikiSample :: Bool -> NoteSample -> Doc AnsiStyle
 prettyWikiSample isBrief samples = stack isBrief $
@@ -89,11 +89,11 @@ prettyWikiSample isBrief samples = stack isBrief $
   where
     numOmitted = omitted samples
     prettyWikiSample' = \case
-        Sample{sample_total = 0} -> red "No wikis to show"
-        Sample{sample_items} ->
+        Sample{total = 0} -> red "No wikis to show"
+        Sample{items} ->
             withHeader "Wiki:" .
             stack isBrief $
-            map ((bullet <>) . indent 1 . prettyNote isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyNote isBrief) items
 
 prettyNoteList :: Bool -> [Entity Note] -> Doc AnsiStyle
 prettyNoteList isBrief =
@@ -144,20 +144,20 @@ prettyTaskSections isBrief samples = stack isBrief
 
 prettyTaskSample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc AnsiStyle
 prettyTaskSample isBrief mode = \case
-    Sample{sample_total = 0} -> red "No notes to show"
-    Sample{sample_total, sample_items} ->
+    Sample{total = 0} -> red "No notes to show"
+    Sample{total, items} ->
         withHeader (sampleLabel mode) . stack isBrief $
-            map ((bullet <>) . indent 1 . prettyNote isBrief) sample_items
+            map ((bullet <>) . indent 1 . prettyNote isBrief) items
             ++  [ hang indentation $
                     fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
-                | count /= sample_total
+                | count /= total
                 ]
       where
         toSeeAllLabel
             = yellow "To see all"
-           <+> magenta (pretty $ Text.pack $ show sample_total)
+           <+> magenta (pretty $ Text.pack $ show total)
            <+> yellow "task(s), run:"
-        count         = genericLength sample_items
+        count         = genericLength items
   where
     cmdToSeeAll = \case
         Overdue _  -> "ff search --overdue"

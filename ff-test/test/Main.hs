@@ -71,7 +71,7 @@ prop_smoke = property $ do
     agenda = Map.singleton
         (Overdue 365478)
         Sample
-            { sample_items =
+            { items =
                 [Entity
                     (DocId "B00000000002D-200000000002D")
                     Note
@@ -81,7 +81,7 @@ prop_smoke = property $ do
                         , note_end    = Just $ fromGregorian 17 06 19
                         , note_track  = Nothing
                         }]
-            , sample_total = 1
+            , total = 1
             }
 
 fs123 :: TestDB
@@ -192,7 +192,7 @@ prop_repo = property $
     ideal = Map.singleton
         (Overdue 10)
         Sample
-            { sample_items = pure Note
+            { items = pure Note
                 { note_status = TaskStatus Active
                 , note_text   = "import issues (GitHub -> ff)"
                 , note_start  = fromGregorian 2018 06 21
@@ -204,7 +204,7 @@ prop_repo = property $
                     , track_url = "https://github.com/ff-notes/ff/issues/60"
                     }
                 }
-            , sample_total = 1
+            , total = 1
             }
 
 todayForIssues :: Day
