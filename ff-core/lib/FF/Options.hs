@@ -65,9 +65,9 @@ data Options = Options
     }
 
 data Track = Track
-    { dryRun       :: Bool
-    , trackAddress :: Maybe Text
-    , trackLimit   :: Maybe Limit
+    { dryRun     :: Bool
+    , address    :: Maybe Text
+    , trackLimit :: Maybe Limit
     }
 
 data Contact = Add Text | Delete ContactId
