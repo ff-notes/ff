@@ -319,10 +319,11 @@ cmdEdit Edit{ids, text, editStart, editEnd} =
             fmap (:[]) $ modifyAndView id $ do
                 assertNoteIsNative
                 note_text_zoom $ do
-                    noteText  <- liftEither =<< gets RGA.getText
                     noteText' <- case text of
-                        Nothing        -> liftIO $ runExternalEditor noteText
                         Just noteText' -> pure noteText'
+                        Nothing        -> do
+                            noteText <- liftEither =<< gets RGA.getText
+                            liftIO $ runExternalEditor noteText
                     RGA.editText noteText'
         _ ->
             fmap toList . for ids $ \id ->
