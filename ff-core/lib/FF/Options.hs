@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -98,7 +99,7 @@ data Edit = Edit
     deriving (Show)
 
 data New = New
-    { newText    :: Text
+    { text    :: Text
     , newStart   :: Maybe Day
     , newEnd     :: Maybe Day
     , newWiki    :: Bool

@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -245,7 +246,7 @@ updateTrackedNotes newNotes = do
     for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
-cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
+cmdNewNote New{text, newStart, newEnd, newWiki} today = do
     let newStart' = fromMaybe today newStart
     whenJust newEnd $ assertStartBeforeEnd newStart'
     (note_status, note_end, note_start) <-
@@ -257,7 +258,7 @@ cmdNewNote New{newText, newStart, newEnd, newWiki} today = do
             { note_end
             , note_start
             , note_status
-            , note_text = Text.unpack newText
+            , note_text = Text.unpack text
             , note_track = Nothing
             }
     obj <- newObject note

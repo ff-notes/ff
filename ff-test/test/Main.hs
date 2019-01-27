@@ -125,7 +125,7 @@ today = fromGregorian 1018 02 10
 
 prop_new :: Property
 prop_new = let
-    newText  = "Мир"
+    text     = "Мир"
     newStart = Just $ fromGregorian 2154 5 6
     newEnd   = Just $ fromGregorian 3150 1 2
     fs =
@@ -148,9 +148,9 @@ prop_new = let
     property $ do
         (note, fs') <-
             evalEitherS $ runStorageSim mempty $
-            cmdNewNote New{newText, newStart, newEnd, newWiki = False} today
+            cmdNewNote New{text, newStart, newEnd, newWiki = False} today
         let Note{note_text, note_start, note_end} = entityVal note
-        Text.unpack newText      === note_text
+        Text.unpack text         === note_text
         fromMaybe today newStart === note_start
         newEnd                   === note_end
         fs                       === fs'
