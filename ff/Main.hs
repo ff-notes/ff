@@ -1,7 +1,7 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -124,13 +124,11 @@ runCmdAction ui cmd isBrief = do
             for_ notes $ \noteId -> do
                 note <- cmdPostpone noteId
                 pprint $ withHeader "postponed:" $ prettyNote isBrief note
-        CmdSearch Search{..} -> do
-            (tasks, wikis, contacts) <- cmdSearch text ui searchLimit today
+        CmdSearch Search{text, limit, inTasks, inWikis, inContacts} -> do
+            (tasks, wikis, contacts) <- cmdSearch text ui limit today
             pprint $
                 prettyTasksWikisContacts
-                    isBrief
-                    tasks wikis contacts
-                    searchTasks searchWiki searchContacts
+                    isBrief tasks wikis contacts inTasks inWikis inContacts
         CmdShow noteIds -> do
             notes <- for noteIds cmdShow
             pprint $ prettyNoteList isBrief notes

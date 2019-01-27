@@ -106,11 +106,11 @@ data New = New
     }
 
 data Search = Search
-    { text           :: Text
-    , searchTasks    :: Bool  -- ^ search among tasks
-    , searchWiki     :: Bool  -- ^ search among wiki notes
-    , searchContacts :: Bool  -- ^ search among contacts
-    , searchLimit    :: Maybe Limit
+    { text       :: Text
+    , inTasks    :: Bool
+    , inWikis    :: Bool
+    , inContacts :: Bool
+    , limit      :: Maybe Limit
     }
 
 parseOptions :: Storage.Handle -> IO Options
