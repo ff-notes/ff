@@ -125,9 +125,9 @@ today = fromGregorian 1018 02 10
 
 prop_new :: Property
 prop_new = let
-    text     = "Мир"
-    newStart = Just $ fromGregorian 2154 5 6
-    newEnd   = Just $ fromGregorian 3150 1 2
+    text   = "Мир"
+    start  = Just $ fromGregorian 2154 5 6
+    newEnd = Just $ fromGregorian 3150 1 2
     fs =
         Map.singleton "note" $ Map.singleton "B000000000038-2000000000012" $
         Map.singleton "B00000000003P-2000000000012" $
@@ -148,12 +148,12 @@ prop_new = let
     property $ do
         (note, fs') <-
             evalEitherS $ runStorageSim mempty $
-            cmdNewNote New{text, newStart, newEnd, newWiki = False} today
+            cmdNewNote New{text, start, newEnd, newWiki = False} today
         let Note{note_text, note_start, note_end} = entityVal note
-        Text.unpack text         === note_text
-        fromMaybe today newStart === note_start
-        newEnd                   === note_end
-        fs                       === fs'
+        Text.unpack text      === note_text
+        fromMaybe today start === note_start
+        newEnd                === note_end
+        fs                    === fs'
 
 evalEitherS :: (MonadTest m, HasCallStack) => Either String a -> m a
 evalEitherS = \case

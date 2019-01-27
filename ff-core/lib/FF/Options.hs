@@ -100,7 +100,7 @@ data Edit = Edit
 
 data New = New
     { text    :: Text
-    , newStart   :: Maybe Day
+    , start   :: Maybe Day
     , newEnd     :: Maybe Day
     , newWiki    :: Bool
     }
