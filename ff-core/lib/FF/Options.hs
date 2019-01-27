@@ -61,7 +61,7 @@ data CmdAction
 data Options = Options
     { brief     :: Bool
     , customDir :: Maybe FilePath
-    , optionCmd :: Cmd
+    , cmd       :: Cmd
     }
 
 data Track = Track
