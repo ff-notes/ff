@@ -59,7 +59,7 @@ data CmdAction
     | CmdWiki       (Maybe Limit)
 
 data Options = Options
-    { optionBrief     :: Bool
+    { brief           :: Bool
     , optionCustomDir :: Maybe FilePath
     , optionCmd       :: Cmd
     }
@@ -113,8 +113,11 @@ parseOptions h =
         , prefMultiSuffix     = "..."
         , prefShowHelpOnError = True
         }
-    parser   = Options <$> brief <*> customDir <*>
-        (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
+    parser =
+        Options
+        <$> briefOption
+        <*> customDir
+        <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
         , action  "agenda"    iCmdAgenda
@@ -170,7 +173,7 @@ parseOptions h =
     wiki = switch
         (long "wiki" <> short 'w' <>
         help "Handle wiki note")
-    brief = switch
+    briefOption = switch
         (long "brief" <> short 'b' <>
         help "List only note titles and ids")
     track = Track
