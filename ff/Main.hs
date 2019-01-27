@@ -149,12 +149,12 @@ runCmdAction ui cmd isBrief = do
             pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: Track -> Day -> Bool -> Storage ()
-cmdTrack Track{dryRun, address, trackLimit} today isBrief =
+cmdTrack Track{dryRun, address, limit} today isBrief =
     if dryRun then liftIO $ do
-        samples <- run $ getOpenIssueSamples address trackLimit today
+        samples <- run $ getOpenIssueSamples address limit today
         pprint $ prettyTaskSections isBrief $ (Entity (DocId "") <$>) <$> samples
     else do
-        notes <- liftIO $ run $ getIssueViews address trackLimit
+        notes <- liftIO $ run $ getIssueViews address limit
         updateTrackedNotes notes
         liftIO
             $   putStrLn

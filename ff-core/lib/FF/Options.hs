@@ -65,9 +65,9 @@ data Options = Options
     }
 
 data Track = Track
-    { dryRun     :: Bool
-    , address    :: Maybe Text
-    , trackLimit :: Maybe Limit
+    { dryRun  :: Bool
+    , address :: Maybe Text
+    , limit   :: Maybe Limit
     }
 
 data Contact = Add Text | Delete ContactId
@@ -156,7 +156,7 @@ parseOptions h =
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    = CmdAgenda    <$> optional limit
+    cmdAgenda    = CmdAgenda    <$> optional limitOption
     cmdContact   = CmdContact   <$> optional contact
     cmdDelete    = CmdDelete    <$> some noteid
     cmdDone      = CmdDone      <$> some noteid
@@ -168,7 +168,7 @@ parseOptions h =
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
-    cmdWiki      = CmdWiki      <$> optional limit
+    cmdWiki      = CmdWiki      <$> optional limitOption
 
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption = switch $
@@ -176,7 +176,7 @@ parseOptions h =
     track = Track
         <$> dryRunOption
         <*> optional repo
-        <*> optional limit
+        <*> optional limitOption
     dryRunOption = switch
         $  long "dry-run"
         <> short 'd'
@@ -210,7 +210,7 @@ parseOptions h =
         <*> searchT
         <*> searchW
         <*> searchC
-        <*> optional limit
+        <*> optional limitOption
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -219,7 +219,8 @@ parseOptions h =
         metavar "ID" <> help "note id" <> completer completeNoteIds
     text = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"
-    limit = option auto $ long "limit" <> short 'l' <> help "Number of issues"
+    limitOption =
+        option auto $ long "limit" <> short 'l' <> help "Number of issues"
     start = dateOption $ long "start" <> short 's' <> help "start date"
     textOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
