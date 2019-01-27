@@ -79,7 +79,7 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 data Shuffle = Shuffle | Sort
 
 data Edit = Edit
-    { editIds   :: NonEmpty NoteId
+    { ids   :: NonEmpty NoteId
     , editText  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)

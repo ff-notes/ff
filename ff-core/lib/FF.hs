@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
@@ -31,6 +30,8 @@ module FF (
     takeSamples,
     updateTrackedNotes,
 ) where
+
+import           Prelude hiding (id)
 
 import           Control.Arrow ((&&&))
 import           Control.Monad.Except (MonadError, liftEither, throwError)
@@ -195,7 +196,7 @@ splitModesBy f today = Map.unionsWith (++) . map singleton where
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
 splitModes :: Day -> [Note] -> ModeMap [Note]
-splitModes = splitModesBy id
+splitModes = splitModesBy identity
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
@@ -310,24 +311,25 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
-cmdEdit Edit{..} = case (editIds, editText, editStart, editEnd) of
-    (_ :| _ : _, Just _, _, _) ->
-        throwError "Can't edit content of multiple notes"
-    (editId :| [], _, Nothing, Nothing) ->
-        fmap (:[]) $ modifyAndView editId $ do
-            assertNoteIsNative
-            note_text_zoom $ do
-                text <- liftEither =<< gets RGA.getText
-                text' <- case editText of
-                    Nothing -> liftIO $ runExternalEditor text
-                    Just text' -> pure text'
-                RGA.editText text'
-    _ ->
-        fmap toList . for editIds $ \editId ->
-            modifyAndView editId $ do
-                whenJust editText $ const assertNoteIsNative
-                checkStartEnd
-                updateStartEndText
+cmdEdit Edit{ids, editText, editStart, editEnd} =
+    case (ids, editText, editStart, editEnd) of
+        (_ :| _ : _, Just _, _, _) ->
+            throwError "Can't edit content of multiple notes"
+        (id :| [], _, Nothing, Nothing) ->
+            fmap (:[]) $ modifyAndView id $ do
+                assertNoteIsNative
+                note_text_zoom $ do
+                    text <- liftEither =<< gets RGA.getText
+                    text' <- case editText of
+                        Nothing -> liftIO $ runExternalEditor text
+                        Just text' -> pure text'
+                    RGA.editText text'
+        _ ->
+            fmap toList . for ids $ \id ->
+                modifyAndView id $ do
+                    whenJust editText $ const assertNoteIsNative
+                    checkStartEnd
+                    updateStartEndText
   where
     checkStartEnd = do
         start <- note_start_read
@@ -432,3 +434,6 @@ checkDataDir :: Monad m => Config -> m FilePath
 checkDataDir Config{dataDir} = case dataDir of
     Just dir -> pure dir
     Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
+
+identity :: a -> a
+identity x = x
