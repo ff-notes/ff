@@ -7,6 +7,7 @@
 
 module Main (main) where
 
+import           Control.Monad.Except (liftEither)
 import           Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import           Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
@@ -17,13 +18,13 @@ import           Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time (Day, UTCTime (..), fromGregorian)
-import           GHC.Stack (HasCallStack, withFrozenCallStack)
+import           GHC.Stack (HasCallStack)
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
-import           Hedgehog (Gen, MonadTest, Property, forAll, property, (===))
-import           Hedgehog.Internal.Property (failWith)
+import           Hedgehog (Gen, MonadTest, Property, evalExceptT, forAll,
+                           property, (===))
 import           RON.Data (ReplicatedAsObject, getObject, newObject)
 import           RON.Storage (DocId (DocId))
 import           RON.Storage.Test (TestDB, runStorageSim)
@@ -156,9 +157,7 @@ prop_new = let
         fs                    === fs'
 
 evalEitherS :: (MonadTest m, HasCallStack) => Either String a -> m a
-evalEitherS = \case
-    Left  x -> withFrozenCallStack $ failWith Nothing x
-    Right a -> pure a
+evalEitherS = evalExceptT . liftEither
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
 jsonRoundtrip genA = property $ do
