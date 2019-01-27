@@ -59,9 +59,9 @@ data CmdAction
     | CmdWiki       (Maybe Limit)
 
 data Options = Options
-    { brief           :: Bool
-    , optionCustomDir :: Maybe FilePath
-    , optionCmd       :: Cmd
+    { brief     :: Bool
+    , customDir :: Maybe FilePath
+    , optionCmd :: Cmd
     }
 
 data Track = Track
@@ -116,7 +116,7 @@ parseOptions h =
     parser =
         Options
         <$> briefOption
-        <*> customDir
+        <*> customDirOption
         <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
     commands = mconcat
         [ action  "add"       iCmdAdd
@@ -229,8 +229,8 @@ parseOptions h =
 
     dateOption m = option auto $ metavar "DATE" <> m
 
-    customDir = optional $ strOption
-        $ long "data-dir"
+    customDirOption = optional $ strOption
+        $  long "data-dir"
         <> short 'C'
         <> metavar "DIRECTORY"
         <> help "Path to the data dir"
