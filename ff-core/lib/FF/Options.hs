@@ -80,7 +80,7 @@ data Shuffle = Shuffle | Sort
 
 data Edit = Edit
     { ids   :: NonEmpty NoteId
-    , editText  :: Maybe Text
+    , text  :: Maybe Text
     , editStart :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
     -- ^ Nothing      -- no option             => no change
@@ -196,13 +196,13 @@ parseOptions h =
             (metavar "CONTACT_ID" <> help "contact id"
             <> completer completeContactIds)
     new = New
-        <$> text
+        <$> noteTextArgument
         <*> optional start
         <*> optional end
         <*> wiki
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
-        <*> optional textOption
+        <*> optional noteTextOption
         <*> optional start
         <*> optional maybeEnd
     search = Search
@@ -217,12 +217,12 @@ parseOptions h =
         switch $ long "contacts" <> short 'c' <> help "Search among contacts"
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
-    text = strArgument $ metavar "TEXT" <> help "note text"
+    noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
     end = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"
     start = dateOption $ long "start" <> short 's' <> help "start date"
-    textOption = strOption $
+    noteTextOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
     maybeEnd =
         Just <$> end <|>
