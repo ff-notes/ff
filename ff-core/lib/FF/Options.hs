@@ -81,7 +81,7 @@ data Shuffle = Shuffle | Sort
 data Edit = Edit
     { ids   :: NonEmpty NoteId
     , text  :: Maybe Text
-    , editStart :: Maybe Day
+    , start :: Maybe Day
     , editEnd   :: Maybe (Maybe Day)
     -- ^ Nothing      -- no option             => no change
     --   Just Nothing -- option with tombstone => clear field
@@ -197,13 +197,13 @@ parseOptions h =
             <> completer completeContactIds)
     new = New
         <$> noteTextArgument
-        <*> optional start
+        <*> optional startDateOption
         <*> optional end
         <*> wiki
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
-        <*> optional start
+        <*> optional startDateOption
         <*> optional maybeEnd
     search = Search
         <$> strArgument (metavar "TEXT")
@@ -221,7 +221,8 @@ parseOptions h =
     end = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"
-    start = dateOption $ long "start" <> short 's' <> help "start date"
+    startDateOption =
+        dateOption $ long "start" <> short 's' <> help "start date"
     noteTextOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
     maybeEnd =

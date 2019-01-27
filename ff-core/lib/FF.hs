@@ -311,8 +311,8 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
-cmdEdit Edit{ids, text, editStart, editEnd} =
-    case (ids, text, editStart, editEnd) of
+cmdEdit Edit{ids, text, start, editEnd} =
+    case (ids, text, start, editEnd) of
         (_ :| _ : _, Just _, _, _) ->
             throwError "Can't edit content of multiple notes"
         (id :| [], _, Nothing, Nothing) ->
@@ -333,11 +333,11 @@ cmdEdit Edit{ids, text, editStart, editEnd} =
                     updateStartEndText
   where
     checkStartEnd = do
-        start <- note_start_read
-        mEnd  <- note_end_read
-        let newStartEnd = case (editStart, editEnd, mEnd) of
+        nStart <- note_start_read
+        mEnd   <- note_end_read
+        let newStartEnd = case (start, editEnd, mEnd) of
                 (Just eStart, Nothing        , Just end) -> Just (eStart, end)
-                (Nothing    , Just (Just end), _       ) -> Just (start,  end)
+                (Nothing    , Just (Just end), _       ) -> Just (nStart, end)
                 (Just eStart, Just (Just end), _       ) -> Just (eStart, end)
                 _                                        -> Nothing
         whenJust newStartEnd $
@@ -345,14 +345,14 @@ cmdEdit Edit{ids, text, editStart, editEnd} =
 
     updateStartEndText = do
         status <- note_status_read
-        (start, end) <- case status of
-            Wiki -> case (editStart, editEnd) of
+        (start', end) <- case status of
+            Wiki -> case (start, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _ -> throwError "Wiki dates are immutable"
-            _ -> pure (editStart, editEnd)
-        whenJust end   $ \d -> note_end_assign   d
-        whenJust start $ \d -> note_start_assign d
-        whenJust text  $ \t -> note_text_zoom $ RGA.editText t
+            _ -> pure (start, editEnd)
+        whenJust end    note_end_assign
+        whenJust start' note_start_assign
+        whenJust text $ note_text_zoom . RGA.editText
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
