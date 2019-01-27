@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -9,11 +10,13 @@ module FF.Options (
     Contact (..),
     DataDir (..),
     Edit (..),
+    MaybeClear (..),
     New (..),
     Options (..),
     Search (..),
     Shuffle (..),
     Track (..),
+    maybeClearToMaybe,
     parseOptions,
 ) where
 
@@ -78,14 +81,19 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
 data Shuffle = Shuffle | Sort
 
+data MaybeClear a = Clear | Set a
+    deriving (Show)
+
+maybeClearToMaybe :: MaybeClear a -> Maybe a
+maybeClearToMaybe = \case
+    Clear -> Nothing
+    Set x -> Just x
+
 data Edit = Edit
     { ids   :: NonEmpty NoteId
     , text  :: Maybe Text
     , start :: Maybe Day
-    , editEnd   :: Maybe (Maybe Day)
-    -- ^ Nothing      -- no option             => no change
-    --   Just Nothing -- option with tombstone => clear field
-    --   Just value   -- option with value     => set field to value
+    , end   :: Maybe (MaybeClear Day)
     }
     deriving (Show)
 
@@ -198,13 +206,13 @@ parseOptions h =
     new = New
         <$> noteTextArgument
         <*> optional startDateOption
-        <*> optional end
+        <*> optional endDateOption
         <*> wiki
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
-        <*> optional maybeEnd
+        <*> optional maybeClearEnd
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -218,16 +226,16 @@ parseOptions h =
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
-    end = dateOption $ long "end" <> short 'e' <> help "end date"
+    endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"
     startDateOption =
         dateOption $ long "start" <> short 's' <> help "start date"
     noteTextOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
-    maybeEnd =
-        Just <$> end <|>
-        flag' Nothing (long "end-clear" <> help "clear end date")
+    maybeClearEnd
+        =   Set <$> endDateOption
+        <|> flag' Clear (long "end-clear" <> help "clear end date")
 
     dateOption m = option auto $ metavar "DATE" <> m
 

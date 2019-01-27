@@ -156,10 +156,9 @@ cmdTrack Track{dryRun, address, limit} today isBrief =
     else do
         notes <- liftIO $ run $ getIssueViews address limit
         updateTrackedNotes notes
-        liftIO
-            $   putStrLn
+        liftIO $ putStrLn
             $   show (length notes)
-                ++ " issues synchronized with the local database"
+            ++  " issues synchronized with the local database"
   where
     run getter = do
         hPutStr stderr "fetching"

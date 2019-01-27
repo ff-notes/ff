@@ -33,6 +33,7 @@ module FF (
 
 import           Prelude hiding (id)
 
+import           Control.Applicative ((<|>))
 import           Control.Arrow ((&&&))
 import           Control.Monad.Except (MonadError, liftEither, throwError)
 import           Control.Monad.Extra (unless, void, when, whenJust)
@@ -72,7 +73,7 @@ import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
                             shuffle)
-import           FF.Options (Edit (..), New (..))
+import           FF.Options (Edit (..), New (..), maybeClearToMaybe)
 import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            Limit, ModeMap, Note (..), NoteId, NoteSample,
                            NoteStatus (..), Sample (..), Status (..), Track,
@@ -311,8 +312,8 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
-cmdEdit Edit{ids, text, start, editEnd} =
-    case (ids, text, start, editEnd) of
+cmdEdit Edit{ids, text, start=editStart, end=editEnd} =
+    case (ids, text, editStart, editEnd) of
         (_ :| _ : _, Just _, _, _) ->
             throwError "Can't edit content of multiple notes"
         (id :| [], _, Nothing, Nothing) ->
@@ -333,25 +334,23 @@ cmdEdit Edit{ids, text, start, editEnd} =
                     updateStartEndText
   where
     checkStartEnd = do
-        nStart <- note_start_read
-        mEnd   <- note_end_read
-        let newStartEnd = case (start, editEnd, mEnd) of
-                (Just eStart, Nothing        , Just end) -> Just (eStart, end)
-                (Nothing    , Just (Just end), _       ) -> Just (nStart, end)
-                (Just eStart, Just (Just end), _       ) -> Just (eStart, end)
-                _                                        -> Nothing
+        curStart <- note_start_read
+        curEnd   <- note_end_read
+        let newStartEnd = (,)
+                <$> (editStart <|> Just curStart)
+                <*> ((editEnd >>= maybeClearToMaybe) <|> curEnd)
         whenJust newStartEnd $
             uncurry assertStartBeforeEnd
 
     updateStartEndText = do
         status <- note_status_read
-        (start', end) <- case status of
-            Wiki -> case (start, editEnd) of
+        (start, end) <- case status of
+            Wiki -> case (editStart, editEnd) of
                 (Nothing, Nothing) -> pure (Nothing, Nothing)
                 _ -> throwError "Wiki dates are immutable"
-            _ -> pure (start, editEnd)
-        whenJust end    note_end_assign
-        whenJust start' note_start_assign
+            _ -> pure (editStart, editEnd)
+        whenJust end  $ note_end_assign . maybeClearToMaybe
+        whenJust start  note_start_assign
         whenJust text $ note_text_zoom . RGA.editText
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
