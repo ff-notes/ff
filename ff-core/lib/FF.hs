@@ -46,7 +46,7 @@ import qualified Data.HashMap.Strict as HashMap
 import           Data.List (genericLength, sortOn)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (catMaybes, fromMaybe)
+import           Data.Maybe (catMaybes, fromMaybe, isJust)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -312,46 +312,42 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid = modifyAndView nid $ note_status_assign $ TaskStatus Active
 
 cmdEdit :: Edit -> Storage [Entity Note]
-cmdEdit Edit{ids, text, start=editStart, end=editEnd} =
-    case (ids, text, editStart, editEnd) of
-        (_ :| _ : _, Just _, _, _) ->
-            throwError "Can't edit content of multiple notes"
-        (id :| [], _, Nothing, Nothing) ->
-            fmap (:[]) $ modifyAndView id $ do
-                assertNoteIsNative
-                note_text_zoom $ do
-                    noteText' <- case text of
-                        Just noteText' -> pure noteText'
-                        Nothing        -> do
-                            noteText <- liftEither =<< gets RGA.getText
-                            liftIO $ runExternalEditor noteText
-                    RGA.editText noteText'
-        _ ->
-            fmap toList . for ids $ \id ->
-                modifyAndView id $ do
-                    whenJust text $ const assertNoteIsNative
-                    checkStartEnd
-                    updateStartEndText
-  where
-    checkStartEnd = do
-        curStart <- note_start_read
-        curEnd   <- note_end_read
-        let newStartEnd = (,)
-                <$> (editStart <|> Just curStart)
-                <*> ((editEnd >>= maybeClearToMaybe) <|> curEnd)
-        whenJust newStartEnd $
-            uncurry assertStartBeforeEnd
-
-    updateStartEndText = do
-        status <- note_status_read
-        (start, end) <- case status of
-            Wiki -> case (editStart, editEnd) of
-                (Nothing, Nothing) -> pure (Nothing, Nothing)
-                _ -> throwError "Wiki dates are immutable"
-            _ -> pure (editStart, editEnd)
-        whenJust end  $ note_end_assign . maybeClearToMaybe
-        whenJust start  note_start_assign
-        whenJust text $ note_text_zoom . RGA.editText
+cmdEdit edit = case edit of
+    Edit{ids = _ :| _ : _, text = Just _} ->
+        throwError "Can't edit content of multiple notes"
+    Edit{ids = id :| [], text, start = Nothing, end = Nothing} ->
+        fmap (:[]) $ modifyAndView id $ do
+            assertNoteIsNative
+            note_text_zoom $ do
+                noteText' <- case text of
+                    Just noteText' -> pure noteText'
+                    Nothing        -> do
+                        noteText <- liftEither =<< gets RGA.getText
+                        liftIO $ runExternalEditor noteText
+                RGA.editText noteText'
+    Edit{ids, text, start, end} ->
+        fmap toList . for ids $ \id ->
+            modifyAndView id $ do
+                -- check text editability
+                whenJust text $ const assertNoteIsNative
+                -- check start and end editability
+                when (isJust start || isJust end) $ do
+                    status <- note_status_read
+                    when (status == Wiki) $
+                        throwError "Wiki dates are immutable"
+                -- check start and end relation
+                do  curStart <- note_start_read
+                    curEnd   <- note_end_read
+                    let newStartEnd = (,)
+                            <$> (start <|> Just curStart)
+                            <*> (end'  <|> curEnd)
+                        end' = end >>= maybeClearToMaybe
+                    whenJust newStartEnd $
+                        uncurry assertStartBeforeEnd
+                -- update
+                whenJust end  $ note_end_assign . maybeClearToMaybe
+                whenJust start  note_start_assign
+                whenJust text $ note_text_zoom . RGA.editText
 
 cmdPostpone :: NoteId -> Storage (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
