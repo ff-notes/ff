@@ -124,9 +124,8 @@ runCmdAction ui cmd isBrief = do
             for_ notes $ \noteId -> do
                 note <- cmdPostpone noteId
                 pprint $ withHeader "postponed:" $ prettyNote isBrief note
-        CmdSearch Search {..} -> do
-            (tasks, wikis, contacts) <-
-                cmdSearch searchText ui searchLimit today
+        CmdSearch Search{..} -> do
+            (tasks, wikis, contacts) <- cmdSearch text ui searchLimit today
             pprint $
                 prettyTasksWikisContacts
                     isBrief

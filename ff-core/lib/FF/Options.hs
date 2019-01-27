@@ -106,7 +106,7 @@ data New = New
     }
 
 data Search = Search
-    { searchText     :: Text
+    { text           :: Text
     , searchTasks    :: Bool  -- ^ search among tasks
     , searchWiki     :: Bool  -- ^ search among wiki notes
     , searchContacts :: Bool  -- ^ search among contacts
