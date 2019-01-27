@@ -246,16 +246,13 @@ updateTrackedNotes newNotes = do
     for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
-cmdNewNote New{text, start, end, newWiki} today = do
+cmdNewNote New{text, start, end, isWiki} today = do
     let start' = fromMaybe today start
     whenJust end $ assertStartBeforeEnd start'
-    (note_status, note_end, note_start) <-
-        if newWiki then
-            case end of
-                Nothing -> pure (Wiki, Nothing, today)
-                Just _  -> throwError "A wiki must have no end date."
-        else
-            pure (TaskStatus Active, end, start')
+    (note_status, note_end, note_start) <- case end of
+        _ | not isWiki -> pure (TaskStatus Active, end, start')
+        Nothing        -> pure (Wiki, Nothing, today)
+        Just _         -> throwError "A wiki must have no end date."
     let note = Note
             { note_end
             , note_start

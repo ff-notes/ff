@@ -148,7 +148,7 @@ prop_new = let
     property $ do
         (note, fs') <-
             evalEitherS $ runStorageSim mempty $
-            cmdNewNote New{text, start, end, newWiki = False} today
+            cmdNewNote New{text, start, end, isWiki = False} today
         let Note{note_text, note_start, note_end} = entityVal note
         Text.unpack text      === note_text
         fromMaybe today start === note_start

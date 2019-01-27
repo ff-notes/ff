@@ -99,10 +99,10 @@ data Edit = Edit
     deriving (Show)
 
 data New = New
-    { text    :: Text
-    , start   :: Maybe Day
-    , end     :: Maybe Day
-    , newWiki    :: Bool
+    { text   :: Text
+    , start  :: Maybe Day
+    , end    :: Maybe Day
+    , isWiki :: Bool
     }
 
 data Search = Search
