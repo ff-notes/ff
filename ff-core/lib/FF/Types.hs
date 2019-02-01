@@ -13,7 +13,10 @@
 
 module FF.Types where
 
+import           Prelude hiding (id)
+
 import           Control.Monad ((>=>))
+import           Control.Monad.Except (MonadError, liftEither)
 import qualified CRDT.Cv.RGA as CRDT
 import qualified CRDT.LamportClock as CRDT
 import qualified CRDT.LWW as CRDT
@@ -39,11 +42,12 @@ import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
 import           RON.Data.LWW (lwwType)
 import           RON.Data.RGA (RgaRaw, rgaType)
 import           RON.Epoch (localEpochTimeFromUnix)
+import           RON.Error (MonadE, throwErrorString)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
-import           RON.Types (Atom (AUuid), Object (Object), Op (Op), UUID,
-                            objectFrame, objectId)
+import           RON.Types (Atom (AUuid), Object (Object, frame, id), Op (Op),
+                            UUID)
 import qualified RON.UUID as UUID
 
 import           FF.CrdtAesonInstances ()
@@ -186,8 +190,10 @@ type EntitySample a = Sample (Entity a)
 
 -- * Legacy, v1
 
-parseNoteV1 :: UUID -> ByteString -> Either String (Object Note)
-parseNoteV1 objectId = eitherDecode >=> parseEither p where
+parseNoteV1 :: MonadE m => UUID -> ByteString -> m (Object Note)
+parseNoteV1 objectId =
+    either throwErrorString pure . (eitherDecode >=> parseEither p)
+  where
 
     p = withObject "Note" $ \obj -> do
         CRDT.LWW (end    :: Maybe Day) endTime    <- obj .:  "end"
@@ -207,17 +213,17 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
                 source     :: Text <- tracked .: "source"
                 url        :: Text <- tracked .: "url"
                 pure $ Just
-                    ( (lwwType, trackId)
-                    , mkStateChunk
+                    ( trackId
+                    , mkStateChunk lwwType
                         [ Op trackId externalIdName $ toPayload externalId
                         , Op trackId providerName   $ toPayload provider
                         , Op trackId sourceName     $ toPayload source
                         , Op trackId urlName        $ toPayload url
                         ]
                     )
-        let objectFrame = Map.fromList
-                $   [   ( (lwwType, objectId)
-                        , mkStateChunk
+        let frame = Map.fromList
+                $   [   ( objectId
+                        , mkStateChunk lwwType
                             [ Op endTime'    endName    $ toPayload end
                             , Op startTime'  startName  $ toPayload start
                             , Op statusTime' statusName $ toPayload status
@@ -225,10 +231,10 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
                             , Op objectId    trackName    trackPayload
                             ]
                         )
-                    ,   ((rgaType, textId), stateToChunk $ rgaFromV1 text)
+                    ,   (textId, stateToChunk $ rgaFromV1 text) -- rgaType
                     ]
                 ++  maybeToList mTrackObject
-        pure Object{objectId, objectFrame}
+        pure Object{id = objectId, frame}
 
     textId  = UUID.succValue objectId
     trackId = UUID.succValue textId
