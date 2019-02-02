@@ -7,7 +7,6 @@
 
 module Main (main) where
 
-import           Control.Monad.Except (liftEither)
 import           Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import           Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
@@ -18,13 +17,11 @@ import           Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time (Day, UTCTime (..), fromGregorian)
-import           GHC.Stack (HasCallStack)
 import           GitHub (Issue (..), IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
-import           Hedgehog (Gen, MonadTest, Property, evalExceptT, forAll,
-                           property, (===))
+import           Hedgehog (Gen, Property, evalEither, forAll, property, (===))
 import           RON.Data (ReplicatedAsObject, getObject, newObject)
 import           RON.Storage (DocId (DocId))
 import           RON.Storage.Test (TestDB, runStorageSim)
@@ -51,9 +48,7 @@ main = $(defaultMainGenerator)
 prop_not_exist :: Property
 prop_not_exist = property $ do
     (agenda, fs') <-
-        either fail pure $
-        runStorageSim fs $
-        getTaskSamples ui agendaLimit today
+        evalEither $ runStorageSim fs $ getTaskSamples ui agendaLimit today
     Map.empty === agenda
     fs === fs'
   where
@@ -62,9 +57,7 @@ prop_not_exist = property $ do
 prop_smoke :: Property
 prop_smoke = property $ do
     (agenda', fs') <-
-        either fail pure $
-        runStorageSim fs123 $
-        getTaskSamples ui agendaLimit today
+        evalEither $ runStorageSim fs123 $ getTaskSamples ui agendaLimit today
     agenda === agenda'
     fs123  === fs'
   where
@@ -130,25 +123,25 @@ prop_new = let
     start = Just $ fromGregorian 2154 5 6
     end   = Just $ fromGregorian 3150 1 2
     fs    =
-        Map.singleton "note" $ Map.singleton "B000000000038-2000000000012" $
-        Map.singleton "B00000000003P-2000000000012" $
+        Map.singleton "note" $ Map.singleton "B000004S54I8M-2000000000012" $
+        Map.singleton "B000005IQBICM-2000000000012" $
         map encodeUtf8
-            [ "*lww #B/000000001d+000000000Y @` !"
+            [ "*lww #B/00004tK__M+000000000Y @` !"
             ,   "\t:end >some =3150 =1 =2"
             ,   "\t:start =2154 =5 =6"
             ,   "\t:status >Active"
-            ,   "\t:text >)B"
+            ,   "\t:text >(2j5K7M"
             ,   "\t:track >none"
-            , "*rga #)B @]0d :0 !"
-            ,   "\t@)b 'М'"
-            ,   "\t@)c 'и'"
-            ,   "\t@)d 'р'"
+            , "*rga #(2j5K7M @(0qmj3f :0 !"
+            ,   "\t@)d 'М'"
+            ,   "\t@)e 'и'"
+            ,   "\t@)f 'р'"
             , "."
             ]
     in
     property $ do
         (note, fs') <-
-            evalEitherS $ runStorageSim mempty $
+            evalEither $ runStorageSim mempty $
             cmdNewNote New{text, start, end, isWiki = False} today
         let Note{note_text, note_start, note_end} = entityVal note
         Text.unpack text      === note_text
@@ -156,23 +149,20 @@ prop_new = let
         end                   === note_end
         fs                    === fs'
 
-evalEitherS :: (MonadTest m, HasCallStack) => Either String a -> m a
-evalEitherS = evalExceptT . liftEither
-
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
 jsonRoundtrip genA = property $ do
     a <- forAll genA
-    a' <- evalEitherS $ parseEither parseJSON $ toJSON a
+    a' <- evalEither $ parseEither parseJSON $ toJSON a
     a === a'
 
 ronRoundtrip :: (Eq a, ReplicatedAsObject a, Show a) => Gen a -> Property
 ronRoundtrip genA = property $ do
     a <- forAll genA
-    (obj, _) <- evalEitherS $ runStorageSim mempty $ newObject a
+    (obj, _) <- evalEither $ runStorageSim mempty $ newObject a
     let (u, bs) = serializeObject obj
-    obj' <- evalEitherS $ parseObject u bs
+    obj' <- evalEither $ parseObject u bs
     obj === obj'
-    a' <- evalEitherS $ getObject obj'
+    a' <- evalEither $ getObject obj'
     a === a'
 
 test_JSON_Tests :: [TestTree]
@@ -261,12 +251,11 @@ prop_json2ron :: Property
 prop_json2ron = property $ do
 
     -- read JSON, merge, write RON
-    do  ((), db') <- either fail pure $ runStorageSim fs123json upgradeDatabase
+    do  ((), db') <- evalEither $ runStorageSim fs123json upgradeDatabase
         fs123merged === db'
 
     -- idempotency
-    do  ((), db') <-
-            either fail pure $ runStorageSim fs123merged upgradeDatabase
+    do  ((), db') <- evalEither $ runStorageSim fs123merged upgradeDatabase
         fs123merged === db'
 
 fs123json :: TestDB
@@ -290,7 +279,7 @@ fs123json =
 fs123merged :: TestDB
 fs123merged =
     Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
-    Map.singleton "B000000000014-2000000000012"
+    Map.singleton "B000000PSDNDU-2000000000012"
         [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U !"
         ,   "\t@B/6n7T8JWK0K+000000000L :end >some =17 =6 =19"
         ,   "\t@B/6n7T8JWK0P+000000000Q :start =22 =11 =24"

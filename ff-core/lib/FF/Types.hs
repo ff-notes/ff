@@ -16,7 +16,6 @@ module FF.Types where
 import           Prelude hiding (id)
 
 import           Control.Monad ((>=>))
-import           Control.Monad.Except (MonadError, liftEither)
 import qualified CRDT.Cv.RGA as CRDT
 import qualified CRDT.LamportClock as CRDT
 import qualified CRDT.LWW as CRDT
@@ -33,14 +32,15 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
 import           Data.Text (Text)
-import           Data.Time (Day, diffDays)
+import           Data.Time (diffDays)
 import           GHC.Generics (Generic)
 import           Numeric.Natural (Natural)
 import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
                            fromPayload, mkStateChunk, payloadEncoding,
                            stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
-import           RON.Data.RGA (RgaRaw, rgaType)
+import           RON.Data.RGA (RgaRaw)
+import           RON.Data.Time (Day)
 import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Error (MonadE, throwErrorString)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)

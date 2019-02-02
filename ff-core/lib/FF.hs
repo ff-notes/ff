@@ -36,7 +36,7 @@ import           Prelude hiding (id)
 
 import           Control.Applicative ((<|>))
 import           Control.Arrow ((&&&))
-import           Control.Monad.Except (MonadError, liftEither, throwError)
+import           Control.Monad.Except (liftEither, throwError)
 import           Control.Monad.Extra (unless, void, when, whenJust)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
@@ -56,12 +56,13 @@ import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
 import           Data.Traversable (for)
 import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
+import           RON.Error (MonadE)
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
                               MonadStorage, createDocument, docIdFromUuid,
                               getDocuments, loadDocument, modify)
 import           RON.Storage.IO (Storage)
-import           RON.Types (Object, objectId)
+import           RON.Types (Object (Object, id))
 import           System.Directory (doesDirectoryExist, findExecutable,
                                    getCurrentDirectory)
 import           System.Environment (getEnv)
@@ -260,17 +261,17 @@ cmdNewNote New{text, start, end, isWiki} today = do
             , note_text = Text.unpack text
             , note_track = Nothing
             }
-    obj <- newObject note
+    obj@Object{id} <- newObject note
     createDocument obj
-    pure $ Entity (docIdFromUuid $ objectId obj) note
+    pure $ Entity (docIdFromUuid id) note
 
 cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
 cmdNewContact name = do
     let contact =
             Contact{contact_name = Text.unpack name, contact_status = Active}
-    obj <- newObject contact
+    obj@Object{id} <- newObject contact
     createDocument obj
-    pure $ Entity (docIdFromUuid $ objectId obj) contact
+    pure $ Entity (docIdFromUuid id) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
@@ -388,12 +389,12 @@ runExternalEditor textOld = do
         pure prog
     assertExecutableFromEnv param = assertExecutable =<< getEnv param
 
-assertStartBeforeEnd :: MonadError String m => Day -> Day -> m ()
+assertStartBeforeEnd :: MonadE m => Day -> Day -> m ()
 assertStartBeforeEnd start end =
     unless (start <= end) $ throwError "task cannot end before it is started"
 
 note_status_assignIfDiffer
-    :: (ReplicaClock m, MonadError String m, MonadState (Object Note) m)
+    :: (ReplicaClock m, MonadE m, MonadState (Object Note) m)
     => NoteStatus -> m ()
 note_status_assignIfDiffer newStatus = do
     curStatus <- note_status_read
@@ -401,7 +402,7 @@ note_status_assignIfDiffer newStatus = do
         note_status_assign newStatus
 {-# ANN note_status_assignIfDiffer ("HLint: ignore Use camelCase" :: String) #-}
 
-assertNoteIsNative :: (MonadError String m, MonadState (Object Note) m) => m ()
+assertNoteIsNative :: (MonadE m, MonadState (Object Note) m) => m ()
 assertNoteIsNative = do
     -- TODO(2018-10-22, cblp) use `case of some/none` without full decoding of
     -- `some`
