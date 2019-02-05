@@ -14,7 +14,7 @@ executable ff-qt
         hoppy-runtime,
         time,
 
-        -- organozation
+        -- organization
         ron-storage,
 
         -- project

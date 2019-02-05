@@ -16,6 +16,7 @@ module FF.Types where
 import           Prelude hiding (id)
 
 import           Control.Monad ((>=>))
+import           Control.Monad.Except (MonadError)
 import qualified CRDT.Cv.RGA as CRDT
 import qualified CRDT.LamportClock as CRDT
 import qualified CRDT.LWW as CRDT
@@ -31,6 +32,7 @@ import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
+import           Data.String (IsString)
 import           Data.Text (Text)
 import           Data.Time (diffDays)
 import           GHC.Generics (Generic)
@@ -191,9 +193,7 @@ type EntitySample a = Sample (Entity a)
 -- * Legacy, v1
 
 parseNoteV1 :: MonadE m => UUID -> ByteString -> m (Object Note)
-parseNoteV1 objectId =
-    either throwErrorString pure . (eitherDecode >=> parseEither p)
-  where
+parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p) where
 
     p = withObject "Note" $ \obj -> do
         CRDT.LWW (end    :: Maybe Day) endTime    <- obj .:  "end"
@@ -248,6 +248,10 @@ parseNoteV1 objectId =
     providerName   = fromJust $ UUID.mkName "provider"
     sourceName     = fromJust $ UUID.mkName "source"
     urlName        = fromJust $ UUID.mkName "url"
+
+-- TODO(cblp) import from RON.Error
+liftEitherString :: (MonadError e m, IsString e) => Either String a -> m a
+liftEitherString = either throwErrorString pure
 
 timeFromV1 :: CRDT.LamportTime -> UUID
 timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =
