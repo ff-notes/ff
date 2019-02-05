@@ -13,7 +13,10 @@
 
 module FF.Types where
 
+import           Prelude hiding (id)
+
 import           Control.Monad ((>=>))
+import           Control.Monad.Except (MonadError)
 import qualified CRDT.Cv.RGA as CRDT
 import qualified CRDT.LamportClock as CRDT
 import qualified CRDT.LWW as CRDT
@@ -29,21 +32,24 @@ import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
+import           Data.String (IsString)
 import           Data.Text (Text)
-import           Data.Time (Day, diffDays)
+import           Data.Time (diffDays)
 import           GHC.Generics (Generic)
 import           Numeric.Natural (Natural)
 import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
                            fromPayload, mkStateChunk, payloadEncoding,
                            stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
-import           RON.Data.RGA (RgaRaw, rgaType)
+import           RON.Data.RGA (RgaRaw)
+import           RON.Data.Time (Day)
 import           RON.Epoch (localEpochTimeFromUnix)
+import           RON.Error (MonadE, throwErrorString)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
-import           RON.Types (Atom (AUuid), Object (Object), Op (Op), UUID,
-                            objectFrame, objectId)
+import           RON.Types (Atom (AUuid), Object (Object, frame, id), Op (Op),
+                            UUID)
 import qualified RON.UUID as UUID
 
 import           FF.CrdtAesonInstances ()
@@ -186,8 +192,8 @@ type EntitySample a = Sample (Entity a)
 
 -- * Legacy, v1
 
-parseNoteV1 :: UUID -> ByteString -> Either String (Object Note)
-parseNoteV1 objectId = eitherDecode >=> parseEither p where
+parseNoteV1 :: MonadE m => UUID -> ByteString -> m (Object Note)
+parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p) where
 
     p = withObject "Note" $ \obj -> do
         CRDT.LWW (end    :: Maybe Day) endTime    <- obj .:  "end"
@@ -207,17 +213,17 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
                 source     :: Text <- tracked .: "source"
                 url        :: Text <- tracked .: "url"
                 pure $ Just
-                    ( (lwwType, trackId)
-                    , mkStateChunk
+                    ( trackId
+                    , mkStateChunk lwwType
                         [ Op trackId externalIdName $ toPayload externalId
                         , Op trackId providerName   $ toPayload provider
                         , Op trackId sourceName     $ toPayload source
                         , Op trackId urlName        $ toPayload url
                         ]
                     )
-        let objectFrame = Map.fromList
-                $   [   ( (lwwType, objectId)
-                        , mkStateChunk
+        let frame = Map.fromList
+                $   [   ( objectId
+                        , mkStateChunk lwwType
                             [ Op endTime'    endName    $ toPayload end
                             , Op startTime'  startName  $ toPayload start
                             , Op statusTime' statusName $ toPayload status
@@ -225,10 +231,10 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
                             , Op objectId    trackName    trackPayload
                             ]
                         )
-                    ,   ((rgaType, textId), stateToChunk $ rgaFromV1 text)
+                    ,   (textId, stateToChunk $ rgaFromV1 text) -- rgaType
                     ]
                 ++  maybeToList mTrackObject
-        pure Object{objectId, objectFrame}
+        pure Object{id = objectId, frame}
 
     textId  = UUID.succValue objectId
     trackId = UUID.succValue textId
@@ -242,6 +248,10 @@ parseNoteV1 objectId = eitherDecode >=> parseEither p where
     providerName   = fromJust $ UUID.mkName "provider"
     sourceName     = fromJust $ UUID.mkName "source"
     urlName        = fromJust $ UUID.mkName "url"
+
+-- TODO(cblp) import from RON.Error
+liftEitherString :: (MonadError e m, IsString e) => Either String a -> m a
+liftEitherString = either throwErrorString pure
 
 timeFromV1 :: CRDT.LamportTime -> UUID
 timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =

@@ -27,6 +27,7 @@ executable ff
 
         -- organization
         ron,
+        ron-storage,
 
         -- project
         ff-core

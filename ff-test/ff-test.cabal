@@ -27,6 +27,8 @@ test-suite ff-test
 
         -- organization
         ron,
+        ron-rdt,
+        ron-storage,
 
         -- project
         ff-core
