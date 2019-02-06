@@ -9,10 +9,13 @@ packages:
 extra-deps:
   # ff:
   - crdt-10.3
-  - ron-0.5
-  - ron-rdt-0.5
-  - ron-schema-0.5
-  - ron-storage-0.5
+  # - ron-0.5
+  # - ron-rdt-0.5
+  # - ron-schema-0.5
+  # - ron-storage-0.5
+  - git: https://github.com/ff-notes/ron.git
+    commit: '40258cf59584d85183fb4644631156ebd1003923'
+    subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
   # ron:
   - hedn-0.2.0.0@sha256:ffa03dec3ad6d76e20e99a951347be160de177a8f37ac2ed85688c689121e110

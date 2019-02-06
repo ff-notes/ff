@@ -5,6 +5,7 @@
 
 module Main (main) where
 
+import           Control.Concurrent (forkIO)
 import           Control.Monad.Extra (void, whenJust, (<=<))
 import           Data.Foldable (traverse_)
 import           Data.Functor (($>))
@@ -51,9 +52,8 @@ import           QVBoxLayout (QVBoxLayout, newWithParent)
 import           QWidget (QWidgetPtr, new, restoreGeometry, saveGeometry,
                           setWindowTitle)
 import qualified QWidget
-import           RON.Storage.IO (Collection, DocId,
-                                 OnDocumentChanged (OnDocumentChanged),
-                                 runStorage, setOnDocumentChanged)
+import           RON.Storage.IO (Collection, CollectionDocId (CollectionDocId),
+                                 DocId, runStorage, subscribeForever)
 import qualified RON.Storage.IO as Storage
 import           System.Environment (getArgs)
 
@@ -77,7 +77,10 @@ main = do
         setApplicationName      "ff"
         setApplicationVersion $ showVersion version
 
-        mainWindow <- newMainWindow h
+        app@App{mainWindow, storage} <- newMainWindow h
+        void $ forkIO $
+            subscribeForever storage $
+                \(CollectionDocId docId) -> updateView app docId
         QWidget.show mainWindow
         exec
 
@@ -86,7 +89,7 @@ withApp = withScopedPtr $ getArgs >>= QApplication.new
 
 type AgendaSection = QVBoxLayout
 
-data MainWindow = MainWindow
+data App = App
     { agendaModeSections :: ! (TaskMode -> AgendaSection)
     , agendaTaskWidgets  :: ! (IORef (Map NoteId QFrame))
     , agendaWidget       :: ! QToolBox
@@ -94,16 +97,17 @@ data MainWindow = MainWindow
     , storage            :: ! Storage.Handle
     }
 
-newMainWindow :: Storage.Handle -> IO QMainWindow
+newMainWindow :: Storage.Handle -> IO App
 newMainWindow h = do
     this <- QMainWindow.new
+    app@App{agendaWidget} <- newAgendaWidget this h
     setCentralWidget this =<< do
         tabs <- QTabWidget.new
-        addTab_ tabs "Agenda" =<< newAgendaWidget this h
+        addTab_ tabs "Agenda" agendaWidget
         pure tabs
     setWindowTitle this "ff"
     installWindowStateSaver this
-    pure this
+    pure app
 
 -- | https://wiki.qt.io/Saving_Window_Size_State
 installWindowStateSaver :: QMainWindowPtr window => window -> IO ()
@@ -136,7 +140,7 @@ sectionLabel mode n = let
         Starting _ -> "Starting soon"
     in concat [label, " (", show n, ")"]
 
-newAgendaWidget :: QMainWindow -> Storage.Handle -> IO QToolBox
+newAgendaWidget :: QMainWindow -> Storage.Handle -> IO App
 newAgendaWidget qMainWindow h = do
     this <- QToolBox.new
     void $ onEvent this $ \(_ :: QShowEvent) ->
@@ -155,16 +159,15 @@ newAgendaWidget qMainWindow h = do
             Actual     -> ac
             Starting _ -> st
     agendaTaskWidgets <- newIORef mempty
-    let mainWindow = MainWindow
+    let app = App
             { agendaModeSections
             , agendaTaskWidgets
             , agendaWidget = this
             , mainWindow = qMainWindow
             , storage = h
             }
-    runStorage h loadActiveTasks >>= traverse_ (addTask mainWindow)
-    setOnDocumentChanged h $ OnDocumentChanged $ updateView mainWindow
-    pure this
+    runStorage h loadActiveTasks >>= traverse_ (addTask app)
+    pure app
 
 newSection :: QToolBoxPtr toolbox => toolbox -> TaskMode -> IO AgendaSection
 newSection this section = do
@@ -176,7 +179,7 @@ newSection this section = do
   where
     label = sectionLabel section 0
 
-addTask :: MainWindow -> Entity Note -> IO ()
+addTask :: App -> Entity Note -> IO ()
 addTask mainWindow taskEntity = do
     today      <- getUtcToday
     taskWidget <- newTaskWidget h taskEntity
@@ -194,7 +197,7 @@ addTask mainWindow taskEntity = do
 
   where
     Entity{entityId=taskId, entityVal=task} = taskEntity
-    MainWindow
+    App
             { agendaWidget
             , agendaModeSections
             , agendaTaskWidgets
@@ -255,14 +258,14 @@ addAction menu text handler = do
     action <- addNewAction menu text
     connect_ action triggeredSignal $ const $ void handler
 
-updateView :: (HasCallStack, Collection a) => MainWindow -> DocId a -> IO ()
+updateView :: (HasCallStack, Collection a) => App -> DocId a -> IO ()
 updateView mainWindow docid = case docid of
     (cast -> Just noteId) -> updateTask mainWindow noteId
     _ -> error $ show (typeRep docid, docid)
 
-updateTask :: MainWindow -> NoteId -> IO ()
+updateTask :: App -> NoteId -> IO ()
 updateTask mainWindow noteId = do
     note <- runStorage h $ load noteId
     addTask   mainWindow note
   where
-    MainWindow{storage = h} = mainWindow
+    App{storage = h} = mainWindow
