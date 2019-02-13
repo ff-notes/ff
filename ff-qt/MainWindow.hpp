@@ -141,7 +141,7 @@ public:
 
     void upsertTask(Note note) { agenda->upsertTask(note); }
 
-    void closeEvent(QCloseEvent * event) override {
+    void closeEvent(QCloseEvent *) override {
         // https://wiki.qt.io/Saving_Window_Size_State
         QSettings settings;
         settings.setValue("mainWindowGeometry", saveGeometry());
