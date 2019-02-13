@@ -9,7 +9,9 @@ and this project adheres to
 
 ## [0.10] - 2019-02-05
 ### Changed
-- Moved task actions menu button to the left.
+- ff-qt:
+  - Moved task actions menu button to the left.
+  - UI rewritten in real C++.
 
 ### Fixed
 - `ff edit` options parsing.
