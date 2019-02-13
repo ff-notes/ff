@@ -1,11 +1,6 @@
-dist: xenial
-
 branches:
   only:
     - master
-
-# Use sudo to install Qt from ppa
-sudo: true
 
 # Do not choose a language; we provide our own build tools.
 language: generic
@@ -23,6 +18,7 @@ before_install:
   - sudo apt install libgmp-dev       # GHC
   - sudo apt install qt512base        # ff-qt
   - sudo apt install mesa-common-dev  # qt512base
+
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
