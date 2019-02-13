@@ -22,6 +22,7 @@ before_install:
   - sudo apt update
   - sudo apt install libgmp-dev  # GHC
   - sudo apt install qt512base   # ff-qt
+  - dpkg --listfiles qt512base
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
