@@ -15,6 +15,7 @@ import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Foldable (for_)
 import           Data.Maybe (isJust)
+import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Data.Time (Day, toGregorian)
@@ -32,7 +33,8 @@ import           FF (getDataDir, load, loadActiveTasks)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), NoteId, entityId,
                            entityVal, note_end, note_start, note_text,
-                           note_track)
+                           note_track, track_externalId, track_provider,
+                           track_source, track_url)
 
 import           Cpp (MainWindow, ffCtx, includeDependent)
 import           Paths_ff_qt (version)
@@ -74,6 +76,10 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
         isTracking = isJust note_track
+        provider   = textZ $ foldMap track_provider   note_track
+        source     = textZ $ foldMap track_source     note_track
+        externalId = textZ $ foldMap track_externalId note_track
+        url        = textZ $ foldMap track_url        note_track
     [Cpp.block| void {
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
@@ -85,6 +91,12 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
                 },
                 .end = (Date){$(int endYear), $(int endMonth), $(int endDay)},
                 .isTracking = $(bool isTracking),
+                .track = {
+                    .provider   = $bs-ptr:provider,
+                    .source     = $bs-ptr:source,
+                    .externalId = $bs-ptr:externalId,
+                    .url        = $bs-ptr:url,
+                },
             }
         );
     }|]
@@ -94,4 +106,7 @@ toGregorianC day = (y, m, d) where
     (fromIntegral -> y, fromIntegral -> m, fromIntegral -> d) = toGregorian day
 
 stringZ :: String -> ByteString
-stringZ = (`BS.snoc` 0) . Text.encodeUtf8 . Text.pack
+stringZ = textZ . Text.pack
+
+textZ :: Text -> ByteString
+textZ = (`BS.snoc` 0) . Text.encodeUtf8

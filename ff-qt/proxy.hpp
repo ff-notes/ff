@@ -18,6 +18,12 @@ struct Note {
     Date start;
     Date end;
     bool isTracking;
+    struct Track {
+        std::string provider;
+        std::string source;
+        std::string externalId;
+        std::string url;
+    } track;
 };
 
 class MainWindow;
