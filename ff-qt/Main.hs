@@ -14,6 +14,7 @@ import           Control.Monad (void)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Foldable (for_)
+import           Data.Maybe (isJust)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Data.Time (Day, toGregorian)
@@ -30,7 +31,8 @@ import qualified RON.Storage.IO as Storage
 import           FF (getDataDir, load, loadActiveTasks)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), NoteId, entityId,
-                           entityVal, note_end, note_start, note_text)
+                           entityVal, note_end, note_start, note_text,
+                           note_track)
 
 import           Cpp (MainWindow, ffCtx, includeDependent)
 import           Paths_ff_qt (version)
@@ -67,10 +69,11 @@ main = do
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
 upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
     let docidBS = stringZ id
-        Note{note_text, note_start, note_end} = note
+        Note{note_text, note_start, note_end, note_track} = note
         noteTextBS = stringZ note_text
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
+        isTracking = isJust note_track
     [Cpp.block| void {
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
@@ -81,6 +84,7 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
                     $(int startYear), $(int startMonth), $(int startDay)
                 },
                 .end = (Date){$(int endYear), $(int endMonth), $(int endDay)},
+                .isTracking = $(bool isTracking),
             }
         );
     }|]

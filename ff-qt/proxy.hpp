@@ -17,6 +17,7 @@ struct Note {
     std::string text;
     Date start;
     Date end;
+    bool isTracking;
 };
 
 class MainWindow;
