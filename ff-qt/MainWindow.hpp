@@ -18,12 +18,17 @@ class DateComponent: public QHBoxLayout {
 public:
 
     DateComponent(QString label, QDate date) {
-        addWidget(new QLabel(label));
-        {
+        const bool editable = false;
+        if (editable) {
+            /// \todo
+            addWidget(new QLabel(label));
             auto dateEdit = new QDateEdit(date);
             dateEdit->setCalendarPopup(true);
-            dateEdit->setReadOnly(true);
             addWidget(dateEdit);
+        } else { // not editable
+            if (date.isValid()) {
+                addWidget(new QLabel(label + " " + date.toString()));
+            }
         }
     }
 };
