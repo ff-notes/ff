@@ -20,9 +20,8 @@ before_install:
   # Install packages
   - sudo apt-add-repository --yes ppa:beineri/opt-qt-5.12.0-xenial
   - sudo apt update
-  - sudo apt install
-      libgmp-dev  # GHC
-      qt512base  # ff-qt
+  - sudo apt install libgmp-dev  # GHC
+  - sudo apt install qt512base   # ff-qt
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
   - export PATH=$HOME/.local/bin:$PATH
