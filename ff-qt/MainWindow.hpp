@@ -62,9 +62,11 @@ public:
     LinkButton(QString text, QString url): super(text) {
         {
             auto f = QFont();
+            f.setBold(false);
             f.setUnderline(true);
             setFont(f);
         }
+        setIcon(QIcon());
         {
             auto p = palette();
             p.setColor(QPalette::ButtonText, p.color(QPalette::Link));
@@ -94,12 +96,21 @@ public:
         auto box = new QVBoxLayout(this);
         box->addWidget(label);
         {
-            auto fields = new QHBoxLayout;
-            fields->addLayout(new DateComponent("Start:", qDate(task.start)));
-            fields->addLayout(new DateComponent("Deadline:", qDate(task.end)));
-            fields->addWidget(new TaskActionsButton(storage, task.id));
-            fields->addStretch();
-            box->addLayout(fields);
+            auto row = new QHBoxLayout;
+            row->addLayout(new DateComponent("Start:", qDate(task.start)));
+            row->addLayout(new DateComponent("Deadline:", qDate(task.end)));
+            row->addWidget(new TaskActionsButton(storage, task.id));
+            row->addStretch();
+            box->addLayout(row);
+        }
+        if (task.isTracking) {
+            auto linkText = QString::fromStdString(
+                task.track.provider + ": " + task.track.source + " #"
+                + task.track.externalId
+            );
+            box->addWidget(
+                new LinkButton(linkText, QString::fromStdString(task.track.url))
+            );
         }
     }
 

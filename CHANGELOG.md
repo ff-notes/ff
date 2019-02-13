@@ -6,12 +6,17 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- ff-qt:
+  - Link to tracked task.
+
+### Changed
+- ff-qt:
+  - UI rewritten in real C++.
 
 ## [0.10] - 2019-02-05
 ### Changed
-- ff-qt:
-  - Moved task actions menu button to the left.
-  - UI rewritten in real C++.
+- ff-qt: Moved task actions menu button to the left.
 
 ### Fixed
 - `ff edit` options parsing.
