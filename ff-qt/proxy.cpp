@@ -5,7 +5,8 @@
 
 MainWindow * proxy_main(std::string version, StorageHandle storagePtr) {
     int argc = 0;
-    char * argv[] = {NULL};
+    char argv0[] = "ff-qt";
+    char * argv[] = {argv0, NULL};
 
     auto app = new QApplication(argc, argv);
     app->setOrganizationDomain("ff.cblp.su");
