@@ -83,13 +83,11 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
     [Cpp.block| void {
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
-            (Note){
-                .id = (NoteId){$bs-ptr:id'},
+            {
+                .id = {$bs-ptr:id'},
                 .text = $bs-ptr:text,
-                .start = (Date){
-                    $(int startYear), $(int startMonth), $(int startDay)
-                },
-                .end = (Date){$(int endYear), $(int endMonth), $(int endDay)},
+                .start = {$(int startYear), $(int startMonth), $(int startDay)},
+                .end = Date{$(int endYear), $(int endMonth), $(int endDay)},
                 .isTracking = $(bool isTracking),
                 .track = {
                     .provider   = $bs-ptr:provider,
