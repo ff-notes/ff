@@ -68,9 +68,9 @@ main = do
 
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
 upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
-    let docidBS = stringZ id
+    let id' = stringZ id
         Note{note_text, note_start, note_end, note_track} = note
-        noteTextBS = stringZ note_text
+        text = stringZ note_text
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
         isTracking = isJust note_track
@@ -78,8 +78,8 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
             (Note){
-                .id = (NoteId){$bs-ptr:docidBS},
-                .text = $bs-ptr:noteTextBS,
+                .id = (NoteId){$bs-ptr:id'},
+                .text = $bs-ptr:text,
                 .start = (Date){
                     $(int startYear), $(int startMonth), $(int startDay)
                 },
