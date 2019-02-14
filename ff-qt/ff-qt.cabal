@@ -16,7 +16,6 @@ executable ff-qt
         base,
         bytestring,
         containers,
-        extra,
         inline-c,
         inline-c-cpp,
         template-haskell,
