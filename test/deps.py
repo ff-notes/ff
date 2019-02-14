@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
-from subprocess import check_call, check_output
+from subprocess import check_call, check_output, run
 
 core_packages = """
     array
+    base-compat
     binary
     bytestring
     clock
@@ -34,7 +35,26 @@ core_packages = """
 """.split()
 
 really_used_packages = [
-    "github",  # to track github issues
+    "crdt",
+    "Diff",             # RGA.edit
+    "ff",
+    "ff-core",
+    "ff-qt",
+    "ff-test",
+    "github",           # to track github issues
+    "gitrev",           # get app version from git
+    "inline-c",         # Qt FFI
+    "inline-c-cpp",     # Qt FFI
+    "ron",
+    "ron-rdt",
+    "ron-schema",
+    "ron-storage",
+    "terminal-size",    # for ff CLI
+]
+
+questionable_packages = [
+    "aeson",    # only string encoding in ron
+    "yaml",     # only config
 ]
 
 dependency_graph = check_output([
@@ -46,14 +66,18 @@ dependency_graph = check_output([
 
 dependency_graph = dependency_graph[0:-2]
 for package in really_used_packages:
-    dependency_graph += '"{}" [fillcolor = green, style = filled];'.format(package).encode()
+    dependency_graph += (
+        '"{}" [fillcolor = green, style = filled];'.format(package).encode()
+    )
+for package in questionable_packages:
+    dependency_graph += (
+        '"{}" [fillcolor = yellow, style = filled];'.format(package).encode()
+    )
 dependency_graph += b'\n}\n'
 
 # print(dependency_graph)
 
-image = check_output(['dot', '-Tpng'], input=dependency_graph)
-
 with open('/tmp/ff.png', 'wb') as f:
-    f.write(image)
+    run(['dot', '-Tpng'], check=True, input=dependency_graph, stdout=f)
 
 check_call(['xdg-open', '/tmp/ff.png'])
