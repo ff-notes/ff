@@ -12,7 +12,6 @@ import           Control.Concurrent.Async (race)
 import           Control.Monad (forever, guard, when)
 import           Control.Monad.Except (runExceptT)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Either.Extra (fromEither)
 import           Data.Foldable (asum, for_)
 import           Data.Functor (($>))
 import           Data.Maybe (isNothing)
@@ -201,3 +200,6 @@ pprint doc = liftIO $ do
     let layoutOptions =
             defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
     printOrPage . (`snoc` '\n') . renderStrict $ layoutSmart layoutOptions doc
+
+fromEither :: Either a a -> a
+fromEither = either id id

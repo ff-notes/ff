@@ -17,7 +17,6 @@ library
         containers,
         crdt,
         directory,
-        extra,
         filepath,
         github,
         hashable,

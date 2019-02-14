@@ -37,7 +37,7 @@ import           Prelude hiding (id)
 import           Control.Applicative ((<|>))
 import           Control.Arrow ((&&&))
 import           Control.Monad.Except (liftEither, throwError)
-import           Control.Monad.Extra (unless, void, when, whenJust)
+import           Control.Monad (unless, void, when)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, StateT, evalState,
                                              evalStateT, gets, state)
@@ -434,3 +434,8 @@ checkDataDir Config{dataDir} = case dataDir of
 
 identity :: a -> a
 identity x = x
+
+whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
+whenJust m f = case m of
+    Nothing -> pure ()
+    Just x  -> f x
