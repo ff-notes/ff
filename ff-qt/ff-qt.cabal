@@ -4,10 +4,16 @@ name: ff-qt
 version: 0.9
 
 build-type: Simple
-extra-source-files: MainWindow.hpp proxy.hpp TaskListWidget.hpp TaskWidget.hpp
+extra-source-files:
+    DateComponent.hpp MainWindow.hpp proxy.hpp TaskListWidget.hpp TaskWidget.hpp
 
 executable ff-qt
-    c-sources: MainWindow.cpp proxy.cpp TaskListWidget.cpp TaskWidget.cpp
+    c-sources:
+        DateComponent.cpp
+        MainWindow.cpp
+        proxy.cpp
+        TaskListWidget.cpp
+        TaskWidget.cpp
     cc-options: -std=c++11 -Wall -Wextra -pedantic -Werror
     default-language: Haskell2010
 

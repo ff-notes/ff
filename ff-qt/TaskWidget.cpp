@@ -1,27 +1,6 @@
+#include "DateComponent.hpp"
 #include "proxy.hpp"
 #include "TaskWidget.hpp"
-
-
-class DateComponent: public QHBoxLayout {
-    using super = QHBoxLayout;
-
-public:
-
-    DateComponent(QString label, QDate date) {
-        const bool editable = false;
-        if (editable) {
-            /// \todo
-            addWidget(new QLabel(label));
-            auto dateEdit = new QDateEdit(date);
-            dateEdit->setCalendarPopup(true);
-            addWidget(dateEdit);
-        } else { // not editable
-            if (date.isValid()) {
-                addWidget(new QLabel(label + " " + date.toString()));
-            }
-        }
-    }
-};
 
 
 class TaskActionsButton: public QToolButton {
