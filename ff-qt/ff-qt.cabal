@@ -6,6 +6,7 @@ version: 0.9
 build-type: Simple
 extra-source-files:
     DateComponent.hpp
+    LinkButton.hpp
     MainWindow.hpp
     proxy.hpp
     TaskActionsButton.hpp
@@ -15,6 +16,7 @@ extra-source-files:
 executable ff-qt
     c-sources:
         DateComponent.cpp
+        LinkButton.cpp
         MainWindow.cpp
         proxy.cpp
         TaskActionsButton.cpp
