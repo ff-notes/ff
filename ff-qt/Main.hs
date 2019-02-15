@@ -55,18 +55,21 @@ main = do
         proxy_main($bs-ptr:version', $(StorageHandle storagePtr))
     }|]
 
-    activeTasks <- runStorage storage loadActiveTasks
-    for_ activeTasks $ upsertTask mainWindow
+    void $ forkIO $ do
+        activeTasks <- runStorage storage loadActiveTasks
+        for_ activeTasks $ upsertTask mainWindow
 
     void $ forkIO $
-        subscribeForever storage $
-            \(CollectionDocId docid) -> case docid of
-                (cast -> Just (noteId :: NoteId)) -> do
-                    note <- runStorage storage $ load noteId
-                    upsertTask mainWindow note
-                _ -> pure ()
+        subscribeForever storage $ upsertDocument storage mainWindow
 
     [Cpp.exp| void { qApp_exec() }|]
+
+upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
+upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
+    (cast -> Just (noteId :: NoteId)) -> do
+        note <- runStorage storage $ load noteId
+        upsertTask mainWindow note
+    _ -> pure ()
 
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
 upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
