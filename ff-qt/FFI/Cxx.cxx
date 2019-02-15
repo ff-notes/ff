@@ -1,7 +1,7 @@
 #include <QtCore>
 
-#include "MainWindow.hpp"
-#include "proxy.hpp"
+#include "Cxx.hxx"
+#include "../MainWindow.hxx"
 
 MainWindow * proxy_main(std::string version, StorageHandle storagePtr) {
     int argc = 0;

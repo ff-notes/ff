@@ -40,7 +40,7 @@ import           Cpp (MainWindow, ffCtx, includeDependent)
 import           Paths_ff_qt (version)
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
-includeDependent "proxy.hpp"
+includeDependent "FFI/Cxx.hxx"
 
 main :: IO ()
 main = do

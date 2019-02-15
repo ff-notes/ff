@@ -1,5 +1,5 @@
-#ifndef ff_qt_TaskWidget_hpp
-#define ff_qt_TaskWidget_hpp
+#ifndef ff_qt_TaskWidget_hxx
+#define ff_qt_TaskWidget_hxx
 
 
 #include <QtWidgets>
@@ -14,4 +14,4 @@ public:
 };
 
 
-#endif // ff_qt_TaskWidget_hpp
+#endif // ff_qt_TaskWidget_hxx

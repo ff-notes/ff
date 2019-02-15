@@ -1,11 +1,10 @@
-#ifndef ff_qt_MainWindow_hpp
-#define ff_qt_MainWindow_hpp
+#ifndef ff_qt_MainWindow_hxx
+#define ff_qt_MainWindow_hxx
 
 
 #include <QtWidgets>
 
-#include "proxy.hpp"
-#include "TaskListWidget.hpp"
+#include "TaskListWidget.hxx"
 
 
 class MainWindow: public QMainWindow {
@@ -18,4 +17,4 @@ public:
 };
 
 
-#endif // ff_qt_MainWindow_hpp
+#endif // ff_qt_MainWindow_hxx

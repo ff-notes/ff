@@ -1,5 +1,5 @@
-#ifndef ff_qt_LinkButton_hpp
-#define ff_qt_LinkButton_hpp
+#ifndef ff_qt_LinkButton_hxx
+#define ff_qt_LinkButton_hxx
 
 
 #include <QtWidgets>
@@ -13,4 +13,4 @@ public:
 };
 
 
-#endif // ff_qt_LinkButton_hpp
+#endif // ff_qt_LinkButton_hxx

@@ -1,4 +1,4 @@
-#include "LinkButton.hpp"
+#include "LinkButton.hxx"
 
 
 LinkButton::LinkButton(QString text, QString url): super(text) {

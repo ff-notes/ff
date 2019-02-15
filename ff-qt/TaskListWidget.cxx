@@ -1,5 +1,5 @@
-#include "TaskListWidget.hpp"
-#include "TaskWidget.hpp"
+#include "TaskListWidget.hxx"
+#include "TaskWidget.hxx"
 
 
 TaskListWidget::TaskListWidget(QWidget * parent, StorageHandle storage):

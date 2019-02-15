@@ -1,8 +1,8 @@
-#include "DateComponent.hpp"
-#include "LinkButton.hpp"
-#include "proxy.hpp"
-#include "TaskActionsButton.hpp"
-#include "TaskWidget.hpp"
+#include "DateComponent.hxx"
+#include "FFI/Cxx.hxx"
+#include "LinkButton.hxx"
+#include "TaskActionsButton.hxx"
+#include "TaskWidget.hxx"
 
 
 QDate qDate(Date d) {

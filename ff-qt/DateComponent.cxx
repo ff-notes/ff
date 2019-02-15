@@ -1,4 +1,4 @@
-#include "DateComponent.hpp"
+#include "DateComponent.hxx"
 
 
 DateComponent::DateComponent(QString label, QDate date) {

@@ -1,10 +1,10 @@
-#ifndef ff_qt_TaskListWidget_hpp
-#define ff_qt_TaskListWidget_hpp
+#ifndef ff_qt_TaskListWidget_hxx
+#define ff_qt_TaskListWidget_hxx
 
 
 #include <QtWidgets>
 
-#include "proxy.hpp"
+#include "FFI/Cxx.hxx"
 
 
 class TaskListWidget: public QTreeView {
@@ -18,4 +18,4 @@ public:
 };
 
 
-#endif // ff_qt_TaskListWidget_hpp
+#endif // ff_qt_TaskListWidget_hxx

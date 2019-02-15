@@ -1,4 +1,4 @@
-#include "MainWindow.hpp"
+#include "MainWindow.hxx"
 
 
 MainWindow::MainWindow(StorageHandle storage):

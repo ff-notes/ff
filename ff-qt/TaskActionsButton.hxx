@@ -1,10 +1,10 @@
-#ifndef ff_qt_TaskActionsButton_hpp
-#define ff_qt_TaskActionsButton_hpp
+#ifndef ff_qt_TaskActionsButton_hxx
+#define ff_qt_TaskActionsButton_hxx
 
 
 #include <QtWidgets>
 
-#include "proxy.hpp"
+#include "FFI/Cxx.hxx"
 
 
 class TaskActionsButton: public QToolButton {
@@ -14,4 +14,4 @@ public:
 };
 
 
-#endif // ff_qt_TaskActionsButton_hpp
+#endif // ff_qt_TaskActionsButton_hxx

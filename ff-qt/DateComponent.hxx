@@ -1,5 +1,5 @@
-#ifndef ff_qt_DateComponent_hpp
-#define ff_qt_DateComponent_hpp
+#ifndef ff_qt_DateComponent_hxx
+#define ff_qt_DateComponent_hxx
 
 
 #include <QtWidgets>
@@ -12,4 +12,4 @@ public:
 };
 
 
-#endif // ff_qt_DateComponent_hpp
+#endif // ff_qt_DateComponent_hxx

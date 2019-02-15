@@ -1,4 +1,4 @@
-module FFI where
+module FFI.Haskell where
 
 import           Control.Monad (void)
 import           Foreign.C (CString, peekCAString)

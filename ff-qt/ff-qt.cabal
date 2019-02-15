@@ -5,23 +5,23 @@ version: 0.9
 
 build-type: Simple
 extra-source-files:
-    DateComponent.hpp
-    LinkButton.hpp
-    MainWindow.hpp
-    proxy.hpp
-    TaskActionsButton.hpp
-    TaskListWidget.hpp
-    TaskWidget.hpp
+    DateComponent.hxx
+    FFI/Cxx.hxx
+    LinkButton.hxx
+    MainWindow.hxx
+    TaskActionsButton.hxx
+    TaskListWidget.hxx
+    TaskWidget.hxx
 
 executable ff-qt
     c-sources:
-        DateComponent.cpp
-        LinkButton.cpp
-        MainWindow.cpp
-        proxy.cpp
-        TaskActionsButton.cpp
-        TaskListWidget.cpp
-        TaskWidget.cpp
+        DateComponent.cxx
+        FFI/Cxx.cxx
+        LinkButton.cxx
+        MainWindow.cxx
+        TaskActionsButton.cxx
+        TaskListWidget.cxx
+        TaskWidget.cxx
     cc-options: -std=c++11 -Wall -Wextra -pedantic -Werror
     default-language: Haskell2010
 
@@ -46,7 +46,7 @@ executable ff-qt
     main-is: Main.hs
     other-modules:
         Cpp
-        FFI
+        FFI.Haskell
         Paths_ff_qt
 
     if os(linux)
