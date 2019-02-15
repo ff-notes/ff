@@ -7,7 +7,7 @@ build-type: Simple
 extra-source-files: MainWindow.hpp proxy.hpp TaskListWidget.hpp TaskWidget.hpp
 
 executable ff-qt
-    c-sources: proxy.cpp TaskListWidget.cpp TaskWidget.cpp
+    c-sources: MainWindow.cpp proxy.cpp TaskListWidget.cpp TaskWidget.cpp
     cc-options: -std=c++11 -Wall -Wextra -pedantic -Werror
     default-language: Haskell2010
 
