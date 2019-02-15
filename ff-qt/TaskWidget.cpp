@@ -1,25 +1,7 @@
 #include "DateComponent.hpp"
 #include "proxy.hpp"
+#include "TaskActionsButton.hpp"
 #include "TaskWidget.hpp"
-
-
-class TaskActionsButton: public QToolButton {
-    using super = QToolButton;
-
-public:
-
-    TaskActionsButton (StorageHandle storageHandle, NoteId id) {
-        auto storage = Storage{storageHandle};
-        setText("⋮");
-        setPopupMode(InstantPopup);
-        {
-            auto menu = new QMenu;
-            menu->addAction("Postpone", [=]{ storage.postpone(id); });
-            setMenu(menu);
-        }
-    }
-
-};
 
 
 class LinkButton: public QCommandLinkButton {

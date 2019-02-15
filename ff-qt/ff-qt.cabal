@@ -5,13 +5,19 @@ version: 0.9
 
 build-type: Simple
 extra-source-files:
-    DateComponent.hpp MainWindow.hpp proxy.hpp TaskListWidget.hpp TaskWidget.hpp
+    DateComponent.hpp
+    MainWindow.hpp
+    proxy.hpp
+    TaskActionsButton.hpp
+    TaskListWidget.hpp
+    TaskWidget.hpp
 
 executable ff-qt
     c-sources:
         DateComponent.cpp
         MainWindow.cpp
         proxy.cpp
+        TaskActionsButton.cpp
         TaskListWidget.cpp
         TaskWidget.cpp
     cc-options: -std=c++11 -Wall -Wextra -pedantic -Werror
