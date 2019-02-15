@@ -34,13 +34,17 @@ core_packages = """
     vector
 """.split()
 
+cannot_be_avoided = [
+    "contravariant",    # `invariant` provides instances for its types
+    "distributive",     # needed in `comonad` by `adjunctions`
+]
+
 really_used_packages = [
     "crdt",
     "Diff",             # RGA.edit
     "ff",
     "ff-core",
     "ff-qt",
-    "ff-test",
     "github",           # to track github issues
     "gitrev",           # get app version from git
     "inline-c",         # Qt FFI
@@ -61,7 +65,7 @@ dependency_graph = check_output([
     'stack', 'dot',
     '--external',
     '--no-include-base',
-    '--prune=' + ','.join(core_packages),
+    '--prune=' + ','.join(core_packages + cannot_be_avoided),
 ])
 
 dependency_graph = dependency_graph[0:-2]
