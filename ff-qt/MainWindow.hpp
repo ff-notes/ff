@@ -181,7 +181,12 @@ public:
         restoreState(settings.value("mainWindowState").toByteArray());
     }
 
-    void upsertTask(Note note) { agenda->upsertTask(note); }
+    void upsertTask(Note note) {
+        // switch to this thread
+        QMetaObject::invokeMethod(this, [=]{
+            agenda->upsertTask(note);
+        });
+    }
 
     void closeEvent(QCloseEvent *) override {
         // https://wiki.qt.io/Saving_Window_Size_State
