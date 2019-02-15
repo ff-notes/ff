@@ -28,7 +28,7 @@ executable ff-qt
         -- project
         ff-core
 
-    ghc-options: -fPIC
+    ghc-options: -fPIC -threaded
     main-is: Main.hs
     other-modules:
         Cpp
