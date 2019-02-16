@@ -2,12 +2,34 @@
 #define ff_qt_FFI_hxx
 
 
+#include <functional>
 #include <string>
 
 
 struct StorageHandle { void * ptr; };
 
 struct NoteId { std::string bytes; };
+
+namespace std {
+    template<>
+    struct hash<NoteId> {
+        typedef NoteId argument_type;
+        typedef std::size_t result_type;
+        result_type operator()(argument_type const & noteId)
+            const // noexcept // TODO why noexcept doesn't work?
+        {
+            return std::hash<std::string>()(noteId.bytes);
+        }
+    };
+
+    template<>
+    struct equal_to<NoteId> {
+        // constexpr // TODO why error?
+        bool operator()(const NoteId & lhs, const NoteId & rhs) const {
+            return lhs.bytes == rhs.bytes;
+        }
+    };
+}
 
 struct Date { int year, month, day; };
 

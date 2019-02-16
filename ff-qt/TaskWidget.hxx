@@ -4,13 +4,18 @@
 
 #include <QtWidgets>
 
+#include "DateComponent.hxx"
+
 
 class TaskWidget: public QFrame {
     using super = QFrame;
 private:
     QLabel * label;
+    DateComponent * start;
+    DateComponent * end;
 public:
     TaskWidget(QWidget * parent, StorageHandle storage, Note task);
+    void updateContent(Note task);
 };
 
 

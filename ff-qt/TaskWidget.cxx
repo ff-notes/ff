@@ -12,18 +12,17 @@ QDate qDate(Date d) {
 
 
 TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
-    super(parent), label(new QLabel(QString::fromStdString(task.text)))
+    super(parent),
+    label(new QLabel(QString::fromStdString(task.text))),
+    start(new DateComponent("Start:", qDate(task.start), not task.isTracking)),
+    end(new DateComponent("Deadline:", qDate(task.end), not task.isTracking))
 {
     auto box = new QVBoxLayout(this);
     box->addWidget(label);
     box->addLayout(
         New<QHBoxLayout>()
-        .addLayout(new DateComponent(
-            "Start:", qDate(task.start), not task.isTracking
-        ))
-        .addLayout(new DateComponent(
-            "Deadline:", qDate(task.end), not task.isTracking
-        ))
+        .addLayout(start)
+        .addLayout(end)
         .addWidget(new TaskActionsButton(storage, task.id))
         .addStretch()
     );
@@ -36,4 +35,11 @@ TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
             QString::fromStdString(task.track.url)
         ));
     }
+}
+
+
+void TaskWidget::updateContent(Note task) {
+    label->setText(QString::fromStdString(task.text));
+    start->setDate(qDate(task.start));
+    end  ->setDate(qDate(task.end  ));
 }

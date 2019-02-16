@@ -3,6 +3,9 @@
 #include "TaskWidget.hxx"
 
 
+const QColor LightBlue(179, 215, 255);
+
+
 TaskListWidget::TaskListWidget(QWidget * parent, StorageHandle storage):
     super(parent), storage(storage)
 {
@@ -10,19 +13,25 @@ TaskListWidget::TaskListWidget(QWidget * parent, StorageHandle storage):
     setHeaderHidden(true);
     setModel(new QStandardItemModel);
     setPalette(
-        Make<QPalette>(palette())
-        .setColor(QPalette::Highlight, QColor(179, 215, 255))
+        Make<QPalette>(palette()).setColor(QPalette::Highlight, LightBlue)
     );
 }
 
 void TaskListWidget::upsertTask(Note task) {
-    auto item = new QStandardItem;
-    model().appendRow(item);
-    auto taskWidget = new TaskWidget(this, storage, task);
-    auto index = item->index();
-    setIndexWidget(index, taskWidget);
-    if (not currentIndex().isValid()) {
-        setCurrentIndex(index);
+    auto it = taskIndex.find(task.id);
+    if (it != taskIndex.end()) {
+        static_cast<TaskWidget *>(indexWidget(it->second->index()))
+            ->updateContent(task);
+    } else {
+        auto item = new QStandardItem;
+        taskIndex.emplace(task.id, item);
+        model().appendRow(item);
+        auto taskWidget = new TaskWidget(this, storage, task);
+        auto index = item->index();
+        setIndexWidget(index, taskWidget);
+        if (not currentIndex().isValid()) {
+            setCurrentIndex(index);
+        }
     }
 }
 

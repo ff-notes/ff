@@ -23,7 +23,7 @@ executable ff-qt
         TaskActionsButton.cxx
         TaskListWidget.cxx
         TaskWidget.cxx
-    cc-options: -std=c++11 -Wall -Wextra -pedantic -Werror
+    cc-options: -std=c++17 -Wall -Wextra -pedantic -Werror
     default-language: Haskell2010
 
     build-depends:

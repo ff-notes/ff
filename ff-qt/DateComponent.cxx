@@ -2,16 +2,30 @@
 #include "DateComponent.hxx"
 
 
-DateComponent::DateComponent(QString label, QDate date, bool isEditable) {
-    /// \todo
-    isEditable = false;
+DateComponent::DateComponent(QString title, QDate date, bool isEditable):
+    isEditable(isEditable),
+    title(title),
+    label(new QLabel)
+{
+    /// \todo re-enable editability
+    this->isEditable = isEditable = false;
+    addWidget(label);
     if (isEditable) {
-        /// \todo
-        addWidget(new QLabel(label));
-        addWidget(New<QDateEdit>(date).setCalendarPopup(true));
-    } else { // not isEditable
+        /// \todo implement editing
+        label->setText(title);
+        dateEdit = New<QDateEdit>(date).setCalendarPopup(true);
+        addWidget(dateEdit);
+    }
+    setDate(date);
+}
+
+
+void DateComponent::setDate(QDate date) {
+    if (isEditable) {
+        dateEdit->setDate(date);
+    } else { // not editable
         if (date.isValid()) {
-            addWidget(new QLabel(label + " " + date.toString()));
+            label->setText(title + " " + date.toString());
         }
     }
 }

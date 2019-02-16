@@ -7,8 +7,13 @@
 
 class DateComponent: public QHBoxLayout {
     using super = QHBoxLayout;
+    bool isEditable;
+    QString title;
+    QDateEdit * dateEdit;
+    QLabel * label;
 public:
     DateComponent(QString label, QDate date, bool isEditable);
+    void setDate(QDate date);
 };
 
 
