@@ -23,6 +23,20 @@ public:
 
 
 template <>
+class New<QHBoxLayout> {
+private:
+    QHBoxLayout * p;
+
+public:
+    operator QHBoxLayout * () { return p; }
+
+    New & addLayout(QLayout * a) { p->addLayout(a); return *this; }
+    New & addWidget(QWidget * a) { p->addWidget(a); return *this; }
+    New & addStretch() { p->addStretch(); return *this; }
+};
+
+
+template <>
 class New<QMenu> {
 private:
     QMenu * p;

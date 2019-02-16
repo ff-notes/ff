@@ -1,3 +1,4 @@
+#include "Builder.hxx"
 #include "DateComponent.hxx"
 #include "FFI/Cxx.hxx"
 #include "LinkButton.hxx"
@@ -15,18 +16,17 @@ TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
 {
     auto box = new QVBoxLayout(this);
     box->addWidget(label);
-    {
-        auto row = new QHBoxLayout;
-        row->addLayout(new DateComponent(
+    box->addLayout(
+        New<QHBoxLayout>()
+        .addLayout(new DateComponent(
             "Start:", qDate(task.start), not task.isTracking
-        ));
-        row->addLayout(new DateComponent(
+        ))
+        .addLayout(new DateComponent(
             "Deadline:", qDate(task.end), not task.isTracking
-        ));
-        row->addWidget(new TaskActionsButton(storage, task.id));
-        row->addStretch();
-        box->addLayout(row);
-    }
+        ))
+        .addWidget(new TaskActionsButton(storage, task.id))
+        .addStretch()
+    );
     if (task.isTracking) {
         box->addWidget(new LinkButton(
             QString::fromStdString(
