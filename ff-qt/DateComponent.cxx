@@ -3,6 +3,8 @@
 
 
 DateComponent::DateComponent(QString label, QDate date, bool isEditable) {
+    /// \todo
+    isEditable = false;
     if (isEditable) {
         /// \todo
         addWidget(new QLabel(label));
