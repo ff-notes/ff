@@ -18,7 +18,7 @@ struct New;
 
 template <>
 struct New<QDateEdit>: NewBase<QDateEdit> {
-    New(QDate d): NewBase{new QDateEdit(d)} {}
+    New(const QDate & a): NewBase{new QDateEdit(a)} {}
     New & setCalendarPopup(bool a) {p->setCalendarPopup(a); return *this;}
 };
 
@@ -49,32 +49,27 @@ struct New<QTabWidget>: NewBase<QTabWidget> {
 
 
 template <typename Wrapped>
+struct MakeBase {
+    Wrapped p;
+    operator Wrapped & () { return p; }
+};
+
+
+template <typename Wrapped>
 struct Make;
 
 
 template <>
-struct Make<QFont> {
-private:
-    QFont p;
-
-public:
-    operator QFont & () { return p; }
-
+struct Make<QFont>: MakeBase<QFont> {
     Make & setBold(bool a) { p.setBold(a); return *this; }
     Make & setUnderline(bool a) { p.setUnderline(a); return *this; }
 };
 
 
 template <>
-struct Make<QPalette> {
-private:
-    QPalette p;
-
-public:
-    Make(const QPalette & p): p(p) {}
-    operator QPalette & () { return p; }
-
-    Make & setColor(QPalette::ColorRole a, QColor b) {
+struct Make<QPalette>: MakeBase<QPalette> {
+    Make(const QPalette & p): MakeBase{p} {}
+    Make & setColor(QPalette::ColorRole a, const QColor & b) {
         p.setColor(a, b); return *this;
     }
 };
