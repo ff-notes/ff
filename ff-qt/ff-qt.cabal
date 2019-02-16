@@ -5,6 +5,7 @@ version: 0.9
 
 build-type: Simple
 extra-source-files:
+    Builder.hxx
     DateComponent.hxx
     FFI/Cxx.hxx
     LinkButton.hxx

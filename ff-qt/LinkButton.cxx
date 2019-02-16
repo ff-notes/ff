@@ -1,19 +1,14 @@
+#include "Builder.hxx"
 #include "LinkButton.hxx"
 
 
 LinkButton::LinkButton(QString text, QString url): super(text) {
-    {
-        auto f = QFont();
-        f.setBold(false);
-        f.setUnderline(true);
-        setFont(f);
-    }
+    setFont(Make<QFont>().setBold(false).setUnderline(true));
     setIcon(QIcon());
-    {
-        auto p = palette();
-        p.setColor(QPalette::ButtonText, p.color(QPalette::Link));
-        setPalette(p);
-    }
+    setPalette(
+        Make<QPalette>(palette())
+        .setColor(QPalette::ButtonText, palette().color(QPalette::Link))
+    );
     setToolTip(url);
     connect(this, &self::clicked, [=]{
         QDesktopServices::openUrl(QUrl(url));

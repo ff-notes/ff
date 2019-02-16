@@ -28,12 +28,12 @@ TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
         box->addLayout(row);
     }
     if (task.isTracking) {
-        auto linkText = QString::fromStdString(
-            task.track.provider + ": " + task.track.source + " #"
-            + task.track.externalId
-        );
-        box->addWidget(
-            new LinkButton(linkText, QString::fromStdString(task.track.url))
-        );
+        box->addWidget(new LinkButton(
+            QString::fromStdString(
+                task.track.provider + ": " + task.track.source + " #"
+                + task.track.externalId
+            ),
+            QString::fromStdString(task.track.url)
+        ));
     }
 }
