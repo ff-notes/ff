@@ -8,6 +8,8 @@
 template <typename Wrapped>
 struct NewBase {
     Wrapped * p;
+    NewBase(): p(new Wrapped) {};
+    NewBase(Wrapped * p): p(p) {};
     operator Wrapped * () { return p; }
 };
 
@@ -18,7 +20,7 @@ struct New;
 
 template <>
 struct New<QDateEdit>: NewBase<QDateEdit> {
-    New(const QDate & a): NewBase{new QDateEdit(a)} {}
+    New(const QDate & a): NewBase(new QDateEdit(a)) {}
     New & setCalendarPopup(bool a) {p->setCalendarPopup(a); return *this;}
 };
 
