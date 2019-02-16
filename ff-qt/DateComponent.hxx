@@ -8,7 +8,7 @@
 class DateComponent: public QHBoxLayout {
     using super = QHBoxLayout;
 public:
-    DateComponent(QString label, QDate date);
+    DateComponent(QString label, QDate date, bool isEditable);
 };
 
 

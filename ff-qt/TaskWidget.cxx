@@ -17,8 +17,12 @@ TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
     box->addWidget(label);
     {
         auto row = new QHBoxLayout;
-        row->addLayout(new DateComponent("Start:", qDate(task.start)));
-        row->addLayout(new DateComponent("Deadline:", qDate(task.end)));
+        row->addLayout(new DateComponent(
+            "Start:", qDate(task.start), not task.isTracking
+        ));
+        row->addLayout(new DateComponent(
+            "Deadline:", qDate(task.end), not task.isTracking
+        ));
         row->addWidget(new TaskActionsButton(storage, task.id));
         row->addStretch();
         box->addLayout(row);
