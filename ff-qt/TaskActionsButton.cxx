@@ -1,13 +1,12 @@
+#include "Builder.hxx"
 #include "TaskActionsButton.hxx"
 
 
 TaskActionsButton::TaskActionsButton(StorageHandle storageHandle, NoteId id) {
     auto storage = Storage{storageHandle};
-    setText("⋮");
+    setMenu(
+        New<QMenu>().addAction("Postpone", [=]{ storage.postpone(id); })
+    );
     setPopupMode(InstantPopup);
-    {
-        auto menu = new QMenu;
-        menu->addAction("Postpone", [=]{ storage.postpone(id); });
-        setMenu(menu);
-    }
+    setText("⋮");
 }
