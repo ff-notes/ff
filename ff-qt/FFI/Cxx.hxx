@@ -8,28 +8,7 @@
 
 struct StorageHandle { void * ptr; };
 
-struct NoteId { std::string bytes; };
-
-namespace std {
-    template<>
-    struct hash<NoteId> {
-        typedef NoteId argument_type;
-        typedef std::size_t result_type;
-        result_type operator()(argument_type const & noteId)
-            const // noexcept // TODO why noexcept doesn't work?
-        {
-            return std::hash<std::string>()(noteId.bytes);
-        }
-    };
-
-    template<>
-    struct equal_to<NoteId> {
-        // constexpr // TODO why error?
-        bool operator()(const NoteId & lhs, const NoteId & rhs) const {
-            return lhs.bytes == rhs.bytes;
-        }
-    };
-}
+typedef std::string NoteId;
 
 struct Date { int year, month, day; };
 
@@ -56,7 +35,7 @@ extern "C" {
 
 struct Storage {
     StorageHandle handle;
-    void postpone(NoteId id) const { c_postpone(handle, id.bytes.c_str()); }
+    void postpone(NoteId id) const { c_postpone(handle, id.c_str()); }
 };
 
 int qApp_exec();

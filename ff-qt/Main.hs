@@ -87,7 +87,7 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
             (Note){
-                .id = {$bs-ptr:id'},
+                .id = $bs-ptr:id',
                 .text = $bs-ptr:text,
                 .start = {$(int startYear), $(int startMonth), $(int startDay)},
                 .end   = {$(int   endYear), $(int   endMonth), $(int   endDay)},
