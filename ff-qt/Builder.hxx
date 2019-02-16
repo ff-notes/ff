@@ -32,7 +32,7 @@ public:
 
     template <typename Func1>
     New & addAction(const QString & a, Func1 b) {
-        p->addAction(a, b, c); return *this;
+        p->addAction(a, b); return *this;
     }
 };
 

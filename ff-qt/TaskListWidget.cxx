@@ -1,3 +1,4 @@
+#include "Builder.hxx"
 #include "TaskListWidget.hxx"
 #include "TaskWidget.hxx"
 
@@ -8,11 +9,10 @@ TaskListWidget::TaskListWidget(QWidget * parent, StorageHandle storage):
     setAlternatingRowColors(true);
     setHeaderHidden(true);
     setModel(new QStandardItemModel);
-    {
-        auto p = palette();
-        p.setColor(QPalette::Highlight, QColor(179, 215, 255));
-        setPalette(p);
-    }
+    setPalette(
+        Make<QPalette>(palette())
+        .setColor(QPalette::Highlight, QColor(179, 215, 255))
+    );
 }
 
 void TaskListWidget::upsertTask(Note task) {
