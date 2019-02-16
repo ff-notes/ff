@@ -6,30 +6,25 @@
 
 
 template <typename Wrapped>
-class New;
+struct NewBase {
+    Wrapped * p;
+    operator Wrapped * () { return p; }
+};
+
+
+template <typename Wrapped>
+struct New;
 
 
 template <>
-class New<QDateEdit> {
-private:
-    QDateEdit * p;
-
-public:
-    New(QDate d): p(new QDateEdit(d)) {}
-    operator QDateEdit * () { return p; }
-
+struct New<QDateEdit>: NewBase<QDateEdit> {
+    New(QDate d): NewBase{new QDateEdit(d)} {}
     New & setCalendarPopup(bool a) {p->setCalendarPopup(a); return *this;}
 };
 
 
 template <>
-class New<QHBoxLayout> {
-private:
-    QHBoxLayout * p;
-
-public:
-    operator QHBoxLayout * () { return p; }
-
+struct New<QHBoxLayout>: NewBase<QHBoxLayout> {
     New & addLayout(QLayout * a) { p->addLayout(a); return *this; }
     New & addWidget(QWidget * a) { p->addWidget(a); return *this; }
     New & addStretch() { p->addStretch(); return *this; }
@@ -37,13 +32,7 @@ public:
 
 
 template <>
-class New<QMenu> {
-private:
-    QMenu * p;
-
-public:
-    operator QMenu * () { return p; }
-
+struct New<QMenu>: NewBase<QMenu> {
     template <typename Func1>
     New & addAction(const QString & a, Func1 b) {
         p->addAction(a, b); return *this;
@@ -52,13 +41,7 @@ public:
 
 
 template <>
-class New<QTabWidget> {
-private:
-    QTabWidget * p;
-
-public:
-    operator QTabWidget * () { return p; }
-
+struct New<QTabWidget>: NewBase<QTabWidget> {
     New & addTab(QWidget * a, const QString & b) {
         p->addTab(a, b); return *this;
     }
@@ -66,11 +49,11 @@ public:
 
 
 template <typename Wrapped>
-class Make;
+struct Make;
 
 
 template <>
-class Make<QFont> {
+struct Make<QFont> {
 private:
     QFont p;
 
@@ -83,7 +66,7 @@ public:
 
 
 template <>
-class Make<QPalette> {
+struct Make<QPalette> {
 private:
     QPalette p;
 
