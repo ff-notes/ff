@@ -10,6 +10,7 @@ extra-source-files:
     FFI/Cxx.hxx
     LinkButton.hxx
     MainWindow.hxx
+    Model.hxx
     TaskActionsButton.hxx
     TaskListWidget.hxx
     TaskWidget.hxx
@@ -20,6 +21,7 @@ executable ff-qt
         FFI/Cxx.cxx
         LinkButton.cxx
         MainWindow.cxx
+        Model.cxx
         TaskActionsButton.cxx
         TaskListWidget.cxx
         TaskWidget.cxx
