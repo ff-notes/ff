@@ -4,11 +4,7 @@
 #include "LinkButton.hxx"
 #include "TaskActionsButton.hxx"
 #include "TaskWidget.hxx"
-
-
-QDate qDate(Date d) {
-    return QDate(d.year, d.month, d.day);
-}
+#include "util.hxx"
 
 
 TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):

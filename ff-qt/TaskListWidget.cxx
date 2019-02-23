@@ -18,15 +18,27 @@ TaskListWidget::TaskListWidget(QWidget * parent, StorageHandle storage):
     connect(
         &model(),
         &Model::rowsInserted,
-        [this, storage](const QModelIndex & parent, int first, int last) {
+        [this, storage](const QModelIndex & parent, int first, int last){
             for (int i = first; i <= last; ++i) {
-                auto index = model().index(i, 0, parent);
-                auto taskWidget =
-                    new TaskWidget(this, storage, model().task(index));
-                setIndexWidget(index, taskWidget);
+                auto ix = model().index(i, 0, parent);
+                setIndexWidget(
+                    ix, new TaskWidget(this, storage, model().task(ix))
+                );
                 if (not currentIndex().isValid()) {
-                    setCurrentIndex(index);
+                    setCurrentIndex(ix);
                 }
+            }
+            updateGeometries();
+        }
+    );
+    connect(
+        &model(),
+        &Model::dataChanged,
+        [this](QModelIndex topLeft, QModelIndex bottomRight){
+            for (int i = topLeft.row(); i <= bottomRight.row(); ++i) {
+                auto ix = topLeft.siblingAtRow(i);
+                static_cast<TaskWidget*>(indexWidget(ix))
+                    ->updateContent(model().task(ix));
             }
         }
     );
