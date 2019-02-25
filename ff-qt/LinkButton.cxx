@@ -22,5 +22,14 @@ LinkButton::LinkButton(QString text, QString url): super(text) {
             QDesktopServices::openUrl(QUrl(url));
         #endif
     });
-    /// \todo(2019-02-12, cblp) Allow to copy link via context menu
+
+    // context menu
+    setContextMenuPolicy(Qt::ActionsContextMenu);
+    {
+        auto action = new QAction("Copy link address");
+        connect(action, &QAction::triggered, [url]{
+            qApp->clipboard()->setText(url);
+        });
+        addAction(action);
+    }
 }
