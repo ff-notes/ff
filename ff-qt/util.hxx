@@ -6,8 +6,13 @@
 #include "FFI/Cxx.hxx"
 
 
-inline QDate qDate(Date d) {
+inline QDate toQDate(Date const & d) {
     return QDate(d.year, d.month, d.day);
+}
+
+
+inline Date fromQDate(QDate const & d) {
+    return Date{d.year(), d.month(), d.day()};
 }
 
 

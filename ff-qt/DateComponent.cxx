@@ -1,19 +1,26 @@
 #include "Builder.hxx"
 #include "DateComponent.hxx"
 
+using std::function;
 
-DateComponent::DateComponent(QString title, QDate date, bool isEditable):
+
+DateComponent::DateComponent(
+    QString const & title,
+    QDate const & date,
+    bool const isEditable,
+    function<void(QDate const &)> onDateChanged
+):
     isEditable(isEditable),
     title(title),
     label(new QLabel)
 {
-    /// \todo re-enable editability
-    this->isEditable = isEditable = false;
     addWidget(label);
     if (isEditable) {
-        /// \todo implement editing
         label->setText(title);
-        dateEdit = New<QDateEdit>(date).setCalendarPopup(true);
+        dateEdit =
+            New<QDateEdit>(date)
+            .setCalendarPopup(true)
+            .onDateChanged(onDateChanged);
         addWidget(dateEdit);
     }
     setDate(date);

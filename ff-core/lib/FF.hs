@@ -276,7 +276,7 @@ cmdNewContact name = do
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
     contact_status_assign Deleted
-    contact_name_zoom $   RGA.editText ""
+    contact_name_zoom $ RGA.editText ""
 
 cmdSearch
     :: Text  -- ^ query

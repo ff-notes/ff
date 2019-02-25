@@ -28,8 +28,8 @@ struct New<QAction>: NewBase<QAction> {
     }
 
     template <typename Handler>
-    New & onTriggered(Handler b) {
-        QObject::connect(p, &QAction::triggered, b); return *this;
+    New & onTriggered(Handler a) {
+        QObject::connect(p, &QAction::triggered, a); return *this;
     }
 };
 
@@ -37,7 +37,15 @@ struct New<QAction>: NewBase<QAction> {
 template <>
 struct New<QDateEdit>: NewBase<QDateEdit> {
     New(const QDate & a): NewBase(new QDateEdit(a)) {}
-    New & setCalendarPopup(bool a) {p->setCalendarPopup(a); return *this;}
+
+    template <typename Handler>
+    New & onDateChanged(Handler a) {
+        QObject::connect(p, &QDateEdit::dateChanged, a); return *this;
+    }
+
+    New & setCalendarPopup(bool a) { p->setCalendarPopup(a); return *this; }
+
+    New & setFrame(bool a) { p->setFrame(a); return *this; }
 };
 
 

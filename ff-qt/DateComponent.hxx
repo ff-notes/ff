@@ -6,13 +6,23 @@
 
 
 class DateComponent: public QHBoxLayout {
+private:
     using super = QHBoxLayout;
-    bool isEditable;
-    QString title;
+
+    bool const isEditable;
+    QString const title;
+
     QDateEdit * dateEdit;
-    QLabel * label;
+    QLabel * const label;
+
 public:
-    DateComponent(QString label, QDate date, bool isEditable);
+    DateComponent(
+        QString const & label,
+        QDate const & date,
+        bool isEditable,
+        std::function<void(QDate const &)> onDateChanged
+    );
+
     void setDate(QDate date);
 };
 
