@@ -1,5 +1,5 @@
-#ifndef ff_qt_FFI_hxx
-#define ff_qt_FFI_hxx
+#ifndef ff_qt_FFI_Cxx_hxx
+#define ff_qt_FFI_Cxx_hxx
 
 
 #include <functional>
@@ -48,4 +48,4 @@ MainWindow * proxy_main(std::string version, StorageHandle);
 void MainWindow_upsertTask(MainWindow *, Note);
 
 
-#endif // ff_qt_FFI_hxx
+#endif // ff_qt_FFI_Cxx_hxx
