@@ -15,14 +15,14 @@ struct Model::Impl {
     Impl(Model & q): q(q) {}
 
     bool lessByStartId(const Note & a, const Note & b) {
-        auto aStart = qDate(a.start);
-        auto bStart = qDate(b.start);
+        auto aStart = toQDate(a.start);
+        auto bStart = toQDate(b.start);
         return aStart == bStart ? a.id < b.id : aStart < bStart;
     }
 
     bool lessByEndStartId(const Note & a, const Note & b) {
-        auto aEnd = qDate(a.end);
-        auto bEnd = qDate(b.end);
+        auto aEnd = toQDate(a.end);
+        auto bEnd = toQDate(b.end);
         return aEnd.isValid()
             ?   bEnd.isNull() ||
                 (aEnd == bEnd ? lessByStartId(a, b) : aEnd < bEnd)
