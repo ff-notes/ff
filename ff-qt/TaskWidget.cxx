@@ -28,7 +28,7 @@ TaskWidget::TaskWidget(
         New<QHBoxLayout>()
         .addLayout(start)
         .addLayout(end)
-        .addWidget(new TaskActionsBar(storage, task.id))
+        .addWidget(new TaskActionsBar(storage, task))
         .addStretch()
     );
     if (task.isTracking) {

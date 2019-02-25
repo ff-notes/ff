@@ -8,9 +8,8 @@
 
 
 class TaskActionsBar: public QToolBar {
-    using super = QToolBar;
 public:
-    TaskActionsBar(StorageHandle storageHandle, NoteId id);
+    TaskActionsBar(StorageHandle storageHandle, Note task);
 };
 
 
