@@ -25,11 +25,10 @@ LinkButton::LinkButton(QString text, QString url): super(text) {
 
     // context menu
     setContextMenuPolicy(Qt::ActionsContextMenu);
-    {
-        auto action = new QAction("Copy link address");
-        connect(action, &QAction::triggered, [url]{
+    addAction(
+        New<QAction>("Copy link address")
+        .connect(&QAction::triggered, [url]{
             qApp->clipboard()->setText(url);
-        });
-        addAction(action);
-    }
+        })
+    );
 }

@@ -19,6 +19,17 @@ struct New;
 
 
 template <>
+struct New<QAction>: NewBase<QAction> {
+    New(const QString & a): NewBase(new QAction(a)) {}
+
+    template <typename Method, typename Handler>
+    New & connect(Method a, Handler b) {
+        QObject::connect(p, a, b); return *this;
+    }
+};
+
+
+template <>
 struct New<QDateEdit>: NewBase<QDateEdit> {
     New(const QDate & a): NewBase(new QDateEdit(a)) {}
     New & setCalendarPopup(bool a) {p->setCalendarPopup(a); return *this;}
