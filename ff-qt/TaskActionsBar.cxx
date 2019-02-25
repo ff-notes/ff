@@ -4,7 +4,7 @@
 
 TaskActionsBar::TaskActionsBar(StorageHandle storageHandle, NoteId id) {
     auto storage = Storage{storageHandle};
-    addAction("Done/Archive", [storage, id]{ storage.done(id); });
+    addAction("Done and archive", [storage, id]{ storage.done(id); });
     addWidget(
         New<QToolButton>()
         .setMenu(
