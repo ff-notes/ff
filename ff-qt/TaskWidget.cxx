@@ -20,6 +20,8 @@ TaskWidget::TaskWidget(
     start(new DateComponent("Start:", qDate(task.start), not task.isTracking)),
     end(new DateComponent("Deadline:", qDate(task.end), not task.isTracking))
 {
+    label->setWordWrap(true);
+
     auto box = new QVBoxLayout(this);
     box->addWidget(label);
     box->addLayout(
