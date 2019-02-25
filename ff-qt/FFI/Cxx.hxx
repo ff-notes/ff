@@ -15,6 +15,7 @@ struct Date { int year, month, day; };
 // \todo(2019-02-10, cblp) generate with ron-schema
 struct Note {
     NoteId id;
+    bool isActive;
     std::string text;
     Date start;
     Date end;
@@ -30,11 +31,13 @@ struct Note {
 class MainWindow;
 
 extern "C" {
+    void c_done    (StorageHandle, const char * noteId);
     void c_postpone(StorageHandle, const char * noteId);
 }
 
 struct Storage {
     StorageHandle handle;
+    void done    (NoteId id) const { c_done    (handle, id.c_str()); }
     void postpone(NoteId id) const { c_postpone(handle, id.c_str()); }
 };
 

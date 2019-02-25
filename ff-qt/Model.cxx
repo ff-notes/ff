@@ -39,7 +39,7 @@ struct Model::Impl {
         );
     }
 
-    void insertTask(Note task) {
+    void insert(Note task) {
         auto it = upper_bound(task);
         int row = it - begin(tasks);
         q.beginInsertRows({}, row, row);
@@ -47,7 +47,7 @@ struct Model::Impl {
         q.endInsertRows();
     }
 
-    void updateTask(NoteIterator src, Note task) {
+    void update(NoteIterator src, Note task) {
         bool const moveUp = src > begin(tasks) && less(task, src[-1]);
         bool const moveDown =
             src < end(tasks) && src + 1 < end(tasks) && less(src[1], task);
@@ -73,6 +73,13 @@ struct Model::Impl {
             auto ix = q.index(src - begin(tasks));
             emit q.dataChanged(ix, ix);
         }
+    }
+
+    void remove(NoteIterator it) {
+        int row = it - begin(tasks);
+        q.beginRemoveRows({}, row, row);
+        tasks.erase(it);
+        q.endRemoveRows();
     }
 };
 
@@ -119,9 +126,15 @@ void Model::upsertTask(Note task) {
         end(p->tasks),
         [task](Note t) -> bool { return t.id == task.id; }
     );
-    if (it == p->tasks.end()) {
-        p->insertTask(task);
+    if (task.isActive) {
+        if (it == p->tasks.end()) {
+            p->insert(task);
+        } else {
+            p->update(it, task);
+        }
     } else {
-        p->updateTask(it, task);
+        if (it != p->tasks.end()) {
+            p->remove(it);
+        }
     }
 }

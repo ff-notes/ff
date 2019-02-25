@@ -31,10 +31,11 @@ import qualified RON.Storage.IO as Storage
 
 import           FF (getDataDir, load, loadActiveTasks)
 import           FF.Config (loadConfig)
-import           FF.Types (Entity (Entity), Note (Note), NoteId, entityId,
-                           entityVal, note_end, note_start, note_text,
-                           note_track, track_externalId, track_provider,
-                           track_source, track_url)
+import           FF.Types (Entity (Entity), Note (Note), NoteId,
+                           NoteStatus (TaskStatus), Status (Active), entityId,
+                           entityVal, note_end, note_start, note_status,
+                           note_text, note_track, track_externalId,
+                           track_provider, track_source, track_url)
 
 import           Cpp (MainWindow, ffCtx, includeDependent)
 import           Paths_ff_qt (version)
@@ -74,7 +75,8 @@ upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
 upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
     let id' = stringZ id
-        Note{note_text, note_start, note_end, note_track} = note
+        isActive = note_status == TaskStatus Active
+        Note{note_text, note_start, note_end, note_track, note_status} = note
         text = stringZ note_text
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
@@ -88,6 +90,7 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
             $(MainWindow * mainWindow),
             (Note){
                 .id = $bs-ptr:id',
+                .isActive = $(bool isActive),
                 .text = $bs-ptr:text,
                 .start = {$(int startYear), $(int startMonth), $(int startDay)},
                 .end   = {$(int   endYear), $(int   endMonth), $(int   endDay)},
