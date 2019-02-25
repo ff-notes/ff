@@ -3,7 +3,8 @@
 
 
 LinkButton::LinkButton(QString text, QString url): super(text) {
-    setFont(Make<QFont>().setBold(false).setUnderline(true));
+    setCursor(Qt::PointingHandCursor);
+    setFont(Make<QFont>(font()).setBold(false).setUnderline(true));
     setIcon(QIcon());
     setPalette(
         Make<QPalette>(palette())

@@ -63,6 +63,7 @@ struct Make;
 
 template <>
 struct Make<QFont>: MakeBase<QFont> {
+    Make(const QFont & p): MakeBase{p} {}
     Make & setBold(bool a) { p.setBold(a); return *this; }
     Make & setUnderline(bool a) { p.setUnderline(a); return *this; }
 };
