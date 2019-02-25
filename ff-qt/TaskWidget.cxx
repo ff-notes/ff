@@ -8,8 +8,15 @@
 
 
 TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
+    TaskWidget(parent, storage, task, QString::fromStdString(task.text))
+{}
+
+
+TaskWidget::TaskWidget(
+    QWidget * parent, StorageHandle storage, Note task, const QString & text
+):
     super(parent),
-    label(new QLabel(QString::fromStdString(task.text))),
+    label(new QLabel(text)),
     start(new DateComponent("Start:", qDate(task.start), not task.isTracking)),
     end(new DateComponent("Deadline:", qDate(task.end), not task.isTracking))
 {
@@ -31,6 +38,13 @@ TaskWidget::TaskWidget(QWidget * parent, StorageHandle storage, Note task):
             QString::fromStdString(task.track.url)
         ));
     }
+
+    // context menu
+    setContextMenuPolicy(Qt::ActionsContextMenu);
+    addAction(
+        New<QAction>("Copy text")
+        .onTriggered([text]{ qApp->clipboard()->setText(text); })
+    );
 }
 
 

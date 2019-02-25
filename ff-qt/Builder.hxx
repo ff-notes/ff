@@ -26,6 +26,11 @@ struct New<QAction>: NewBase<QAction> {
     New & connect(Method a, Handler b) {
         QObject::connect(p, a, b); return *this;
     }
+
+    template <typename Handler>
+    New & onTriggered(Handler b) {
+        QObject::connect(p, &QAction::triggered, b); return *this;
+    }
 };
 
 
