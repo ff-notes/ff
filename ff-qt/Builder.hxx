@@ -70,6 +70,18 @@ struct New<QTabWidget>: NewBase<QTabWidget> {
 };
 
 
+template <>
+struct New<QToolButton>: NewBase<QToolButton> {
+    New & setMenu(QMenu * a) { p->setMenu(a); return *this; }
+
+    New & setPopupMode(QToolButton::ToolButtonPopupMode a) {
+        p->setPopupMode(a); return *this;
+    }
+
+    New & setText(const QString & a) { p->setText(a); return *this; }
+};
+
+
 template <typename Wrapped>
 struct MakeBase {
     Wrapped p;
