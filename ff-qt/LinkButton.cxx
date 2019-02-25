@@ -11,8 +11,10 @@ LinkButton::LinkButton(QString text, QString url): super(text) {
     );
     setToolTip(url);
     connect(this, &self::clicked, [=]{
-        /// \todo(2019-02-23, cblp) Yandex.Browser on macOS doesn't open a tab
-        /// via QDesktopServices::openUrl
+        /// \todo(2019-02-23, cblp,
+        /// browser@support.yandex.ru [Ticket#19022310562166345])
+        /// Yandex.Browser on macOS doesn't open a tab via
+        /// QDesktopServices::openUrl
         #ifdef __APPLE__
             QProcess::execute("open", {url});
         #else
