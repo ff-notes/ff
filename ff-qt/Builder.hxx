@@ -51,6 +51,10 @@ struct New<QHBoxLayout>: NewBase<QHBoxLayout> {
 
 template <>
 struct New<QMenu>: NewBase<QMenu> {
+    New(): NewBase(new QMenu()) {}
+    New(const QString & a): NewBase(new QMenu(a)) {}
+    New(QWidget * a): NewBase(new QMenu(a)) {}
+
     template <typename Func1>
     New & addAction(const QString & a, Func1 b) {
         p->addAction(a, b); return *this;

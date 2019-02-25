@@ -2,7 +2,7 @@
 #include "DateComponent.hxx"
 #include "FFI/Cxx.hxx"
 #include "LinkButton.hxx"
-#include "TaskActionsButton.hxx"
+#include "TaskActionsBar.hxx"
 #include "TaskWidget.hxx"
 #include "util.hxx"
 
@@ -28,7 +28,7 @@ TaskWidget::TaskWidget(
         New<QHBoxLayout>()
         .addLayout(start)
         .addLayout(end)
-        .addWidget(new TaskActionsButton(storage, task.id))
+        .addWidget(new TaskActionsBar(storage, task.id))
         .addStretch()
     );
     if (task.isTracking) {
