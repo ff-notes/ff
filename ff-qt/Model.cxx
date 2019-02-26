@@ -4,33 +4,48 @@
 using std::bind;
 using std::placeholders::_1;
 using std::placeholders::_2;
+using std::tuple;
 using std::vector;
 
 
 struct Model::Impl {
     Model & q;
-    std::vector<Note> tasks;
+    vector<Note> tasks;
     using NoteIterator = vector<Note>::iterator;
 
     Impl(Model & q): q(q) {}
 
-    bool lessByStartId(const Note & a, const Note & b) {
-        auto aStart = toQDate(a.start);
-        auto bStart = toQDate(b.start);
-        return aStart == bStart ? a.id < b.id : aStart < bStart;
+    enum TaskModeTag {
+        Overdue,
+        EndToday,
+        EndSoon,
+        Actual,
+        Starting,
+    };
+
+    typedef tuple<TaskModeTag, unsigned> TaskMode;
+
+    TaskMode taskMode(QDate const & today, Note const & note) {
+        auto const start = toQDate(note.start);
+        auto const end   = toQDate(note.end);
+        return
+            end.isValid() ?
+                ( end   <  today ? TaskMode{Overdue , end.daysTo(today)  }
+                : end   == today ? TaskMode{EndToday, 0                  }
+                : start <= today ? TaskMode{EndSoon , today.daysTo(end)  }
+                :                  TaskMode{Starting, today.daysTo(start)}
+                )
+            : start <= today ?     TaskMode{Actual  , 0                  }
+            :                      TaskMode{Starting, today.daysTo(start)};
     }
 
-    bool lessByEndStartId(const Note & a, const Note & b) {
-        auto aEnd = toQDate(a.end);
-        auto bEnd = toQDate(b.end);
-        return aEnd.isValid()
-            ?   bEnd.isNull() ||
-                (aEnd == bEnd ? lessByStartId(a, b) : aEnd < bEnd)
-            :   bEnd.isNull() && lessByStartId(a, b);
+    bool naturalLess(Note const & a, Note const & b) {
+        auto const today = QDate::currentDate();
+        return taskMode(today, a) < taskMode(today, b);
     }
 
-    bool less(const Note & a, const Note & b) {
-        return lessByEndStartId(a, b);
+    bool less(Note const & a, Note const & b) {
+        return naturalLess(a, b);
     }
 
     NoteIterator upper_bound(Note task) {
