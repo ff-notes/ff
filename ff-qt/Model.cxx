@@ -38,18 +38,21 @@ struct Model::Impl {
             :                      TaskMode{Starting, today.daysTo(start)} ;
     }
 
-    bool naturalLess(Note const & a, Note const & b) {
-        auto const today = QDate::currentDate();
+    bool naturalLess(QDate const & today, Note const & a, Note const & b) {
         return taskMode(today, a) < taskMode(today, b);
     }
 
-    bool less(Note const & a, Note const & b) {
-        return naturalLess(a, b);
+    bool less(QDate const & today, Note const & a, Note const & b) {
+        return naturalLess(today, a, b);
     }
 
     NoteIterator upper_bound(Note task) {
+        auto const today = QDate::currentDate();
         return std::upper_bound(
-            begin(tasks), end(tasks), task, bind(&Impl::less, this, _1, _2)
+            begin(tasks),
+            end(tasks),
+            task,
+            bind(&Impl::less, this, today, _1, _2)
         );
     }
 
@@ -62,9 +65,12 @@ struct Model::Impl {
     }
 
     void update(NoteIterator src, Note task) {
-        bool const moveUp = src > begin(tasks) && less(task, src[-1]);
-        bool const moveDown =
-            src < end(tasks) && src + 1 < end(tasks) && less(src[1], task);
+        auto const today = QDate::currentDate();
+        bool const moveUp = src > begin(tasks) && less(today, task, src[-1]);
+        bool const moveDown
+            =   src < end(tasks)
+            &&  src + 1 < end(tasks)
+            &&  less(today, src[1], task);
         if (moveUp || moveDown) {
             int rowSrc = src - begin(tasks);
             auto dst = upper_bound(task);
