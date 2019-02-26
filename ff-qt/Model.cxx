@@ -23,7 +23,7 @@ struct Model::Impl {
         Starting,
     };
 
-    typedef tuple<TaskModeTag, unsigned> TaskMode;
+    using TaskMode = tuple<TaskModeTag, unsigned>;
 
     TaskMode taskMode(QDate const & today, Note const & note) {
         auto const start = toQDate(note.start);
@@ -33,10 +33,9 @@ struct Model::Impl {
                 ( end   <  today ? TaskMode{Overdue , end.daysTo(today)  }
                 : end   == today ? TaskMode{EndToday, 0                  }
                 : start <= today ? TaskMode{EndSoon , today.daysTo(end)  }
-                :                  TaskMode{Starting, today.daysTo(start)}
-                )
+                :                  TaskMode{Starting, today.daysTo(start)} )
             : start <= today ?     TaskMode{Actual  , 0                  }
-            :                      TaskMode{Starting, today.daysTo(start)};
+            :                      TaskMode{Starting, today.daysTo(start)} ;
     }
 
     bool naturalLess(Note const & a, Note const & b) {
