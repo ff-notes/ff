@@ -39,7 +39,8 @@ struct Model::Impl {
     }
 
     bool naturalLess(QDate const & today, Note const & a, Note const & b) {
-        return taskMode(today, a) < taskMode(today, b);
+        return  make_tuple(taskMode(today, a), a.id)
+            <   make_tuple(taskMode(today, b), b.id);
     }
 
     bool less(QDate const & today, Note const & a, Note const & b) {
