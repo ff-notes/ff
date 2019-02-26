@@ -10,7 +10,6 @@ module Main (main) where
 import           Prelude hiding (id)
 
 import           Control.Concurrent (forkIO)
-import           Control.Monad (void)
 import           Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import           Data.Foldable (for_)
@@ -52,17 +51,20 @@ main = do
     let version' = stringZ $ showVersion version
     storagePtr <- newStablePtr storage
 
+    -- set up UI
     mainWindow <- [Cpp.exp| MainWindow * {
         proxy_main($bs-ptr:version', $(StorageHandle storagePtr))
     }|]
 
-    void $ forkIO $ do
+    -- load current data to the view, asynchronously
+    _ <- forkIO $ do
         activeTasks <- runStorage storage loadActiveTasks
         for_ activeTasks $ upsertTask mainWindow
 
-    void $ forkIO $
-        subscribeForever storage $ upsertDocument storage mainWindow
+    -- update the view with future changes
+    _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
 
+    -- run UI
     [Cpp.exp| void { qApp_exec() }|]
 
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
@@ -109,8 +111,10 @@ toGregorianC :: Day -> (CInt, CInt, CInt)
 toGregorianC day = (y, m, d) where
     (fromIntegral -> y, fromIntegral -> m, fromIntegral -> d) = toGregorian day
 
+-- | Zero-terminated C string from 'String'
 stringZ :: String -> ByteString
 stringZ = textZ . Text.pack
 
+-- | Zero-terminated C string from 'Text'
 textZ :: Text -> ByteString
 textZ = (`BS.snoc` 0) . Text.encodeUtf8
