@@ -30,7 +30,7 @@ struct Model::Impl {
         auto const end   = toQDate(note.end);
         return
             end.isValid() ?
-                ( end   <  today ? TaskMode{Overdue , end.daysTo(today)  }
+                ( end   <  today ? TaskMode{Overdue , today.daysTo(end)  }
                 : end   == today ? TaskMode{EndToday, 0                  }
                 : start <= today ? TaskMode{EndSoon , today.daysTo(end)  }
                 :                  TaskMode{Starting, today.daysTo(start)} )
