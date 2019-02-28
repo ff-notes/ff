@@ -9,7 +9,7 @@ packages:
 extra-deps:
   # ff-core:
   - crdt-10.4
-  - github-0.20
+  - github-0.21
   # - ron-0.5
   # - ron-rdt-0.5
   # - ron-schema-0.5
