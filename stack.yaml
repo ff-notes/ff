@@ -7,8 +7,8 @@ packages:
   - ff-test
 
 extra-deps:
-  # ff:
-  - crdt-10.3
+  # ff-core:
+  - crdt-10.4
   # - ron-0.5
   # - ron-rdt-0.5
   # - ron-schema-0.5
