@@ -6,13 +6,25 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.11] - 2019-03-02
 ### Added
 - ff-qt:
-  - Link to tracked task.
+  - Link to tracked task. Clickable. With context menu to copy link.
+  - Load tasks asynchronously.
+  - Update tasks asynchronously.
+  - "Done and archive" button to task widget.
 
 ### Changed
 - ff-qt:
   - UI rewritten in real C++.
+  - Sort tasks in agenda naturally.
+    (See [NaturalTaskOrder](doc/NaturalTaskOrder.md))
+- Target Haskell version is now GHC 8.6
+
+### Fixed
+- ff-qt:
+  - Enable threading.
 
 ## [0.10] - 2019-02-05
 ### Changed
@@ -145,7 +157,8 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.10...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.11...HEAD
+[0.11]: https://github.com/ff-notes/ff/compare/v0.10...v0.11
 [0.10]: https://github.com/ff-notes/ff/compare/v0.9...v0.10
 [0.9]: https://github.com/ff-notes/ff/compare/v0.8...v0.9
 [0.8]: https://github.com/ff-notes/ff/compare/v0.7...v0.8
