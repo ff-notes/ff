@@ -17,7 +17,7 @@ and this project adheres to
 
 ### Changed
 - ff-qt:
-  - UI rewritten in real C++.
+  - UI is rewritten in real C++.
   - Sort tasks in agenda naturally.
     (See [NaturalTaskOrder](doc/NaturalTaskOrder.md))
 - Target Haskell version is now GHC 8.6
