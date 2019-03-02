@@ -10,13 +10,10 @@ extra-deps:
   # ff-core:
   - crdt-10.4
   - github-0.21
-  # - ron-0.5
-  # - ron-rdt-0.5
-  # - ron-schema-0.5
-  # - ron-storage-0.5
-  - git: https://github.com/ff-notes/ron.git
-    commit: '40258cf59584d85183fb4644631156ebd1003923'
-    subdirs: [ron, ron-rdt, ron-schema, ron-storage]
+  - ron-0.6
+  - ron-rdt-0.5
+  - ron-schema-0.5
+  - ron-storage-0.6
 
   # ff-test:
   - tasty-hedgehog-0.2.0.0
