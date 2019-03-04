@@ -1,4 +1,4 @@
-resolver: lts-13.9
+resolver: lts-13.10
 
 packages:
   - ff
