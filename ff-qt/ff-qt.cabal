@@ -75,11 +75,8 @@ executable ff-qt
     if os(osx)
         cc-options: -Qunused-arguments
             -- ignore unused arguments warning from clang
-        ghc-options:
-            -framework-path=/usr/local/opt/qt5/lib
-            -framework=QtCore
-            -framework=QtGui
-            -framework=QtWidgets
+        extra-frameworks-dirs: /usr/local/opt/qt5/lib
+        frameworks: QtCore QtGui QtWidgets
         include-dirs:
             /usr/local/opt/qt5/include
             /usr/local/opt/qt5/include/QtCore
