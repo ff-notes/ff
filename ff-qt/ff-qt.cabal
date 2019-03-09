@@ -68,6 +68,10 @@ executable ff-qt
             /usr/include/x86_64-linux-gnu/qt5
             /usr/include/x86_64-linux-gnu/qt5/QtCore
             /usr/include/x86_64-linux-gnu/qt5/QtWidgets
+            -- Arch Linux
+            /usr/include/qt
+            /usr/include/qt/QtCore
+            /usr/include/qt/QtWidgets
     if os(osx)
         cc-options: -Qunused-arguments
             -- ignore unused arguments warning from clang
