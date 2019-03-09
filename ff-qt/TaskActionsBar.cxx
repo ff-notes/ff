@@ -20,6 +20,6 @@ TaskActionsBar::TaskActionsBar(StorageHandle storageHandle, Note task) {
             .addAction("Postpone", [storage, id]{ storage.postpone(id); })
         )
         .setPopupMode(QToolButton::InstantPopup)
-        .setText("≡")
+        .setText("▼")
     );
 }
