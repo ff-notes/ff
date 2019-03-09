@@ -80,6 +80,8 @@ struct New<QTabWidget>: NewBase<QTabWidget> {
 
 template <>
 struct New<QToolButton>: NewBase<QToolButton> {
+    New & setIcon(QIcon const & a) { p->setIcon(a); return *this; }
+
     New & setMenu(QMenu * a) { p->setMenu(a); return *this; }
 
     New & setPopupMode(QToolButton::ToolButtonPopupMode a) {
