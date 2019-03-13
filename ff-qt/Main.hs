@@ -80,10 +80,10 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
         isTracking = isJust note_track
-        provider   = encodeUtf8 $ foldMap track_provider   note_track
-        source     = encodeUtf8 $ foldMap track_source     note_track
-        externalId = encodeUtf8 $ foldMap track_externalId note_track
-        url        = encodeUtf8 $ foldMap track_url        note_track
+        provider   = encodeUtf8 $ maybe "" track_provider   note_track
+        source     = encodeUtf8 $ maybe "" track_source     note_track
+        externalId = encodeUtf8 $ maybe "" track_externalId note_track
+        url        = encodeUtf8 $ maybe "" track_url        note_track
     [Cpp.block| void {
         MainWindow_upsertTask(
             $(MainWindow * mainWindow),
