@@ -33,7 +33,6 @@ executable ff-qt
     build-depends:
         -- global
         base,
-        bytestring,
         containers,
         inline-c,
         inline-c-cpp,
