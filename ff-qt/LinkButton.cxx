@@ -11,11 +11,13 @@ LinkButton::LinkButton(QString text, QString url): super(text) {
         .setColor(QPalette::ButtonText, palette().color(QPalette::Link))
     );
     setToolTip(url);
-    connect(this, &self::clicked, [=]{
+    connect(this, &self::clicked, [url]{
         /// \todo(2019-02-23, cblp,
-        /// browser@support.yandex.ru [Ticket#19022310562166345])
+        /// browser@support.yandex.ru [Ticket#19022310562166345],
+        /// https://github.com/ff-notes/ff/issues/135)
         /// Yandex.Browser on macOS doesn't open a tab via
-        /// QDesktopServices::openUrl
+        /// QDesktopServices::openUrl called from Haskell;
+        /// other browser, or other OS, or haskell-less app work well
         #ifdef __APPLE__
             QProcess::execute("open", {url});
         #else
