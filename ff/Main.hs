@@ -108,21 +108,21 @@ runCmdAction ui cmd isBrief = do
         CmdDelete notes ->
             for_ notes $ \noteId -> do
                 note <- cmdDeleteNote noteId
-                pprint $ withHeader "deleted:" $ prettyNote isBrief note
+                pprint $ withHeader "Deleted:" $ prettyNote isBrief note
         CmdDone notes ->
             for_ notes $ \noteId -> do
                 note <- cmdDone noteId
-                pprint $ withHeader "archived:" $ prettyNote isBrief note
+                pprint $ withHeader "Archived:" $ prettyNote isBrief note
         CmdEdit edit -> do
             notes <- cmdEdit edit
-            pprint $ withHeader "edited:" $ prettyNoteList isBrief notes
+            pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes
         CmdNew new -> do
             note <- cmdNewNote new today
-            pprint $ withHeader "added:" $ prettyNote isBrief note
+            pprint $ withHeader "Added:" $ prettyNote isBrief note
         CmdPostpone notes ->
             for_ notes $ \noteId -> do
                 note <- cmdPostpone noteId
-                pprint $ withHeader "postponed:" $ prettyNote isBrief note
+                pprint $ withHeader "Postponed:" $ prettyNote isBrief note
         CmdSearch Search{text, limit, inTasks, inWikis, inContacts} -> do
             (tasks, wikis, contacts) <- cmdSearch text ui limit today
             pprint $
@@ -136,10 +136,10 @@ runCmdAction ui cmd isBrief = do
         CmdUnarchive tasks ->
             for_ tasks $ \taskId -> do
                 task <- cmdUnarchive taskId
-                pprint . withHeader "unarchived:" $ prettyNote isBrief task
+                pprint . withHeader "Unarchived:" $ prettyNote isBrief task
         CmdUpgrade -> do
             upgradeDatabase
-            liftIO $ putStrLn "upgraded"
+            liftIO $ putStrLn "Upgraded"
         CmdWiki mlimit -> do
             wikis <- getWikiSamples ui mlimit today
             pprint $ prettyWikiSample isBrief wikis
@@ -173,10 +173,10 @@ cmdContact :: Bool -> Maybe Contact -> Storage ()
 cmdContact isBrief = \case
     Just (Add name) -> do
         contact <- cmdNewContact name
-        pprint $ withHeader "added:" $ prettyContact isBrief contact
+        pprint $ withHeader "Added:" $ prettyContact isBrief contact
     Just (Delete cid) -> do
         contact <- cmdDeleteContact cid
-        pprint $ withHeader "deleted:" $ prettyContact isBrief contact
+        pprint $ withHeader "Deleted:" $ prettyContact isBrief contact
     Nothing -> do
         contacts <- getContactSamples
         pprint $ prettyContactSample isBrief contacts
