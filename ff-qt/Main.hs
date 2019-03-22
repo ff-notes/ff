@@ -38,6 +38,7 @@ import           Paths_ff_qt (version)
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 includeDependent "FFI/Cxx.hxx"
+includeDependent "MainWindow.hxx"
 
 main :: IO ()
 main = do
@@ -49,9 +50,21 @@ main = do
     storagePtr <- newStablePtr storage
 
     -- set up UI
-    mainWindow <- [Cpp.exp| MainWindow * {
-        proxy_main($bs-cstr:version', $(StorageHandle storagePtr))
-    }|]
+    mainWindow <- [Cpp.block| MainWindow * {
+        int argc = 0;
+        char argv0[] = "ff-qt";
+        char * argv[] = {argv0, NULL};
+
+        auto app = new QApplication(argc, argv);
+        app->setOrganizationDomain("ff.cblp.su");
+        app->setOrganizationName("ff");
+        app->setApplicationName("ff");
+        app->setApplicationVersion(QString::fromStdString($bs-cstr:version'));
+
+        auto window = new MainWindow($(StorageHandle storagePtr));
+        window->show();
+        return window;
+    } |]
 
     -- load current data to the view, asynchronously
     _ <- forkIO $ do
@@ -62,7 +75,7 @@ main = do
     _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
 
     -- run UI
-    [Cpp.block| void { qApp_exec(); }|]
+    [Cpp.block| void { qApp->exec(); } |]
 
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
@@ -85,24 +98,21 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
         externalId = encodeUtf8 $ maybe "" track_externalId note_track
         url        = encodeUtf8 $ maybe "" track_url        note_track
     [Cpp.block| void {
-        MainWindow_upsertTask(
-            $(MainWindow * mainWindow),
-            (Note){
-                .id = $bs-cstr:id',
-                .isActive = $(bool isActive),
-                .text = $bs-cstr:text,
-                .start = {$(int startYear), $(int startMonth), $(int startDay)},
-                .end   = {$(int   endYear), $(int   endMonth), $(int   endDay)},
-                .isTracking = $(bool isTracking),
-                .track = {
-                    .provider   = $bs-cstr:provider,
-                    .source     = $bs-cstr:source,
-                    .externalId = $bs-cstr:externalId,
-                    .url        = $bs-cstr:url,
-                },
-            }
-        );
-    }|]
+        $(MainWindow * mainWindow)->upsertTask({
+            .id = $bs-cstr:id',
+            .isActive = $(bool isActive),
+            .text = $bs-cstr:text,
+            .start = {$(int startYear), $(int startMonth), $(int startDay)},
+            .end   = {$(int   endYear), $(int   endMonth), $(int   endDay)},
+            .isTracking = $(bool isTracking),
+            .track = {
+                .provider   = $bs-cstr:provider,
+                .source     = $bs-cstr:source,
+                .externalId = $bs-cstr:externalId,
+                .url        = $bs-cstr:url,
+            },
+        });
+    } |]
 
 toGregorianC :: Day -> (CInt, CInt, CInt)
 toGregorianC day = (y, m, d) where

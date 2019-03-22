@@ -56,11 +56,5 @@ struct Storage {
     void postpone(NoteId id) const { c_postpone(handle, id.c_str()); }
 };
 
-int qApp_exec();
-
-MainWindow * proxy_main(std::string version, StorageHandle);
-
-void MainWindow_upsertTask(MainWindow *, Note);
-
 
 #endif // ff_qt_FFI_Cxx_hxx

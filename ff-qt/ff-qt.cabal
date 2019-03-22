@@ -51,7 +51,6 @@ executable ff-qt
         ff-qt-ffi
     cxx-sources:
         DateComponent.cxx
-        FFI/Cxx.cxx
         LinkButton.cxx
         MainWindow.cxx
         Model.cxx
@@ -60,7 +59,7 @@ executable ff-qt
         TaskWidget.cxx
         util.cxx
     cxx-options: -pedantic -std=c++11 -Wall -Wextra -Werror
-    ghc-options: -fPIC -threaded
+    ghc-options: -optc=-std=c++11 -pgmc=clang++
     main-is: Main.hs
     other-modules:
         Cpp
