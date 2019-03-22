@@ -13,7 +13,7 @@ import           Foreign.StablePtr (StablePtr)
 import           Language.C.Inline (include)
 import           Language.C.Inline.Context (Context, ctxTypesTable)
 import           Language.C.Types (TypeSpecifier (TypeName))
-import           Language.Haskell.TH (DecsQ, conT)
+import           Language.Haskell.TH (DecsQ)
 import           Language.Haskell.TH.Syntax (addDependentFile)
 import qualified RON.Storage.IO as Storage
 
@@ -22,8 +22,8 @@ data MainWindow
 ffCtx :: Context
 ffCtx = mempty
     { ctxTypesTable = Map.fromList
-        [ (TypeName "bool", conT ''Bool)
-        , (TypeName "MainWindow", conT ''MainWindow)
+        [ (TypeName "bool",          [t| Bool |])
+        , (TypeName "MainWindow",    [t| MainWindow |])
         , (TypeName "StorageHandle", [t| StablePtr Storage.Handle |])
         ]
     }

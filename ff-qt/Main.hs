@@ -62,7 +62,7 @@ main = do
     _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
 
     -- run UI
-    [Cpp.exp| void { qApp_exec() }|]
+    [Cpp.block| void { qApp_exec(); }|]
 
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
