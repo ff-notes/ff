@@ -59,7 +59,7 @@ executable ff-qt
         TaskWidget.cxx
         util.cxx
     cxx-options: -pedantic -std=c++11 -Wall -Wextra -Werror
-    ghc-options: -optc=-std=c++11 -pgmc=clang++
+    ghc-options: -optc=-std=c++11 -pgmc=clang++ -threaded
     main-is: Main.hs
     other-modules:
         Cpp
