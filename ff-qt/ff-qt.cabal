@@ -59,7 +59,7 @@ executable ff-qt
         TaskWidget.cxx
         util.cxx
     cxx-options: -pedantic -std=c++11 -Wall -Wextra -Werror
-    ghc-options: -optc=-std=c++11 -pgmc=clang++ -threaded
+    ghc-options: -threaded
     main-is: Main.hs
     other-modules:
         Cpp
@@ -88,6 +88,7 @@ executable ff-qt
             -- ignore unused arguments warning from clang
         extra-framework-dirs: /usr/local/opt/qt5/lib
         frameworks: QtCore QtGui QtWidgets
+        ghc-options: -optc=-std=c++11 -pgmc=clang++
         include-dirs:
             /usr/local/opt/qt5/include
             /usr/local/opt/qt5/include/QtCore
