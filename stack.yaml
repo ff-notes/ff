@@ -20,3 +20,10 @@ extra-deps:
 
 # reduce some deps?
 # flags: {comonad: {contravariant: False}}
+
+docker:
+  enable: false
+  # env:
+  #   - "https_proxy=http://172.17.0.1:3128/"
+  image: ff-ubuntu-18.04
+  # set-user: true
