@@ -6,7 +6,7 @@ ENV PATH=/opt/ghc/bin:$PATH
 
 RUN apt update
 RUN apt install --no-install-recommends --yes \
-        curl software-properties-common sudo
+        curl g++ software-properties-common sudo zlib1g-dev
 
 RUN add-apt-repository ppa:hvr/ghc
 RUN apt update
