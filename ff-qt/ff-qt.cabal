@@ -70,7 +70,7 @@ executable ff-qt
         extra-lib-dirs:
             -- Ubuntu on Travis
             /opt/qt512/lib
-        ghc-options: -optc=-fPIC
+        ghc-options: -optc=-fPIC -optc=-std=c++11
         include-dirs:
             -- Ubuntu on Travis
             /opt/qt512/include
