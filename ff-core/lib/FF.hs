@@ -27,6 +27,7 @@ module FF (
     load,
     loadTasks,
     loadAll,
+    noDirectory,
     splitModes,
     takeSamples,
     updateTrackedNotes,
@@ -422,13 +423,11 @@ assertNoteIsNative = do
     whenJust tracking $ \_ ->
         throwError "A tracked note must be modified in its source."
 
-getDataDir :: Config -> IO FilePath
-getDataDir cfg = do
+getDataDir :: Config -> IO (Maybe FilePath)
+getDataDir Config{dataDir} = do
     cur <- getCurrentDirectory
     mDataDirFromVcs <- findVcs $ parents cur
-    case mDataDirFromVcs of
-        Just dataDir -> pure dataDir
-        Nothing      -> checkDataDir cfg
+    pure $ maybe dataDir (pure . identity) mDataDirFromVcs
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
     findVcs []         = pure Nothing
@@ -439,10 +438,8 @@ getDataDir cfg = do
         else
             findVcs dirs
 
-checkDataDir :: Monad m => Config -> m FilePath
-checkDataDir Config{dataDir} = case dataDir of
-    Just dir -> pure dir
-    Nothing  -> fail "Data directory isn't set, run `ff config dataDir --help`"
+noDirectory :: String
+noDirectory = "Data directory isn't set, run `ff config dataDir --help`"
 
 identity :: a -> a
 identity x = x

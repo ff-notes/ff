@@ -25,7 +25,7 @@ import           RON.Storage.IO (CollectionDocId (CollectionDocId),
                                  DocId (DocId), runStorage, subscribeForever)
 import qualified RON.Storage.IO as Storage
 
-import           FF (getDataDir, load, loadTasks)
+import           FF (getDataDir, load, loadTasks, noDirectory)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), NoteId,
                            NoteStatus (TaskStatus), Status (Active), entityId,
@@ -44,7 +44,7 @@ main :: IO ()
 main = do
     cfg     <- loadConfig
     dataDir <- getDataDir cfg
-    storage <- Storage.newHandle dataDir
+    storage <- maybe (fail noDirectory) Storage.newHandle dataDir
 
     let version' = encodeUtf8 . Text.pack $ showVersion version
     storagePtr <- newStablePtr storage

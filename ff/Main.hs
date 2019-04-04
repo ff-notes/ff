@@ -41,7 +41,7 @@ import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
                      cmdUnarchive, getContactSamples, getDataDir,
                      getTaskSamples, getUtcToday, getWikiSamples,
-                     updateTrackedNotes)
+                     updateTrackedNotes, noDirectory)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -61,13 +61,15 @@ main :: IO ()
 main = do
     cfg@Config{ui} <- loadConfig
     dataDir <- getDataDir cfg
-    h' <- Storage.newHandle dataDir
-    Options{brief, customDir, cmd} <- parseOptions h'
-    h <- maybe (pure h') Storage.newHandle customDir
+    globalHandle <- maybeHandle Nothing dataDir
+    Options{brief, customDir, cmd} <- parseOptions globalHandle
+    handle <- maybeHandle globalHandle customDir
     case cmd of
         CmdConfig param  -> runCmdConfig cfg param
-        CmdAction action -> runStorage h $ runCmdAction ui action brief
         CmdVersion       -> runCmdVersion
+        CmdAction action -> case handle of
+            Nothing -> fail noDirectory
+            Just h -> runStorage h $ runCmdAction ui action brief
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config { dataDir, ui } = \case
@@ -204,3 +206,6 @@ pprint doc = liftIO $ do
 
 fromEither :: Either a a -> a
 fromEither = either id id
+
+maybeHandle :: Maybe Storage.Handle -> Maybe FilePath -> IO (Maybe Storage.Handle)
+maybeHandle mHandle = maybe (pure mHandle) (fmap Just . Storage.newHandle)
