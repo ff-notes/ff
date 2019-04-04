@@ -27,7 +27,7 @@ module FF (
     load,
     loadTasks,
     loadAll,
-    noDirectory,
+    noDataDirectoryMessage,
     splitModes,
     takeSamples,
     updateTrackedNotes,
@@ -427,7 +427,7 @@ getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config{dataDir} = do
     cur <- getCurrentDirectory
     mDataDirFromVcs <- findVcs $ parents cur
-    pure $ maybe dataDir (pure . identity) mDataDirFromVcs
+    pure $ maybe dataDir pure mDataDirFromVcs
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
     findVcs []         = pure Nothing
@@ -438,8 +438,8 @@ getDataDir Config{dataDir} = do
         else
             findVcs dirs
 
-noDirectory :: String
-noDirectory = "Data directory isn't set, run `ff config dataDir --help`"
+noDataDirectoryMessage :: String
+noDataDirectoryMessage = "Data directory isn't set, run `ff config dataDir --help`"
 
 identity :: a -> a
 identity x = x

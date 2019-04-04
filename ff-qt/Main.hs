@@ -25,7 +25,7 @@ import           RON.Storage.IO (CollectionDocId (CollectionDocId),
                                  DocId (DocId), runStorage, subscribeForever)
 import qualified RON.Storage.IO as Storage
 
-import           FF (getDataDir, load, loadTasks, noDirectory)
+import           FF (getDataDir, load, loadTasks, noDataDirectoryMessage)
 import           FF.Config (loadConfig)
 import           FF.Types (Entity (Entity), Note (Note), NoteId,
                            NoteStatus (TaskStatus), Status (Active), entityId,
@@ -40,12 +40,8 @@ Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 includeDependent "FFI/Cxx.hxx"
 includeDependent "MainWindow.hxx"
 
-main :: IO ()
-main = do
-    cfg     <- loadConfig
-    dataDir <- getDataDir cfg
-    storage <- maybe (fail noDirectory) Storage.newHandle dataDir
-
+main :: Storage.Handle -> IO ()
+main storage = do
     let version' = encodeUtf8 . Text.pack $ showVersion version
     storagePtr <- newStablePtr storage
 
@@ -76,6 +72,12 @@ main = do
 
     -- run UI
     [Cpp.block| void { qApp->exec(); } |]
+
+getHandle :: IO (Storage.Handle)
+getHandle = do
+    cfg     <- loadConfig
+    dataDir <- getDataDir cfg
+    maybe (fail noDataDirectoryMessage) Storage.newHandle dataDir
 
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of

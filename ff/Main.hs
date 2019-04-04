@@ -41,7 +41,7 @@ import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
                      cmdUnarchive, getContactSamples, getDataDir,
                      getTaskSamples, getUtcToday, getWikiSamples,
-                     updateTrackedNotes, noDirectory)
+                     updateTrackedNotes, noDataDirectoryMessage)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -61,14 +61,16 @@ main :: IO ()
 main = do
     cfg@Config{ui} <- loadConfig
     dataDir <- getDataDir cfg
-    globalHandle <- maybeHandle Nothing dataDir
-    Options{brief, customDir, cmd} <- parseOptions globalHandle
-    handle <- maybeHandle globalHandle customDir
+    handle' <- traverse Storage.newHandle dataDir
+    Options{brief, customDir, cmd} <- parseOptions handle'
+    handle <- case customDir of
+        Nothing -> pure handle'
+        path -> traverse Storage.newHandle path
     case cmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdVersion       -> runCmdVersion
         CmdAction action -> case handle of
-            Nothing -> fail noDirectory
+            Nothing -> fail noDataDirectoryMessage
             Just h -> runStorage h $ runCmdAction ui action brief
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
