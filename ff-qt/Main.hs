@@ -43,7 +43,7 @@ includeDependent "MainWindow.hxx"
 main :: IO ()
 main = do
     let version' = encodeUtf8 . Text.pack $ showVersion version
-    path <- getPath
+    path <- getDataDirOrFail
     storage <- Storage.newHandle path
     storagePtr <- newStablePtr storage
 
@@ -75,8 +75,8 @@ main = do
     -- run UI
     [Cpp.block| void { qApp->exec(); } |]
 
-getPath :: IO FilePath
-getPath = do
+getDataDirOrFail :: IO FilePath
+getDataDirOrFail = do
     cfg     <- loadConfig
     dataDir <- getDataDir cfg
     case dataDir of
