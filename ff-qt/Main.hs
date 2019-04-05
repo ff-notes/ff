@@ -40,9 +40,10 @@ Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 includeDependent "FFI/Cxx.hxx"
 includeDependent "MainWindow.hxx"
 
-main :: FilePath -> IO ()
-main path = do
+main :: IO ()
+main = do
     let version' = encodeUtf8 . Text.pack $ showVersion version
+    path <- getPath
     storage <- Storage.newHandle path
     storagePtr <- newStablePtr storage
 
@@ -74,8 +75,8 @@ main path = do
     -- run UI
     [Cpp.block| void { qApp->exec(); } |]
 
-getHandle :: IO FilePath
-getHandle = do
+getPath :: IO FilePath
+getPath = do
     cfg     <- loadConfig
     dataDir <- getDataDir cfg
     case dataDir of
