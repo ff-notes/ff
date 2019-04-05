@@ -40,9 +40,10 @@ Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 includeDependent "FFI/Cxx.hxx"
 includeDependent "MainWindow.hxx"
 
-main :: Storage.Handle -> IO ()
-main storage = do
+main :: FilePath -> IO ()
+main path = do
     let version' = encodeUtf8 . Text.pack $ showVersion version
+    storage <- Storage.newHandle path
     storagePtr <- newStablePtr storage
 
     -- set up UI
@@ -73,11 +74,13 @@ main storage = do
     -- run UI
     [Cpp.block| void { qApp->exec(); } |]
 
-getHandle :: IO (Storage.Handle)
+getHandle :: IO FilePath
 getHandle = do
     cfg     <- loadConfig
     dataDir <- getDataDir cfg
-    maybe (fail noDataDirectoryMessage) Storage.newHandle dataDir
+    case dataDir of
+        Nothing -> fail noDataDirectoryMessage
+        Just path -> pure path
 
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
