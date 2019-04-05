@@ -427,7 +427,7 @@ getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config{dataDir} = do
     cur <- getCurrentDirectory
     mDataDirFromVcs <- findVcs $ parents cur
-    pure $ maybe dataDir Just mDataDirFromVcs
+    pure $ mDataDirFromVcs <|> dataDir
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
     findVcs []         = pure Nothing
