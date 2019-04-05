@@ -30,11 +30,11 @@ import           Data.Time (Day)
 import           Options.Applicative (Completer, argument, auto, command,
                                       completer, customExecParser, defaultPrefs,
                                       flag', fullDesc, help, helper, info,
-                                      listIOCompleter, long, metavar, option,
-                                      prefDisambiguate, prefMultiSuffix,
-                                      prefShowHelpOnError, progDesc, short, str,
-                                      strArgument, strOption, subparser, switch,
-                                      (<**>))
+                                      listCompleter, listIOCompleter, long,
+                                      metavar, option, prefDisambiguate,
+                                      prefMultiSuffix, prefShowHelpOnError,
+                                      progDesc, short, str, strArgument,
+                                      strOption, subparser, switch, (<**>))
 import           RON.Storage.IO (Collection, DocId (DocId), getDocuments,
                                  runStorage)
 import qualified RON.Storage.IO as Storage
@@ -114,7 +114,7 @@ data Search = Search
     , limit      :: Maybe Limit
     }
 
-parseOptions :: Storage.Handle -> IO Options
+parseOptions :: Maybe Storage.Handle -> IO Options
 parseOptions h =
     customExecParser prefs $ i parser "A note taker and task tracker"
   where
@@ -277,8 +277,9 @@ parseOptions h =
     completeContactIds = docIdCompleter @FF.Types.Contact
 
     docIdCompleter :: forall a . Collection a => Completer
-    docIdCompleter =
-        listIOCompleter $ map unDocId <$> runStorage h (getDocuments @_ @a)
+    docIdCompleter = case h of
+        Nothing -> listCompleter []
+        Just h' -> listIOCompleter $ map unDocId <$> runStorage h' (getDocuments @_ @a)
 
     unDocId (DocId name) = name
 
