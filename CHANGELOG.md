@@ -9,6 +9,7 @@ and this project adheres to
 ### Added
 - ff:
   - Search within archived contacts and tasks.
+  - Add config tests.
 
 ## [0.11] - 2019-03-02
 ### Added

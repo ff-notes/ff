@@ -11,22 +11,7 @@ build-type: Simple
 executable ff
     build-depends:
         -- global
-        async,
         base >= 4 && < 4.13,
-        directory,
-        filepath,
-        gitrev,
-        mtl,
-        pager,
-        prettyprinter,
-        prettyprinter-ansi-terminal,
-        terminal-size,
-        text,
-        time,
-
-        -- organization
-        ron,
-        ron-storage,
 
         -- project
         ff-core
