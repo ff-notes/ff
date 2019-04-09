@@ -181,9 +181,6 @@ test_JSON_Tests =
     , testProperty "Note"    $ ronRoundtrip  Gen.note
     ]
 
--- comfUI :: ConfigUI
--- comfUI = ConfigUI {shuffle = False}
-
 prop_repo :: Property
 prop_repo = property $
     ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues
