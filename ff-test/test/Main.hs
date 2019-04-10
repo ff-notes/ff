@@ -48,7 +48,7 @@ import Config (configTests)
 main :: IO ()
 main = do
     configTests
-    -- I'dataTests' should be evaluated at the end.
+    -- 'dataTests' should be evaluated at the end.
     dataTests
 
 dataTests :: IO ()
