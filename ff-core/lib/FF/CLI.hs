@@ -6,10 +6,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
-module FF.CLI (
-    cli,
-    runCmdConfig
-) where
+module FF.CLI where
 
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (race)

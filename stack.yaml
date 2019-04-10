@@ -17,7 +17,6 @@ extra-deps:
 
   # ff-test:
   - tasty-hedgehog-0.2.0.0
-  - silently-1.2.5
 
 # reduce some deps?
 # flags: {comonad: {contravariant: False}}

@@ -38,6 +38,6 @@ test-suite ff-test
     hs-source-dirs: test
     main-is: Main.hs
     other-modules:
-        Gen,
         Config
+        Gen
     type: exitcode-stdio-1.0

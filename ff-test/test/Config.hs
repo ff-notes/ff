@@ -21,16 +21,8 @@ configTests = withSystemTempDirectory "tempHome" $ \tempHome ->
 runConfigTests :: FilePath -> Group -> IO ()
 runConfigTests tempPath group = do
     defaultHome <- getEnv "HOME"
-    putStrLn $ "Remeber current HOME envirement as " ++ defaultHome
-    let prepare = do
-          putStrLn "Set HOME envirement to 'tempHome' for tests' evalution"
-          setEnv "HOME" tempPath
-    -- Release resources.
-    let finish _ = do
-          setEnv "HOME" defaultHome
-          putStrLn $ "Revert HOME envirement back to " ++ defaultHome
-          putHomeEnv
-    bracket prepare finish $ \_ -> void $ checkSequential group
+    setEnv "HOME" tempPath
+    void $ checkSequential group
 
 putHomeEnv :: IO ()
 putHomeEnv = do
