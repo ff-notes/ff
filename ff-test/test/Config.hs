@@ -2,32 +2,21 @@
 
 module Config (configTests) where
 
-import           Control.Exception (bracket)
 import           Control.Monad (void)
 import           FF.CLI (runCmdConfig)
 import           FF.Config (Config (..), defaultConfigUI, emptyConfig,
                             loadConfig, printConfig, saveConfig)
 import           Hedgehog (Group (..), Property, PropertyT, checkSequential,
                            evalIO, property, (===))
-import           System.Environment (getEnv, setEnv)
+import           System.Environment (setEnv)
 import           System.IO (stderr)
 import           System.IO.Silently (hCapture_)
 import           System.IO.Temp (withSystemTempDirectory)
 
 configTests :: IO ()
-configTests = withSystemTempDirectory "tempHome" $ \tempHome ->
-    runConfigTests tempHome testGroup
-
-runConfigTests :: FilePath -> Group -> IO ()
-runConfigTests tempPath group = do
-    defaultHome <- getEnv "HOME"
-    setEnv "HOME" tempPath
-    void $ checkSequential group
-
-putHomeEnv :: IO ()
-putHomeEnv = do
-    home <- getEnv "HOME"
-    putStrLn $ concat ["Current HOME env is ", home, "\n"]
+configTests = withSystemTempDirectory "tempHome" $ \tempHome -> do
+    setEnv "HOME" tempHome
+    void $ checkSequential testGroup
 
 captureString :: IO () -> PropertyT IO String
 captureString = evalIO . hCapture_ [stderr]
