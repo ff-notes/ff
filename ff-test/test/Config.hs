@@ -1,3 +1,5 @@
+{-# OPTIONS -Wno-missing-signatures #-}
+
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -17,43 +19,27 @@ import           FF.Config (Config (..), defaultConfigUI, emptyConfig,
 configTests :: TestTree
 configTests = $(testGroupGenerator)
 
-captureString :: IO () -> PropertyT IO String
+captureString :: IO a -> PropertyT IO String
 captureString = evalIO . hCapture_ [stderr]
 
-checkRunCmd :: Config -> PropertyT IO ()
-checkRunCmd setConfig = do
-    evalIO $ saveConfig setConfig
-    runcmdconf <- captureString $ runCmdConfig setConfig Nothing
-    printsetconf <- captureString $ printConfig setConfig
+checkRunCmd :: Config -> Property
+checkRunCmd config = property $ do
+    evalIO $ saveConfig config
+    runcmdconf <- captureString $ runCmdConfig config Nothing
+    printsetconf <- captureString $ printConfig config
     runcmdconf === printsetconf
 
-checkLoad :: Config -> PropertyT IO ()
-checkLoad setConfig = do
-    evalIO $ saveConfig setConfig
+checkLoad :: Config -> Property
+checkLoad config = property $ do
+    evalIO $ saveConfig config
     loadedconf <- evalIO loadConfig
-    setConfig === loadedconf
+    config === loadedconf
 
-prop_loadNoConfig :: Property
 prop_loadNoConfig = property $ do
-    conf <- evalIO loadConfig
-    emptyConfig === conf
+    config <- evalIO loadConfig
+    emptyConfig === config
 
-prop_loadJustConfig :: Property
-prop_loadJustConfig = property $ do
-    let setConfig = Config (Just "pathNotes") defaultConfigUI
-    checkLoad setConfig
-
-prop_loadNothingConfig :: Property
-prop_loadNothingConfig = property $ do
-    let setConfig = Config Nothing defaultConfigUI
-    checkLoad setConfig
-
-prop_runCmdConfigJust :: Property
-prop_runCmdConfigJust = property $ do
-    let setConfig = Config (Just "pathNotes") defaultConfigUI
-    checkRunCmd setConfig
-
-prop_runCmdConfigNothing :: Property
-prop_runCmdConfigNothing = property $ do
-    let setConfig = Config Nothing defaultConfigUI
-    checkRunCmd setConfig
+prop_loadJustConfig      = checkLoad   $ Config (Just "path") defaultConfigUI
+prop_loadNothingConfig   = checkLoad   $ Config Nothing       defaultConfigUI
+prop_runCmdConfigJust    = checkRunCmd $ Config (Just "path") defaultConfigUI
+prop_runCmdConfigNothing = checkRunCmd $ Config Nothing       defaultConfigUI
