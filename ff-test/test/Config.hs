@@ -1,22 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Config (configTests) where
 
-import           Control.Monad (void)
+import           Hedgehog (Property, PropertyT, evalIO, property, (===))
+import           System.IO (stderr)
+import           System.IO.Silently (hCapture_)
+import           Test.Tasty (TestTree)
+import           Test.Tasty.Hedgehog (testProperty)
+import           Test.Tasty.TH (testGroupGenerator)
+
 import           FF.CLI (runCmdConfig)
 import           FF.Config (Config (..), defaultConfigUI, emptyConfig,
                             loadConfig, printConfig, saveConfig)
-import           Hedgehog (Group (..), Property, PropertyT, checkSequential,
-                           evalIO, property, (===))
-import           System.Environment (setEnv)
-import           System.IO (stderr)
-import           System.IO.Silently (hCapture_)
-import           System.IO.Temp (withSystemTempDirectory)
 
-configTests :: IO ()
-configTests = withSystemTempDirectory "tempHome" $ \tempHome -> do
-    setEnv "HOME" tempHome
-    void $ checkSequential testGroup
+configTests :: TestTree
+configTests = $(testGroupGenerator)
 
 captureString :: IO () -> PropertyT IO String
 captureString = evalIO . hCapture_ [stderr]
@@ -58,12 +57,3 @@ prop_runCmdConfigNothing :: Property
 prop_runCmdConfigNothing = property $ do
     let setConfig = Config Nothing defaultConfigUI
     checkRunCmd setConfig
-
-testGroup :: Group
-testGroup = Group "config tests" [
-    ("LoadConfig with an absent config file:", prop_loadNoConfig),
-    ("LoadConfig with defined dataDir:", prop_loadJustConfig),
-    ("LoadConfig with Nothing in dataDir field:", prop_loadNothingConfig),
-    ("RunCmdConf with defined dataDir:", prop_runCmdConfigJust),
-    ("RunCmdConf with Nothing in dataDir field:", prop_runCmdConfigNothing)
-    ]

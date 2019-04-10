@@ -39,5 +39,6 @@ test-suite ff-test
     main-is: Main.hs
     other-modules:
         Config
+        Database
         Gen
     type: exitcode-stdio-1.0
