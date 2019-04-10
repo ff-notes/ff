@@ -12,6 +12,7 @@ library
     build-depends:
         -- global
         aeson,
+        async,
         base,
         bytestring,
         containers,
@@ -19,13 +20,16 @@ library
         directory,
         filepath,
         github,
+        gitrev,
         hashable,
         mtl,
         optparse-applicative,
+        pager,
         prettyprinter,
         prettyprinter-ansi-terminal,
         random,
         temporary,
+        terminal-size,
         text,
         time,
         typed-process,
@@ -42,6 +46,7 @@ library
     default-language: Haskell2010
     exposed-modules:
         FF
+        FF.CLI
         FF.Config
         FF.Github
         FF.Options

@@ -17,9 +17,11 @@ test-suite ff-test
         hedgehog,
         interpolate,
         mtl,
+        silently,
         tasty,
         tasty-hedgehog,
         tasty-th,
+        temporary,
         text,
         time,
         unordered-containers,
@@ -36,5 +38,6 @@ test-suite ff-test
     hs-source-dirs: test
     main-is: Main.hs
     other-modules:
+        Config
         Gen
     type: exitcode-stdio-1.0

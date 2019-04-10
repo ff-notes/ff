@@ -32,7 +32,7 @@ import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (defaultMainGenerator)
 
 import           FF (cmdNewNote, getTaskSamples)
-import           FF.Config (ConfigUI (..))
+import           FF.Config (defaultConfigUI)
 import qualified FF.Github as Github
 import           FF.Options (New (..))
 import           FF.Types (pattern Entity, Limit, Note (..),
@@ -42,14 +42,22 @@ import           FF.Types (pattern Entity, Limit, Note (..),
 import           FF.Upgrade (upgradeDatabase)
 
 import qualified Gen
+import Config (configTests)
+
 
 main :: IO ()
-main = $(defaultMainGenerator)
+main = do
+    configTests
+    -- 'dataTests' should be evaluated at the end.
+    dataTests
+
+dataTests :: IO ()
+dataTests = $(defaultMainGenerator)
 
 prop_not_exist :: Property
 prop_not_exist = property $ do
     (agenda, fs') <-
-        evalEither $ runStorageSim fs $ getTaskSamples False ui agendaLimit today
+        evalEither $ runStorageSim fs $ getTaskSamples False defaultConfigUI agendaLimit today
     Map.empty === agenda
     fs === fs'
   where
@@ -58,7 +66,7 @@ prop_not_exist = property $ do
 prop_smoke :: Property
 prop_smoke = property $ do
     (agenda', fs') <-
-        evalEither $ runStorageSim fs123 $ getTaskSamples False ui agendaLimit today
+        evalEither $ runStorageSim fs123 $ getTaskSamples False defaultConfigUI agendaLimit today
     agenda === agenda'
     fs123  === fs'
   where
@@ -172,9 +180,6 @@ test_JSON_Tests =
     , testProperty "Contact" $ ronRoundtrip  Gen.contact
     , testProperty "Note"    $ ronRoundtrip  Gen.note
     ]
-
-ui :: ConfigUI
-ui = ConfigUI {shuffle = False}
 
 prop_repo :: Property
 prop_repo = property $
