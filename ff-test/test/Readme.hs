@@ -33,7 +33,7 @@ ffhelp = T.concat [pref, "\n", T.pack $ showHelp Nothing, "\n"]
 
 parseMD :: Text -> Maybe Text
 parseMD s =
-    let Node _ DOCUMENT ns = commonmarkToNode [optSafe] s
+    let Node _ _ ns = commonmarkToNode [optSafe] s
         code = [block | Node _ (CODE_BLOCK _ block) _ <- ns]
         help = filter ((==) pref . T.take (T.length pref)) code
         help' = if null help then Nothing else Just (head help)
