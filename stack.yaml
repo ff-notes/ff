@@ -16,6 +16,7 @@ extra-deps:
   - ron-storage-0.6
 
   # ff-test:
+  - cmark-0.5.6
   - tasty-hedgehog-0.2.0.0
 
 # reduce some deps?

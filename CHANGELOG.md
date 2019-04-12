@@ -10,6 +10,7 @@ and this project adheres to
 - ff:
   - Search within archived contacts and tasks.
   - Add config tests.
+  - Add a test to check if `ff --help` section at the README updated.
 
 ## [0.11] - 2019-03-02
 ### Added

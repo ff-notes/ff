@@ -11,6 +11,7 @@ test-suite ff-test
         aeson,
         base,
         bytestring,
+        cmark,
         containers,
         errors,
         github,
@@ -41,4 +42,5 @@ test-suite ff-test
         Config
         Database
         Gen
+        Readme
     type: exitcode-stdio-1.0
