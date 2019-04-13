@@ -1,7 +1,6 @@
 {-# OPTIONS -Wno-missing-signatures #-}
 
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 module Readme (readmeTest) where
 
