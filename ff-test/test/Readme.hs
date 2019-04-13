@@ -21,14 +21,14 @@ readmeTest = testProperty "readme" prop_readme
 prop_readme :: Property
 prop_readme = property $ do
     readme <- evalIO $ Text.readFile "../README.md"
-    readme' <- evalEither $ note noHelpSection $ parseIfHelp readme
+    readme' <- evalEither $ note noHelpSection $ parseFFHelp readme
     ffhelp === readme'
 
 ffhelp :: Text
 ffhelp = Text.unlines [pref, Text.pack showHelp]
 
-parseIfHelp :: Text -> Maybe Text
-parseIfHelp s =
+parseFFHelp :: Text -> Maybe Text
+parseFFHelp s =
     let Node _ _ ns = commonmarkToNode [optSafe] s
         code = [block | Node _ (CODE_BLOCK _ block) _ <- ns]
         help = filter ((==) pref . Text.take (Text.length pref)) code
