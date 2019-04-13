@@ -19,6 +19,7 @@ module FF.Options (
     Track (..),
     maybeClearToMaybe,
     parseOptions,
+    showHelp,
 ) where
 
 import           Control.Applicative (optional, some, (<|>))
@@ -27,14 +28,17 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Completer, argument, auto, command,
-                                      completer, customExecParser, defaultPrefs,
-                                      flag', fullDesc, help, helper, info,
-                                      listCompleter, listIOCompleter, long,
-                                      metavar, option, prefDisambiguate,
+import           Options.Applicative (Completer, ParseError (ShowHelpText), Parser,
+                                      ParserInfo, ParserPrefs, argument, auto,
+                                      command, completer, customExecParser,
+                                      defaultPrefs, flag', fullDesc, help,
+                                      helper, info, listCompleter,
+                                      listIOCompleter, long, metavar, option,
+                                      parserFailure, prefDisambiguate,
                                       prefMultiSuffix, prefShowHelpOnError,
-                                      progDesc, short, str, strArgument,
-                                      strOption, subparser, switch, (<**>))
+                                      progDesc, renderFailure, short, str,
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
 import           RON.Storage.IO (Collection, DocId (DocId), getDocuments,
                                  runStorage)
 import qualified RON.Storage.IO as Storage
@@ -115,19 +119,22 @@ data Search = Search
     }
 
 parseOptions :: Maybe Storage.Handle -> IO Options
-parseOptions h =
-    customExecParser prefs $ i parser "A note taker and task tracker"
-  where
-    prefs = defaultPrefs
-        { prefDisambiguate    = True
-        , prefMultiSuffix     = "..."
-        , prefShowHelpOnError = True
-        }
-    parser =
+parseOptions = customExecParser prefs . parserInfo
+
+prefs :: ParserPrefs
+prefs = defaultPrefs
+    { prefDisambiguate    = True
+    , prefMultiSuffix     = "..."
+    , prefShowHelpOnError = True
+    }
+
+parser :: Maybe Storage.Handle -> Parser Options
+parser h =
         Options
         <$> briefOption
         <*> customDirOption
         <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
+  where
     commands = mconcat
         [ action  "add"       iCmdAdd
         , action  "agenda"    iCmdAgenda
@@ -270,8 +277,6 @@ parseOptions h =
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
 
-    i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
-
     completeNoteIds = docIdCompleter @Note
 
     completeContactIds = docIdCompleter @FF.Types.Contact
@@ -284,3 +289,13 @@ parseOptions h =
     unDocId (DocId name) = name
 
     readDocId = DocId <$> str
+
+i :: forall a . Parser a -> String -> ParserInfo a
+i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
+
+parserInfo :: Maybe Storage.Handle -> ParserInfo Options
+parserInfo h = i (parser h) "A note taker and task tracker"
+
+showHelp :: String
+showHelp = fst $
+    renderFailure (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty) ""

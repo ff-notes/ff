@@ -62,24 +62,34 @@ Ubuntu:
 ### Look what 𝑓𝑓 can do for you
 
     $ ff --help
-    Usage: ff ([COMMAND] | [-l|--limit ARG])
+    Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
+            [-l|--limit ARG])
       A note taker and task tracker
 
     Available options:
-      -l,--limit ARG           limit
+      -b,--brief               List only note titles and ids
+      -C,--data-dir DIRECTORY  Path to the data dir
+      -V,--version             Current ff-note version
+      -l,--limit ARG           Number of issues
       -h,--help                Show this help text
 
     Available commands:
-      add                      add a new task or note
+      add                      add new task or note
       agenda                   show what you can do right now [default action]
       config                   show/edit configuration
+      contact                  show contacts
       delete                   delete a task
       done                     mark a task done (archive)
       edit                     edit a task or a note
       new                      synonym for `add`
       postpone                 make a task start later
       search                   search for notes with the given text
+      show                     show note by id
+      track                    track issues from external sources
       unarchive                restore the note from archive
+      upgrade                  check and upgrade the database to the most recent
+                               format
+      wiki                     show all wiki notes
 
 ### Get started
 
