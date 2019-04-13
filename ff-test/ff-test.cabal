@@ -18,6 +18,7 @@ test-suite ff-test
         hedgehog,
         interpolate,
         mtl,
+        safe,
         silently,
         tasty,
         tasty-hedgehog,

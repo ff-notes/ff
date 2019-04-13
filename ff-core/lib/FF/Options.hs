@@ -28,7 +28,7 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Completer, ParseError (..), Parser,
+import           Options.Applicative (Completer, ParseError (ShowHelpText), Parser,
                                       ParserInfo, ParserPrefs, argument, auto,
                                       command, completer, customExecParser,
                                       defaultPrefs, flag', fullDesc, help,
@@ -296,6 +296,6 @@ i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 parserInfo :: Maybe Storage.Handle -> ParserInfo Options
 parserInfo h = i (parser h) "A note taker and task tracker"
 
-showHelp :: Maybe Storage.Handle -> String
-showHelp h = fst $
-    renderFailure (parserFailure prefs (parserInfo h) ShowHelpText mempty) ""
+showHelp :: String
+showHelp = fst $
+    renderFailure (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty) ""
