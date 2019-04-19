@@ -3,11 +3,11 @@
 	:provider 'github'
 	:source 'ff-notes/ff'
 	:url 'https://github.com/ff-notes/ff/issues/123'
-#]tq @` :0 !
-	:end >none
+#]tq @B/7eOjIebzNA+00gDu8014Y :0 !
+	@` :end >none
 	:start =2019 =2 =14
-	:status >Active
-	:text >]qG
+	@B/7eOjIebzNA+00gDu8014Y :status >Archived
+	@` :text >]qG
 	:track >some >B/7eCI9V2rst+00P01fLmVG
 *rga #]qG @]gT :0 !
 	@]fr 'T'
