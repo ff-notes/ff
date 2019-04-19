@@ -58,7 +58,7 @@ import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
 import           Data.Traversable (for)
 import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
-import           RON.Error (MonadE)
+import           RON.Error (MonadE, throwErrorText)
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId (..), Document (..),
                               MonadStorage, createDocument, docIdFromUuid,
@@ -80,7 +80,7 @@ import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
 import           FF.Options (Edit (..), New (..), maybeClearToMaybe)
 import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            Limit, ModeMap, Note (..), NoteId, NoteSample,
-                           NoteStatus (..), Sample (..), Status (..), Track,
+                           NoteStatus (..), Sample (..), Status (..), Track (..),
                            contact_name_zoom, contact_status_assign,
                            emptySample, note_end_assign, note_end_read,
                            note_start_assign, note_start_read,
@@ -420,8 +420,10 @@ assertNoteIsNative = do
     -- TODO(2018-10-22, cblp) use `case of some/none` without full decoding of
     -- `some`
     tracking <- note_track_read
-    whenJust tracking $ \_ ->
-        throwError "A tracked note must be modified in its source."
+    whenJust tracking $ \track -> do
+        let url = track_url track
+        let err = Text.append "A tracked note must be edited in its source: " url
+        throwErrorText err
 
 getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config{dataDir} = do
