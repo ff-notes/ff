@@ -420,10 +420,8 @@ assertNoteIsNative = do
     -- TODO(2018-10-22, cblp) use `case of some/none` without full decoding of
     -- `some`
     tracking <- note_track_read
-    whenJust tracking $ \track -> do
-        let url = track_url track
-        let err = Text.append "A tracked note must be edited in its source: " url
-        throwErrorText err
+    whenJust tracking $ \Track{track_url} ->
+        throwErrorText $ "A tracked note must be edited in its source: " <> track_url
 
 getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config{dataDir} = do
