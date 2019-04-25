@@ -49,6 +49,7 @@ import RON.Data
     stateToWireChunk
     )
 import RON.Data.LWW (lwwType)
+import RON.Data.ORSet (ORSet(..))
 import RON.Data.RGA (RgaRep)
 import RON.Data.Time (Day)
 import RON.Epoch (localEpochTimeFromUnix)
@@ -138,6 +139,7 @@ instance ReplicatedAsPayload NoteStatus where
     text    RgaString
     start   Day         #ron{merge LWW}
     end     Day         #ron{merge LWW}
+    tags    (ORSet String)
     track   Track)
 |]
 
@@ -267,6 +269,7 @@ getNoteFromV2 = do
         note_start  = noteV2_start,
         note_status = noteV2_status,
         note_text   = noteV2_text,
+        note_tags   = Nothing,
         note_track  = trackFromV2 <$> noteV2_track
         }
 

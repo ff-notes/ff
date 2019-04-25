@@ -16,7 +16,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
 import Data.Functor (($>))
 import Data.Maybe (isNothing)
-import Data.Text (snoc)
+import Data.Text (Text, snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
   ( Doc,
@@ -45,6 +45,7 @@ import FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    loadAllTags,
     noDataDirectoryMessage,
     updateTrackedNotes
     )
@@ -75,6 +76,7 @@ import FF.UI
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
     prettyWikiSample,
@@ -97,7 +99,7 @@ cli version = do
   cfg@Config {ui} <- loadConfig
   dataDir <- getDataDir cfg
   handle' <- traverse StorageFS.newHandle dataDir
-  Options {brief, customDir, cmd} <- parseOptions handle'
+  Options {brief, tags, customDir, cmd} <- parseOptions handle'
   handle <-
     case customDir of
       Nothing   -> pure handle'
@@ -107,7 +109,7 @@ cli version = do
     CmdVersion -> runCmdVersion version
     CmdAction action -> case handle of
       Nothing -> fail noDataDirectoryMessage
-      Just h  -> runStorage h $ runCmdAction ui action brief
+      Just h  -> runStorage h $ runCmdAction ui action brief tags
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config {dataDir, ui} = \case
@@ -142,13 +144,13 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
         ui' = ConfigUI {shuffle = shuffle'}
 
 runCmdAction
-  :: (MonadIO m, MonadStorage m) => ConfigUI -> CmdAction -> Bool -> m ()
-runCmdAction ui cmd isBrief = do
+  :: (MonadIO m, MonadStorage m) => ConfigUI -> CmdAction -> Bool -> Maybe Text -> m ()
+runCmdAction ui cmd isBrief tags = do
   today <- getUtcToday
   case cmd of
     CmdAgenda mlimit -> do
-      notes <- getTaskSamples False ui mlimit today
-      pprint $ prettyTaskSections isBrief notes
+      notes <- getTaskSamples False ui mlimit today tags
+      pprint $ prettyTaskSections isBrief tags notes
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
@@ -169,7 +171,7 @@ runCmdAction ui cmd isBrief = do
         note <- cmdPostpone noteId
         pprint $ withHeader "Postponed:" $ prettyNote isBrief note
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today
+      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -182,8 +184,11 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
+    CmdShowTags -> do
+      allTags <- loadAllTags
+      pprint $ prettyTagsList allTags
     CmdTrack track ->
-      cmdTrack track today isBrief
+      cmdTrack track today tags isBrief
     CmdUnarchive tasks ->
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
@@ -195,13 +200,13 @@ runCmdAction ui cmd isBrief = do
       wikis <- getWikiSamples False ui mlimit today
       pprint $ prettyWikiSample isBrief wikis
 
-cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
-cmdTrack Track {dryRun, address, limit} today isBrief
+cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Maybe Text -> Bool -> m ()
+cmdTrack Track {dryRun, address, limit} today tags isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
       pprint
-        $ prettyTaskSections isBrief
+        $ prettyTaskSections isBrief tags
         $ (Entity (DocId "") <$>)
         <$> samples
   | otherwise =

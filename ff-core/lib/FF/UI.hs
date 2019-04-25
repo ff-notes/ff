@@ -10,11 +10,12 @@ module FF.UI (
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
     prettyWikiSample,
     sampleLabel,
-    withHeader,
+    withHeader
 ) where
 
 import           Data.Char (isSpace)
@@ -31,6 +32,7 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
 import           Data.Time (Day)
+import           RON.Data.ORSet (ORSet(..))
 import           RON.Storage.Backend (DocId (DocId))
 
 import           FF (fromRgaM)
@@ -38,6 +40,7 @@ import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
                            Note (..), NoteSample, NoteStatus (Wiki),
                            Sample (..), TaskMode (..), Track (..), omitted)
 
+-- | Header with fixed yellow color.
 withHeader :: Text -> Doc AnsiStyle -> Doc AnsiStyle
 withHeader header value =
     hang indentation $ vsep [yellow $ pretty header, value]
@@ -68,7 +71,7 @@ prettyTasksWikisContacts
         (True,  False, True ) -> vsep [ts, cs]
         (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ts = prettyTaskSections  isBrief tasks
+    ts = prettyTaskSections  isBrief Nothing tasks
     ws = prettyWikiSample    isBrief wiki
     cs = prettyContactSample isBrief contacts
 
@@ -123,11 +126,13 @@ prettyNote isBrief (Entity entityId note) = case isBrief of
                     , Just end <- [note_end]
                     ]
                 ]
+            ++  [ green "|" <+> cyan "tags" <+> pretty tags | not $ null tags]
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
   where
-    Note{note_end, note_start, note_status, note_text, note_track} = note
+    ORSet tags = fromJust note_tags
+    Note{note_end, note_start, note_status, note_text, note_tags, note_track} = note
     start = fromJust note_start
     text  = fromRgaM note_text
 
@@ -139,13 +144,18 @@ title
     . Text.lines
     . Text.pack
 
-prettyTaskSections :: Bool -> ModeMap (Sample (Entity Note)) -> Doc AnsiStyle
-prettyTaskSections isBrief samples = stack isBrief
-    $   [ prettyTaskSample isBrief mode sample
-        | (mode, sample) <- Map.assocs samples
-        ]
-    ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
+prettyTaskSections :: Bool -> Maybe Text -> ModeMap (Sample (Entity Note)) -> Doc AnsiStyle
+prettyTaskSections isBrief mTags samples = case mTags of
+    Just tags -> tagHeader tags tasks
+    Nothing   -> tasks
   where
+    tagsWithComma = Text.intercalate ", " . Text.words
+    tagHeader t = withHeader ("Filtered by tags: " <> tagsWithComma t)
+    tasks = stack isBrief
+        $   [ prettyTaskSample isBrief mode sample
+            | (mode, sample) <- Map.assocs samples
+            ]
+        ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
     numOmitted = sum $ fmap omitted samples
 
 prettyTaskSample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc AnsiStyle
@@ -191,6 +201,10 @@ prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
   where
     name = fromRgaM contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
+
+prettyTagsList :: [Text] -> Doc AnsiStyle
+prettyTagsList tags = withHeader "All tags:" $
+    fillSep $ map (\t -> green "|" <+> pretty t) tags
 
 wrapLines :: Text -> Doc ann
 wrapLines =

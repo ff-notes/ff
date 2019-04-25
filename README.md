@@ -80,12 +80,13 @@ Ubuntu:
 ### Look what 𝑓𝑓 can do for you
 
     $ ff --help
-    Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
-            [-l|--limit ARG])
+    Usage:  [-b|--brief] [-t|--tags TAGS] [-C|--data-dir DIRECTORY] ([-V|--version]
+            | [COMMAND] | [-l|--limit ARG])
       A note taker and task tracker
 
     Available options:
       -b,--brief               List only note titles and ids
+      -t,--tags TAGS           List notes with these tags only
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
@@ -103,6 +104,7 @@ Ubuntu:
       postpone                 make a task start later
       search                   search for notes with the given text
       show                     show note by id
+      show-tags                show tags of all notes
       track                    track issues from external sources
       unarchive                restore the note from archive
       upgrade                  check and upgrade the database to the most recent

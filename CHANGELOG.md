@@ -13,6 +13,7 @@ and this project adheres to
   - Search within archived contacts and tasks.
   - Add config tests.
   - Add a test to check if `ff --help` section at the README updated.
+  - Add tags.
 
 ### Changed
 - Base data type from LWW to OR-Set

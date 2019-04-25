@@ -61,6 +61,7 @@ data CmdAction
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdShow       [NoteId]
+    | CmdShowTags
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
     | CmdUpgrade
@@ -68,6 +69,7 @@ data CmdAction
 
 data Options = Options
     { brief     :: Bool
+    , tags      :: Maybe Text
     , customDir :: Maybe FilePath
     , cmd       :: Cmd
     }
@@ -95,10 +97,13 @@ maybeClearToMaybe = \case
     Set x -> Just x
 
 data Edit = Edit
-    { ids   :: NonEmpty NoteId
-    , text  :: Maybe Text
-    , start :: Maybe Day
-    , end   :: Maybe (MaybeClear Day)
+    { ids     :: NonEmpty NoteId
+    , text    :: Maybe Text
+    , start   :: Maybe Day
+    , end     :: Maybe (MaybeClear Day)
+    , addTags :: Maybe Text
+    , editTag :: Maybe Text
+    , delTags :: Bool
     }
     deriving (Show)
 
@@ -107,6 +112,7 @@ data New = New
     , start  :: Maybe Day
     , end    :: Maybe Day
     , isWiki :: Bool
+    , tags   :: Maybe Text
     }
 
 data Search = Search
@@ -132,6 +138,7 @@ parser :: Maybe StorageFS.Handle -> Parser Options
 parser h =
         Options
         <$> briefOption
+        <*> tagOption
         <*> customDirOption
         <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
   where
@@ -147,6 +154,7 @@ parser h =
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
+        , action  "show-tags" iCmdShowTags
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
@@ -167,6 +175,7 @@ parser h =
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdShow      = i cmdShow       "show note by id"
+    iCmdShowTags  = i cmdShowTags   "show tags of all notes"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
@@ -182,6 +191,7 @@ parser h =
     cmdPostpone  = CmdPostpone  <$> some noteid
     cmdSearch    = CmdSearch    <$> search
     cmdShow      = CmdShow      <$> some noteid
+    cmdShowTags  = pure CmdShowTags
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
@@ -217,11 +227,15 @@ parser h =
         <*> optional startDateOption
         <*> optional endDateOption
         <*> wiki
+        <*> optional newTags
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional maybeClearEnd
+        <*> optional newTags
+        <*> optional editTag
+        <*> deleteTags
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -238,6 +252,13 @@ parser h =
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
+    tagOption = optional $ strOption $
+        short 't' <> long "tags" <> metavar "TAGS" <> help "List notes have these tags"
+    newTags = strOption $
+        long "tags" <> metavar "TAGS" <> help "Add a note's tags"
+    editTag = strOption $
+        long "edit-tag" <> metavar "TAG" <> help "Edit a note's tag"
+    deleteTags = switch $ long "delete-tags" <> short 'd' <> help "Delete all note's tags"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"

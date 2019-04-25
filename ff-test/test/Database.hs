@@ -68,7 +68,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today
+      $ getTaskSamples False defaultConfigUI agendaLimit today Nothing
   Map.empty === agenda
   fs        === fs'
   where
@@ -79,7 +79,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today
+      $ getTaskSamples False defaultConfigUI agendaLimit today Nothing
   agenda === agenda'
   fs123  === fs'
   where
@@ -95,6 +95,7 @@ prop_smoke = property $ do
                       note_text   = Just $ RGA "helloworld",
                       note_start  = Just $ fromGregorian 22 11 24,
                       note_end    = Just $ fromGregorian 17 06 19,
+                      note_tags   = []
                       note_track  = Nothing
                       }
                 ],
@@ -161,6 +162,7 @@ prop_new =
                   "\t@`}IOM >end 3150 1 2",
                   "\t@}QUM >start 2154 5 6",
                   "\t@}_QM >status >Active",
+                  "\t:tags >(1r9IOM",
                   "\t@}mnM >text >B/0000000qnM+000000000Y",
                   "\t@{1A9r >track"
                   ],
@@ -168,17 +170,19 @@ prop_new =
                   "\t@`}y_h 'М'",
                   "\t@)i 'и'",
                   "\t@)j 'р'",
+                  "\t@ 'hi'",
                   "."
                   ]
                 ]
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False} today
-        let Note {note_text, note_start, note_end} = entityVal note
+            $ cmdNewNote New {text, start, end, isWiki = False, tags = Just "hi"} today
+        let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
+        tags                          === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
@@ -221,6 +225,7 @@ prop_repo =
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
                     note_end    = Just $ fromGregorian 2018 06 15,
+                    note_tags   = [],
                     note_track  = Just
                       Track
                         { track_provider   = Just "github",
