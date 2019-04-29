@@ -60,10 +60,11 @@ import           RON.Data (getObject, newObject)
 import qualified RON.Data.RGA as RGA
 import           RON.Error (MonadE, throwErrorText)
 import           RON.Event (ReplicaClock)
-import           RON.Storage (Collection, DocId (..), Document (..),
-                              MonadStorage, createDocument, docIdFromUuid,
-                              getDocuments, loadDocument, modify)
-import           RON.Storage.IO (Storage)
+import           RON.Storage (Collection, DocId, createDocument, docIdFromUuid,
+                              loadDocument, modify)
+import           RON.Storage.Backend (Document (Document), MonadStorage,
+                                      getDocuments, value)
+import           RON.Storage.FS (Storage)
 import           RON.Types (Object (Object, id))
 import           System.Directory (doesDirectoryExist, findExecutable,
                                    getCurrentDirectory)

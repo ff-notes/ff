@@ -30,7 +30,7 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
 import           Data.Time (Day)
-import           RON.Storage (DocId (DocId))
+import           RON.Storage.Backend (DocId (DocId))
 
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
                            Note (..), NoteSample, NoteStatus (Wiki),

@@ -11,9 +11,9 @@ extra-deps:
   - crdt-10.4
   - github-0.21
   - ron-0.6
-  - ron-rdt-0.5
-  - ron-schema-0.5
-  - ron-storage-0.6
+  - ron-rdt-0.6
+  - ron-schema-0.6
+  - ron-storage-0.7
 
   # ff-test:
   - cmark-0.5.6

@@ -21,9 +21,10 @@ import           Foreign (Ptr)
 import           Foreign.C (CInt)
 import           Foreign.StablePtr (newStablePtr)
 import qualified Language.C.Inline.Cpp as Cpp
-import           RON.Storage.IO (CollectionDocId (CollectionDocId),
-                                 DocId (DocId), runStorage, subscribeForever)
-import qualified RON.Storage.IO as Storage
+import           RON.Storage.Backend (DocId (DocId))
+import           RON.Storage.FS (CollectionDocId (CollectionDocId), runStorage,
+                                 subscribeForever)
+import qualified RON.Storage.FS as StorageFS
 
 import           FF (getDataDir, load, loadTasks, noDataDirectoryMessage)
 import           FF.Config (loadConfig)
@@ -44,7 +45,7 @@ main :: IO ()
 main = do
     let version' = encodeUtf8 . Text.pack $ showVersion version
     path <- getDataDirOrFail
-    storage <- Storage.newHandle path
+    storage <- StorageFS.newHandle path
     storagePtr <- newStablePtr storage
 
     -- set up UI
@@ -83,7 +84,7 @@ getDataDirOrFail = do
         Nothing -> fail noDataDirectoryMessage
         Just path -> pure path
 
-upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
+upsertDocument :: StorageFS.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
     (cast -> Just (noteId :: NoteId)) -> do
         note <- runStorage storage $ load noteId

@@ -15,7 +15,7 @@ import           Language.C.Inline.Context (Context, ctxTypesTable)
 import           Language.C.Types (TypeSpecifier (TypeName))
 import           Language.Haskell.TH (DecsQ)
 import           Language.Haskell.TH.Syntax (addDependentFile)
-import qualified RON.Storage.IO as Storage
+import qualified RON.Storage.FS as StorageFS
 
 data MainWindow
 
@@ -24,7 +24,7 @@ ffCtx = mempty
     { ctxTypesTable = Map.fromList
         [ (TypeName "bool",          [t| Bool |])
         , (TypeName "MainWindow",    [t| MainWindow |])
-        , (TypeName "StorageHandle", [t| StablePtr Storage.Handle |])
+        , (TypeName "StorageHandle", [t| StablePtr StorageFS.Handle |])
         ]
     }
 

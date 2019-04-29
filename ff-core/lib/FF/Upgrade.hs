@@ -7,9 +7,10 @@ module FF.Upgrade (upgradeDatabase) where
 
 import           Data.Foldable (for_)
 import           RON.Event (getEventUuid)
-import           RON.Storage (Collection, DocId, MonadStorage, changeDocId,
-                              decodeDocId, docIdFromUuid, getCollections,
-                              getDocuments, modify)
+import           RON.Storage.Backend (MonadStorage, changeDocId, getCollections,
+                                      getDocuments)
+import           RON.Storage.FS (Collection, DocId, decodeDocId, docIdFromUuid,
+                                 modify)
 
 import           FF.Types (Note)
 

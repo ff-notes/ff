@@ -27,8 +27,9 @@ import           Data.Time (Day)
 import           Data.Traversable (for)
 import           Data.Version (Version, showVersion)
 import           Development.GitRev (gitDirty, gitHash)
-import           RON.Storage.IO (DocId (DocId), Storage, runStorage)
-import qualified RON.Storage.IO as Storage
+import           RON.Storage.Backend (DocId (DocId))
+import           RON.Storage.FS (Storage, runStorage)
+import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
 import           System.Directory (doesDirectoryExist, getHomeDirectory)
 import           System.Environment (lookupEnv, setEnv)
@@ -41,7 +42,7 @@ import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch, cmdShow,
                      cmdUnarchive, getContactSamples, getDataDir,
                      getTaskSamples, getUtcToday, getWikiSamples,
-                     updateTrackedNotes, noDataDirectoryMessage)
+                     noDataDirectoryMessage, updateTrackedNotes)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -59,11 +60,11 @@ cli :: Version -> IO ()
 cli version = do
     cfg@Config{ui} <- loadConfig
     dataDir <- getDataDir cfg
-    handle' <- traverse Storage.newHandle dataDir
+    handle' <- traverse StorageFS.newHandle dataDir
     Options{brief, customDir, cmd} <- parseOptions handle'
     handle <- case customDir of
         Nothing -> pure handle'
-        path -> traverse Storage.newHandle path
+        path -> traverse StorageFS.newHandle path
     case cmd of
         CmdConfig param  -> runCmdConfig cfg param
         CmdVersion       -> runCmdVersion version

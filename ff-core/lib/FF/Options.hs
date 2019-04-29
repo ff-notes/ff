@@ -28,20 +28,20 @@ import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import           Data.Time (Day)
-import           Options.Applicative (Completer, ParseError (ShowHelpText), Parser,
-                                      ParserInfo, ParserPrefs, argument, auto,
-                                      command, completer, customExecParser,
-                                      defaultPrefs, flag', fullDesc, help,
-                                      helper, info, listCompleter,
-                                      listIOCompleter, long, metavar, option,
-                                      parserFailure, prefDisambiguate,
-                                      prefMultiSuffix, prefShowHelpOnError,
-                                      progDesc, renderFailure, short, str,
-                                      strArgument, strOption, subparser, switch,
-                                      (<**>))
-import           RON.Storage.IO (Collection, DocId (DocId), getDocuments,
-                                 runStorage)
-import qualified RON.Storage.IO as Storage
+import           Options.Applicative (Completer, ParseError (ShowHelpText),
+                                      Parser, ParserInfo, ParserPrefs, argument,
+                                      auto, command, completer,
+                                      customExecParser, defaultPrefs, flag',
+                                      fullDesc, help, helper, info,
+                                      listCompleter, listIOCompleter, long,
+                                      metavar, option, parserFailure,
+                                      prefDisambiguate, prefMultiSuffix,
+                                      prefShowHelpOnError, progDesc,
+                                      renderFailure, short, str, strArgument,
+                                      strOption, subparser, switch, (<**>))
+import           RON.Storage.Backend (DocId (DocId), getDocuments)
+import           RON.Storage.FS (Collection, runStorage)
+import qualified RON.Storage.FS as StorageFS
 
 import           FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
@@ -118,7 +118,7 @@ data Search = Search
     , limit      :: Maybe Limit
     }
 
-parseOptions :: Maybe Storage.Handle -> IO Options
+parseOptions :: Maybe StorageFS.Handle -> IO Options
 parseOptions = customExecParser prefs . parserInfo
 
 prefs :: ParserPrefs
@@ -128,7 +128,7 @@ prefs = defaultPrefs
     , prefShowHelpOnError = True
     }
 
-parser :: Maybe Storage.Handle -> Parser Options
+parser :: Maybe StorageFS.Handle -> Parser Options
 parser h =
         Options
         <$> briefOption
@@ -233,7 +233,8 @@ parser h =
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
         switch $ long "contacts" <> short 'c' <> help "Search among contacts"
-    searchA = switch $ long "archived" <> short 'a' <> help "Search among archived"
+    searchA =
+        switch $ long "archived" <> short 'a' <> help "Search among archived"
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
@@ -256,13 +257,14 @@ parser h =
         <> metavar "DIRECTORY"
         <> help "Path to the data dir"
 
-    cmdConfig = fmap CmdConfig . optional $
-        subparser $ command "dataDir" iDataDir <> command "ui" iUi
+    cmdConfig =
+        fmap CmdConfig . optional . subparser $
+        command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
-        pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
-          where
-            pJust = DataDirJust <$> strArgument (metavar "DIRECTORY" <> help "path")
+        pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk) where
+            pJust =
+                DataDirJust <$> strArgument (metavar "DIRECTORY" <> help "path")
             pYandexDisk = flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
@@ -284,7 +286,8 @@ parser h =
     docIdCompleter :: forall a . Collection a => Completer
     docIdCompleter = case h of
         Nothing -> listCompleter []
-        Just h' -> listIOCompleter $ map unDocId <$> runStorage h' (getDocuments @_ @a)
+        Just h' ->
+            listIOCompleter $ map unDocId <$> runStorage h' (getDocuments @_ @a)
 
     unDocId (DocId name) = name
 
@@ -293,9 +296,12 @@ parser h =
 i :: forall a . Parser a -> String -> ParserInfo a
 i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 
-parserInfo :: Maybe Storage.Handle -> ParserInfo Options
+parserInfo :: Maybe StorageFS.Handle -> ParserInfo Options
 parserInfo h = i (parser h) "A note taker and task tracker"
 
 showHelp :: String
-showHelp = fst $
-    renderFailure (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty) ""
+showHelp =
+    fst $
+    renderFailure
+        (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
+        ""
