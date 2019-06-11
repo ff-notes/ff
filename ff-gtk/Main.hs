@@ -17,9 +17,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
 import qualified GI.Gtk as Gtk
-import           GI.Gtk.Declarative (Attribute ((:=)), BoxChild (BoxChild), bin,
-                                     container, defaultBoxChildProperties,
-                                     expand, fill, on, widget)
+import           GI.Gtk.Declarative (Attribute ((:=)), BoxChild, bin, container,
+                                     on, widget)
 import           GI.Gtk.Declarative.App.Simple (App (App), AppView,
                                                 Transition (Exit, Transition),
                                                 run)
@@ -52,12 +51,10 @@ view State{tasks} =
         mainWidget
   where
 
-    mainWidget = container Gtk.Box
-        [#orientation := Gtk.OrientationVertical]
-        [taskList] -- , newTaskForm
+    mainWidget = bin Gtk.ScrolledWindow [] taskList
 
     taskList =
-        BoxChild defaultBoxChildProperties{expand = True, fill = True} $
+        -- BoxChild defaultBoxChildProperties{expand = True, fill = True} $
         container Gtk.Box
             [#orientation := Gtk.OrientationVertical]
             (Vector.fromList
