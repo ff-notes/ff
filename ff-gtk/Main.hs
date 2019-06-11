@@ -43,15 +43,14 @@ data Event
 
 view :: State -> AppView Gtk.Window Event
 view State{tasks} =
-    bin Gtk.Window windowAttrs mainWidget
-  where
-
-    windowAttrs =
+    bin Gtk.Window
         [ #title := "ff-gtk"
         , #heightRequest := 300
         , #widthRequest  := 400
         , on #deleteEvent $ const (True, Close)
         ]
+        mainWidget
+  where
 
     mainWidget = container Gtk.Box
         [#orientation := Gtk.OrientationVertical]
