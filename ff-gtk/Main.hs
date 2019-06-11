@@ -69,9 +69,10 @@ view State{tasks} =
     taskWidget :: Entity Note -> BoxChild Event
     taskWidget Entity{entityVal = Note{note_status, note_text}} =
         widget Gtk.Label
-            [ #label := (if isActive then id else strike) (Text.pack note_text)
-            , #halign := Gtk.AlignStart
+            [ #halign := Gtk.AlignStart
+            , #label := (if isActive then id else strike) (Text.pack note_text)
             -- , #useMarkup := True
+            , #wrap := True
             ]
       where
         isActive = note_status == TaskStatus Active
