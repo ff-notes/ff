@@ -21,7 +21,6 @@ extra-deps:
   - gi-gtk-declarative-app-simple-0.4.1
 
   # ff-test:
-  - cmark-0.5.6
   - tasty-hedgehog-0.2.0.0
 
 # reduce some deps?
