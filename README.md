@@ -14,6 +14,7 @@ A distributed note taker and task manager.
 
 Works on all my computers and synchronizes between them successfully.
 𝑓𝑓's own issues are tracked in 𝑓𝑓 since the first day of development.
+I also use 𝑓𝑓 for my personal tasks since the first day of development.
 Please feel free to test it in your environment.
 But no guarantees.
 
