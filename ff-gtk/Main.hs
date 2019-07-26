@@ -24,6 +24,7 @@ import           GI.Gtk.Declarative.App.Simple (App (App), AppView,
                                                 run)
 import qualified GI.Gtk.Declarative.App.Simple
 import           Pipes (Producer, each)
+import           RON.Data.RGA (RGA (RGA))
 import           RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 
@@ -66,11 +67,12 @@ view State{tasks} =
     taskWidget Entity{entityVal = Note{note_status, note_text}} =
         widget Gtk.Label
             [ #halign := Gtk.AlignStart
-            , #label := (if isActive then id else strike) (Text.pack note_text)
+            , #label := (if isActive then id else strike) (Text.pack noteText)
             -- , #useMarkup := True
             , #wrap := True
             ]
       where
+        RGA noteText = note_text
         isActive = note_status == TaskStatus Active
         strike text = "<s>" <> text <> "</s>"
 

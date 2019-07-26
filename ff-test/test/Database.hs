@@ -23,7 +23,9 @@ import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
 import           Hedgehog (Gen, Property, evalEither, forAll, property, (===))
-import           RON.Data (ReplicatedAsObject, getObject, newObject)
+import           RON.Data (ReplicatedAsObject, evalObjectState, getObject,
+                           newObjectState)
+import           RON.Data.RGA (RGA (RGA))
 import           RON.Storage.Backend (DocId (DocId))
 import           RON.Storage.Test (TestDB, runStorageSim)
 import           RON.Text (parseObject, serializeObject)
@@ -70,7 +72,7 @@ prop_smoke = property $ do
                     (DocId "B00000000002D-200000000002D")
                     Note
                         { note_status = TaskStatus Active
-                        , note_text   = "helloworld"
+                        , note_text   = RGA "helloworld"
                         , note_start  = fromGregorian 22 11 24
                         , note_end    = Just $ fromGregorian 17 06 19
                         , note_track  = Nothing
@@ -130,8 +132,8 @@ prop_new = let
         Map.singleton "B000005IQBICM-2000000000012" $
         map encodeUtf8
             [ "*lww #B/00004tK__M+000000000Y @` !"
-            ,   "\t:end >some =3150 =1 =2"
-            ,   "\t:start =2154 =5 =6"
+            ,   "\t:end >some 3150 1 2"
+            ,   "\t:start 2154 5 6"
             ,   "\t:status >Active"
             ,   "\t:text >(2j5K7M"
             ,   "\t:track >none"
@@ -147,10 +149,10 @@ prop_new = let
             evalEither $ runStorageSim mempty $
             cmdNewNote New{text, start, end, isWiki = False} today
         let Note{note_text, note_start, note_end} = entityVal note
-        Text.unpack text      === note_text
-        fromMaybe today start === note_start
-        end                   === note_end
-        fs                    === fs'
+        RGA (Text.unpack text) === note_text
+        fromMaybe today start  === note_start
+        end                    === note_end
+        fs                     === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
 jsonRoundtrip genA = property $ do
@@ -161,11 +163,11 @@ jsonRoundtrip genA = property $ do
 ronRoundtrip :: (Eq a, ReplicatedAsObject a, Show a) => Gen a -> Property
 ronRoundtrip genA = property $ do
     a <- forAll genA
-    (obj, _) <- evalEither $ runStorageSim mempty $ newObject a
+    (obj, _) <- evalEither $ runStorageSim mempty $ newObjectState a
     let (u, bs) = serializeObject obj
     obj' <- evalEither $ parseObject u bs
     obj === obj'
-    a' <- evalEither $ getObject obj'
+    a' <- evalEither $ evalObjectState obj' getObject
     a === a'
 
 test_JSON_Tests :: [TestTree]
@@ -184,7 +186,7 @@ prop_repo = property $
         Sample
             { items = pure Note
                 { note_status = TaskStatus Active
-                , note_text   = "import issues (GitHub -> ff)"
+                , note_text   = RGA "import issues (GitHub -> ff)"
                 , note_start  = fromGregorian 2018 06 21
                 , note_end    = Just $ fromGregorian 2018 06 15
                 , note_track  = Just Track
@@ -283,8 +285,8 @@ fs123merged =
     Map.singleton "note" $ Map.singleton "000000000008K-000000000001J" $
     Map.singleton "B000000PSDNDU-2000000000012"
         [ "*lww #000000004K$000000000o @B/6n7T8JWK0T+000000000U !"
-        ,   "\t@B/6n7T8JWK0K+000000000L :end >some =17 =6 =19"
-        ,   "\t@B/6n7T8JWK0P+000000000Q :start =22 =11 =24"
+        ,   "\t@B/6n7T8JWK0K+000000000L :end >some 17 6 19"
+        ,   "\t@B/6n7T8JWK0P+000000000Q :start 22 11 24"
         ,   "\t@B/6n7T8JWK0T+000000000U :status >Active"
         ,   "\t@` :text >)L"
         ,   "\t:track >none"

@@ -30,6 +30,7 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
 import           Data.Time (Day)
+import           RON.Data.RGA (RGA (RGA))
 import           RON.Storage.Backend (DocId (DocId))
 
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
@@ -105,9 +106,9 @@ prettyNote
     -> Entity Note
     -> Doc AnsiStyle
 prettyNote isBrief (Entity entityId Note{..}) = case isBrief of
-    True -> fillSep [title note_text, meta] where
+    True -> fillSep [title text, meta] where
         meta = green "|" <+> cyan "id" <+> prettyDocId entityId
-    False -> sparsedStack [wrapLines $ Text.pack note_text, sep meta] where
+    False -> sparsedStack [wrapLines $ Text.pack text, sep meta] where
         meta
             = mconcat
                 [   [ green "|" <+> cyan "id" <+> prettyDocId entityId
@@ -124,6 +125,8 @@ prettyNote isBrief (Entity entityId Note{..}) = case isBrief of
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
+  where
+    RGA text = note_text
 
 title :: String -> Doc ann
 title
@@ -181,9 +184,9 @@ sampleLabel = \case
         _ -> "Starting in " <> Text.pack (show n) <> " days:"
 
 prettyContact :: Bool -> Entity Contact -> Doc AnsiStyle
-prettyContact _isBrief (Entity entityId Contact{..}) =
-    sep [pretty contact_name, meta]
+prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
   where
+    RGA name = contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
 
 wrapLines :: Text -> Doc ann

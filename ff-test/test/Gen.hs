@@ -9,6 +9,7 @@ import           Hedgehog (MonadGen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, maybe,
                                string, text, unicode)
 import qualified Hedgehog.Range as Range
+import           RON.Data.RGA (RGA (RGA))
 
 import           FF.Config (Config (..), ConfigUI (..))
 import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
@@ -32,14 +33,14 @@ day = fromGregorian
     <*> integral (Range.constant 1 31)
 
 contact :: MonadGen m => m Contact
-contact = Contact <$> string (Range.linear 1 100) unicode <*> status
+contact = Contact <$> (RGA <$> string (Range.linear 1 100) unicode) <*> status
 
 note :: MonadGen m => m Note
 note = Note
     <$> maybe day
     <*> day
     <*> noteStatus
-    <*> string (Range.linear 1 100) unicode
+    <*> (RGA <$> string (Range.linear 1 100) unicode)
     <*> maybe track
 
 noteStatus :: MonadGen m => m NoteStatus

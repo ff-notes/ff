@@ -21,6 +21,7 @@ import           Foreign (Ptr)
 import           Foreign.C (CInt)
 import           Foreign.StablePtr (newStablePtr)
 import qualified Language.C.Inline.Cpp as Cpp
+import           RON.Data.RGA (RGA (RGA))
 import           RON.Storage.Backend (DocId (DocId))
 import           RON.Storage.FS (CollectionDocId (CollectionDocId), runStorage,
                                  subscribeForever)
@@ -96,7 +97,8 @@ upsertTask mainWindow Entity{entityId = DocId id, entityVal = note} = do
     let id' = encodeUtf8 $ Text.pack id
         isActive = note_status == TaskStatus Active
         Note{note_text, note_start, note_end, note_track, note_status} = note
-        text = encodeUtf8 $ Text.pack note_text
+        RGA noteText = note_text
+        text = encodeUtf8 $ Text.pack noteText
         (startYear, startMonth, startDay) = toGregorianC note_start
         (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
         isTracking = isJust note_track

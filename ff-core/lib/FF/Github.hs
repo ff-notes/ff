@@ -28,6 +28,7 @@ import           GitHub (FetchCount (..), Issue (Issue), IssueRepoMod,
                          issueTitle, mkOwnerName, mkRepoName, stateAll,
                          stateOpen, unIssueNumber)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
+import           RON.Data.RGA (RGA (RGA))
 import           System.Process.Typed (proc, readProcessStdout_)
 
 import           FF (splitModes, takeSamples)
@@ -107,7 +108,7 @@ noteViewList address mlimit =
 issueToNote :: Text -> Issue -> Note
 issueToNote address issue = Note
     { note_status = toStatus issueState
-    , note_text   = Text.unpack $ issueTitle <> body
+    , note_text   = RGA $ Text.unpack $ issueTitle <> body
     , note_start  = utctDay issueCreatedAt
     , note_end
     , note_track  = Just Track

@@ -41,14 +41,15 @@ import           RON.Data (Replicated, ReplicatedAsPayload, encoding,
                            fromPayload, mkStateChunk, payloadEncoding,
                            stateFromChunk, stateToChunk, toPayload)
 import           RON.Data.LWW (lwwType)
-import           RON.Data.RGA (RgaRaw)
+import           RON.Data.RGA (RgaRep)
 import           RON.Data.Time (Day)
 import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Error (MonadE, throwErrorString)
 import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse)
-import           RON.Types (Atom (AUuid), Object (Object, frame, id), Op (Op),
+import           RON.Types (Atom (AUuid),
+                            ObjectState (ObjectState, frame, uuid), Op (Op),
                             UUID)
 import qualified RON.UUID as UUID
 
@@ -192,7 +193,7 @@ type EntitySample a = Sample (Entity a)
 
 -- * Legacy, v1
 
-parseNoteV1 :: MonadE m => UUID -> ByteString -> m (Object Note)
+parseNoteV1 :: MonadE m => UUID -> ByteString -> m (ObjectState Note)
 parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p) where
 
     p = withObject "Note" $ \obj -> do
@@ -234,7 +235,7 @@ parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p) where
                     ,   (textId, stateToChunk $ rgaFromV1 text) -- rgaType
                     ]
                 ++  maybeToList mTrackObject
-        pure Object{id = objectId, frame}
+        pure ObjectState{uuid = objectId, frame}
 
     textId  = UUID.succValue objectId
     trackId = UUID.succValue textId
@@ -260,7 +261,7 @@ timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =
         (localEpochTimeFromUnix $ fromIntegral unixTime)
         (applicationSpecific pid)
 
-rgaFromV1 :: CRDT.RgaString -> RgaRaw
+rgaFromV1 :: CRDT.RgaString -> RgaRep
 rgaFromV1 (CRDT.RGA oldRga) = stateFromChunk
     [ Op event ref $ toPayload a
     | (vid, a) <- oldRga

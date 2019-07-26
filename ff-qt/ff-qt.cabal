@@ -44,6 +44,7 @@ executable ff-qt
         text,
         time,
         -- organization
+        ron-rdt,
         ron-storage,
         -- project
         ff-core,

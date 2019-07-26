@@ -38,10 +38,9 @@ import           Prelude hiding (id)
 import           Control.Applicative ((<|>))
 import           Control.Arrow ((&&&))
 import           Control.Monad (unless, void, when)
-import           Control.Monad.Except (liftEither, throwError)
+import           Control.Monad.Except (throwError)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.State.Strict (MonadState, StateT, evalState,
-                                             evalStateT, gets, state)
+import           Control.Monad.State.Strict (evalState, state)
 import           Data.Bool (bool)
 import           Data.Foldable (asum, for_, toList)
 import           Data.HashMap.Strict (HashMap)
@@ -56,16 +55,18 @@ import qualified Data.Text.IO as Text
 import           Data.Time (Day, addDays, fromGregorian, getCurrentTime,
                             toModifiedJulianDay, utctDay)
 import           Data.Traversable (for)
-import           RON.Data (getObject, newObject)
+import           RON.Data (MonadObjectState, ObjectStateT, evalObjectState,
+                           getObject, newObjectState, runObjectState)
+import           RON.Data.RGA (RGA (RGA))
 import qualified RON.Data.RGA as RGA
 import           RON.Error (MonadE, throwErrorText)
 import           RON.Event (ReplicaClock)
 import           RON.Storage (Collection, DocId, createDocument, docIdFromUuid,
-                              loadDocument, modify)
+                              loadDocument)
 import           RON.Storage.Backend (Document (Document), MonadStorage,
-                                      getDocuments, value)
+                                      createVersion, getDocuments, value)
 import           RON.Storage.FS (Storage)
-import           RON.Types (Object (Object, id))
+import           RON.Types (ObjectState (ObjectState, uuid))
 import           System.Directory (doesDirectoryExist, findExecutable,
                                    getCurrentDirectory)
 import           System.Environment (getEnv)
@@ -81,8 +82,8 @@ import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
 import           FF.Options (Edit (..), New (..), maybeClearToMaybe)
 import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            Limit, ModeMap, Note (..), NoteId, NoteSample,
-                           NoteStatus (..), Sample (..), Status (..), Track (..),
-                           contact_name_zoom, contact_status_assign,
+                           NoteStatus (..), Sample (..), Status (..),
+                           Track (..), contact_name_zoom, contact_status_assign,
                            emptySample, note_end_assign, note_end_read,
                            note_start_assign, note_start_read,
                            note_status_assign, note_status_read, note_text_zoom,
@@ -91,7 +92,7 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
 load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
 load docid = do
     Document{value = obj} <- loadDocument docid
-    entityVal <- liftEither $ getObject obj
+    entityVal <- evalObjectState obj getObject
     pure $ Entity docid entityVal
 
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
@@ -115,7 +116,12 @@ getContactSamplesWith
 getContactSamplesWith predicate isArchived = do
     contacts <- loadContacts isArchived
     pure . (\ys -> Sample ys $ genericLength ys) $
-        filter (predicate . Text.pack . contact_name . entityVal) contacts
+        filter
+            (predicate . Text.pack . fromRga . contact_name . entityVal)
+            contacts
+
+fromRga :: RGA a -> [a]
+fromRga (RGA xs) = xs
 
 loadTasks :: MonadStorage m => Bool -> m [Entity Note]
 loadTasks isArchived =
@@ -147,7 +153,7 @@ getTaskSamplesWith predicate isArchived ConfigUI{shuffle} limit today = do
         takeSamples limit .
         shuffleOrSort .
         splitModesBy entityVal today $
-        filter (predicate . Text.pack . note_text . entityVal) tasks
+        filter (predicate . Text.pack . fromRga . note_text . entityVal) tasks
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
     shuffleOrSort
@@ -178,7 +184,10 @@ getWikiSamplesWith predicate archive ConfigUI{shuffle} limit today =
     if archive then pure emptySample
     else do
         wikis0 <- loadWikis
-        let wikis1 = filter (predicate . Text.pack . note_text . entityVal) wikis0
+        let wikis1 =
+                filter
+                    (predicate . Text.pack . fromRga . note_text . entityVal)
+                    wikis0
         let wikis2 = case limit of
                 Nothing -> wikis1
                 Just l -> take (fromIntegral l) wikis1
@@ -237,14 +246,14 @@ updateTrackedNote
 updateTrackedNote oldNotes note = case note of
     Note{note_track = Just track} -> case HashMap.lookup track oldNotes of
         Nothing -> do
-            obj <- newObject note
+            obj <- newObjectState note
             createDocument obj
         Just noteid -> void $ modify noteid $ do
             note_status_assignIfDiffer note_status
-            note_text_zoom $ RGA.edit note_text
+            note_text_zoom $ RGA.edit text
     _ -> throwError "External note is expected to be supplied with tracking"
   where
-    Note{note_status, note_text} = note
+    Note{note_status, note_text = RGA text} = note
 
 updateTrackedNotes :: [Note] -> Storage ()
 updateTrackedNotes newNotes = do
@@ -255,7 +264,7 @@ updateTrackedNotes newNotes = do
         fmap (HashMap.fromList . catMaybes) .
         for notes $ \noteId -> do
             Document{value = obj} <- loadDocument noteId
-            mTrack <- (`evalStateT` obj) note_track_read
+            mTrack <- evalObjectState obj note_track_read
             pure $ (, noteId) <$> mTrack
     for_ newNotes $ updateTrackedNote oldNotes
 
@@ -271,20 +280,21 @@ cmdNewNote New{text, start, end, isWiki} today = do
             { note_end
             , note_start
             , note_status
-            , note_text = Text.unpack text
+            , note_text = RGA $ Text.unpack text
             , note_track = Nothing
             }
-    obj@Object{id} <- newObject note
+    obj@ObjectState{uuid} <- newObjectState note
     createDocument obj
-    pure $ Entity (docIdFromUuid id) note
+    pure $ Entity (docIdFromUuid uuid) note
 
 cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
 cmdNewContact name = do
     let contact =
-            Contact{contact_name = Text.unpack name, contact_status = Active}
-    obj@Object{id} <- newObject contact
+            Contact
+                {contact_name = RGA $ Text.unpack name, contact_status = Active}
+    obj@ObjectState{uuid} <- newObjectState contact
     createDocument obj
-    pure $ Entity (docIdFromUuid id) contact
+    pure $ Entity (docIdFromUuid uuid) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
@@ -337,7 +347,7 @@ cmdEdit edit = case edit of
                 noteText' <- case text of
                     Just noteText' -> pure noteText'
                     Nothing        -> do
-                        noteText <- liftEither =<< gets RGA.getText
+                        noteText <- RGA.getText
                         liftIO $ runExternalEditor noteText
                 RGA.editText noteText'
     Edit{ids, text, start, end} ->
@@ -375,12 +385,25 @@ cmdPostpone nid = modifyAndView nid $ do
         Just end | end < start' -> note_end_assign $ Just start'
         _                       -> pure ()
 
+-- | Load document, apply changes and put it back to storage
+-- TODO(2019-07-26, cblp) put it back to RON.Storage
+modify
+    :: (Collection a, MonadStorage m)
+    => DocId a -> ObjectStateT a m b -> m b
+modify docid f = do
+    oldDoc <- loadDocument docid
+    (b, value') <- runObjectState (value oldDoc) f
+    createVersion (Just (docid, oldDoc)) value'
+    pure b
+
 modifyAndView
     :: (Collection a, MonadStorage m)
-    => DocId a -> StateT (Object a) m () -> m (Entity a)
+    => DocId a -> ObjectStateT a m () -> m (Entity a)
 modifyAndView docid f = do
-    obj <- modify docid f
-    entityVal <- liftEither $ getObject obj
+    entityVal <-
+        modify docid $ do
+            f
+            getObject
     pure $ Entity docid entityVal
 
 getUtcToday :: MonadIO io => io Day
@@ -408,7 +431,7 @@ assertStartBeforeEnd start end =
     unless (start <= end) $ throwError "task cannot end before it is started"
 
 note_status_assignIfDiffer
-    :: (ReplicaClock m, MonadE m, MonadState (Object Note) m)
+    :: (ReplicaClock m, MonadE m, MonadObjectState Note m)
     => NoteStatus -> m ()
 note_status_assignIfDiffer newStatus = do
     curStatus <- note_status_read
@@ -416,7 +439,7 @@ note_status_assignIfDiffer newStatus = do
         note_status_assign newStatus
 {-# ANN note_status_assignIfDiffer ("HLint: ignore Use camelCase" :: String) #-}
 
-assertNoteIsNative :: (MonadE m, MonadState (Object Note) m) => m ()
+assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
     -- TODO(2018-10-22, cblp) use `case of some/none` without full decoding of
     -- `some`
@@ -440,7 +463,8 @@ getDataDir Config{dataDir} = do
             findVcs dirs
 
 noDataDirectoryMessage :: String
-noDataDirectoryMessage = "Data directory isn't set, run `ff config dataDir --help`"
+noDataDirectoryMessage =
+    "Data directory isn't set, run `ff config dataDir --help`"
 
 identity :: a -> a
 identity x = x

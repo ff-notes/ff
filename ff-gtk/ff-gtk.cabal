@@ -19,6 +19,7 @@ executable ff-gtk
         text,
         vector,
         -- organization
+        ron-rdt,
         ron-storage,
         -- project
         ff-core
