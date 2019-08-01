@@ -1,4 +1,4 @@
-resolver: lts-13.20
+resolver: lts-13.30
 
 packages:
   - ff
@@ -10,18 +10,26 @@ packages:
 extra-deps:
   # ff-core:
   - crdt-10.4
-  - github-0.21
+  - github-0.22
   - ron-0.7
   - ron-rdt-0.7
   - ron-schema-0.7
   - ron-storage-0.8
 
   # ff-gtk:
-  - gi-gtk-declarative-0.4.2
-  - gi-gtk-declarative-app-simple-0.4.1
+  - gi-gtk-declarative-0.4.3
+  - gi-gtk-declarative-app-simple-0.4.2
 
   # ff-test:
-  - tasty-hedgehog-0.2.0.0
+  - hedgehog-1.0
+  - tasty-hedgehog-1.0.0.1
+
+  # github:
+  - binary-instances-1
+
+  # binary-instances:
+  - binary-orphans-1.0.1
+  - time-compat-1.9.2.2
 
 # reduce some deps?
 # flags: {comonad: {contravariant: False}}
