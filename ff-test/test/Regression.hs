@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -10,20 +11,22 @@ module Regression
     )
 where
 
-import Data.Aeson (ToJSON)
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
 import Data.Traversable (for)
 import Data.Yaml (encodeFile)
-import FF.Types (Note, NoteStatus, Status, Track)
-import RON.Data (evalObjectState, getObject)
-import RON.Data.RGA (RGA)
-import RON.Storage (Collection, CollectionName, DocId, loadDocument)
-import RON.Storage.Backend
-  ( Document (Document, objectFrame),
-    getCollections,
-    getDocuments
-    )
 import RON.Storage.FS (Handle, newHandle, runStorage)
+import FF.Types
+  ( Entity (Entity, entityVal),
+    Note,
+    NoteId,
+    NoteStatus,
+    Status,
+    Track,
+    loadNote
+    )
+import RON.Data.RGA (RGA)
+import RON.Storage (CollectionName)
+import RON.Storage.Backend (getCollections, getDocuments)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Test.Tasty (TestTree, testGroup)
@@ -45,27 +48,22 @@ mkRegressionTest = do
   collections <- runStorage h getCollections
   tests <-
     for collections $ \collection -> case collection of
-      "note" -> testCollection @Note h collection
+      "note" -> testNoteCollection h collection
       _      -> fail $ "unsupported type " ++ show collection
   pure $ \tmp -> testGroup "regression" [test tmp | test <- tests]
 
-testCollection
-  :: forall a. (Collection a, ToJSON a)
-  => Handle
-  -> CollectionName
-  -> IO (FilePath -> TestTree)
-testCollection h collectionName = do
-  docs <- runStorage h $ getDocuments @_ @a
-  pure $ \tmp -> testGroup collectionName $ map (testDoc h tmp) docs
+testNoteCollection :: Handle -> CollectionName -> IO (FilePath -> TestTree)
+testNoteCollection h collectionName = do
+  docs <- runStorage h $ getDocuments @_ @Note
+  pure $ \tmp -> testGroup collectionName $ map (testNote h tmp) docs
 
-testDoc :: (Collection a, ToJSON a) => Handle -> FilePath -> DocId a -> TestTree
-testDoc h tmp docid =
+testNote :: Handle -> FilePath -> NoteId -> TestTree
+testNote h tmp docid =
   goldenVsFileDiff (show docid) diff ("ff.dump" </> show docid) outFile action
   where
     outFile = tmp </> show docid
     action = do
-      Document {objectFrame} <- runStorage h $ loadDocument docid
-      val <- either (fail . show) pure $ evalObjectState objectFrame getObject
+      Entity {entityVal = val} <- runStorage h $ loadNote docid
       createDirectoryIfMissing True $ takeDirectory outFile
       encodeFile outFile val
 

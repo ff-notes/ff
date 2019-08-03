@@ -7,7 +7,7 @@ import           Test.Tasty (defaultMain, testGroup)
 import           System.IO.Temp (withSystemTempDirectory)
 
 import           Config (configTests)
-import           Database (dataTests)
+import           Database (databaseTests)
 import           Readme (readmeTest)
 import           Regression (mkRegressionTest)
 
@@ -17,4 +17,4 @@ main = do
     withSystemTempDirectory "ff-test" $ \tmp ->
         defaultMain $
             testGroup ""
-                [configTests, dataTests, readmeTest, regressionTest tmp]
+                [configTests, databaseTests, readmeTest, regressionTest tmp]
