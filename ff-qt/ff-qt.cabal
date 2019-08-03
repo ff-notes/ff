@@ -5,6 +5,11 @@ version: 0.11
 
 build-type: Simple
 
+flag qt
+    description: Build ff-qt package
+    default: True
+    manual: True
+
 extra-source-files:
     Builder.hxx
     DateComponent.hxx
@@ -20,6 +25,10 @@ extra-source-files:
 common language
     build-depends: base
     default-language: Haskell2010
+    if flag(qt)
+        buildable: True
+    else
+        buildable: False
 
 library ff-qt-ffi
     import: language

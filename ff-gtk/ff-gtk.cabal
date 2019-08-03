@@ -5,7 +5,17 @@ version:        0
 
 build-type:     Simple
 
+flag gtk
+    description: Build ff-gtk package
+    default: True
+    manual: True
+
 executable ff-gtk
+    if flag(gtk)
+        buildable: True
+    else
+        buildable: False
+
     build-depends:
         -- global
         base,
