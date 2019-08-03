@@ -30,7 +30,7 @@ prop_runCmdConfig :: Property
 prop_runCmdConfig = property $ do
     config <- forAll genConfig
     (runcmdconf, printsetconf) <-
-        evalIO $ do
+        evalIO $ withTempHome $ do
             saveConfig config
             runcmdconf   <- captureString $ runCmdConfig config Nothing
             printsetconf <- captureString $ printConfig  config
