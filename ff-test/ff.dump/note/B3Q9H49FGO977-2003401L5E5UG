@@ -1,0 +1,12 @@
+note_start: 2019-02-07
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/118
+  track_source: ff-notes/ff
+  track_externalId: '118'
+  track_provider: github
+note_text: "org-mode as UI\n\nAdd UUID of a note as metadata in org-mode.\r\n\r\n-
+  #119\r\n- #120"
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Active

@@ -13,7 +13,9 @@ test-suite ff-test
         bytestring,
         cmark,
         containers,
+        directory,
         errors,
+        filepath,
         github,
         hedgehog,
         interpolate,
@@ -22,12 +24,14 @@ test-suite ff-test
         silently,
         tasty,
         tasty-hedgehog,
+        tasty-golden,
         tasty-th,
         temporary,
         text,
         time,
         unordered-containers,
         vector,
+        yaml,
 
         -- organization
         ron,
@@ -44,4 +48,5 @@ test-suite ff-test
         Database
         Gen
         Readme
+        Regression
     type: exitcode-stdio-1.0

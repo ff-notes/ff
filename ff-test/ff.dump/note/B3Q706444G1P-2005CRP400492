@@ -1,0 +1,14 @@
+note_start: 2018-11-03
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/102
+  track_source: ff-notes/ff
+  track_externalId: '102'
+  track_provider: github
+note_text: |-
+  Support git-urls in `ff track`
+
+  like `git@github.com:ff-notes/ff.git`
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Archived

@@ -1,0 +1,14 @@
+note_start: 2019-01-07
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/115
+  track_source: ff-notes/ff
+  track_externalId: '115'
+  track_provider: github
+note_text: |-
+  Pack Ubuntu packages
+
+  deb/snap
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Active
