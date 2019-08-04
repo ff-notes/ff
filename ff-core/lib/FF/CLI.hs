@@ -73,7 +73,7 @@ cli version = do
             Just h -> runStorage h $ runCmdAction ui action brief
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
-runCmdConfig cfg@Config { dataDir, ui } = \case
+runCmdConfig cfg@Config{dataDir, ui} = \case
     Nothing                           -> printConfig cfg
     Just (Options.ConfigDataDir mDir) -> do
         dir <- case mDir of

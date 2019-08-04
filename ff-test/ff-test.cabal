@@ -21,7 +21,6 @@ test-suite ff-test
         interpolate,
         mtl,
         safe,
-        silently,
         tasty,
         tasty-hedgehog,
         tasty-golden,
