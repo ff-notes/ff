@@ -39,13 +39,13 @@ import FF
     cmdNewNote,
     cmdPostpone,
     cmdSearch,
-    cmdShow,
     cmdUnarchive,
     getContactSamples,
     getDataDir,
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    load,
     noDataDirectoryMessage,
     updateTrackedNotes
     )
@@ -181,7 +181,7 @@ runCmdAction ui cmd isBrief = do
             inWikis
             inContacts
     CmdShow noteIds -> do
-      notes <- for noteIds cmdShow
+      notes <- for noteIds load
       pprint $ prettyNoteList isBrief notes
     CmdTrack track ->
       cmdTrack track today isBrief

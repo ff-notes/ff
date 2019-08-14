@@ -18,7 +18,6 @@ module FF
     cmdNewContact,
     cmdPostpone,
     cmdSearch,
-    cmdShow,
     cmdUnarchive,
     fromRga,
     fromRgaM,
@@ -364,9 +363,6 @@ cmdSearch substr archive ui limit today = do
   pure (tasks, wikis, contacts)
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
-
-cmdShow :: MonadStorage m => NoteId -> m (Entity Note)
-cmdShow = load
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do
