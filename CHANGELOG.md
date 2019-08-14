@@ -6,11 +6,16 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.12] - 2019-08-14
 ### Added
 - ff:
   - Search within archived contacts and tasks.
   - Add config tests.
   - Add a test to check if `ff --help` section at the README updated.
+
+### Changed
+- Base data type from LWW to OR-Set
 
 ## [0.11] - 2019-03-02
 ### Added
@@ -162,7 +167,8 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.11...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.12...HEAD
+[0.12]: https://github.com/ff-notes/ff/compare/v0.11...v0.12
 [0.11]: https://github.com/ff-notes/ff/compare/v0.10...v0.11
 [0.10]: https://github.com/ff-notes/ff/compare/v0.9...v0.10
 [0.9]: https://github.com/ff-notes/ff/compare/v0.8...v0.9
