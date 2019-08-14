@@ -14,7 +14,6 @@ where
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
 import Data.Traversable (for)
 import Data.Yaml (encodeFile)
-import RON.Storage.FS (Handle, newHandle, runStorage)
 import FF.Types
   ( Entity (Entity, entityVal),
     Note,
@@ -27,6 +26,7 @@ import FF.Types
 import RON.Data.RGA (RGA)
 import RON.Storage (CollectionName)
 import RON.Storage.Backend (getCollections, getDocuments)
+import RON.Storage.FS (Handle, newHandle, runStorage)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Test.Tasty (TestTree, testGroup)
