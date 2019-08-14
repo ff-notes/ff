@@ -281,7 +281,7 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
 
 updateTrackedNote
   :: MonadStorage m
-  => HashMap Track NoteId s -- ^ selection of all aready tracked notes
+  => HashMap Track NoteId -- ^ selection of all aready tracked notes
   -> Note -- ^ external note to insert
   -> m ()
 updateTrackedNote oldNotes note = case note of
