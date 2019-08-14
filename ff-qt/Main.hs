@@ -13,13 +13,19 @@ where
 import Control.Concurrent (forkIO)
 import Cpp (MainWindow, ffCtx, includeDependent)
 import Data.Foldable (for_)
-import Data.Maybe (isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust)
 import qualified Data.Text as Text
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (Day, toGregorian)
 import Data.Typeable (cast)
 import Data.Version (showVersion)
-import FF (getDataDir, load, loadTasks, noDataDirectoryMessage)
+import FF
+  ( fromRgaM,
+    getDataDir,
+    load,
+    loadTasks,
+    noDataDirectoryMessage
+    )
 import FF.Config (loadConfig)
 import FF.Types
   ( Entity (Entity),
@@ -44,14 +50,13 @@ import Foreign.C (CInt)
 import Foreign.StablePtr (newStablePtr)
 import qualified Language.C.Inline.Cpp as Cpp
 import Paths_ff_qt (version)
-import RON.Data.RGA (RGA (RGA))
 import RON.Storage.Backend (DocId (DocId))
+import qualified RON.Storage.FS as Storage
 import RON.Storage.FS
   ( CollectionDocId (CollectionDocId),
     runStorage,
     subscribeForever
     )
-import qualified RON.Storage.FS as StorageFS
 import Prelude hiding (id)
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
@@ -64,7 +69,7 @@ main :: IO ()
 main = do
   let version' = encodeUtf8 . Text.pack $ showVersion version
   path <- getDataDirOrFail
-  storage <- StorageFS.newHandle path
+  storage <- Storage.newHandle path
   storagePtr <- newStablePtr storage
   -- set up UI
   mainWindow <-
@@ -101,7 +106,7 @@ getDataDirOrFail = do
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path
 
-upsertDocument :: StorageFS.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
+upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
   (cast -> Just (noteId :: NoteId)) -> do
     note <- runStorage storage $ load noteId
@@ -111,17 +116,17 @@ upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
 upsertTask mainWindow Entity {entityId = DocId id, entityVal = note} = do
   let id' = encodeUtf8 $ Text.pack id
-      isActive = note_status == TaskStatus Active
+      isActive = note_status == Just (TaskStatus Active)
       Note {note_text, note_start, note_end, note_track, note_status} = note
-      RGA noteText = note_text
+      noteText = fromRgaM note_text
       text = encodeUtf8 $ Text.pack noteText
-      (startYear, startMonth, startDay) = toGregorianC note_start
+      (startYear, startMonth, startDay) = toGregorianC $ fromJust note_start
       (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
       isTracking = isJust note_track
-      provider = encodeUtf8 $ maybe "" track_provider note_track
-      source = encodeUtf8 $ maybe "" track_source note_track
-      externalId = encodeUtf8 $ maybe "" track_externalId note_track
-      url = encodeUtf8 $ maybe "" track_url note_track
+      provider = encodeUtf8 $ fromMaybe "" $ note_track >>= track_provider
+      source = encodeUtf8 $ fromMaybe "" $ note_track >>= track_source
+      externalId = encodeUtf8 $ fromMaybe "" $ note_track >>= track_externalId
+      url = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
   [Cpp.block| void {
     $(MainWindow * mainWindow)->upsertTask({
       .id = $bs-cstr:id',
