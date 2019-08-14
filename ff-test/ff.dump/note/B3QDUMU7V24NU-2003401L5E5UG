@@ -1,0 +1,11 @@
+note_start: 2019-08-13
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/163
+  track_source: ff-notes/ff
+  track_externalId: '163'
+  track_provider: github
+note_text: Upgrade Note to ORSet rep and drop LWW-rep support a year after
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Active
