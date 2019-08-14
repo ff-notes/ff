@@ -116,7 +116,6 @@ import RON.Storage.Backend
     MonadStorage (getDocuments),
     createVersion
     )
-import RON.Storage.FS (Storage)
 import RON.Types (ObjectFrame (ObjectFrame, uuid))
 import System.Directory
   ( doesDirectoryExist,
@@ -300,7 +299,7 @@ updateTrackedNote oldNotes note = case note of
   where
     Note {note_status, note_text = (fromRgaM -> text)} = note
 
-updateTrackedNotes :: [Note] -> Storage ()
+updateTrackedNotes :: MonadStorage m => [Note] -> m ()
 updateTrackedNotes newNotes = do
   -- TODO(2018-10-22, cblp) index notes by track in the database and select
   -- specific note by its track
@@ -350,12 +349,13 @@ cmdDeleteContact cid = modifyAndView cid $ do
   contact_name_zoom $ RGA.editText ""
 
 cmdSearch
-  :: Text -- ^ query
+  :: MonadStorage m
+  => Text -- ^ query
   -> Bool -- ^ search within archived tasks or contacts
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Storage (ModeMap NoteSample, NoteSample, ContactSample)
+  -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr archive ui limit today = do
   -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
   tasks <- getTaskSamplesWith predicate archive ui limit today
@@ -365,7 +365,7 @@ cmdSearch substr archive ui limit today = do
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
-cmdShow :: NoteId -> Storage (Entity Note)
+cmdShow :: MonadStorage m => NoteId -> m (Entity Note)
 cmdShow = load
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
@@ -385,7 +385,7 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid =
   modifyAndView nid $ note_status_assign $ Just $ TaskStatus Active
 
-cmdEdit :: Edit -> Storage [Entity Note]
+cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
@@ -426,7 +426,7 @@ cmdEdit edit = case edit of
         whenJust start $ note_start_assign . Just
         whenJust text  $ note_text_zoom    . RGA.editText
 
-cmdPostpone :: NoteId -> Storage (Entity Note)
+cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
   today <- getUtcToday
   start <- note_start_read
