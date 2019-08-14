@@ -123,10 +123,10 @@ upsertTask mainWindow Entity {entityId = DocId id, entityVal = note} = do
       (startYear, startMonth, startDay) = toGregorianC $ fromJust note_start
       (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
       isTracking = isJust note_track
-      provider = encodeUtf8 $ fromMaybe "" $ note_track >>= track_provider
-      source = encodeUtf8 $ fromMaybe "" $ note_track >>= track_source
+      provider   = encodeUtf8 $ fromMaybe "" $ note_track >>= track_provider
+      source     = encodeUtf8 $ fromMaybe "" $ note_track >>= track_source
       externalId = encodeUtf8 $ fromMaybe "" $ note_track >>= track_externalId
-      url = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
+      url        = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
   [Cpp.block| void {
     $(MainWindow * mainWindow)->upsertTask({
       .id = $bs-cstr:id',
