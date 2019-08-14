@@ -58,7 +58,6 @@ import RON.Types
     WireStateChunk (WireStateChunk, stateBody, stateType)
     )
 import qualified RON.UUID as UUID
-import Prelude hiding (id)
 
 data NoteStatus = TaskStatus Status | Wiki
   deriving (Eq, Show)

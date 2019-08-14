@@ -57,7 +57,6 @@ import RON.Storage.FS
     runStorage,
     subscribeForever
     )
-import Prelude hiding (id)
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 
@@ -114,8 +113,8 @@ upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
   _ -> pure ()
 
 upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
-upsertTask mainWindow Entity {entityId = DocId id, entityVal = note} = do
-  let id' = encodeUtf8 $ Text.pack id
+upsertTask mainWindow Entity {entityId = DocId nid, entityVal = note} = do
+  let nid' = encodeUtf8 $ Text.pack nid
       isActive = note_status == Just (TaskStatus Active)
       Note {note_text, note_start, note_end, note_track, note_status} = note
       noteText = fromRgaM note_text
@@ -129,7 +128,7 @@ upsertTask mainWindow Entity {entityId = DocId id, entityVal = note} = do
       url        = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
   [Cpp.block| void {
     $(MainWindow * mainWindow)->upsertTask({
-      .id = $bs-cstr:id',
+      .id = $bs-cstr:nid',
       .isActive = $(bool isActive),
       .text = $bs-cstr:text,
       .start = {$(int startYear), $(int startMonth), $(int startDay)},

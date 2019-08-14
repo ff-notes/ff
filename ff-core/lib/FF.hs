@@ -128,7 +128,6 @@ import System.IO (hClose)
 import System.IO.Temp (withSystemTempFile)
 import System.Process.Typed (proc, runProcess)
 import System.Random (StdGen, mkStdGen, randoms, split)
-import Prelude hiding (id)
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
 load docid = do
@@ -385,8 +384,8 @@ cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
-  Edit {ids = id :| [], text, start = Nothing, end = Nothing} ->
-    fmap (: []) $ modifyAndView id $ do
+  Edit {ids = nid :| [], text, start = Nothing, end = Nothing} ->
+    fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
@@ -397,8 +396,8 @@ cmdEdit edit = case edit of
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
   Edit {ids, text, start, end} ->
-    fmap toList . for ids $ \id ->
-      modifyAndView id $ do
+    fmap toList . for ids $ \nid ->
+      modifyAndView nid $ do
         -- check text editability
         whenJust text $ const assertNoteIsNative
         -- check start and end editability
