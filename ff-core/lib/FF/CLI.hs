@@ -82,8 +82,8 @@ import FF.UI
     withHeader
     )
 import FF.Upgrade (upgradeDatabase)
-import RON.Storage.Backend (DocId (DocId))
-import RON.Storage.FS (Storage, runStorage)
+import RON.Storage.Backend (DocId (DocId), MonadStorage)
+import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
 import System.Directory (doesDirectoryExist, getHomeDirectory)
@@ -142,7 +142,8 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
       where
         ui' = ConfigUI {shuffle = shuffle'}
 
-runCmdAction :: ConfigUI -> CmdAction -> Bool -> Storage ()
+runCmdAction
+  :: (MonadIO m, MonadStorage m) => ConfigUI -> CmdAction -> Bool -> m ()
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
@@ -195,7 +196,7 @@ runCmdAction ui cmd isBrief = do
       wikis <- getWikiSamples False ui mlimit today
       pprint $ prettyWikiSample isBrief wikis
 
-cmdTrack :: Track -> Day -> Bool -> Storage ()
+cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
@@ -226,7 +227,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
           exitFailure
         Right issues -> pure issues
 
-cmdContact :: Bool -> Maybe Contact -> Storage ()
+cmdContact :: (MonadIO m, MonadStorage m) => Bool -> Maybe Contact -> m ()
 cmdContact isBrief = \case
   Just (Add name) -> do
     contact <- cmdNewContact name
