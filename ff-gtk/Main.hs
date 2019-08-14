@@ -19,7 +19,7 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
-import FF (getDataDir, loadTasks, noDataDirectoryMessage)
+import FF (fromRgaM, getDataDir, loadTasks, noDataDirectoryMessage)
 import FF.Config (loadConfig)
 import FF.Types
   ( Entity (Entity),
@@ -46,7 +46,6 @@ import GI.Gtk.Declarative.App.Simple
     )
 import qualified GI.Gtk.Declarative.App.Simple
 import Pipes (Producer, each)
-import RON.Data.RGA (RGA (RGA))
 import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 
@@ -87,8 +86,8 @@ view State {tasks} =
           #wrap := True
           ]
       where
-        RGA noteText = note_text
-        isActive = note_status == TaskStatus Active
+        noteText = fromRgaM note_text
+        isActive = note_status == Just (TaskStatus Active)
         strike text = "<s>" <> text <> "</s>"
 
 -- newTaskForm = widget Gtk.Entry
