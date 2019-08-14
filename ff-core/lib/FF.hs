@@ -39,7 +39,7 @@ import Control.Arrow ((&&&))
 import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State.Strict (evalState, state)
+import Control.Monad.State.Strict (MonadState, evalState, state)
 import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
@@ -250,6 +250,7 @@ getWikiSamplesWith predicate archive ConfigUI {shuffle} limit today =
 shuffleItems :: StdGen -> [b] -> [b]
 shuffleItems gen = (`evalState` gen) . shuf
 
+shuf :: MonadState StdGen m => [b] -> m [b]
 shuf xs = do
   g <- state split
   pure . map snd . sortOn fst $ zip (randoms g :: [Int]) xs
