@@ -4,7 +4,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeSynonymInstances #-}
 
 module FF.CrdtAesonInstances
     (
