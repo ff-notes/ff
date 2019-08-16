@@ -82,22 +82,7 @@ convertLwwToSet uuid =
     chunk@WireStateChunk {stateType} <-
       liftMaybe "no such object in chunk" $ Map.lookup uuid frame
     if
-      | stateType == lwwType ->
-        do
-          LwwRep lwwRep <- stateFromWireChunk chunk
-          stateBody' <-
-            for (Map.assocs lwwRep) $ \(field, Op {payload}) -> do
-              opId <- getEventUuid
-              pure
-                Op
-                  { opId,
-                    refId = Zero,
-                    payload = AUuid field : removeOption payload
-                    }
-          -- TODO(2019-08-16, cblp) use ORSetRep
-          modify'
-            $ Map.insert uuid
-                WireStateChunk {stateType = setType, stateBody = stateBody'}
+      | stateType == lwwType -> doConvert chunk
       | stateType == setType ->
         pure () -- OK
       | otherwise ->
@@ -106,6 +91,21 @@ convertLwwToSet uuid =
               ["expected set or lww", Error ("got " <> show stateType) []]
   where
     setType = reducibleOpType @ORSetRep
+    doConvert chunk = do
+      LwwRep lwwRep <- stateFromWireChunk chunk
+      stateBody' <-
+        for (Map.assocs lwwRep) $ \(field, Op {payload}) -> do
+          opId <- getEventUuid
+          pure
+            Op
+              { opId,
+                refId = Zero,
+                payload = AUuid field : removeOption payload
+                }
+      -- TODO(2019-08-16, cblp) use ORSetRep
+      modify'
+        $ Map.insert uuid
+            WireStateChunk {stateType = setType, stateBody = stateBody'}
     removeOption = \case
       AUuid u : payload | u == some' -> payload
       [AUuid u] | u == none' -> []
