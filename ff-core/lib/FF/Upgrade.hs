@@ -18,8 +18,13 @@ where
 import Data.Foldable (for_)
 import qualified Data.Map.Strict as Map
 import FF.Types (Note)
-import RON.Data (MonadObjectState, getObjectStateChunk, reducibleOpType)
-import RON.Data.LWW (lwwType)
+import RON.Data
+  ( MonadObjectState,
+    getObjectStateChunk,
+    reducibleOpType,
+    stateFromWireChunk
+    )
+import RON.Data.LWW (LwwRep (LwwRep), lwwType)
 import RON.Data.ORSet (ORSetRep)
 import RON.Error (Error (Error), MonadE, errorContext, liftMaybe)
 import RON.Event (ReplicaClock, getEventUuid)
@@ -74,20 +79,22 @@ convertLwwToSet
 convertLwwToSet uuid =
   errorContext "convertLwwToSet" $ do
     frame <- get
-    WireStateChunk {stateType, stateBody} <-
+    chunk@WireStateChunk {stateType} <-
       liftMaybe "no such object in chunk" $ Map.lookup uuid frame
     if
       | stateType == lwwType ->
         do
+          LwwRep lwwRep <- stateFromWireChunk chunk
           stateBody' <-
-            for stateBody $ \Op {refId, payload} -> do
+            for (Map.assocs lwwRep) $ \(field, Op {payload}) -> do
               opId <- getEventUuid
               pure
                 Op
                   { opId,
                     refId = Zero,
-                    payload = AUuid refId : removeOption payload
+                    payload = AUuid field : removeOption payload
                     }
+          -- TODO(2019-08-16, cblp) use ORSetRep
           modify'
             $ Map.insert uuid
                 WireStateChunk {stateType = setType, stateBody = stateBody'}
@@ -96,7 +103,7 @@ convertLwwToSet uuid =
       | otherwise ->
         throwError
           $ Error "bad type"
-              [Error "expected lww" [], Error ("got " <> show stateType) []]
+              ["expected set or lww", Error ("got " <> show stateType) []]
   where
     setType = reducibleOpType @ORSetRep
     removeOption = \case
