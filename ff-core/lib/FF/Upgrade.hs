@@ -53,7 +53,7 @@ upgradeDatabase :: (MonadE m, MonadStorage m) => m ()
 upgradeDatabase = do
   collections <- getCollections
   for_ collections $ \case
-    "note"     -> upgradeNoteCollection
+    "note" -> upgradeNoteCollection
     collection -> throwError $ Error ("unsupported type " <> show collection) []
 
 upgradeNoteCollection :: MonadStorage m => m ()
@@ -76,26 +76,27 @@ convertLwwToSet uuid =
     frame <- get
     WireStateChunk {stateType, stateBody} <-
       liftMaybe "no such object in chunk" $ Map.lookup uuid frame
-    if | stateType == lwwType ->
-         do
-           stateBody' <-
-             for stateBody $ \Op {refId, payload} -> do
-               opId <- getEventUuid
-               pure
-                 Op
-                   { opId,
-                     refId   = Zero,
-                     payload = AUuid refId : removeOption payload
-                     }
-           modify'
-             $ Map.insert uuid
-                 WireStateChunk {stateType = setType, stateBody = stateBody'}
-       | stateType == setType ->
-         pure () -- OK
-       | otherwise ->
-         throwError
-           $ Error "bad type"
-               [Error "expected lww" [], Error ("got " <> show stateType) []]
+    if
+      | stateType == lwwType ->
+        do
+          stateBody' <-
+            for stateBody $ \Op {refId, payload} -> do
+              opId <- getEventUuid
+              pure
+                Op
+                  { opId,
+                    refId = Zero,
+                    payload = AUuid refId : removeOption payload
+                    }
+          modify'
+            $ Map.insert uuid
+                WireStateChunk {stateType = setType, stateBody = stateBody'}
+      | stateType == setType ->
+        pure () -- OK
+      | otherwise ->
+        throwError
+          $ Error "bad type"
+              [Error "expected lww" [], Error ("got " <> show stateType) []]
   where
     setType = reducibleOpType @ORSetRep
     removeOption = \case
