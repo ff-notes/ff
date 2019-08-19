@@ -4,8 +4,9 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '118'
   track_provider: github
-note_text: "org-mode as UI\n\nAdd UUID of a note as metadata in org-mode.\r\n\r\n-
-  #119\r\n- #120"
+note_text: "org-mode-like UI\n\nPossible ways:\r\n1. Clone Emacs and org-mode with
+  vty/brick/reflex-vty.\r\n2. Write an Emacs mode with https://github.com/knupfer/haskell-emacs\r\n\r\nSee
+  also:\r\n- #119\r\n- #120"
 note_end: null
 note_status:
   tag: TaskStatus
