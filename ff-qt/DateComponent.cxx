@@ -1,3 +1,5 @@
+#include <QtCore/QDate>
+
 #include "Builder.hxx"
 #include "DateComponent.hxx"
 

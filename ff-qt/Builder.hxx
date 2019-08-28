@@ -2,7 +2,7 @@
 #define ff_qt_Builder_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QtWidgets>
 
 
 template <typename Wrapped>

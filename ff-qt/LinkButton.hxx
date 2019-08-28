@@ -2,7 +2,7 @@
 #define ff_qt_LinkButton_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QCommandLinkButton>
 
 
 class LinkButton: public QCommandLinkButton {

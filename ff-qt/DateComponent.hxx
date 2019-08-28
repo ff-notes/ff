@@ -2,7 +2,9 @@
 #define ff_qt_DateComponent_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QDateEdit>
+#include <QtWidgets/QHBoxLayout>
+#include <QtWidgets/QLabel>
 
 
 class DateComponent: public QHBoxLayout {

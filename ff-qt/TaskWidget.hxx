@@ -2,7 +2,7 @@
 #define ff_qt_TaskWidget_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QFrame>
 
 #include "DateComponent.hxx"
 

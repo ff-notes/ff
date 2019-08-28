@@ -60,6 +60,8 @@ import RON.Storage.FS
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 
+Cpp.include "<QtWidgets/QApplication>"
+
 includeDependent "FFI/Cxx.hxx"
 
 includeDependent "MainWindow.hxx"

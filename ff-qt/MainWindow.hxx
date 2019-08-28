@@ -2,7 +2,7 @@
 #define ff_qt_MainWindow_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QMainWindow>
 
 #include "TaskListWidget.hxx"
 

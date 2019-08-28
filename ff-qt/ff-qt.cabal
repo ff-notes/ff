@@ -84,23 +84,14 @@ executable ff-qt
         include-dirs:
             -- Ubuntu on Travis
             /opt/qt512/include
-            /opt/qt512/include/QtCore
-            /opt/qt512/include/QtWidgets
             -- latest Ubuntu
             /usr/include/x86_64-linux-gnu/qt5
-            /usr/include/x86_64-linux-gnu/qt5/QtCore
-            /usr/include/x86_64-linux-gnu/qt5/QtWidgets
             -- Arch Linux
             /usr/include/qt
-            /usr/include/qt/QtCore
-            /usr/include/qt/QtWidgets
     if os(osx)
         cc-options: -Qunused-arguments
             -- ignore unused arguments warning from clang
         extra-framework-dirs: /usr/local/opt/qt5/lib
         frameworks: QtCore QtGui QtWidgets
         ghc-options: -optc=-std=c++11 -pgmc=clang++
-        include-dirs:
-            /usr/local/opt/qt5/include
-            /usr/local/opt/qt5/include/QtCore
-            /usr/local/opt/qt5/include/QtWidgets
+        include-dirs: /usr/local/opt/qt5/include

@@ -1,3 +1,5 @@
+#include <QtCore/QModelIndex>
+
 #include "Model.hxx"
 #include "util.hxx"
 

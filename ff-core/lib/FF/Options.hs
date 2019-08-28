@@ -293,7 +293,7 @@ parser h =
 
     readDocId = DocId <$> str
 
-i :: forall a . Parser a -> String -> ParserInfo a
+i :: Parser a -> String -> ParserInfo a
 i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
 
 parserInfo :: Maybe StorageFS.Handle -> ParserInfo Options

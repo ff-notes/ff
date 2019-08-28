@@ -2,7 +2,8 @@
 #define ff_qt_util_hxx
 
 
-#include <QtCore>
+#include <QtCore/QDate>
+
 #include "FFI/Cxx.hxx"
 
 

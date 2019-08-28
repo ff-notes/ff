@@ -2,8 +2,8 @@
 #define ff_qt_TaskListWidget_hxx
 
 
+#include <QtWidgets/QTreeView>
 #include <unordered_map>
-#include <QtWidgets>
 
 #include "FFI/Cxx.hxx"
 #include "Model.hxx"

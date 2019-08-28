@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include <QtCore>
+// #include <QtCore>
 
 #include "FFI/Cxx.hxx"
 

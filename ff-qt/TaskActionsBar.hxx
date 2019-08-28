@@ -2,7 +2,7 @@
 #define ff_qt_TaskActionsBar_hxx
 
 
-#include <QtWidgets>
+#include <QtWidgets/QToolBar>
 
 #include "FFI/Cxx.hxx"
 
