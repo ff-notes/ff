@@ -37,3 +37,6 @@ extra-deps:
 docker:
   enable: false
   image: ff-ubuntu-16.04
+
+nix:
+  packages: [zlib qt5.qtbase gtk3 gobject-introspection]
