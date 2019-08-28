@@ -8,6 +8,10 @@ packages:
   - ff-test
 
 extra-deps:
+  # binary-instances:
+  - binary-orphans-1.0.1
+  - time-compat-1.9.2.2
+
   # ff-core:
   - crdt-10.4
   - github-0.22
@@ -24,12 +28,20 @@ extra-deps:
   - hedgehog-1.0
   - tasty-hedgehog-1.0.0.1
 
+  # gi-gtk-declarative:
+  - haskell-gi-0.22.4
+    # 0.22.4 fixes https://github.com/haskell-gi/haskell-gi/issues/230
+
   # github:
   - binary-instances-1
 
-  # binary-instances:
-  - binary-orphans-1.0.1
-  - time-compat-1.9.2.2
+  # haskell-gi-0.22.4 depends on versions of GI too new for lts-13:
+  - gi-cairo-1.0.19
+  - gi-gdk-3.0.18
+  - gi-gio-2.0.20
+  - gi-glib-2.0.19
+  - gi-gtk-3.0.28
+  - haskell-gi-base-0.22.2
 
 # reduce some deps?
 # flags: {comonad: {contravariant: False}}

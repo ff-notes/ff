@@ -5,6 +5,20 @@
 
 packages:
 - completed:
+    hackage: binary-orphans-1.0.1@sha256:76c4afdcd2187af0f65dd647779f1b126c505ea0882992e4ee7ad847400a9c6b,2004
+    pantry-tree:
+      size: 285
+      sha256: 97ac4ee9ffd5d00e8fca2c68d5eb977ba31b21fd416c845dffcc06ae1c04b707
+  original:
+    hackage: binary-orphans-1.0.1
+- completed:
+    hackage: time-compat-1.9.2.2@sha256:9998dc1b77b5067572ab708e94750f1061152f342e92ad1aba38aae63581174d,4209
+    pantry-tree:
+      size: 3602
+      sha256: 724a63e80871bc6709a2d3ca1c3c7316048e99c9d50b0492f0eff25ce2cecbe0
+  original:
+    hackage: time-compat-1.9.2.2
+- completed:
     hackage: crdt-10.4@sha256:5d5827348b72c97fa835e13e2bb2c034048a212008b5419b7bb78da5ed083abb,2128
     pantry-tree:
       size: 1500
@@ -75,6 +89,13 @@ packages:
   original:
     hackage: tasty-hedgehog-1.0.0.1
 - completed:
+    hackage: haskell-gi-0.22.4@sha256:370bcdea619b0b70881d794785914238e43237b74ab6be0a2b2e3f41461c8658,5035
+    pantry-tree:
+      size: 4346
+      sha256: 737980dea240cb386a8010494e93bcb76b13251a39ea05348a7a526e15403467
+  original:
+    hackage: haskell-gi-0.22.4
+- completed:
     hackage: binary-instances-1@sha256:cdef50410f2797de38f021d328d38c32b2f4abeaab86bfaf78e0657150863090,2613
     pantry-tree:
       size: 1035
@@ -82,19 +103,47 @@ packages:
   original:
     hackage: binary-instances-1
 - completed:
-    hackage: binary-orphans-1.0.1@sha256:76c4afdcd2187af0f65dd647779f1b126c505ea0882992e4ee7ad847400a9c6b,2004
+    hackage: gi-cairo-1.0.19@sha256:22fe36b5b3744f71d902589d0ffac3ac3e7801a1acc6d5c3eadff429e9cb39de,2588
     pantry-tree:
-      size: 285
-      sha256: 97ac4ee9ffd5d00e8fca2c68d5eb977ba31b21fd416c845dffcc06ae1c04b707
+      size: 2366
+      sha256: 12039df41a7112872a2d9c1a1a17fa16d8ee45ab7b07387223683e37caaae923
   original:
-    hackage: binary-orphans-1.0.1
+    hackage: gi-cairo-1.0.19
 - completed:
-    hackage: time-compat-1.9.2.2@sha256:9998dc1b77b5067572ab708e94750f1061152f342e92ad1aba38aae63581174d,4209
+    hackage: gi-gdk-3.0.18@sha256:5164a3d5f2504a5f41ca8a772148537a1e6d57fe36cc22ee74db04bd49f5cbeb,5214
     pantry-tree:
-      size: 3602
-      sha256: 724a63e80871bc6709a2d3ca1c3c7316048e99c9d50b0492f0eff25ce2cecbe0
+      size: 9033
+      sha256: 3ec700b11d163cbad6d6335eabc12a8e27dab5db816af75d4bbb1ba8f1fe55af
   original:
-    hackage: time-compat-1.9.2.2
+    hackage: gi-gdk-3.0.18
+- completed:
+    hackage: gi-gio-2.0.20@sha256:9f5384c4f428df521b697937072b59ebb4098a5e7a330a4c8daf463036b5ea10,11647
+    pantry-tree:
+      size: 27437
+      sha256: c1c0864d2e75cd14ed907e26c54224bf08a175be472532719f692206bb01a3b4
+  original:
+    hackage: gi-gio-2.0.20
+- completed:
+    hackage: gi-glib-2.0.19@sha256:07537af1cff2596a8b79e42414a20dd434f240acda377babc4296444f416eb54,5493
+    pantry-tree:
+      size: 10673
+      sha256: 170c898f85e3460640c7a57adaa0f4ddd21181f8b9471db2cdd029ec77f1bbcb
+  original:
+    hackage: gi-glib-2.0.19
+- completed:
+    hackage: gi-gtk-3.0.28@sha256:4f79f4949df43f07bdd78037cffce4c0ed8e3bb5f3df4d89e44d08774458be1d,20056
+    pantry-tree:
+      size: 50997
+      sha256: 324a434e1dc9c9597b9614735c72392e50986b96d6d6ed7427c1c5df5f5e1122
+  original:
+    hackage: gi-gtk-3.0.28
+- completed:
+    hackage: haskell-gi-base-0.22.2@sha256:e8d5cf0b4fada4914443f171b38c8b82924bbefca3196793b1622f5fa50adfb4,2308
+    pantry-tree:
+      size: 1663
+      sha256: 6f85514d25d696f7389baa35cb34318e8cc896cad3244cb80d798bc71c5949f1
+  original:
+    hackage: haskell-gi-base-0.22.2
 snapshots:
 - completed:
     size: 500539
