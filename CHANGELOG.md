@@ -17,6 +17,9 @@ and this project adheres to
 ### Changed
 - Base data type from LWW to OR-Set
 
+### Fixed
+- GTK build
+
 ## [0.11] - 2019-03-02
 ### Added
 - ff-qt:
