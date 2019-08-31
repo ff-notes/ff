@@ -6,6 +6,14 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- Nix build
+
+### Changed
+- Updated dependencies
+
+### Fixed
+- GTK build
 
 ## [0.12] - 2019-08-14
 ### Added
@@ -17,9 +25,6 @@ and this project adheres to
 
 ### Changed
 - Base data type from LWW to OR-Set
-
-### Fixed
-- GTK build
 
 ## [0.11] - 2019-03-02
 ### Added
