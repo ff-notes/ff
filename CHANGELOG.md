@@ -7,13 +7,14 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
-- Nix build
+- Nix build.
+- Tags.
 
 ### Changed
-- Updated dependencies
+- Updated dependencies.
 
 ### Fixed
-- GTK build
+- GTK build.
 
 ## [0.12] - 2019-08-14
 ### Added
@@ -21,10 +22,9 @@ and this project adheres to
   - Search within archived contacts and tasks.
   - Add config tests.
   - Add a test to check if `ff --help` section at the README updated.
-  - Add tags.
 
 ### Changed
-- Base data type from LWW to OR-Set
+- Base data type from LWW to OR-Set.
 
 ## [0.11] - 2019-03-02
 ### Added
