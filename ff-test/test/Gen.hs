@@ -7,9 +7,10 @@ import           Prelude hiding (maybe)
 import           Data.Text (Text)
 import           Data.Time (Day, fromGregorian)
 import           Hedgehog (Gen)
-import           Hedgehog.Gen (bool_, choice, enumBounded, integral, maybe,
-                               string, text, unicode, list)
+import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
+                               maybe, string, text, unicode)
 import qualified Hedgehog.Range as Range
+import           RON.Data.ORSet (ORSet (..))
 import           RON.Data.RGA (RGA (RGA))
 
 import           FF.Config (Config (..), ConfigUI (..))
@@ -44,7 +45,7 @@ note = Note
     <$> maybe day
     <*> (Just <$> day)
     <*> (Just <$> noteStatus)
-    <*> list (Range.linear 0 10) tags
+    <*> (Just . ORSet <$> list (Range.linear 0 10) tags)
     <*> maybe (RGA <$> string (Range.linear 1 100) unicode)
     <*> maybe track
 
@@ -61,5 +62,5 @@ track = Track
 status :: Gen Status
 status = enumBounded
 
-tags :: MonadGen m => m Text
+tags :: Gen Text
 tags = text (Range.linear 1 100) unicode

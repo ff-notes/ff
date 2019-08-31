@@ -168,7 +168,6 @@ loadNotesWithInputedTags tagsInputed =
     selectInputed Nothing = False
     selectInputed (Just (ORSet tags')) = (not . null) $ intersect tags tags'
 
-
 -- | Load all unique tags from all notes.
 loadAllTags :: MonadStorage m => m [Text]
 loadAllTags = do
@@ -176,7 +175,7 @@ loadAllTags = do
   let mTagsList = traverse (note_tags . entityVal) taggedNotes
   case mTagsList of
     Nothing -> pure []
-    Just tagsList -> do
+    Just tagsList ->
       pure $ nub $ concatMap (\(ORSet tag) -> tag) tagsList
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
@@ -424,8 +423,14 @@ cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
-  Edit {ids = nid :| [], text, start = Nothing, end = Nothing, addTags = Nothing, editTag = Nothing, delTags = False} ->
-    fmap (: []) $ modifyAndView nid $ do
+  Edit
+    { ids = nid :| []
+    , text, start = Nothing
+    , end = Nothing
+    , addTags = Nothing
+    , editTag = Nothing
+    , delTags = False
+    } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
@@ -462,16 +467,16 @@ cmdEdit edit = case edit of
         whenJust text  $ note_text_zoom    . RGA.editText
         when delTags   $ note_tags_assign Nothing
         unless delTags $ do
-            whenJust addTags $ \tags -> unless (Text.null tags) $
-              note_tags_zoom . addValue . onlySpace $ tags
-            whenJust editTag $ \editTag' -> do
-              allTags <- note_tags_read
-              whenJust allTags $ \(ORSet tags) -> do
-                whenJust (find (== editTag') tags) $ \oldtag -> do
-                    newtag <- liftIO $ runExternalEditor oldtag
-                    unless (newtag == oldtag) $ do
-                        note_tags_zoom $ addValue $ onlySpace newtag
-                        note_tags_zoom $ removeValue oldtag
+          whenJust addTags $ \tags -> unless (Text.null tags) $
+            note_tags_zoom . addValue . onlySpace $ tags
+          whenJust editTag $ \editTag' -> do
+            allTags <- note_tags_read
+            whenJust allTags $ \(ORSet tags) ->
+              whenJust (find (== editTag') tags) $ \oldtag -> do
+                newtag <- liftIO $ runExternalEditor oldtag
+                unless (newtag == oldtag) $ do
+                    note_tags_zoom $ addValue $ onlySpace newtag
+                    note_tags_zoom $ removeValue oldtag
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
