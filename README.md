@@ -86,7 +86,7 @@ Ubuntu:
 
     Available options:
       -b,--brief               List only note titles and ids
-      -t,--tags TAGS           List notes with these tags only
+      -t,--tags TAGS           List notes with these tags
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues

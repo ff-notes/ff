@@ -24,6 +24,7 @@ import FF.Types
     loadNote
     )
 import RON.Data.RGA (RGA)
+import RON.Data.ORSet (ORSet)
 import RON.Storage (CollectionName)
 import RON.Storage.Backend (getCollections, getDocuments)
 import RON.Storage.FS (Handle, newHandle, runStorage)
@@ -33,6 +34,8 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsFileDiff)
 
 deriveToJSON defaultOptions ''RGA
+
+deriveToJSON defaultOptions ''ORSet
 
 deriveToJSON defaultOptions ''Note
 

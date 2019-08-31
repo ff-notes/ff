@@ -53,6 +53,7 @@ import RON.Data
     newObjectFrame
     )
 import RON.Data.RGA (RGA (RGA))
+import RON.Data.ORSet (ORSet(..))
 import RON.Storage.Backend (DocId (DocId))
 import RON.Storage.Test (TestDB, runStorageSim)
 import RON.Text (parseObject, serializeObject)
@@ -95,7 +96,7 @@ prop_smoke = property $ do
                       note_text   = Just $ RGA "helloworld",
                       note_start  = Just $ fromGregorian 22 11 24,
                       note_end    = Just $ fromGregorian 17 06 19,
-                      note_tags   = []
+                      note_tags   = Nothing,
                       note_track  = Nothing
                       }
                 ],
@@ -150,39 +151,39 @@ today = fromGregorian 1018 02 10
 
 prop_new :: Property
 prop_new =
-  let text  = "Мир"
+  let text  = "Way"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
+      tags  = Just ("hi" :: Text.Text)
       fs =
         Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B00000000AJ6M-2000000000012"
+          $ Map.singleton "B00000000GJ6M-2000000000012"
           $ map encodeUtf8
-          $ mconcat
-              [ [ "*set #B/0000000Drz+000000000Y !",
-                  "\t@`}IOM >end 3150 1 2",
-                  "\t@}QUM >start 2154 5 6",
-                  "\t@}_QM >status >Active",
-                  "\t:tags >(1r9IOM",
-                  "\t@}mnM >text >B/0000000qnM+000000000Y",
-                  "\t@{1A9r >track"
-                  ],
-                [ "*rga #}qnM @0 !",
-                  "\t@`}y_h 'М'",
-                  "\t@)i 'и'",
-                  "\t@)j 'р'",
-                  "\t@ 'hi'",
-                  "."
-                  ]
-                ]
+          -- $ mconcat
+              [ "*set #B/0000000Drz+000000000Y !"
+              , "\t@`}IOM >end 3150 1 2"
+              , "\t@}QUM >start 2154 5 6"
+              , "\t@}_QM >status >Active"
+              , "\t@}mnM >tags >B/0000000ynM+000000000Y"
+              , "\t@{1DnM >text >B/0000001TnM+000000000Y"
+              , "\t@}v9r >track"
+              , "#}ynM @0 !"
+              , "\t@`}qnM 'hi'"
+              , "*rga #{1TnM @0 !"
+              , "\t@`}i_h 'W'"
+              , "\t@)i 'a'"
+              , "\t@)j 'y'"
+              , "."
+              ]
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False, tags = Just "hi"} today
+            $ cmdNewNote New {text, start, end, isWiki = False, tags} today
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
-        tags                          === note_tags
+        (ORSet . Text.words <$> tags) === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
@@ -225,7 +226,7 @@ prop_repo =
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
                     note_end    = Just $ fromGregorian 2018 06 15,
-                    note_tags   = [],
+                    note_tags   = Nothing,
                     note_track  = Just
                       Track
                         { track_provider   = Just "github",
