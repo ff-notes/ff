@@ -21,7 +21,7 @@ module FF.UI (
 import           Data.Char (isSpace)
 import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromJust)
+import           Data.Maybe (fromJust, fromMaybe)
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -131,7 +131,7 @@ prettyNote isBrief (Entity entityId note) = case isBrief of
                 | Just Track{..} <- [note_track]
                 ]
   where
-    ORSet tags = fromJust note_tags
+    ORSet tags = fromMaybe (ORSet []) note_tags
     Note{note_end, note_start, note_status, note_text, note_tags, note_track} = note
     start = fromJust note_start
     text  = fromRgaM note_text

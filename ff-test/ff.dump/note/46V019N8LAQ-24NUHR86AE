@@ -15,3 +15,4 @@ note_end: null
 note_status:
   tag: TaskStatus
   contents: Active
+note_tags: null
