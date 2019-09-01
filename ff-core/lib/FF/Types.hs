@@ -49,7 +49,6 @@ import RON.Data
     stateToWireChunk
     )
 import RON.Data.LWW (lwwType)
-import RON.Data.ORSet (ORSet(..))
 import RON.Data.RGA (RgaRep)
 import RON.Data.Time (Day)
 import RON.Epoch (localEpochTimeFromUnix)
