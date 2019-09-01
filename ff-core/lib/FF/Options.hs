@@ -234,7 +234,7 @@ parser h =
         <*> optional startDateOption
         <*> optional maybeClearEnd
         <*> optional newTags
-        <*> optional editTag
+        <*> optional editTag'
         <*> deleteTags
     search = Search
         <$> strArgument (metavar "TEXT")
@@ -256,7 +256,7 @@ parser h =
         short 't' <> long "tags" <> metavar "TAGS" <> help "List notes with input tags"
     newTags = strOption $
         long "tags" <> metavar "TAGS" <> help "Add a note's tags"
-    editTag = strOption $
+    editTag' = strOption $
         long "edit-tag" <> metavar "TAG" <> help "Edit a note's tag"
     deleteTags = switch $ long "delete-tags" <> short 'd' <> help "Delete all note's tags"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
