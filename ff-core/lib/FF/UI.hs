@@ -132,7 +132,14 @@ prettyNote isBrief (Entity entityId note) = case isBrief of
                 ]
   where
     ORSet tags = fromMaybe (ORSet []) note_tags
-    Note{note_end, note_start, note_status, note_text, note_tags, note_track} = note
+    Note
+      { note_end
+      , note_start
+      , note_status
+      , note_text
+      , note_tags
+      , note_track
+      } = note
     start = fromJust note_start
     text  = fromRgaM note_text
 
@@ -144,7 +151,11 @@ title
     . Text.lines
     . Text.pack
 
-prettyTaskSections :: Bool -> Maybe Text -> ModeMap (Sample (Entity Note)) -> Doc AnsiStyle
+prettyTaskSections
+    :: Bool
+    -> Maybe Text
+    -> ModeMap (Sample (Entity Note))
+    -> Doc AnsiStyle
 prettyTaskSections isBrief mTags samples = case mTags of
     Just tags -> tagHeader tags tasks
     Nothing   -> tasks

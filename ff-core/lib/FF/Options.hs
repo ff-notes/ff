@@ -253,7 +253,7 @@ parser h =
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
     tagOption = optional $ strOption $
-        short 't' <> long "tags" <> metavar "TAGS" <> help "List notes with these tags"
+        short 't' <> long "tags" <> metavar "TAGS" <> help "List notes with input tags"
     newTags = strOption $
         long "tags" <> metavar "TAGS" <> help "Add a note's tags"
     editTag = strOption $
