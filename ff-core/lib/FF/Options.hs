@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Options (
+    Agenda (..),
     Cmd (..),
     CmdAction (..),
     Config (..),
@@ -22,11 +23,12 @@ module FF.Options (
     showHelp,
 ) where
 
-import           Control.Applicative (optional, some, (<|>))
+import           Control.Applicative (many, optional, some, (<|>))
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Time (Day)
 import           Options.Applicative (Completer, ParseError (ShowHelpText),
                                       Parser, ParserInfo, ParserPrefs, argument,
@@ -52,7 +54,8 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     (Maybe Limit)
+    -- = CmdAgenda     (Maybe Limit)
+    = CmdAgenda     Agenda
     | CmdContact    (Maybe Contact)
     | CmdDelete     [NoteId]
     | CmdDone       [NoteId]
@@ -69,7 +72,7 @@ data CmdAction
 
 data Options = Options
     { brief     :: Bool
-    , tags      :: Maybe Text
+    -- , tags      :: Maybe Text
     , customDir :: Maybe FilePath
     , cmd       :: Cmd
     }
@@ -78,6 +81,7 @@ data Track = Track
     { dryRun  :: Bool
     , address :: Maybe Text
     , limit   :: Maybe Limit
+    , tags    :: [Text]
     }
 
 data Contact = Add Text | Delete ContactId
@@ -96,14 +100,19 @@ maybeClearToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
+data Agenda = Agenda
+    { limit :: Maybe Limit
+    , tags  :: [Text]
+    }
+
 data Edit = Edit
-    { ids     :: NonEmpty NoteId
-    , text    :: Maybe Text
-    , start   :: Maybe Day
-    , end     :: Maybe (MaybeClear Day)
-    , addTags :: Maybe Text
-    , editTag :: Maybe Text
-    , delTags :: Bool
+    { ids       :: NonEmpty NoteId
+    , text      :: Maybe Text
+    , start     :: Maybe Day
+    , end       :: Maybe (MaybeClear Day)
+    , addTags   :: [Text]
+    , editTag   :: Maybe Text
+    , deleteTag :: Maybe Text
     }
     deriving (Show)
 
@@ -112,7 +121,7 @@ data New = New
     , start  :: Maybe Day
     , end    :: Maybe Day
     , isWiki :: Bool
-    , tags   :: Maybe Text
+    , tags   :: [Text]
     }
 
 data Search = Search
@@ -122,6 +131,7 @@ data Search = Search
     , inContacts :: Bool
     , inArchived :: Bool
     , limit      :: Maybe Limit
+    , tags       :: [Text]
     }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -138,7 +148,6 @@ parser :: Maybe StorageFS.Handle -> Parser Options
 parser h =
         Options
         <$> briefOption
-        <*> tagOption
         <*> customDirOption
         <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
   where
@@ -182,7 +191,7 @@ parser h =
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    = CmdAgenda    <$> optional limitOption
+    cmdAgenda    = CmdAgenda    <$> agenda
     cmdContact   = CmdContact   <$> optional contact
     cmdDelete    = CmdDelete    <$> some noteid
     cmdDone      = CmdDone      <$> some noteid
@@ -200,10 +209,14 @@ parser h =
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption = switch $
         long "brief" <> short 'b' <> help "List only note titles and ids"
+    agenda = Agenda
+        <$> optional limitOption
+        <*> tags
     track = Track
         <$> dryRunOption
         <*> optional repo
         <*> optional limitOption
+        <*> tags
     dryRunOption = switch
         $  long "dry-run"
         <> short 'd'
@@ -227,15 +240,15 @@ parser h =
         <*> optional startDateOption
         <*> optional endDateOption
         <*> wiki
-        <*> optional newTags
+        <*> tags
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional maybeClearEnd
-        <*> optional newTags
-        <*> optional editTag'
-        <*> deleteTags
+        <*> tags
+        <*> optional editTag
+        <*> optional deleteTag
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -243,6 +256,7 @@ parser h =
         <*> searchC
         <*> searchA
         <*> optional limitOption
+        <*> tags
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -251,14 +265,13 @@ parser h =
         switch $ long "archived" <> short 'a' <> help "Search among archived"
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
-    noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
-    tagOption = optional $ strOption $
-        short 't' <> long "tags" <> metavar "TAGS" <> help "List notes with input tags"
-    newTags = strOption $
-        long "tags" <> metavar "TAGS" <> help "Add a note's tags"
-    editTag' = strOption $
-        long "edit-tag" <> metavar "TAG" <> help "Edit a note's tag"
-    deleteTags = switch $ long "delete-tags" <> short 'd' <> help "Delete all note's tags"
+    noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
+    tags = many $ strOption $
+        short 't' <> long "tag" <> metavar "TAG" <> help "Tag"
+    editTag = strOption $
+        long "edit-tag" <> metavar "TAG" <> help "Edit a tag"
+    deleteTag = strOption $
+        long "delete-tag" <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"

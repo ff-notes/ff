@@ -38,7 +38,7 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Monad (unless, void, when)
+import Control.Monad (unless, void, when, join)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
@@ -63,7 +63,7 @@ import Data.Time
     )
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
-import FF.Options (Edit (..), New (..), maybeClearToMaybe)
+import FF.Options (Agenda(..), Edit (..), New (..), maybeClearToMaybe)
 import FF.Types
   ( Contact (..),
     ContactId,
@@ -77,6 +77,7 @@ import FF.Types
     NoteStatus (..),
     Sample (..),
     Status (..),
+    Tag (..),
     Track (..),
     contact_name_zoom,
     contact_status_assign,
@@ -103,7 +104,8 @@ import RON.Data
     newObjectFrame,
     runObjectState
     )
-import RON.Data.ORSet (ORSet(..), addValue, removeValue)
+import RON.Data.ORSet (ORSet(ORSet))
+import qualified RON.Data.ORSet as ORSet
 import RON.Data.RGA (RGA (RGA))
 import qualified RON.Data.RGA as RGA
 import RON.Error (MonadE, throwErrorText)
@@ -156,27 +158,26 @@ loadContacts isArchived =
 
 -- | Load tagged notes only.
 loadTaggedNotes :: MonadStorage m => m [Entity Note]
-loadTaggedNotes = filter (isJust . note_tags . entityVal) <$> loadAll
+loadTaggedNotes = filter (isJust . note_tags . entityVal) <$> loadAllNotes
 
 -- | Load notes tagged at least a one tag from user input.
 --   Maybe it is better to load notes tagged by all tags from user input?
-loadNotesWithInputedTags :: MonadStorage m => Text -> m [Entity Note]
-loadNotesWithInputedTags tagsInputed =
+loadNotesWithInputedTags :: MonadStorage m => [Text] -> m [Entity Note]
+loadNotesWithInputedTags tagsInput =
     filter (selectInputed . note_tags . entityVal) <$> loadTaggedNotes
   where
-    tags = nub $ Text.words tagsInputed
     selectInputed Nothing = False
-    selectInputed (Just (ORSet tags')) = (not . null) $ intersect tags tags'
+    selectInputed (Just (ORSet tags)) = case traverse tag_record tags of
+      Nothing -> False
+      Just tags' -> (not . null) $ intersect tagsInput tags'
 
 -- | Load all unique tags from all notes.
 loadAllTags :: MonadStorage m => m [Text]
 loadAllTags = do
   taggedNotes <- loadTaggedNotes
-  let mTagsList = traverse (note_tags . entityVal) taggedNotes
-  case mTagsList of
-    Nothing -> pure []
-    Just tagsList ->
-      pure $ nub $ concatMap (\(ORSet tag) -> tag) tagsList
+  let tags = fromMaybe [] $ traverse (note_tags . entityVal) taggedNotes
+  let tags' = fromMaybe [] $ traverse (\(ORSet tag) -> traverse tag_record tag) tags
+  pure $ concat tags'
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
@@ -213,7 +214,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Maybe Text      -- ^ tags to filter notes
+  -> [Text] -- ^ tags to filter notes
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -224,12 +225,12 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Maybe Text -- ^ tags to filter notes
+  -> [Text] -- ^ tags to filter notes
   -> m (ModeMap NoteSample)
-getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today mTags = do
-  tasks <- case mTags of
-    Nothing -> loadTasks isArchived
-    Just tags -> loadNotesWithInputedTags tags
+getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today tags = do
+  tasks <- if null tags
+    then loadTasks isArchived
+    else loadNotesWithInputedTags tags
   pure
     . takeSamples limit
     . shuffleOrSort
@@ -360,7 +361,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
           note_start  = Just noteStart,
           note_status = Just status,
           note_text   = Just $ RGA $ Text.unpack text,
-          note_tags   = ORSet . (nub . Text.words) <$> tags,
+          note_tags   = Just $ ORSet $ Tag . Just <$> nub tags,
           note_track  = Nothing
           }
   obj@ObjectFrame {uuid} <- newObjectFrame note
@@ -390,7 +391,7 @@ cmdSearch
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Maybe Text
+  -> [Text] -- ^ search within tasks with tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr archive ui limit today tags = do
   -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
@@ -427,9 +428,9 @@ cmdEdit edit = case edit of
     { ids = nid :| []
     , text, start = Nothing
     , end = Nothing
-    , addTags = Nothing
+    , addTags = []
     , editTag = Nothing
-    , delTags = False
+    , deleteTag = Nothing
     } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
@@ -440,7 +441,7 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, editTag, delTags} ->
+  Edit {ids, text, start, end, addTags, editTag, deleteTag} ->
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -461,22 +462,37 @@ cmdEdit edit = case edit of
               end' = end >>= maybeClearToMaybe
           whenJust newStartEnd
             $ uncurry assertStartBeforeEnd
-        -- update
+        -- update commands
         whenJust end   $ note_end_assign   . maybeClearToMaybe
         whenJust start $ note_start_assign . Just
         whenJust text  $ note_text_zoom    . RGA.editText
-        when delTags   $ note_tags_assign Nothing
-        unless delTags $ do
-          whenJust addTags $ \tags -> unless (Text.null tags) $
-            note_tags_zoom . addValue . onlySpace $ tags
-          whenJust editTag $ \editTag' -> do
-            allTags <- note_tags_read
-            whenJust allTags $ \(ORSet tags) ->
-              whenJust (find (== editTag') tags) $ \oldtag -> do
-                newtag <- liftIO $ runExternalEditor oldtag
-                unless (newtag == oldtag) $ do
-                    note_tags_zoom $ addValue $ onlySpace newtag
-                    note_tags_zoom $ removeValue oldtag
+        -- add new tags without dublicats
+        unless (null addTags) $ do
+          oldTags <- note_tags_read
+          whenJust oldTags $ \(ORSet tags) ->
+            whenJust (traverse tag_record tags) $ \tags' ->
+              note_tags_assign $ Just $ ORSet $ Tag . Just <$> (nub $ addTags <> tags')
+        -- edit one tag
+        whenJust editTag $ \editTag' -> do
+          oldTags <- note_tags_read
+          whenJust oldTags $ \(ORSet tags) ->
+            whenJust (traverse tag_record tags) $ \tags' ->
+              whenJust (find (== editTag') tags') $ \oldtag' -> do
+                newtag <- liftIO $ runExternalEditor oldtag'
+                -- save editions if there were  changes
+                unless (newtag == oldtag') $ do
+                  -- remove old tag
+                  note_tags_zoom $ ORSet.removeValue (Tag $ Just oldtag')
+                  -- add new tag if it not exists
+                  when (notElem newtag tags') $
+                    note_tags_zoom $ ORSet.addValue $ Tag $ Just newtag
+        -- delete one tag
+        whenJust deleteTag $ \deleteTag' -> do
+          oldTags <- note_tags_read
+          whenJust oldTags $ \(ORSet tags) ->
+            whenJust (traverse tag_record tags) $ \tags' ->
+              whenJust (find (== deleteTag') tags') $ \tagToDelete ->
+                note_tags_zoom $ ORSet.removeValue $ Tag $ Just $ tagToDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

@@ -34,9 +34,9 @@ c_assignStart storagePtr noteIdStr year month day = do
             , text = Nothing
             , start
             , end = Nothing
-            , addTags = Nothing
+            , addTags = []
             , editTag = Nothing
-            , delTags = False
+            , deleteTag = Nothing
             }
 
 foreign export ccall c_assignEnd
@@ -58,9 +58,9 @@ c_assignEnd storagePtr noteIdStr year month day = do
             , text = Nothing
             , end
             , start = Nothing
-            , addTags = Nothing
+            , addTags = []
             , editTag = Nothing
-            , delTags = False
+            , deleteTag = Nothing
             }
 
 foreign export ccall c_done :: StablePtr StorageFS.Handle -> CString -> IO ()

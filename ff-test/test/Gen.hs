@@ -8,7 +8,7 @@ import           Data.Text (Text)
 import           Data.Time (Day, fromGregorian)
 import           Hedgehog (Gen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
-                               maybe, string, text, unicode)
+                               maybe, string, text, unicode, maybe)
 import qualified Hedgehog.Range as Range
 import           RON.Data.ORSet (ORSet (..))
 import           RON.Data.RGA (RGA (RGA))
@@ -45,7 +45,7 @@ note = Note
     <$> maybe day
     <*> (Just <$> day)
     <*> (Just <$> noteStatus)
-    <*> (Just . ORSet <$> list (Range.linear 0 10) tags)
+    <*> maybe (ORSet <$> list (Range.linear 0 10) tags)
     <*> maybe (RGA <$> string (Range.linear 1 100) unicode)
     <*> maybe track
 

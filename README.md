@@ -80,16 +80,16 @@ Ubuntu:
 ### Look what 𝑓𝑓 can do for you
 
     $ ff --help
-    Usage:  [-b|--brief] [-t|--tags TAGS] [-C|--data-dir DIRECTORY] ([-V|--version]
-            | [COMMAND] | [-l|--limit ARG])
+    Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
+            [-l|--limit ARG] [-t|--tag TAG]...)
       A note taker and task tracker
 
     Available options:
       -b,--brief               List only note titles and ids
-      -t,--tags TAGS           List notes with input tags
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
+      -t,--tag TAG...          Tag
       -h,--help                Show this help text
 
     Available commands:

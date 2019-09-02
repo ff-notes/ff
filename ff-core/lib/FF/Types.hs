@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -122,6 +123,10 @@ instance ReplicatedAsPayload NoteStatus where
     externalId  String  #ron{merge LWW}
     url         String  #ron{merge LWW})
 
+  (struct_set Tag
+    #haskell {field_prefix "tag_"}
+    record String #ron{merge LWW})
+
   ; TODO(2019-08-08, cblp) remove a year after release of Note(3)
   ; release is planned on 2019-08
   (struct_lww NoteV2
@@ -138,7 +143,7 @@ instance ReplicatedAsPayload NoteStatus where
     text    RgaString
     start   Day         #ron{merge LWW}
     end     Day         #ron{merge LWW}
-    tags    (ORSet String)
+    tags    (ORSet Tag)
     track   Track)
 |]
 
@@ -165,6 +170,10 @@ deriving instance Generic Track
 deriving instance Hashable Track
 
 deriving instance Show Track
+
+deriving instance Eq Tag
+
+deriving instance Show Tag
 
 type NoteId = DocId Note
 

@@ -69,7 +69,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today Nothing
+      $ getTaskSamples False defaultConfigUI agendaLimit today []
   Map.empty === agenda
   fs        === fs'
   where
@@ -80,7 +80,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today Nothing
+      $ getTaskSamples False defaultConfigUI agendaLimit today []
   agenda === agenda'
   fs123  === fs'
   where
@@ -151,30 +151,32 @@ today = fromGregorian 1018 02 10
 
 prop_new :: Property
 prop_new =
-  let text  = "Way"
+  let text  = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
-      tags  = Just ("hi" :: Text.Text)
+      tags  = ["список"]
       fs =
         Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
           $ Map.singleton "B00000000GJ6M-2000000000012"
           $ map encodeUtf8
-          -- $ mconcat
-              [ "*set #B/0000000Drz+000000000Y !"
-              , "\t@`}IOM >end 3150 1 2"
-              , "\t@}QUM >start 2154 5 6"
-              , "\t@}_QM >status >Active"
-              , "\t@}mnM >tags >B/0000000ynM+000000000Y"
-              , "\t@{1DnM >text >B/0000001TnM+000000000Y"
-              , "\t@}v9r >track"
-              , "#}ynM @0 !"
-              , "\t@`}qnM 'hi'"
-              , "*rga #{1TnM @0 !"
-              , "\t@`}i_h 'W'"
-              , "\t@)i 'a'"
-              , "\t@)j 'y'"
-              , "."
+          $ mconcat
+            [ [ "*set #B/0000000Drz+000000000Y !",
+                "\t@`}IOM >end 3150 1 2",
+                "\t@}QUM >start 2154 5 6",
+                "\t@}_QM >status >Active",
+                "\t@}mnM >tags >B/0000000ynM+000000000Y",
+                "\t@{1DnM >text >B/0000001TnM+000000000Y",
+                "\t@}v9r >track",
+                "#}ynM @0 !",
+                "\t@`}qnM 'список'"
+              ],
+              [ "*rga #{1TnM @0 !",
+                "\t@`}i_h 'М'",
+                "\t@)i 'и'",
+                "\t@)j 'р'",
+                "."
               ]
+            ]
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
@@ -183,7 +185,7 @@ prop_new =
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
-        (ORSet . Text.words <$> tags) === note_tags
+        Just (ORSet tags)             === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
