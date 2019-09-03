@@ -29,6 +29,7 @@ import FF.Types
     NoteStatus (TaskStatus),
     Sample (..),
     Status (Active),
+    Tag(..),
     TaskMode (Overdue),
     Track (..),
     entityVal,
@@ -157,35 +158,39 @@ prop_new =
       tags  = ["список"]
       fs =
         Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B00000000GJ6M-2000000000012"
+          $ Map.singleton "B00000000KJ6M-2000000000012"
           $ map encodeUtf8
           $ mconcat
-            [ [ "*set #B/0000000Drz+000000000Y !",
-                "\t@`}IOM >end 3150 1 2",
-                "\t@}QUM >start 2154 5 6",
-                "\t@}_QM >status >Active",
-                "\t@}mnM >tags >B/0000000ynM+000000000Y",
-                "\t@{1DnM >text >B/0000001TnM+000000000Y",
-                "\t@}v9r >track",
-                "#}ynM @0 !",
-                "\t@`}qnM 'список'"
-              ],
-              [ "*rga #{1TnM @0 !",
-                "\t@`}i_h 'М'",
-                "\t@)i 'и'",
-                "\t@)j 'р'",
-                "."
+              [ [ "*set #B/0000000Drz+000000000Y !",
+                  "\t@`}IOM >end 3150 1 2",
+                  "\t@}QUM >start 2154 5 6",
+                  "\t@}_QM >status >Active",
+                  "\t@}mnM >tags >B/0000001TnM+000000000Y",
+                  "\t@{1inM >text >B/0000001ynM+000000000Y",
+                  "\t@{2Q9r >track",
+
+                  "#}ynM @0 !",
+                  "\t@`{1DnM >text 'список'",
+                  "#{1TnM @0 !",
+                  "\t@`{0qnM >{0ynM"
+                ],
+                [ "*rga #}ynM @0 !",
+                  "\t@`{2D_h 'М'",
+                  "\t@)i 'и'",
+                  "\t@)j 'р'",
+                  "."
+                ]
               ]
-            ]
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
+        let tags' = Just $ ORSet $ (Tag . Just) <$> tags
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
-        Just (ORSet tags)             === note_tags
+        tags'                         === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property

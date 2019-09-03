@@ -46,7 +46,7 @@ import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List (find, genericLength, intersect, nub, sortOn)
+import Data.List (find, genericLength, intersect, nub, sortOn, (\\))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust)
@@ -429,8 +429,7 @@ cmdEdit edit = case edit of
     , text, start = Nothing
     , end = Nothing
     , addTags = []
-    , editTag = Nothing
-    , deleteTag = Nothing
+    , deleteTags = []
     } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
@@ -441,7 +440,7 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, editTag, deleteTag} ->
+  Edit {ids, text, start, end, addTags, deleteTags} ->
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -472,27 +471,14 @@ cmdEdit edit = case edit of
           whenJust oldTags $ \(ORSet tags) ->
             whenJust (traverse tag_text tags) $ \tags' ->
               note_tags_assign $ Just $ ORSet $ Tag . Just <$> (nub $ addTags <> tags')
-        -- edit one tag
-        whenJust editTag $ \editTag' -> do
+        -- delete tags
+        unless (null deleteTags) $ do
           oldTags <- note_tags_read
-          whenJust oldTags $ \(ORSet tags) ->
-            whenJust (traverse tag_text tags) $ \tags' ->
-              whenJust (find (== editTag') tags') $ \oldtag' -> do
-                newtag <- liftIO $ runExternalEditor oldtag'
-                -- save editions if there were  changes
-                unless (newtag == oldtag') $ do
-                  -- remove old tag
-                  note_tags_zoom $ ORSet.removeValue (Tag $ Just oldtag')
-                  -- add new tag if it not exists
-                  when (notElem newtag tags') $
-                    note_tags_zoom $ ORSet.addValue $ Tag $ Just newtag
-        -- delete one tag
-        whenJust deleteTag $ \deleteTag' -> do
-          oldTags <- note_tags_read
-          whenJust oldTags $ \(ORSet tags) ->
-            whenJust (traverse tag_text tags) $ \tags' ->
-              whenJust (find (== deleteTag') tags') $ \tagToDelete ->
-                note_tags_zoom $ ORSet.removeValue $ Tag $ Just $ tagToDelete
+          whenJust oldTags $ \(ORSet oldTags') ->
+            whenJust (traverse tag_text oldTags') $ \tagTexts -> do
+              let tagsAfterDelete = tagTexts \\ nub deleteTags
+              when (tagsAfterDelete /= tagTexts) $
+                note_tags_assign $ Just $ ORSet $ Tag . Just <$> tagsAfterDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

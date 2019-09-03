@@ -5,8 +5,8 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.UI (
-    prettyContact,
+module FF.UI
+  ( prettyContact,
     prettyContactSample,
     prettyNote,
     prettyNoteList,
@@ -16,30 +16,53 @@ module FF.UI (
     prettyWikiSample,
     sampleLabel,
     withHeader
-) where
+    )
+where
 
-import           Data.Char (isSpace)
-import           Data.List (genericLength, intersperse)
+import Data.Char (isSpace)
+import Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromJust, fromMaybe)
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
+import Data.Maybe (fromJust, fromMaybe)
+import Data.Semigroup ((<>))
+import Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
-                                            indent, pretty, sep, space, viaShow,
-                                            vsep, (<+>))
-import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
-                                                            Color (..), bold,
-                                                            color)
-import           Data.Time (Day)
-import           RON.Data.ORSet (ORSet (..))
-import           RON.Storage.Backend (DocId (DocId))
-
-import           FF (fromRgaM)
-import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
-                           Note (..), NoteSample, NoteStatus (Wiki),
-                           Sample (..), Tag (..), TaskMode (..), Track (..),
-                           omitted)
+import Data.Text.Prettyprint.Doc
+  ( (<+>),
+    Doc,
+    annotate,
+    fillSep,
+    hang,
+    indent,
+    pretty,
+    sep,
+    space,
+    viaShow,
+    vsep
+    )
+import Data.Text.Prettyprint.Doc.Render.Terminal
+  ( AnsiStyle,
+    Color (..),
+    bold,
+    color
+    )
+import Data.Time (Day)
+import FF (fromRgaM)
+import FF.Types
+  ( Contact (..),
+    ContactSample,
+    Entity (..),
+    ModeMap,
+    Note (..),
+    NoteSample,
+    NoteStatus (Wiki),
+    Sample (..),
+    Tag (..),
+    TaskMode (..),
+    Track (..),
+    omitted
+    )
+import RON.Data.ORSet (ORSet (..))
+import RON.Storage.Backend (DocId (DocId))
 
 -- | Header with fixed yellow color.
 withHeader :: Text -> Doc AnsiStyle -> Doc AnsiStyle
@@ -215,8 +238,10 @@ prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
 
 prettyTagsList :: [Text] -> Doc AnsiStyle
-prettyTagsList tags = withHeader "All tags:" $
-    fillSep [green "|" <+> pretty t| t <- tags]
+prettyTagsList tags =
+  if null tags
+    then red "There are no tags."
+    else withHeader "All tags:" $ fillSep [green "|" <+> pretty t | t <- tags]
 
 wrapLines :: Text -> Doc ann
 wrapLines =

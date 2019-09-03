@@ -4,8 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.Options (
-    Agenda (..),
+module FF.Options
+  ( Agenda (..),
     Cmd (..),
     CmdAction (..),
     Config (..),
@@ -20,33 +20,57 @@ module FF.Options (
     Track (..),
     maybeClearToMaybe,
     parseOptions,
-    showHelp,
-) where
+    showHelp
+    )
+where
 
-import           Control.Applicative (many, optional, some, (<|>))
-import           Data.List.NonEmpty (NonEmpty)
+import Control.Applicative ((<|>), many, optional, some)
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
-import qualified Data.Text as T
-import           Data.Time (Day)
-import           Options.Applicative (Completer, ParseError (ShowHelpText),
-                                      Parser, ParserInfo, ParserPrefs, argument,
-                                      auto, command, completer,
-                                      customExecParser, defaultPrefs, flag',
-                                      fullDesc, help, helper, info,
-                                      listCompleter, listIOCompleter, long,
-                                      metavar, option, parserFailure,
-                                      prefDisambiguate, prefMultiSuffix,
-                                      prefShowHelpOnError, progDesc,
-                                      renderFailure, short, str, strArgument,
-                                      strOption, subparser, switch, (<**>))
-import           RON.Storage.Backend (DocId (DocId), getDocuments)
-import           RON.Storage.FS (Collection, runStorage)
-import qualified RON.Storage.FS as StorageFS
-
-import           FF.Types (ContactId, Limit, Note, NoteId)
+import Data.Semigroup ((<>))
+import Data.Text (Text)
+import Data.Time (Day)
+import FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
+import Options.Applicative
+  ( (<**>),
+    Completer,
+    ParseError (ShowHelpText),
+    Parser,
+    ParserInfo,
+    ParserPrefs,
+    argument,
+    auto,
+    command,
+    completer,
+    customExecParser,
+    defaultPrefs,
+    flag',
+    fullDesc,
+    help,
+    helper,
+    info,
+    listCompleter,
+    listIOCompleter,
+    long,
+    metavar,
+    option,
+    parserFailure,
+    prefDisambiguate,
+    prefMultiSuffix,
+    prefShowHelpOnError,
+    progDesc,
+    renderFailure,
+    short,
+    str,
+    strArgument,
+    strOption,
+    subparser,
+    switch
+    )
+import RON.Storage.Backend (DocId (DocId), getDocuments)
+import RON.Storage.FS (Collection, runStorage)
+import qualified RON.Storage.FS as StorageFS
 
 data Cmd
     = CmdConfig (Maybe Config)
@@ -63,7 +87,7 @@ data CmdAction
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdShow       [NoteId]
-    | CmdShowTags
+    | CmdTags
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
     | CmdUpgrade
@@ -79,7 +103,6 @@ data Track = Track
     { dryRun  :: Bool
     , address :: Maybe Text
     , limit   :: Maybe Limit
-    , tags    :: [Text]
     }
 
 data Contact = Add Text | Delete ContactId
@@ -104,13 +127,12 @@ data Agenda = Agenda
     }
 
 data Edit = Edit
-    { ids       :: NonEmpty NoteId
-    , text      :: Maybe Text
-    , start     :: Maybe Day
-    , end       :: Maybe (MaybeClear Day)
-    , addTags   :: [Text]
-    , editTag   :: Maybe Text
-    , deleteTag :: Maybe Text
+    { ids        :: NonEmpty NoteId
+    , text       :: Maybe Text
+    , start      :: Maybe Day
+    , end        :: Maybe (MaybeClear Day)
+    , addTags    :: [Text]
+    , deleteTags :: [Text]
     }
     deriving (Show)
 
@@ -161,7 +183,7 @@ parser h =
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
-        , action  "tags"      iCmdShowTags
+        , action  "tags"      iCmdTags
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
@@ -182,7 +204,7 @@ parser h =
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdShow      = i cmdShow       "show note by id"
-    iCmdShowTags  = i cmdShowTags   "show tags of all notes"
+    iCmdTags      = i cmdTags       "show tags of all notes"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
@@ -198,7 +220,7 @@ parser h =
     cmdPostpone  = CmdPostpone  <$> some noteid
     cmdSearch    = CmdSearch    <$> search
     cmdShow      = CmdShow      <$> some noteid
-    cmdShowTags  = pure CmdShowTags
+    cmdTags      = pure CmdTags
     cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
@@ -214,7 +236,6 @@ parser h =
         <$> dryRunOption
         <*> optional repo
         <*> optional limitOption
-        <*> tags
     dryRunOption = switch
         $  long "dry-run"
         <> short 'd'
@@ -244,9 +265,8 @@ parser h =
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional maybeClearEnd
-        <*> tags
-        <*> optional editTag
-        <*> optional deleteTag
+        <*> addTags
+        <*> deleteTags
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -264,12 +284,12 @@ parser h =
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
-    tags = many $ strOption $
-        short 't' <> long "tag" <> metavar "TAG" <> help "Tag"
-    editTag = strOption $
-        long "edit-tag" <> metavar "TAG" <> help "Edit a tag"
-    deleteTag = strOption $
-        long "delete-tag" <> metavar "TAG" <> help "Delete a tag"
+    tags = many $ strOption
+        $ short 't' <> long "tag" <> metavar "TAG" <> help "Tag"
+    addTags = many $ strOption
+        $ long "at" <> long "tag" <> metavar "TAG" <> help "Tag"
+    deleteTags = many $ strOption
+        $ long "delete-tag" <> long "dt" <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"

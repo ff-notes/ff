@@ -20,6 +20,7 @@ import FF.Types
     NoteId,
     NoteStatus,
     Status,
+    Tag,
     Track,
     loadNote
     )
@@ -44,6 +45,8 @@ deriveToJSON defaultOptions ''NoteStatus
 deriveToJSON defaultOptions ''Status
 
 deriveToJSON defaultOptions ''Track
+
+deriveToJSON defaultOptions ''Tag
 
 mkRegressionTest :: IO (FilePath -> TestTree)
 mkRegressionTest = do

@@ -1,5 +1,5 @@
-{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DisambiguateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,53 +9,95 @@
 
 module FF.CLI where
 
-import           Control.Concurrent (threadDelay)
-import           Control.Concurrent.Async (race)
-import           Control.Monad (forever, guard, when)
-import           Control.Monad.Except (runExceptT)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Foldable (asum, for_)
-import           Data.Functor (($>))
-import           Data.Maybe (isNothing)
-import           Data.Text (Text, snoc)
-import           Data.Text.IO (hPutStrLn)
-import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
-                                            defaultLayoutOptions,
-                                            layoutPageWidth, layoutSmart)
-import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
-                                                            renderStrict)
-import           Data.Time (Day)
-import           Data.Traversable (for)
-import           Data.Version (Version, showVersion)
-import           Development.GitRev (gitDirty, gitHash)
-import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
-                     cmdUnarchive, getContactSamples, getDataDir,
-                     getTaskSamples, getUtcToday, getWikiSamples, loadAllTags,
-                     noDataDirectoryMessage, updateTrackedNotes)
-import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
-                            printConfig, saveConfig)
-import           FF.Github (getIssueViews, getOpenIssueSamples)
-import           FF.Options (Agenda (..), Cmd (..), CmdAction (..),
-                             Contact (..), DataDir (..), Options (..),
-                             Search (..), Shuffle (..), Track (..),
-                             parseOptions)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (race)
+import Control.Monad (forever, guard, when)
+import Control.Monad.Except (runExceptT)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Foldable (asum, for_)
+import Data.Functor (($>))
+import Data.Maybe (isNothing)
+import Data.Text (Text, snoc)
+import Data.Text.IO (hPutStrLn)
+import Data.Text.Prettyprint.Doc
+  ( Doc,
+    PageWidth (AvailablePerLine),
+    defaultLayoutOptions,
+    layoutPageWidth,
+    layoutSmart
+    )
+import Data.Text.Prettyprint.Doc.Render.Terminal
+  ( AnsiStyle,
+    renderStrict
+    )
+import Data.Time (Day)
+import Data.Traversable (for)
+import Data.Version (Version, showVersion)
+import Development.GitRev (gitDirty, gitHash)
+import FF
+  ( cmdDeleteContact,
+    cmdDeleteNote,
+    cmdDone,
+    cmdEdit,
+    cmdNewContact,
+    cmdNewNote,
+    cmdPostpone,
+    cmdSearch,
+    cmdUnarchive,
+    getContactSamples,
+    getDataDir,
+    getTaskSamples,
+    getUtcToday,
+    getWikiSamples,
+    loadAllTags,
+    noDataDirectoryMessage,
+    updateTrackedNotes
+    )
+import FF.Config
+  ( Config (..),
+    ConfigUI (..),
+    appName,
+    loadConfig,
+    printConfig,
+    saveConfig
+    )
+import FF.Github (getIssueViews, getOpenIssueSamples)
+import FF.Options
+  ( Agenda (..),
+    Cmd (..),
+    CmdAction (..),
+    Contact (..),
+    DataDir (..),
+    Options (..),
+    Search (..),
+    Shuffle (..),
+    Track (..),
+    parseOptions
+    )
 import qualified FF.Options as Options
-import           FF.Types (Entity (..), loadNote)
-import           FF.UI (prettyContact, prettyContactSample, prettyNote,
-                        prettyNoteList, prettyTagsList, prettyTaskSections,
-                        prettyTasksWikisContacts, prettyWikiSample, withHeader)
-import           FF.Upgrade (upgradeDatabase)
-import           RON.Storage.Backend (DocId (DocId), MonadStorage)
-import           RON.Storage.FS (runStorage)
+import FF.Types (Entity (..), loadNote)
+import FF.UI
+  ( prettyContact,
+    prettyContactSample,
+    prettyNote,
+    prettyNoteList,
+    prettyTagsList,
+    prettyTaskSections,
+    prettyTasksWikisContacts,
+    prettyWikiSample,
+    withHeader
+    )
+import FF.Upgrade (upgradeDatabase)
+import RON.Storage.Backend (DocId (DocId), MonadStorage)
+import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, getHomeDirectory)
-import           System.Environment (lookupEnv, setEnv)
-import           System.Exit (exitFailure)
-import           System.FilePath ((</>))
-import           System.IO (hPutChar, hPutStr, stderr)
-import           System.Pager (printOrPage)
+import System.Directory (doesDirectoryExist, getHomeDirectory)
+import System.Environment (lookupEnv, setEnv)
+import System.Exit (exitFailure)
+import System.FilePath ((</>))
+import System.IO (hPutChar, hPutStr, stderr)
+import System.Pager (printOrPage)
 
 cli :: Version -> IO ()
 cli version = do
@@ -147,7 +189,7 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
-    CmdShowTags -> do
+    CmdTags -> do
       allTags <- loadAllTags
       pprint $ prettyTagsList allTags
     CmdTrack track ->
@@ -169,12 +211,12 @@ cmdTrack
   -> Day
   -> Bool
   -> m ()
-cmdTrack Track{dryRun, address, limit, tags} today isBrief
+cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
       pprint
-        $ prettyTaskSections isBrief tags
+        $ prettyTaskSections isBrief []
         $ (Entity (DocId "") <$>)
         <$> samples
   | otherwise =

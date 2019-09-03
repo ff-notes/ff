@@ -8,14 +8,14 @@ import           Data.Text (Text)
 import           Data.Time (Day, fromGregorian)
 import           Hedgehog (Gen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
-                               maybe, string, text, unicode, maybe)
+                               maybe, string, text, unicode)
 import qualified Hedgehog.Range as Range
 import           RON.Data.ORSet (ORSet (..))
 import           RON.Data.RGA (RGA (RGA))
 
 import           FF.Config (Config (..), ConfigUI (..))
 import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
-                           Track (..))
+                           Tag (..), Track (..))
 
 config :: Gen Config
 config = do
@@ -45,7 +45,7 @@ note = Note
     <$> maybe day
     <*> (Just <$> day)
     <*> (Just <$> noteStatus)
-    <*> maybe (ORSet <$> list (Range.linear 0 10) tags)
+    <*> maybe (ORSet <$> list (Range.linear 0 10) (Tag <$> maybe tags))
     <*> maybe (RGA <$> string (Range.linear 1 100) unicode)
     <*> maybe track
 
