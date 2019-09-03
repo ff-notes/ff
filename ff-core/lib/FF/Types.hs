@@ -125,7 +125,7 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Tag
     #haskell {field_prefix "tag_"}
-    record String #ron{merge LWW})
+    text String #ron{merge LWW})
 
   ; TODO(2019-08-08, cblp) remove a year after release of Note(3)
   ; release is planned on 2019-08

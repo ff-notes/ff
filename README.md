@@ -104,7 +104,7 @@ Ubuntu:
       postpone                 make a task start later
       search                   search for notes with the given text
       show                     show note by id
-      show-tags                show tags of all notes
+      tags                     show tags of all notes
       track                    track issues from external sources
       unarchive                restore the note from archive
       upgrade                  check and upgrade the database to the most recent

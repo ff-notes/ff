@@ -54,7 +54,6 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    -- = CmdAgenda     (Maybe Limit)
     = CmdAgenda     Agenda
     | CmdContact    (Maybe Contact)
     | CmdDelete     [NoteId]
@@ -72,7 +71,6 @@ data CmdAction
 
 data Options = Options
     { brief     :: Bool
-    -- , tags      :: Maybe Text
     , customDir :: Maybe FilePath
     , cmd       :: Cmd
     }
@@ -163,7 +161,7 @@ parser h =
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
-        , action  "show-tags" iCmdShowTags
+        , action  "tags"      iCmdShowTags
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade

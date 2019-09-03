@@ -167,7 +167,7 @@ loadNotesWithInputedTags tagsInput =
     filter (selectInputed . note_tags . entityVal) <$> loadTaggedNotes
   where
     selectInputed Nothing = False
-    selectInputed (Just (ORSet tags)) = case traverse tag_record tags of
+    selectInputed (Just (ORSet tags)) = case traverse tag_text tags of
       Nothing -> False
       Just tags' -> (not . null) $ intersect tagsInput tags'
 
@@ -176,7 +176,7 @@ loadAllTags :: MonadStorage m => m [Text]
 loadAllTags = do
   taggedNotes <- loadTaggedNotes
   let tags = fromMaybe [] $ traverse (note_tags . entityVal) taggedNotes
-  let tags' = fromMaybe [] $ traverse (\(ORSet tag) -> traverse tag_record tag) tags
+  let tags' = fromMaybe [] $ traverse (\(ORSet tag) -> traverse tag_text tag) tags
   pure $ concat tags'
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
@@ -470,13 +470,13 @@ cmdEdit edit = case edit of
         unless (null addTags) $ do
           oldTags <- note_tags_read
           whenJust oldTags $ \(ORSet tags) ->
-            whenJust (traverse tag_record tags) $ \tags' ->
+            whenJust (traverse tag_text tags) $ \tags' ->
               note_tags_assign $ Just $ ORSet $ Tag . Just <$> (nub $ addTags <> tags')
         -- edit one tag
         whenJust editTag $ \editTag' -> do
           oldTags <- note_tags_read
           whenJust oldTags $ \(ORSet tags) ->
-            whenJust (traverse tag_record tags) $ \tags' ->
+            whenJust (traverse tag_text tags) $ \tags' ->
               whenJust (find (== editTag') tags') $ \oldtag' -> do
                 newtag <- liftIO $ runExternalEditor oldtag'
                 -- save editions if there were  changes
@@ -490,7 +490,7 @@ cmdEdit edit = case edit of
         whenJust deleteTag $ \deleteTag' -> do
           oldTags <- note_tags_read
           whenJust oldTags $ \(ORSet tags) ->
-            whenJust (traverse tag_record tags) $ \tags' ->
+            whenJust (traverse tag_text tags) $ \tags' ->
               whenJust (find (== deleteTag') tags') $ \tagToDelete ->
                 note_tags_zoom $ ORSet.removeValue $ Tag $ Just $ tagToDelete
 
