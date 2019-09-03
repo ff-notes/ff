@@ -205,12 +205,7 @@ runCmdAction ui cmd isBrief = do
       wikis <- getWikiSamples False ui mlimit today
       pprint $ prettyWikiSample isBrief wikis
 
-cmdTrack
-  :: (MonadIO m, MonadStorage m)
-  => Track
-  -> Day
-  -> Bool
-  -> m ()
+cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do

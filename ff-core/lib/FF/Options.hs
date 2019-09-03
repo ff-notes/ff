@@ -4,8 +4,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
-module FF.Options
-  ( Agenda (..),
+module FF.Options (
+    Agenda (..),
     Cmd (..),
     CmdAction (..),
     Config (..),
@@ -21,8 +21,7 @@ module FF.Options
     maybeClearToMaybe,
     parseOptions,
     showHelp
-    )
-where
+) where
 
 import Control.Applicative ((<|>), many, optional, some)
 import Data.List.NonEmpty (NonEmpty)
