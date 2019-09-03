@@ -58,7 +58,6 @@ c_assignEnd storagePtr noteIdStr year month day = do
             , end
             , start = Nothing
             , addTags = []
-            , editTag = Nothing
             , deleteTags = Nothing
             }
 

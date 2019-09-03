@@ -470,7 +470,7 @@ cmdEdit edit = case edit of
           oldTags <- note_tags_read
           whenJust oldTags $ \(ORSet tags) ->
             whenJust (traverse tag_text tags) $ \tags' ->
-              note_tags_assign $ Just $ ORSet $ Tag . Just <$> (nub $ addTags <> tags')
+              note_tags_assign $ Just $ ORSet $ Tag . Just <$> nub (addTags <> tags')
         -- delete tags
         unless (null deleteTags) $ do
           oldTags <- note_tags_read

@@ -185,7 +185,7 @@ prop_new =
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
-        let tags' = Just $ ORSet $ (Tag . Just) <$> tags
+        let tags' = Just $ ORSet $ Tag . Just <$> tags
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
