@@ -179,6 +179,8 @@ type NoteId = DocId Note
 
 type ContactId = DocId Contact
 
+type TagId = DocId Tag
+
 instance Collection Note where
 
   collectionName = "note"
@@ -188,6 +190,10 @@ instance Collection Note where
 instance Collection Contact where
 
   collectionName = "contact"
+
+instance Collection Tag where
+
+  collectionName = "tag"
 
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
@@ -253,6 +259,14 @@ data Entity a = Entity {entityId :: DocId a, entityVal :: a}
   deriving (Eq, Show)
 
 type EntitySample a = Sample (Entity a)
+
+loadTag :: MonadStorage m => TagId -> m (Entity Tag)
+loadTag docid = do
+  Document {objectFrame} <- loadDocument docid
+  let tryCurrentEncoding = evalObjectState objectFrame getObject
+  case tryCurrentEncoding of
+    Right tag -> pure $ Entity docid tag
+    Left e1 -> throwError $ Error "loadTag" [e1]
 
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)

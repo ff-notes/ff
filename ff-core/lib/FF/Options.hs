@@ -264,7 +264,7 @@ parser h =
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional maybeClearEnd
-        <*> addTags
+        <*> tags
         <*> deleteTags
     search = Search
         <$> strArgument (metavar "TEXT")
@@ -284,11 +284,9 @@ parser h =
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     tags = many $ strOption
-        $ short 't' <> long "tag" <> metavar "TAG" <> help "Tag"
-    addTags = many $ strOption
-        $ long "at" <> long "tag" <> metavar "TAG" <> help "Tag"
+        $ long "tag" <> metavar "TAG" <> help "Tag"
     deleteTags = many $ strOption
-        $ long "delete-tag" <> long "dt" <> metavar "TAG" <> help "Delete a tag"
+        $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"

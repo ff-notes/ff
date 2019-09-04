@@ -28,7 +28,7 @@ module FF
     getWikiSamples,
     loadTasks,
     loadAll,
-    loadAllTags,
+    loadAllTagTexts,
     noDataDirectoryMessage,
     splitModes,
     takeSamples,
@@ -83,6 +83,7 @@ import FF.Types
     contact_status_assign,
     emptySample,
     loadNote,
+    loadTag,
     note_end_assign,
     note_end_read,
     note_start_assign,
@@ -120,7 +121,8 @@ import RON.Storage
 import RON.Storage.Backend
   ( Document (Document, objectFrame),
     MonadStorage (getDocuments),
-    createVersion
+    createVersion,
+    getCollections
     )
 import RON.Types (ObjectFrame (ObjectFrame, uuid))
 import System.Directory
@@ -156,28 +158,34 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- | Load tagged notes only.
-loadTaggedNotes :: MonadStorage m => m [Entity Note]
-loadTaggedNotes = filter (isJust . note_tags . entityVal) <$> loadAllNotes
-
 -- | Load notes tagged at least a one tag from user input.
 --   Maybe it is better to load notes tagged by all tags from user input?
 loadNotesWithInputedTags :: MonadStorage m => [Text] -> m [Entity Note]
 loadNotesWithInputedTags tagsInput =
-    filter (selectInputed . note_tags . entityVal) <$> loadTaggedNotes
+    filter (selectInputed . note_tags . entityVal) <$> loadAllNotes
   where
     selectInputed Nothing = False
     selectInputed (Just (ORSet tags)) = case traverse tag_text tags of
       Nothing -> False
       Just tags' -> (not . null) $ intersect tagsInput tags'
 
--- | Load all unique tags from all notes.
-loadAllTags :: MonadStorage m => m [Text]
-loadAllTags = do
-  taggedNotes <- loadTaggedNotes
+-- | Load tags as texts
+loadAllTagTexts :: MonadStorage m => m [Text]
+loadAllTagTexts = do
+  taggedNotes <- loadAllNotes
   let tags = fromMaybe [] $ traverse (note_tags . entityVal) taggedNotes
   let tags' = fromMaybe [] $ traverse (\(ORSet tag) -> traverse tag_text tag) tags
   pure $ concat tags'
+
+-- Uncomment when Collection Tag will become workable.
+-- | Load tags.
+-- loadAllTags :: MonadStorage m => m [Entity Tag]
+-- loadAllTags = getDocuments >>= traverse loadTag
+
+-- -- Load tags as texts
+-- loadAllTagTexts :: MonadStorage m => m [Text]
+-- loadAllTagTexts =
+--   fromMaybe [] . traverse (tag_text . entityVal) <$> loadAllTags
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True

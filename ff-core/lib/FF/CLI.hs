@@ -26,10 +26,7 @@ import Data.Text.Prettyprint.Doc
     layoutPageWidth,
     layoutSmart
     )
-import Data.Text.Prettyprint.Doc.Render.Terminal
-  ( AnsiStyle,
-    renderStrict
-    )
+import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import Data.Time (Day)
 import Data.Traversable (for)
 import Data.Version (Version, showVersion)
@@ -49,7 +46,7 @@ import FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
-    loadAllTags,
+    loadAllTagTexts,
     noDataDirectoryMessage,
     updateTrackedNotes
     )
@@ -190,7 +187,7 @@ runCmdAction ui cmd isBrief = do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
     CmdTags -> do
-      allTags <- loadAllTags
+      allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags
     CmdTrack track ->
       cmdTrack track today isBrief
