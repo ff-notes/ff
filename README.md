@@ -103,6 +103,7 @@ Ubuntu:
       postpone                 make a task start later
       search                   search for notes with the given text
       show                     show note by id
+      sponsors                 show project sponsors
       track                    track issues from external sources
       unarchive                restore the note from archive
       upgrade                  check and upgrade the database to the most recent

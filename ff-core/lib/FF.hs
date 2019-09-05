@@ -29,6 +29,7 @@ module FF
     loadTasks,
     noDataDirectoryMessage,
     splitModes,
+    sponsors,
     takeSamples,
     updateTrackedNotes
     )
@@ -529,3 +530,6 @@ whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of
   Nothing -> pure ()
   Just x -> f x
+
+sponsors :: [Text]
+sponsors = ["Nadezda"]

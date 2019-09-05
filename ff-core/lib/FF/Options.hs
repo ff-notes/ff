@@ -61,6 +61,7 @@ data CmdAction
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdShow       [NoteId]
+    | CmdSponsors
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
     | CmdUpgrade
@@ -147,6 +148,7 @@ parser h =
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
+        , action  "sponsors"  iCmdSponsors
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
@@ -167,25 +169,27 @@ parser h =
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdShow      = i cmdShow       "show note by id"
+    iCmdSponsors  = i cmdSponsors   "show project sponsors"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    = CmdAgenda    <$> optional limitOption
-    cmdContact   = CmdContact   <$> optional contact
-    cmdDelete    = CmdDelete    <$> some noteid
-    cmdDone      = CmdDone      <$> some noteid
-    cmdEdit      = CmdEdit      <$> edit
-    cmdNew       = CmdNew       <$> new
-    cmdPostpone  = CmdPostpone  <$> some noteid
-    cmdSearch    = CmdSearch    <$> search
-    cmdShow      = CmdShow      <$> some noteid
-    cmdTrack     = CmdTrack     <$> track
-    cmdUnarchive = CmdUnarchive <$> some noteid
+    cmdAgenda    =      CmdAgenda    <$> optional limitOption
+    cmdContact   =      CmdContact   <$> optional contact
+    cmdDelete    =      CmdDelete    <$> some noteid
+    cmdDone      =      CmdDone      <$> some noteid
+    cmdEdit      =      CmdEdit      <$> edit
+    cmdNew       =      CmdNew       <$> new
+    cmdPostpone  =      CmdPostpone  <$> some noteid
+    cmdSearch    =      CmdSearch    <$> search
+    cmdShow      =      CmdShow      <$> some noteid
+    cmdSponsors  = pure CmdSponsors
+    cmdTrack     =      CmdTrack     <$> track
+    cmdUnarchive =      CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
-    cmdWiki      = CmdWiki      <$> optional limitOption
+    cmdWiki      =      CmdWiki      <$> optional limitOption
 
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption = switch $

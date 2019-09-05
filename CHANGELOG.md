@@ -8,6 +8,7 @@ and this project adheres to
 ## [Unreleased]
 ### Added
 - Nix build
+- Sponsor list under subcommand `ff sponsors`
 
 ### Changed
 - Updated dependencies

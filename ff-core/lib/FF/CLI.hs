@@ -23,7 +23,9 @@ import Data.Text.Prettyprint.Doc
     PageWidth (AvailablePerLine),
     defaultLayoutOptions,
     layoutPageWidth,
-    layoutSmart
+    layoutSmart,
+    pretty,
+    vsep
     )
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import Data.Time (Day)
@@ -46,6 +48,7 @@ import FF
     getUtcToday,
     getWikiSamples,
     noDataDirectoryMessage,
+    sponsors,
     updateTrackedNotes
     )
 import FF.Config
@@ -182,6 +185,7 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
+    CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief
     CmdUnarchive tasks ->
