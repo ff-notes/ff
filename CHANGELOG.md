@@ -12,6 +12,8 @@ and this project adheres to
 
 ### Changed
 - Updated dependencies
+- Set all fields to empty when deleting note or contact instead of assigning
+  status `Deleted`
 
 ### Fixed
 - GTK build

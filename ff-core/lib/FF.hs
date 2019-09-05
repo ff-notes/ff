@@ -52,14 +52,7 @@ import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import Data.Time
-  ( Day,
-    addDays,
-    fromGregorian,
-    getCurrentTime,
-    toModifiedJulianDay,
-    utctDay
-    )
+import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
 import FF.Options (Edit (..), New (..), maybeClearToMaybe)
@@ -77,7 +70,7 @@ import FF.Types
     Sample (..),
     Status (..),
     Track (..),
-    contact_name_zoom,
+    contact_name_assign,
     contact_status_assign,
     emptySample,
     loadNote,
@@ -87,6 +80,7 @@ import FF.Types
     note_start_read,
     note_status_assign,
     note_status_read,
+    note_text_assign,
     note_text_zoom,
     note_track_read,
     taskMode
@@ -346,8 +340,8 @@ cmdNewContact name = do
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
-  contact_status_assign $ Just Deleted
-  contact_name_zoom $ RGA.editText ""
+  contact_status_assign Nothing
+  contact_name_assign   Nothing
 
 cmdSearch
   :: MonadStorage m
@@ -369,10 +363,10 @@ cmdSearch substr archive ui limit today = do
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do
   assertNoteIsNative
-  note_status_assign $ Just $ TaskStatus Deleted
-  note_text_zoom $ RGA.editText ""
-  note_start_assign $ Just $ fromGregorian 0 1 1
-  note_end_assign Nothing
+  note_status_assign Nothing
+  note_text_assign   Nothing
+  note_start_assign  Nothing
+  note_end_assign    Nothing
 
 cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDone nid = modifyAndView nid $ do

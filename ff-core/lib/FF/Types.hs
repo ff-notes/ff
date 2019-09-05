@@ -96,7 +96,7 @@ instance ReplicatedAsPayload NoteStatus where
 
 [mkReplicated|
   (enum Status
-    Active Archived Deleted)
+    Active Archived)
 
   (opaque atoms NoteStatus)
     ; TODO(2018-12-05, cblp) (enum NoteStatus (extends Status) Wiki)
