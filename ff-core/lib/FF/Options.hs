@@ -5,19 +5,19 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Options (
+    Assign (..),
     Cmd (..),
     CmdAction (..),
     Config (..),
     Contact (..),
     DataDir (..),
     Edit (..),
-    MaybeClear (..),
     New (..),
     Options (..),
     Search (..),
     Shuffle (..),
     Track (..),
-    maybeClearToMaybe,
+    assignToMaybe,
     parseOptions,
     showHelp,
 ) where
@@ -87,11 +87,11 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
 data Shuffle = Shuffle | Sort
 
-data MaybeClear a = Clear | Set a
+data Assign a = Clear | Set a
     deriving (Show)
 
-maybeClearToMaybe :: MaybeClear a -> Maybe a
-maybeClearToMaybe = \case
+assignToMaybe :: Assign a -> Maybe a
+assignToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
@@ -99,7 +99,7 @@ data Edit = Edit
     { ids   :: NonEmpty NoteId
     , text  :: Maybe Text
     , start :: Maybe Day
-    , end   :: Maybe (MaybeClear Day)
+    , end   :: Maybe (Assign Day)
     }
     deriving (Show)
 
@@ -225,7 +225,7 @@ parser h =
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
-        <*> optional maybeClearEnd
+        <*> optional assignEnd
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -249,7 +249,7 @@ parser h =
         dateOption $ long "start" <> short 's' <> help "start date"
     noteTextOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
-    maybeClearEnd
+    assignEnd
         =   Set <$> endDateOption
         <|> flag' Clear (long "end-clear" <> help "clear end date")
 

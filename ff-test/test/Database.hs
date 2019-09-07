@@ -48,7 +48,7 @@ import GitHub.Data.Id (Id (..))
 import GitHub.Data.Name (Name (..))
 import Hedgehog ((===), Gen, Property, evalEither, forAll, property)
 import RON.Data
-  ( ReplicatedAsObject (getObject),
+  ( ReplicatedAsObject (readObject),
     evalObjectState,
     newObjectFrame
     )
@@ -154,20 +154,19 @@ prop_new =
       end   = Just $ fromGregorian 3150 1 2
       fs =
         Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B00000000AJ6M-2000000000012"
+          $ Map.singleton "B0000000098JM-2000000000012"
           $ map encodeUtf8
           $ mconcat
-              [ [ "*set #B/0000000Drz+000000000Y !",
-                  "\t@`}IOM >end 3150 1 2",
-                  "\t@}QUM >start 2154 5 6",
-                  "\t@}_QM >status >Active",
-                  "\t@}mnM >text >B/0000000qnM+000000000Y",
-                  "\t@{1A9r >track"
+              [ [ "*set\t#B/0000000Drz+000000000Y\t!",
+                  "\t@`}IOM\t>end 3150 1 2",
+                  "\t@}QUM\t>start 2154 5 6",
+                  "\t@}_QM\t>status >Active",
+                  "\t@}mnM\t>text >B/0000000qnM+000000000Y"
                   ],
-                [ "*rga #}qnM @0 !",
-                  "\t@`}y_h 'М'",
-                  "\t@)i 'и'",
-                  "\t@)j 'р'",
+                [ "*rga\t#}qnM\t@0\t!",
+                  "\t@`}y_h\t'М'",
+                  "\t@)i\t'и'",
+                  "\t@)j\t'р'",
                   "."
                   ]
                 ]
@@ -194,7 +193,7 @@ ronRoundtrip genA = property $ do
   let (u, bs) = serializeObject obj
   obj' <- evalEither $ parseObject u bs
   obj === obj'
-  a' <- evalEither $ evalObjectState obj' getObject
+  a' <- evalEither $ evalObjectState obj' readObject
   a === a'
 
 prop_Config_JSON :: Property
@@ -364,57 +363,56 @@ fs123merged =
   Map.singleton "note"
     $ Map.fromList
         [ ( "000000000008K-000000000001J",
-            Map.singleton "B000000006N4M-2000000000012"
+            Map.singleton "B00000000674M-2000000000012"
               $ mconcat
-                  [ [ "*set #000000004K$000000000o !",
-                      "\t@B/0000000Drz+000000000Y >end 17 6 19",
-                      "\t@}IOM >start 22 11 24",
-                      "\t@}QUM >status >Active",
-                      "\t@}_QM >text >000000004L$000000000o",
-                      "\t@}mnM >track"
+                  [ [ "*set\t#000000004K$000000000o\t!",
+                      "\t@B/0000000Drz+000000000Y\t>end 17 6 19",
+                      "\t@}IOM\t>start 22 11 24",
+                      "\t@}QUM\t>status >Active",
+                      "\t@}_QM\t>text >000000004L$000000000o"
                       ],
-                    [ "*rga #)L @0 !",
-                      "\t@B/6n7T8JWK06+0000000007 'h'",
-                      "\t@)7 'e'",
-                      "\t@)8 'l'",
-                      "\t@)9 'l'",
-                      "\t@)A 'o'",
-                      "\t@B/6n7T8JWK04+0000000005 'w'",
-                      "\t@)5 'o'",
-                      "\t@)6 'r'",
-                      "\t@)7 'l'",
-                      "\t@)8 'd'",
+                    [ "*rga\t#)L\t@0\t!",
+                      "\t@B/6n7T8JWK06+0000000007\t'h'",
+                      "\t@)7\t'e'",
+                      "\t@)8\t'l'",
+                      "\t@)9\t'l'",
+                      "\t@)A\t'o'",
+                      "\t@B/6n7T8JWK04+0000000005\t'w'",
+                      "\t@)5\t'o'",
+                      "\t@)6\t'r'",
+                      "\t@)7\t'l'",
+                      "\t@)8\t'd'",
                       "."
                       ]
                     ]
             ),
           ( "000000000008M-000000000001J",
-            Map.singleton "B00000000PN4M-2000000000012"
+            Map.singleton "B00000000NN4M-2000000000012"
               $ mconcat
-                  [ [ "*set #000000004M$000000000o !",
-                      "\t@B/0000000ynM+000000000Y >end 17 6 19",
-                      "\t@{1DnM >start 22 11 24",
-                      "\t@}TnM >status >Active",
-                      "\t@}inM >text >000000004P$000000000o",
-                      "\t@}ynM >track >000000004Q$000000000o"
+                  [ [ "*set\t#000000004M$000000000o\t!",
+                      "\t@B/0000000qnM+000000000Y\t>end 17 6 19",
+                      "\t@}ynM\t>start 22 11 24",
+                      "\t@{1DnM\t>status >Active",
+                      "\t@}TnM\t>text >000000004P$000000000o",
+                      "\t@}inM\t>track >000000004Q$000000000o"
                       ],
-                    [ "*rga #)P @0 !",
-                      "\t@B/6n7T8JWK06+0000000007 'h'",
-                      "\t@)7 'e'",
-                      "\t@)8 'l'",
-                      "\t@)9 'l'",
-                      "\t@)A 'o'",
-                      "\t@B/6n7T8JWK04+0000000005 'w'",
-                      "\t@)5 'o'",
-                      "\t@)6 'r'",
-                      "\t@)7 'l'",
-                      "\t@)8 'd'"
+                    [ "*rga\t#)P\t@0\t!",
+                      "\t@B/6n7T8JWK06+0000000007\t'h'",
+                      "\t@)7\t'e'",
+                      "\t@)8\t'l'",
+                      "\t@)9\t'l'",
+                      "\t@)A\t'o'",
+                      "\t@B/6n7T8JWK04+0000000005\t'w'",
+                      "\t@)5\t'o'",
+                      "\t@)6\t'r'",
+                      "\t@)7\t'l'",
+                      "\t@)8\t'd'"
                       ],
-                    [ "*set #)Q @0 !",
-                      "\t@B/0000002DnM+000000000Y >externalId '54'",
-                      "\t@}TnM >provider 'github'",
-                      "\t@}inM >source 'ff-notes/ff'",
-                      "\t@}ynM >url 'https://github.com/ff-notes/ff/pull/54'",
+                    [ "*set\t#)Q\t@0\t!",
+                      "\t@B/0000001ynM+000000000Y\t>externalId '54'",
+                      "\t@{2DnM\t>provider 'github'",
+                      "\t@}TnM\t>source 'ff-notes/ff'",
+                      "\t@}inM\t>url 'https://github.com/ff-notes/ff/pull/54'",
                       "."
                       ]
                     ]
