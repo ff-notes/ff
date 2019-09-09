@@ -23,7 +23,7 @@ module FF.Options (
     showHelp
 ) where
 
-import Control.Applicative ((<|>), many, optional, some)
+import Control.Applicative (many, optional, some, (<|>))
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import Data.Semigroup ((<>))
