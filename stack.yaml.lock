@@ -19,33 +19,33 @@ packages:
   original:
     hackage: github-0.22
 - completed:
-    hackage: ron-0.8@sha256:8b1c4ea480ec9eeaaacf8436866522143f31c7e505a33c09482fdae65563295f,1807
+    hackage: ron-0.9@sha256:5e5c9233168001ec822e1f10e6084476b2bc54473d3d2bd161e516c3d70b4db4,1895
     pantry-tree:
-      size: 1483
-      sha256: 91563a008a69bd213ba0c408c2651e1fce0437c1581573052f9d30dbcd279974
+      size: 1548
+      sha256: 7264efeef5287fcb551f6c45fb40aab420056ce9209c5fd689e171e12ea26b21
   original:
-    hackage: ron-0.8
+    hackage: ron-0.9
 - completed:
-    hackage: ron-rdt-0.8@sha256:0b6e15d07656f85ff8cbbcbd953a929224b31cf9abaf42f73d7088593b38ad98,1289
+    hackage: ron-rdt-0.9@sha256:6eb28ba6fff87b63c0eda36684af1b673d7c5b9461bcecb3624d6bb034bc004f,1289
     pantry-tree:
       size: 594
-      sha256: f83462648bcea3e1c033c386bc6aed8e77dd84b857298ee928348d12f32e5042
+      sha256: 73db61156fa23bfb5a693528f1ca4a2df78e1ce53fffb7be3d7b9106622c57b9
   original:
-    hackage: ron-rdt-0.8
+    hackage: ron-rdt-0.9
 - completed:
-    hackage: ron-schema-0.8@sha256:8eaddf2773d3cd125af608f9a3145340474dfb3f3af6b7576d9bce10b07124c2,1292
+    hackage: ron-schema-0.9@sha256:86cf2e3f73b76a97034b8ddd21122a4410b91b7c45c7a3f4e3a401b8eef384ea,1292
     pantry-tree:
       size: 542
-      sha256: cc3db5f902f34fed53deca474a095b919e2968798732969e579bff665f9d6588
+      sha256: 93829a222d5f094c1d282d7e6be59c7ea7726e2fcfec87a70a916b52ec92e757
   original:
-    hackage: ron-schema-0.8
+    hackage: ron-schema-0.9
 - completed:
-    hackage: ron-storage-0.9@sha256:bbc1ac9b08ffc7d3c8358a423d87d3d0c19a0d33b2da26fa1d83ce2efacf888b,1251
+    hackage: ron-storage-0.10@sha256:fe99017923fd22b773f03ca45e92f20c353421c10473d9cae5b9f1095d8ad55d,1271
     pantry-tree:
       size: 414
-      sha256: 67f44d790212643427dec626daba6d8ddf7bba64c91a04c282ca6c683cf3f93e
+      sha256: b1859165614095724db69e3e5fadf4d173a8da9ef66c8bc36eb5e2b493669b13
   original:
-    hackage: ron-storage-0.9
+    hackage: ron-storage-0.10
 - completed:
     hackage: gi-gtk-declarative-0.5.0@sha256:e710da215736dac238513d78726f6cff583a6eb60b0281dc392eec5f15ea5e1b,3908
     pantry-tree:

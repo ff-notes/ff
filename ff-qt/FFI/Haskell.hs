@@ -12,8 +12,8 @@ import           RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 
 import           FF (cmdDone, cmdEdit, cmdPostpone)
-import           FF.Options (Edit (..),
-                             MaybeClear (Clear, Set))
+import           FF.Options (Assign (Clear, Set),
+                             Edit (Edit, end, ids, start, text))
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 

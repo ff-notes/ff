@@ -28,7 +28,6 @@ import qualified Data.Aeson as JSON
 import Data.Aeson.TH (defaultOptions, deriveFromJSON)
 import Data.Aeson.Types (parseEither)
 import Data.ByteString.Lazy (ByteString)
-import Data.Functor (($>))
 import Data.Hashable (Hashable)
 import Data.List (genericLength)
 import Data.Map.Strict (Map)
@@ -44,8 +43,8 @@ import RON.Data
     Replicated (encoding),
     ReplicatedAsPayload (fromPayload, toPayload),
     evalObjectState,
-    getObject,
     payloadEncoding,
+    readObject,
     stateFromChunk,
     stateToWireChunk
     )
@@ -66,10 +65,9 @@ import RON.Storage
 import RON.Storage.Backend (Document (Document, objectFrame), MonadStorage)
 import RON.Types
   ( Atom (AUuid),
-    Object (Object),
+    ObjectRef (ObjectRef),
     ObjectFrame (ObjectFrame, frame, uuid),
     Op (Op),
-    Payload,
     UUID,
     WireStateChunk (WireStateChunk, stateBody, stateType)
     )
@@ -97,9 +95,9 @@ instance ReplicatedAsPayload NoteStatus where
 
 [mkReplicated|
   (enum Status
-    Active Archived Deleted)
+    Active Archived)
 
-  (opaque atoms NoteStatus)
+  (opaque_atoms NoteStatus)
     ; TODO(2018-12-05, cblp) (enum NoteStatus (extends Status) Wiki)
 
   (struct_set Contact
@@ -263,7 +261,7 @@ type EntitySample a = Sample (Entity a)
 loadTag :: MonadStorage m => TagId -> m (Entity Tag)
 loadTag docid = do
   Document {objectFrame} <- loadDocument docid
-  let tryCurrentEncoding = evalObjectState objectFrame getObject
+  let tryCurrentEncoding = evalObjectState objectFrame readObject
   case tryCurrentEncoding of
     Right tag -> pure $ Entity docid tag
     Left e1 -> throwError $ Error "loadTag" [e1]
@@ -272,19 +270,19 @@ loadTag docid = do
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)
 loadNote docid = do
   Document {objectFrame} <- loadDocument docid
-  let tryCurrentEncoding = evalObjectState objectFrame getObject
+  let tryCurrentEncoding = evalObjectState objectFrame readObject
   case tryCurrentEncoding of
     Right note -> pure $ Entity docid note
     Left e1 -> do
-      let tryNote2Encoding = evalObjectState objectFrame getNoteFromV2
+      let tryNote2Encoding = evalObjectState objectFrame readNoteFromV2
       case tryNote2Encoding of
         Right note -> pure $ Entity docid note
         Left e2 -> throwError $ Error "loadNote" [e1, e2]
 
-getNoteFromV2 :: (MonadE m, MonadObjectState a m) => m Note
-getNoteFromV2 = do
-  Object uuid <- ask
-  NoteV2 {..} <- runReaderT getObject (Object @NoteV2 uuid)
+readNoteFromV2 :: (MonadE m, MonadObjectState a m) => m Note
+readNoteFromV2 = do
+  ObjectRef uuid <- ask
+  NoteV2 {..} <- runReaderT readObject (ObjectRef @NoteV2 uuid)
   pure
     Note
       { note_end    = noteV2_end,
@@ -317,7 +315,7 @@ parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
       let endTime'    = timeFromV1 endTime
           startTime'  = timeFromV1 startTime
           statusTime' = timeFromV1 statusTime
-      let trackPayload = toPayloadM $ mTracked $> trackId
+      -- let trackPayload = toPayloadM $ mTracked $> trackId
       mTrackObject <-
         case mTracked of
           Nothing -> pure Nothing
@@ -340,12 +338,14 @@ parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
             Map.fromList
               $ [ ( objectId,
                     mkLww
-                      [ Op endTime'    endName    $ toPayloadM end,
-                        Op startTime'  startName  $ toPayload start,
-                        Op statusTime' statusName $ toPayload status,
-                        Op objectId    textName   $ toPayload textId,
-                        Op objectId    trackName    trackPayload
-                        ]
+                      $ [Op endTime' endName $ toPayload e | Just e <- [end]]
+                      ++  [ Op startTime' startName $ toPayload start,
+                            Op statusTime' statusName $ toPayload status,
+                            Op objectId textName $ toPayload textId
+                            ]
+                      ++  [ Op objectId trackName $ toPayload trackId
+                            | Just _ <- [mTracked]
+                            ]
                     ),
                   (textId, stateToWireChunk $ rgaFromV1 text) -- rgaType
                   ]
@@ -363,9 +363,6 @@ parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
     providerName   = $(UUID.liftName "provider")
     sourceName     = $(UUID.liftName "source")
     urlName        = $(UUID.liftName "url")
-
-toPayloadM :: ReplicatedAsPayload a => Maybe a -> Payload
-toPayloadM = maybe [] toPayload
 
 timeFromV1 :: CRDT.LamportTime -> UUID
 timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =

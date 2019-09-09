@@ -31,6 +31,7 @@ module FF
     loadAllTagTexts,
     noDataDirectoryMessage,
     splitModes,
+    sponsors,
     takeSamples,
     updateTrackedNotes
     )
@@ -53,17 +54,10 @@ import Data.Maybe (catMaybes, fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import Data.Time
-  ( Day,
-    addDays,
-    fromGregorian,
-    getCurrentTime,
-    toModifiedJulianDay,
-    utctDay
-    )
+import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
-import FF.Options (Agenda(..), Edit (..), New (..), maybeClearToMaybe)
+import FF.Options (Agenda(..), Assign (Clear, Set), Edit (..), New (..), assignToMaybe)
 import FF.Types
   ( Contact (..),
     ContactId,
@@ -79,19 +73,24 @@ import FF.Types
     Status (..),
     Tag (..),
     Track (..),
-    contact_name_zoom,
-    contact_status_assign,
+    contact_name_clear,
+    contact_status_clear,
     emptySample,
     loadNote,
     loadTag,
-    note_end_assign,
+    note_end_clear,
     note_end_read,
-    note_start_assign,
+    note_end_set,
+    note_start_clear,
     note_start_read,
-    note_status_assign,
+    note_start_set,
+    note_status_clear,
     note_status_read,
+    note_status_set,
+    note_text_clear,
     note_text_zoom,
-    note_tags_assign,
+    note_tags_clear,
+    note_tags_set,
     note_tags_zoom,
     note_tags_read,
     note_track_read,
@@ -101,8 +100,8 @@ import RON.Data
   ( MonadObjectState,
     ObjectStateT,
     evalObjectState,
-    getObject,
     newObjectFrame,
+    readObject,
     runObjectState
     )
 import RON.Data.ORSet (ORSet(ORSet))
@@ -141,7 +140,7 @@ import System.Random (StdGen, mkStdGen, randoms, split)
 load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
 load docid = do
   Document {objectFrame} <- loadDocument docid
-  entityVal <- evalObjectState objectFrame getObject
+  entityVal <- evalObjectState objectFrame readObject
   pure $ Entity docid entityVal
 
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
@@ -336,7 +335,7 @@ updateTrackedNote oldNotes note = case note of
       obj <- newObjectFrame note
       createDocument obj
     Just noteid -> void $ modify noteid $ do
-      note_status_assignIfDiffer note_status
+      note_status_setIfDiffer note_status
       note_text_zoom $ RGA.edit text
   _ -> throwError "External note is expected to be supplied with tracking"
   where
@@ -389,8 +388,8 @@ cmdNewContact name = do
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
-  contact_status_assign $ Just Deleted
-  contact_name_zoom $ RGA.editText ""
+  contact_status_clear
+  contact_name_clear
 
 cmdSearch
   :: MonadStorage m
@@ -413,20 +412,20 @@ cmdSearch substr archive ui limit today tags = do
 cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDeleteNote nid = modifyAndView nid $ do
   assertNoteIsNative
-  note_status_assign $ Just $ TaskStatus Deleted
-  note_text_zoom $ RGA.editText ""
-  note_start_assign $ Just $ fromGregorian 0 1 1
-  note_end_assign Nothing
-  note_tags_assign Nothing
+  note_status_clear
+  note_text_clear
+  note_start_clear
+  note_end_clear
+  note_tags_clear
 
 cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDone nid = modifyAndView nid $ do
   assertNoteIsNative
-  note_status_assign $ Just $ TaskStatus Archived
+  note_status_set $ TaskStatus Archived
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
 cmdUnarchive nid =
-  modifyAndView nid $ note_status_assign $ Just $ TaskStatus Active
+  modifyAndView nid $ note_status_set $ TaskStatus Active
 
 cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
@@ -466,19 +465,21 @@ cmdEdit edit = case edit of
                 (,)
                   <$> (start <|> curStart)
                   <*> (end'  <|> curEnd)
-              end' = end >>= maybeClearToMaybe
+              end' = end >>= assignToMaybe
           whenJust newStartEnd
             $ uncurry assertStartBeforeEnd
         -- update commands
-        whenJust end   $ note_end_assign   . maybeClearToMaybe
-        whenJust start $ note_start_assign . Just
-        whenJust text  $ note_text_zoom    . RGA.editText
+        whenJust end $ \case
+          Clear -> note_end_clear
+          Set e -> note_end_set e
+        whenJust start note_start_set
+        whenJust text $ note_text_zoom . RGA.editText
         -- add new tags without dublicats
         unless (null addTags) $ do
           oldTags <- note_tags_read
           whenJust oldTags $ \(ORSet tags) ->
             whenJust (traverse tag_text tags) $ \tags' ->
-              note_tags_assign $ Just $ ORSet $ Tag . Just <$> nub (addTags <> tags')
+              note_tags_set $ ORSet $ Tag . Just <$> nub (addTags <> tags')
         -- delete tags
         unless (null deleteTags) $ do
           oldTags <- note_tags_read
@@ -486,17 +487,17 @@ cmdEdit edit = case edit of
             whenJust (traverse tag_text oldTags') $ \tagTexts -> do
               let tagsAfterDelete = tagTexts \\ nub deleteTags
               when (tagsAfterDelete /= tagTexts) $
-                note_tags_assign $ Just $ ORSet $ Tag . Just <$> tagsAfterDelete
+                note_tags_set $ ORSet $ Tag . Just <$> tagsAfterDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
   today <- getUtcToday
   start <- note_start_read
   let start' = addDays 1 $ maybe today (max today) start
-  note_start_assign $ Just start'
+  note_start_set start'
   mEnd <- note_end_read
   case mEnd of
-    Just end | end < start' -> note_end_assign $ Just start'
+    Just end | end < start' -> note_end_set start'
     _ -> pure ()
 
 -- | Load document, apply changes and put it back to storage
@@ -521,7 +522,7 @@ modifyAndView docid f = do
   entityVal <-
     modify docid $ do
       f
-      getObject
+      readObject
   pure $ Entity docid entityVal
 
 getUtcToday :: MonadIO io => io Day
@@ -549,14 +550,14 @@ assertStartBeforeEnd :: MonadE m => Day -> Day -> m ()
 assertStartBeforeEnd start end =
   unless (start <= end) $ throwError "task cannot end before it is started"
 
-note_status_assignIfDiffer
+note_status_setIfDiffer
   :: (ReplicaClock m, MonadE m, MonadObjectState Note m)
   => Maybe NoteStatus
   -> m ()
-note_status_assignIfDiffer newStatus = do
+note_status_setIfDiffer newStatus = do
   curStatus <- note_status_read
   when (curStatus /= newStatus)
-    $ note_status_assign newStatus
+    $ maybe note_status_clear note_status_set newStatus
 
 assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
@@ -597,3 +598,6 @@ whenJust m f = case m of
 
 onlySpace :: Text -> Text
 onlySpace = Text.map (\c -> bool c ' ' (c =='\n' || c == '\t'))
+
+sponsors :: [Text]
+sponsors = ["Nadezda"]

@@ -44,7 +44,7 @@ import RON.Storage.FS
     )
 import RON.Types
   ( Atom (AUuid),
-    Object (Object),
+    ObjectRef (ObjectRef),
     Op (Op, opId, payload, refId),
     StateChunk (StateChunk),
     StateFrame,
@@ -67,7 +67,7 @@ upgradeNoteCollection = do
   for_ docs $ \docid -> do
     docid' <- upgradeDocId docid
     modify docid' $ errorContext ("docid' = " <> show docid') $ do
-      Object noteId <- ask
+      ObjectRef noteId <- ask
       errorContext "convert note" $ convertLwwToSet noteId
       mTrack <- note_track_get
       whenJust mTrack

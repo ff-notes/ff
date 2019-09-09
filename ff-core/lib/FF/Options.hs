@@ -6,19 +6,19 @@
 
 module FF.Options (
     Agenda (..),
+    Assign (..),
     Cmd (..),
     CmdAction (..),
     Config (..),
     Contact (..),
     DataDir (..),
     Edit (..),
-    MaybeClear (..),
     New (..),
     Options (..),
     Search (..),
     Shuffle (..),
     Track (..),
-    maybeClearToMaybe,
+    assignToMaybe,
     parseOptions,
     showHelp
 ) where
@@ -87,6 +87,7 @@ data CmdAction
     | CmdSearch     Search
     | CmdShow       [NoteId]
     | CmdTags
+    | CmdSponsors
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
     | CmdUpgrade
@@ -112,11 +113,11 @@ data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
 data Shuffle = Shuffle | Sort
 
-data MaybeClear a = Clear | Set a
+data Assign a = Clear | Set a
     deriving (Show)
 
-maybeClearToMaybe :: MaybeClear a -> Maybe a
-maybeClearToMaybe = \case
+assignToMaybe :: Assign a -> Maybe a
+assignToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
@@ -129,7 +130,7 @@ data Edit = Edit
     { ids        :: NonEmpty NoteId
     , text       :: Maybe Text
     , start      :: Maybe Day
-    , end        :: Maybe (MaybeClear Day)
+    , end        :: Maybe (Assign Day)
     , addTags    :: [Text]
     , deleteTags :: [Text]
     }
@@ -183,6 +184,7 @@ parser h =
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
         , action  "tags"      iCmdTags
+        , action  "sponsors"  iCmdSponsors
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
         , action  "upgrade"   iCmdUpgrade
@@ -204,26 +206,28 @@ parser h =
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdShow      = i cmdShow       "show note by id"
     iCmdTags      = i cmdTags       "show tags of all notes"
+    iCmdSponsors  = i cmdSponsors   "show project sponsors"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
     iCmdUpgrade   = i cmdUpgrade    "check and upgrade the database to the most\
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    = CmdAgenda    <$> agenda
-    cmdContact   = CmdContact   <$> optional contact
-    cmdDelete    = CmdDelete    <$> some noteid
-    cmdDone      = CmdDone      <$> some noteid
-    cmdEdit      = CmdEdit      <$> edit
-    cmdNew       = CmdNew       <$> new
-    cmdPostpone  = CmdPostpone  <$> some noteid
-    cmdSearch    = CmdSearch    <$> search
-    cmdShow      = CmdShow      <$> some noteid
+    cmdAgenda    =      CmdAgenda    <$> agenda
+    cmdContact   =      CmdContact   <$> optional contact
+    cmdDelete    =      CmdDelete    <$> some noteid
+    cmdDone      =      CmdDone      <$> some noteid
+    cmdEdit      =      CmdEdit      <$> edit
+    cmdNew       =      CmdNew       <$> new
+    cmdPostpone  =      CmdPostpone  <$> some noteid
+    cmdSearch    =      CmdSearch    <$> search
+    cmdShow      =      CmdShow      <$> some noteid
+    cmdSponsors  = pure CmdSponsors
     cmdTags      = pure CmdTags
-    cmdTrack     = CmdTrack     <$> track
-    cmdUnarchive = CmdUnarchive <$> some noteid
+    cmdTrack     =      CmdTrack     <$> track
+    cmdUnarchive =      CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade
-    cmdWiki      = CmdWiki      <$> optional limitOption
+    cmdWiki      =      CmdWiki      <$> optional limitOption
 
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption = switch $
@@ -263,7 +267,7 @@ parser h =
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
-        <*> optional maybeClearEnd
+        <*> optional assignEnd
         <*> tags
         <*> deleteTags
     search = Search
@@ -294,7 +298,7 @@ parser h =
         dateOption $ long "start" <> short 's' <> help "start date"
     noteTextOption = strOption $
         long "text" <> short 't' <> help "note text" <> metavar "TEXT"
-    maybeClearEnd
+    assignEnd
         =   Set <$> endDateOption
         <|> flag' Clear (long "end-clear" <> help "clear end date")
 
