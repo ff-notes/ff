@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.13] - 2019-09-10
 ### Added
 - Nix build
 - Sponsor list under subcommand `ff sponsors`
@@ -178,7 +180,8 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.12...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.13...HEAD
+[0.13]: https://github.com/ff-notes/ff/compare/v0.12...v0.13
 [0.12]: https://github.com/ff-notes/ff/compare/v0.11...v0.12
 [0.11]: https://github.com/ff-notes/ff/compare/v0.10...v0.11
 [0.10]: https://github.com/ff-notes/ff/compare/v0.9...v0.10
