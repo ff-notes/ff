@@ -104,7 +104,6 @@ import RON.Data
     evalObjectState,
     newObjectFrame,
     readObject,
-    runObjectState
     )
 import RON.Data.RGA (RGA (RGA))
 import qualified RON.Data.RGA as RGA
@@ -116,12 +115,12 @@ import RON.Storage
     createDocument,
     decodeDocId,
     docIdFromUuid,
-    loadDocument
+    loadDocument,
+    modify,
     )
 import RON.Storage.Backend
   ( Document (Document, objectFrame),
     MonadStorage (getDocuments),
-    createVersion,
     )
 import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
 import System.Directory
@@ -516,19 +515,6 @@ cmdPostpone nid = modifyAndView nid $ do
   case mEnd of
     Just end | end < start' -> note_end_set start'
     _ -> pure ()
-
--- | Load document, apply changes and put it back to storage
--- TODO(2019-07-26, cblp) put it back to RON.Storage
-modify
-  :: (Collection a, MonadStorage m)
-  => DocId a
-  -> ObjectStateT a m b
-  -> m b
-modify docid f = do
-  oldDoc <- loadDocument docid
-  (b, objectFrame') <- runObjectState (objectFrame oldDoc) f
-  createVersion (Just (docid, oldDoc)) objectFrame'
-  pure b
 
 modifyAndView
   :: (Collection a, MonadStorage m)
