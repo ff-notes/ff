@@ -12,7 +12,8 @@ typedef std::string NoteId;
 
 struct Date { int year, month, day; };
 
-// \todo(2019-02-10, cblp) generate with ron-schema
+// \todo(2019-02-10, https://github.com/ff-notes/ron/issues/117, cblp) generate
+// with ron-schema
 struct Note {
     NoteId id;
     bool isActive;

@@ -12,9 +12,8 @@ LinkButton::LinkButton(QString text, QString url): super(text) {
     );
     setToolTip(url);
     connect(this, &self::clicked, [url]{
-        /// \todo(2019-02-23, cblp,
-        /// browser@support.yandex.ru [Ticket#19022310562166345],
-        /// https://github.com/ff-notes/ff/issues/135)
+        /// \todo(2019-02-23, cblp, https://github.com/ff-notes/ff/issues/135,
+        /// browser@support.yandex.ru [Ticket#19022310562166345])
         /// Yandex.Browser on macOS doesn't open a tab via
         /// QDesktopServices::openUrl called from Haskell;
         /// other browser, or other OS, or haskell-less app work well

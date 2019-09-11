@@ -298,8 +298,8 @@ updateTrackedNote oldNotes note = case note of
 
 updateTrackedNotes :: MonadStorage m => [Note] -> m ()
 updateTrackedNotes newNotes = do
-  -- TODO(2018-10-22, cblp) index notes by track in the database and select
-  -- specific note by its track
+  -- TODO(2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
+  -- notes by track in the database and select specific note by its track
   notes <- getDocuments
   oldNotesM <-
     for notes $ \noteId -> do
@@ -354,7 +354,7 @@ cmdSearch
   -> Day -- ^ today
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr archive ui limit today = do
-  -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
+  -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step
   tasks <- getTaskSamplesWith predicate archive ui limit today
   wikis <- getWikiSamplesWith predicate archive ui limit today
   contacts <- getContactSamplesWith predicate archive
@@ -481,8 +481,6 @@ note_status_setIfDiffer newStatus = do
 
 assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
-  -- TODO(2018-10-22, cblp) use `case of some/none` without full decoding of
-  -- `some`
   tracking <- note_track_read
   whenJust tracking $ \Track {track_url} ->
     throwErrorText
