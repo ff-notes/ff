@@ -22,10 +22,11 @@ import RON.Data
   ( MonadObjectState,
     getObjectStateChunk,
     reducibleOpType,
-    stateFromWireChunk
+    stateFromWireChunk,
+    stateToWireChunk,
     )
-import RON.Data.LWW (LwwRep (LwwRep), lwwType)
-import RON.Data.ORSet (ORSetRep)
+import RON.Data.LWW (LwwRep (LwwRep))
+import RON.Data.ORSet (ORSetRep (ORSetRep))
 import RON.Error (Error (Error), MonadE, errorContext, liftMaybe)
 import RON.Event (ReplicaClock, getEventUuid)
 import RON.Prelude
@@ -49,7 +50,7 @@ import RON.Types
     StateChunk (StateChunk),
     StateFrame,
     UUID,
-    WireStateChunk (WireStateChunk, stateBody, stateType)
+    WireStateChunk (WireStateChunk, stateType),
     )
 import RON.UUID (pattern Zero)
 import qualified RON.UUID as UUID
@@ -90,22 +91,28 @@ convertLwwToSet uuid =
           $ Error "bad type"
               ["expected set or lww", Error ("got " <> show stateType) []]
   where
+    lwwType = reducibleOpType @LwwRep
     setType = reducibleOpType @ORSetRep
+
     doConvert chunk = do
       LwwRep lwwRep <- stateFromWireChunk chunk
-      stateBody' <-
+      opMap <-
         for (Map.assocs lwwRep) $ \(field, Op {payload}) -> do
           opId <- getEventUuid
           pure
-            Op
-              { opId,
-                refId = Zero,
-                payload = AUuid field : removeOption payload
-                }
-      -- TODO(2019-08-16, cblp) use ORSetRep
+            ( opId,
+              Op
+                { opId,
+                  refId = Zero,
+                  payload = AUuid field : removeOption payload
+                  }
+              )
       modify'
         $ Map.insert uuid
-            WireStateChunk {stateType = setType, stateBody = stateBody'}
+        $ stateToWireChunk
+        $ ORSetRep
+        $ Map.fromList opMap
+
     removeOption = \case
       AUuid u : payload | u == some' -> payload
       [AUuid u] | u == none' -> []
