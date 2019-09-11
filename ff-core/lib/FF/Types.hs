@@ -98,15 +98,16 @@ instance ReplicatedAsPayload NoteStatus where
     Active Archived)
 
   (opaque_atoms NoteStatus)
-    ; TODO(2018-12-05, cblp) (enum NoteStatus (extends Status) Wiki)
+    ; TODO(2018-12-05, https://github.com/ff-notes/ron/issues/115, cblp)
+    ; (enum NoteStatus (extends Status) Wiki)
 
   (struct_set Contact
     #haskell {field_prefix "contact_"}
     status  Status  #ron{merge LWW}
     name    RgaString)
 
-  ; TODO(2019-08-08, cblp) remove a year after release of Track(3)
-  ; release is planned on 2019-08
+  ; TODO(2019-08-08, #163, cblp) remove a year after release of Track(3)
+  ; ff 0.12 is released on 2019-08-14
   (struct_lww TrackV2
     #haskell {field_prefix "trackV2_"}
     provider    String
@@ -125,8 +126,8 @@ instance ReplicatedAsPayload NoteStatus where
     #haskell {field_prefix "tag_"}
     text String #ron{merge LWW})
 
-  ; TODO(2019-08-08, cblp) remove a year after release of Note(3)
-  ; release is planned on 2019-08
+  ; TODO(2019-08-08, #163, cblp) remove a year after release of Note(3)
+  ; ff 0.12 is released on 2019-08-14
   (struct_lww NoteV2
     #haskell {field_prefix "noteV2_"}
     status  NoteStatus
