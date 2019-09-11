@@ -424,7 +424,8 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
           note_status = Just status,
           note_text = Just $ RGA $ Text.unpack text,
           note_tags = toList refs,
-          note_track = Nothing
+          note_track = Nothing,
+          note_links = []
         }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
@@ -541,8 +542,8 @@ cmdEdit edit = case edit of
           let newRefs = HashSet.difference refsAdd currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
-        unless (null deleteTags) $
-          mapM_ note_tags_remove refsDelete
+        unless (null deleteTags)
+          $ mapM_ note_tags_remove refsDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

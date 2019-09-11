@@ -46,6 +46,7 @@ note = do
     let note_tags = []
     note_text  <- maybe $ RGA <$> string (Range.linear 1 100) unicode
     note_track <- maybe track
+    let note_links = []
     pure Note{..}
 
 noteStatus :: Gen NoteStatus

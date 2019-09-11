@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '157'
   track_provider: github
+note_links: []
 note_text: "[WIP] Add tags\n\nResolves #20 \r\n\r\nToDo:\r\n- [x] Add tags when `ff
   new ...`\r\n- [x] Add, edit, remove tags when `ff edit ...`\r\n- [x] Show all tags
   `ff show-tags`\r\n- [x] Show tag field when `ff`\r\n- [x] List notes by tags\r\n-

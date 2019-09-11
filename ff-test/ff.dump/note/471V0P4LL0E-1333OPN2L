@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '56'
   track_provider: github
+note_links: []
 note_text: |
   taskMode to get proper state in ff github llist
 

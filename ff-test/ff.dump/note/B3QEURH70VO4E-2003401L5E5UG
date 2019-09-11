@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '170'
   track_provider: github
+note_links: []
 note_text: |
   (1) Add type Tag; (2) listing tags; (3) field Note.tags; (4) filtering by tags on notes output; (5) adding tags to note; (6) removing tags from note
 

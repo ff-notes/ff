@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '135'
   track_provider: github
+note_links: []
 note_text: "open links in browser\n\nYandex.Browser on macOS doesn't open a tab via
   QDesktopServices::openUrl called from Haskell; another browser, or other OS, or
   Haskell-less app work well\r\n"

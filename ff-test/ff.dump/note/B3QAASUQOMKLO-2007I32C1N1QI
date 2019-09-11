@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '137'
   track_provider: github
+note_links: []
 note_text: "Add `--color=auto/always/never`\n\nAs in git\r\n\r\nAlso, check terminal
   detection under docker.\r\n\r\nalways — colorize the output unconditionally\r\nnever
   — do not colorize the output\r\nauto [default] — detect if we are running in a terminal

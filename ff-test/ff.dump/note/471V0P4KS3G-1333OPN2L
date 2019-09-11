@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '66'
   track_provider: github
+note_links: []
 note_text: "Add dotting while fetching \n\nТакая конструкция отдельно делает все как
   надо, но в проекте во время загрузки данных с гитхаба, ничего не отображается, только
   потом после вывода виден _fetching..._.\n\n<!-- Reviewable:start -->\n---\nThis

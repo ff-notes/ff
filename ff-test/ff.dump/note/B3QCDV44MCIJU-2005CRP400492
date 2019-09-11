@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '158'
   track_provider: github
+note_links: []
 note_text: 'CLI: Calendar output'
 note_end: null
 note_status:

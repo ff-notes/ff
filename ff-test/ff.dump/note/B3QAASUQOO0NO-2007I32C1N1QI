@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '132'
   track_provider: github
+note_links: []
 note_text: |
   Add GHC 8.6 support
 

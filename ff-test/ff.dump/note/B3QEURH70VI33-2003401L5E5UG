@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '171'
   track_provider: github
+note_links: []
 note_text: Do not use git repo as a database if there is no .ff yet
 note_end: null
 note_status:

@@ -15,9 +15,9 @@ import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
 import Data.Maybe (mapMaybe)
 import Data.Semigroup ((<>))
+import qualified Data.Set as Set
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -103,7 +103,8 @@ prop_smoke = property $ do
                                  note_start = Just $ fromGregorian 22 11 24,
                                  note_end = Just $ fromGregorian 17 06 19,
                                  note_tags = [],
-                                 note_track = Nothing
+                                 note_track = Nothing,
+                                 note_links = []
                                },
                     tags = mempty
                   }
@@ -268,7 +269,8 @@ prop_repo =
                                      track_url =
                                        Just
                                          "https://github.com/ff-notes/ff/issues/60"
-                                   }
+                                   },
+                                 note_links = []
                                },
                     tags = mempty
                   }

@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '47'
   track_provider: github
+note_links: []
 note_text: "Version Upgrade\n\nhttps://github.com/ff-notes/ff/issues/24\r\n\r\n1.
   -V,--version\r\n2. Add changelog line\r\n3. Include git revision and dirtiness.\r\n\r\n<!--
   Reviewable:start -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\"

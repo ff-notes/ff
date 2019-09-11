@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '20'
   track_provider: github
+note_links: []
 note_text: "Tags\n\nA tag is a document in the _ff_ database.\r\n\r\nIt must contain
   one text field (RgaText).\r\n\r\nA note must have a field \"tags\" of type OR-Set,
   containing references (ids) to tag objects."

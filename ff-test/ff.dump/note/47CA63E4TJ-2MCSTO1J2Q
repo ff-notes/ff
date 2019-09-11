@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '95'
   track_provider: github
+note_links: []
 note_text: "Colorized output\n\n`printOrPage` from [pager](https://github.com/pharpend/pager/blob/master/System/Pager.hs)
   shows colors when env Pager = `more`. For `less` it does not. `less` required flag
   `-r` to show colors.\r\n\r\nWe wait until end of 01.19 for [PR](https://github.com/pharpend/pager/pull/1)

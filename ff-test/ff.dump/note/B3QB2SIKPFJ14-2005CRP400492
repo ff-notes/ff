@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '149'
   track_provider: github
+note_links: []
 note_text: "Add useful commands to .vscode/tasks.json\n\nstylish-haskell\r\nstack
   repl\r\nstack test"
 note_end: null

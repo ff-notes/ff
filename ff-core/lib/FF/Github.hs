@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -117,7 +118,7 @@ noteViewList address mlimit =
     map (issueToNote address) . maybe id (take . fromIntegral) mlimit . toList
 
 issueToNote :: Text -> Issue -> Note
-issueToNote address issue = Note
+issueToNote address Issue{..} = Note
     { note_status = Just $ toStatus issueState
     , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
     , note_start  = Just $ utctDay issueCreatedAt
@@ -129,17 +130,9 @@ issueToNote address issue = Note
         , track_externalId = Just externalId
         , track_url        = Just trackUrl
         }
+    , note_links = []
     }
   where
-    Issue   { issueBody
-            , issueCreatedAt
-            , issueHtmlUrl
-            , issueMilestone
-            , issueNumber
-            , issueState
-            , issueTitle
-            }
-        = issue
     externalId = Text.pack . show @Int $ unIssueNumber issueNumber
     trackUrl = case issueHtmlUrl of
         Just (URL url) -> url
