@@ -93,6 +93,7 @@ import FF.Types
     note_tags_clear,
     note_tags_set,
     note_tags_add,
+    note_tags_remove,
     note_tags_read,
     note_track_read,
     taskMode
@@ -467,7 +468,8 @@ cmdEdit edit = case edit of
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
   Edit {ids, text, start, end, newTags, deleteTags} -> do
-    refs <- addTags newTags
+    refsAdd <- addTags newTags
+    refsDelete <- loadRefsByTags deleteTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -498,11 +500,11 @@ cmdEdit edit = case edit of
         unless (null newTags) $ do
           currentRefs <- note_tags_read
           -- drop tags that note_tags has already
-          let newRefs = refs \\ currentRefs
+          let newRefs = refsAdd \\ currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
-        -- unless (null deleteTags) $
-        --   note_tags_remove $ ORSet $ Tag . Just <$> deleteTags
+        unless (null deleteTags) $
+          mapM_ note_tags_remove refsDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
