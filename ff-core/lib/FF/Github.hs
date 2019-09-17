@@ -111,7 +111,7 @@ issueToNote address issue = Note
     , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
     , note_start  = Just $ utctDay issueCreatedAt
     , note_end
-    , note_tags   = Nothing  -- TODO: #168 Fetch github tags
+    , note_tags   = []  -- TODO: #168 Fetch github tags
     , note_track  = Just Track
         { track_provider   = Just "github"
         , track_source     = Just address

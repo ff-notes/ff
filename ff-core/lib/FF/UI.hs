@@ -126,13 +126,10 @@ prettyNote isBrief (Entity entityId note) = case isBrief of
                     , Just end <- [note_end]
                     ]
                 ]
-            ++  [ green "|" <+> cyan "tags" <+> pretty tags' | not $ null tags']
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
   where
-    tags' = fromMaybe [] $ traverse tag_text tags
-    ORSet tags = fromMaybe (ORSet []) note_tags
     Note
       { note_end
       , note_start

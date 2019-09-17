@@ -48,7 +48,6 @@ import FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
-    loadAllTagTexts,
     noDataDirectoryMessage,
     sponsors,
     updateTrackedNotes
@@ -154,7 +153,7 @@ runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
     CmdAgenda Agenda{limit,tags} -> do
-      notes <- getTaskSamples False ui limit today tags
+      notes <- getTaskSamples False ui limit today
       pprint $ prettyTaskSections isBrief tags notes
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
@@ -176,7 +175,7 @@ runCmdAction ui cmd isBrief = do
         note <- cmdPostpone noteId
         pprint $ withHeader "Postponed:" $ prettyNote isBrief note
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
+      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -189,9 +188,6 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
-    CmdTags -> do
-      allTags <- loadAllTagTexts
-      pprint $ prettyTagsList allTags
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief

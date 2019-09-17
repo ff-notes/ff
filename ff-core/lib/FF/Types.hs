@@ -137,11 +137,11 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Note
     #haskell {field_prefix "note_"}
-    status  NoteStatus  #ron{merge LWW}
+    status  NoteStatus      #ron{merge LWW}
     text    RgaString
-    start   Day         #ron{merge LWW}
-    end     Day         #ron{merge LWW}
-    tags    (ORSet Tag)
+    start   Day             #ron{merge LWW}
+    end     Day             #ron{merge LWW}
+    tags    (ObjectRef Tag) #ron{merge set}
     track   Track)
 |]
 
@@ -258,14 +258,6 @@ data Entity a = Entity {entityId :: DocId a, entityVal :: a}
 
 type EntitySample a = Sample (Entity a)
 
-loadTag :: MonadStorage m => TagId -> m (Entity Tag)
-loadTag docid = do
-  Document {objectFrame} <- loadDocument docid
-  let tryCurrentEncoding = evalObjectState objectFrame readObject
-  case tryCurrentEncoding of
-    Right tag -> pure $ Entity docid tag
-    Left e1 -> throwError $ Error "loadTag" [e1]
-
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)
 loadNote docid = do
@@ -289,7 +281,7 @@ readNoteFromV2 = do
         note_start  = noteV2_start,
         note_status = noteV2_status,
         note_text   = noteV2_text,
-        note_tags   = Nothing,
+        note_tags   = [],
         note_track  = trackFromV2 <$> noteV2_track
         }
 
