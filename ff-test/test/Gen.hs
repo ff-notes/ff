@@ -4,7 +4,9 @@ module Gen (config, contact, day, note) where
 
 import           Prelude hiding (maybe)
 
+import           Data.Maybe (fromJust)
 import           Data.Text (Text)
+import           Data.Text.Encoding (encodeUtf8)
 import           Data.Time (Day, fromGregorian)
 import           Hedgehog (Gen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
@@ -12,6 +14,8 @@ import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
 import qualified Hedgehog.Range as Range
 import           RON.Data.ORSet (ORSet (..))
 import           RON.Data.RGA (RGA (RGA))
+import           RON.Types (ObjectRef (ObjectRef), UUID)
+import qualified RON.UUID as UUID
 
 import           FF.Config (Config (..), ConfigUI (..))
 import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
@@ -45,9 +49,15 @@ note = Note
     <$> maybe day
     <*> (Just <$> day)
     <*> (Just <$> noteStatus)
-    <*> maybe (ORSet <$> list (Range.linear 0 10) (Tag <$> maybe tags))
+    <*> tags
     <*> maybe (RGA <$> string (Range.linear 1 100) unicode)
     <*> maybe track
+  where
+    tags = do
+        mUid <- uid
+        case mUid of
+            Nothing -> pure []
+            Just uuid -> list (Range.linear 0 10) (pure $ ObjectRef uuid)
 
 noteStatus :: Gen NoteStatus
 noteStatus = choice [TaskStatus <$> status, pure Wiki]
@@ -62,5 +72,8 @@ track = Track
 status :: Gen Status
 status = enumBounded
 
-tags :: Gen Text
-tags = text (Range.linear 1 100) unicode
+tag :: Gen Text
+tag = text (Range.linear 1 100) unicode
+
+uid :: Gen (Maybe UUID)
+uid = UUID.mkName . encodeUtf8 <$> tag

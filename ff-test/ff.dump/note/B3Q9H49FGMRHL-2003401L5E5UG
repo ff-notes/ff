@@ -12,4 +12,4 @@ note_end: null
 note_status:
   tag: TaskStatus
   contents: Archived
-note_tags: null
+note_tags: []

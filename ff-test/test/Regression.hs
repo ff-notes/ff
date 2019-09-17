@@ -29,6 +29,7 @@ import RON.Data.ORSet (ORSet)
 import RON.Storage (CollectionName)
 import RON.Storage.Backend (getCollections, getDocuments)
 import RON.Storage.FS (Handle, newHandle, runStorage)
+import RON.Types (ObjectRef (ObjectRef), UUID)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Test.Tasty (TestTree, testGroup)
@@ -39,6 +40,10 @@ deriveToJSON defaultOptions ''RGA
 deriveToJSON defaultOptions ''ORSet
 
 deriveToJSON defaultOptions ''Note
+
+deriveToJSON defaultOptions ''UUID
+
+$(deriveToJSON defaultOptions 'ObjectRef)
 
 deriveToJSON defaultOptions ''NoteStatus
 

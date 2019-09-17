@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
@@ -61,6 +62,8 @@ import RON.Text (parseObject, serializeObject)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
 import Test.Tasty.TH (testGroupGenerator)
+import RON.Types (ObjectRef (ObjectRef))
+import qualified RON.UUID as UUID
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -97,7 +100,7 @@ prop_smoke = property $ do
                       note_text   = Just $ RGA "helloworld",
                       note_start  = Just $ fromGregorian 22 11 24,
                       note_end    = Just $ fromGregorian 17 06 19,
-                      note_tags   = Nothing,
+                      note_tags   = [],
                       note_track  = Nothing
                       }
                 ],
@@ -186,12 +189,12 @@ prop_new =
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
-        let tags' = Just $ ORSet $ Tag . Just <$> tags
+        tags' <- traverse (UUID.mkName . TE.encodeUtf8) tags
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
-        tags'                         === note_tags
+        map ObjectRef tags'           === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
@@ -234,7 +237,7 @@ prop_repo =
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
                     note_end    = Just $ fromGregorian 2018 06 15,
-                    note_tags   = Nothing,
+                    note_tags   = [],
                     note_track  = Just
                       Track
                         { track_provider   = Just "github",
