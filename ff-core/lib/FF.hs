@@ -241,6 +241,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text]
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -251,8 +252,9 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text]
   -> m (ModeMap NoteSample)
-getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today = do
+getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today tags = do
   tasks <- loadTasks isArchived
   pure
     . takeSamples limit
@@ -371,7 +373,7 @@ updateTrackedNotes newNotes = do
   for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
-cmdNewNote New {text, start, end, isWiki} today = do
+cmdNewNote New {text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
@@ -379,12 +381,13 @@ cmdNewNote New {text, start, end, isWiki} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
+  refs <- addTags tags
   let note = Note
         { note_end,
           note_start  = Just noteStart,
           note_status = Just status,
           note_text   = Just $ RGA $ Text.unpack text,
-          note_tags   = [],
+          note_tags   = refs,
           note_track  = Nothing
           }
   obj@ObjectFrame {uuid} <- newObjectFrame note
@@ -414,10 +417,11 @@ cmdSearch
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text]
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr archive ui limit today = do
+cmdSearch substr archive ui limit today tags = do
   -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
-  tasks <- getTaskSamplesWith predicate archive ui limit today
+  tasks <- getTaskSamplesWith predicate archive ui limit today tags
   wikis <- getWikiSamplesWith predicate archive ui limit today
   contacts <- getContactSamplesWith predicate archive
   pure (tasks, wikis, contacts)
@@ -450,6 +454,7 @@ cmdEdit edit = case edit of
     { ids = nid :| []
     , text, start = Nothing
     , end = Nothing
+    , newTags = []
     , deleteTags = []
     } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
@@ -461,7 +466,8 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end} ->
+  Edit {ids, text, start, end, newTags, deleteTags} -> do
+    refs <- addTags newTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -488,6 +494,15 @@ cmdEdit edit = case edit of
           Set e -> note_end_set e
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
+        -- add new tags
+        unless (null newTags) $ do
+          currentRefs <- note_tags_read
+          -- drop tags that note_tags has already
+          let newRefs = refs \\ currentRefs
+          mapM_ note_tags_add newRefs
+        -- delete tags
+        -- unless (null deleteTags) $
+        --   note_tags_remove $ ORSet $ Tag . Just <$> deleteTags
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

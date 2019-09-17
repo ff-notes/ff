@@ -59,9 +59,10 @@ prettyTasksWikisContacts
     -> Bool                 -- ^ does search involve tasks
     -> Bool                 -- ^ does search involve wikis
     -> Bool                 -- ^ does search involve contacts
+    -> [[[Text]]]           -- ^ Tags
     -> Doc AnsiStyle
 prettyTasksWikisContacts
-        isBrief tasks wiki contacts involveTasks involveWikis involveContacts =
+        isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
     case (involveTasks, involveWikis, involveContacts) of
         (True,  False, False) -> ts
         (False, True,  False) -> ws
@@ -71,7 +72,7 @@ prettyTasksWikisContacts
         (True,  False, True ) -> vsep [ts, cs]
         (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ts = prettyTaskSections  isBrief tasks
+    ts = prettyTaskSections  isBrief [] tags tasks
     ws = prettyWikiSample    isBrief wiki
     cs = prettyContactSample isBrief contacts
 
@@ -98,18 +99,21 @@ prettyWikiSample isBrief samples = stack isBrief $
         Sample{items} ->
             withHeader "Wiki:" .
             stack isBrief $
-            map ((bullet <>) . indent 1 . prettyNote isBrief) items
+            map ((bullet <>) . indent 1 . prettyNote isBrief []) items
 
-prettyNoteList :: Bool -> [Entity Note] -> Doc AnsiStyle
-prettyNoteList isBrief =
-    stack isBrief . map ((bullet <>) . indent 1 . prettyNote isBrief)
+prettyNoteList :: Bool -> [[Text]] -> [Entity Note] -> Doc AnsiStyle
+prettyNoteList isBrief tags
+    = stack isBrief
+    . map ((bullet <>) . indent 1)
+    . zipWith (prettyNote isBrief) tags
 
 -- | For both tasks and wikis
 prettyNote
     :: Bool  -- ^ is brief
+    -> [Text] -- ^ Tags
     -> Entity Note
     -> Doc AnsiStyle
-prettyNote isBrief (Entity entityId note) = case isBrief of
+prettyNote isBrief tags(Entity entityId note) = case isBrief of
     True -> fillSep [title text, meta] where
         meta = green "|" <+> cyan "id" <+> prettyDocId entityId
     False -> sparsedStack [wrapLines $ Text.pack text, sep meta] where
@@ -126,6 +130,7 @@ prettyNote isBrief (Entity entityId note) = case isBrief of
                     , Just end <- [note_end]
                     ]
                 ]
+            ++  [ green "|" <+> cyan "tags" <+> pretty tags | not $ null tags]
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
@@ -151,23 +156,29 @@ title
 
 prettyTaskSections
     :: Bool
+    -> [Text] -- ^ inputed tags
+    -> [[[Text]]] -- ^ note tags
     -> ModeMap (Sample (Entity Note))
     -> Doc AnsiStyle
-prettyTaskSections isBrief samples = tasks
+prettyTaskSections isBrief inputedTags noteTags samples = if null inputedTags
+    then tasks
+    else tagHeader inputedTags tasks
   where
+    tagHeader t = withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
     tasks = stack isBrief
-        $   [ prettyTaskSample isBrief mode sample
+        $   [ prettyTaskSample isBrief noteTag mode sample
             | (mode, sample) <- Map.assocs samples
+            , noteTag <- noteTags
             ]
         ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
     numOmitted = sum $ fmap omitted samples
 
-prettyTaskSample :: Bool -> TaskMode -> Sample (Entity Note) -> Doc AnsiStyle
-prettyTaskSample isBrief mode = \case
+prettyTaskSample :: Bool -> [[Text]] -> TaskMode -> Sample (Entity Note) -> Doc AnsiStyle
+prettyTaskSample isBrief tags mode = \case
     Sample{total = 0} -> red "No notes to show"
     Sample{total, items} ->
         withHeader (sampleLabel mode) . stack isBrief $
-            map ((bullet <>) . indent 1 . prettyNote isBrief) items
+            map ((bullet <>) . indent 1) $ zipWith (prettyNote isBrief) tags items
             ++  [ hang indentation $
                     fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
                 | count /= total

@@ -155,30 +155,45 @@ runCmdAction
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda limit -> do
-      notes <- getTaskSamples False ui limit today
-      pprint $ prettyTaskSections isBrief notes
+    CmdAgenda Agenda{limit,tags} -> do
+      samples <- getTaskSamples False ui limit today tags
+      let noteTags =
+            [ map (note_tags . entityVal) items
+            | (mode, Sample{items}) <- Map.assocs samples
+            ]
+      noteTags <- traverse (traverse loadTagsByRefs) noteTags
+      pprint $ prettyTaskSections isBrief tags noteTags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
-        pprint $ withHeader "Deleted:" $ prettyNote isBrief note
+        tags <- loadTagsByRefs $ note_tags $ entityVal note
+        pprint $ withHeader "Deleted:" $ prettyNote isBrief tags note
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
-        pprint $ withHeader "Archived:" $ prettyNote isBrief note
+        tags <- loadTagsByRefs $ note_tags $ entityVal note
+        pprint $ withHeader "Archived:" $ prettyNote isBrief tags note
     CmdEdit edit -> do
       notes <- cmdEdit edit
-      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes
+      tags <- traverse (loadTagsByRefs . note_tags . entityVal) notes
+      pprint $ withHeader "Edited:" $ prettyNoteList isBrief tags notes
     CmdNew new -> do
       note <- cmdNewNote new today
-      pprint $ withHeader "Added:" $ prettyNote isBrief note
+      tags <- loadTagsByRefs $ note_tags $ entityVal note
+      pprint $ withHeader "Added:" $ prettyNote isBrief tags note
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
-        pprint $ withHeader "Postponed:" $ prettyNote isBrief note
+        tags <- loadTagsByRefs $ note_tags $ entityVal note
+        pprint $ withHeader "Postponed:" $ prettyNote isBrief tags note
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today
+      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
+      let noteTags =
+            [ map (note_tags . entityVal) items
+            | (mode, Sample{items}) <- Map.assocs tasks
+            ]
+      noteTags <- traverse (traverse loadTagsByRefs) noteTags
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -188,9 +203,11 @@ runCmdAction ui cmd isBrief = do
             inTasks
             inWikis
             inContacts
+            noteTags
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
-      pprint $ prettyNoteList isBrief notes
+      tags <- traverse (loadTagsByRefs . note_tags . entityVal) notes
+      pprint $ prettyNoteList isBrief tags notes
     CmdTags -> do
       allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags
@@ -201,7 +218,7 @@ runCmdAction ui cmd isBrief = do
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
         tags <- loadTagsByRefs $ note_tags $ entityVal task
-        pprint . withHeader "Unarchived:" $ prettyNote isBrief task
+        pprint . withHeader "Unarchived:" $ prettyNote isBrief tags task
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
@@ -215,7 +232,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
       pprint
-        $ prettyTaskSections isBrief
+        $ prettyTaskSections isBrief [] []
         $ (Entity (DocId "") <$>)
         <$> samples
   | otherwise =

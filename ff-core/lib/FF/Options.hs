@@ -77,7 +77,7 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     (Maybe Limit)
+    = CmdAgenda     Agenda
     | CmdContact    (Maybe Contact)
     | CmdDelete     [NoteId]
     | CmdDone       [NoteId]
@@ -131,7 +131,7 @@ data Edit = Edit
     , text       :: Maybe Text
     , start      :: Maybe Day
     , end        :: Maybe (Assign Day)
-    , addTags    :: [Text]
+    , newTags    :: [Text]
     , deleteTags :: [Text]
     }
     deriving (Show)
@@ -213,7 +213,7 @@ parser h =
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    =      CmdAgenda    <$> optional limitOption
+    cmdAgenda    =      CmdAgenda    <$> agenda
     cmdContact   =      CmdContact   <$> optional contact
     cmdDelete    =      CmdDelete    <$> some noteid
     cmdDone      =      CmdDone      <$> some noteid
