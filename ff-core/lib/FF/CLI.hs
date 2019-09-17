@@ -16,6 +16,7 @@ import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
 import Data.Functor (($>))
+import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
 import Data.Text (Text, snoc)
 import Data.Text.IO (hPutStrLn)
@@ -48,6 +49,8 @@ import FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    loadAllTagTexts,
+    loadTagsByRefs,
     noDataDirectoryMessage,
     sponsors,
     updateTrackedNotes
@@ -74,7 +77,7 @@ import FF.Options
     parseOptions
     )
 import qualified FF.Options as Options
-import FF.Types (Entity (..), loadNote)
+import FF.Types (Entity (..), Note (note_tags), Sample (..), loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -152,9 +155,9 @@ runCmdAction
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda Agenda{limit,tags} -> do
+    CmdAgenda limit -> do
       notes <- getTaskSamples False ui limit today
-      pprint $ prettyTaskSections isBrief tags notes
+      pprint $ prettyTaskSections isBrief notes
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
@@ -188,12 +191,16 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
+    CmdTags -> do
+      allTags <- loadAllTagTexts
+      pprint $ prettyTagsList allTags
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief
     CmdUnarchive tasks ->
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
+        tags <- loadTagsByRefs $ note_tags $ entityVal task
         pprint . withHeader "Unarchived:" $ prettyNote isBrief task
     CmdUpgrade -> do
       upgradeDatabase
@@ -208,7 +215,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
       pprint
-        $ prettyTaskSections isBrief []
+        $ prettyTaskSections isBrief
         $ (Entity (DocId "") <$>)
         <$> samples
   | otherwise =

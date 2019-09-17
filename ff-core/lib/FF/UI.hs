@@ -71,7 +71,7 @@ prettyTasksWikisContacts
         (True,  False, True ) -> vsep [ts, cs]
         (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ts = prettyTaskSections  isBrief [] tasks
+    ts = prettyTaskSections  isBrief tasks
     ws = prettyWikiSample    isBrief wiki
     cs = prettyContactSample isBrief contacts
 
@@ -151,14 +151,10 @@ title
 
 prettyTaskSections
     :: Bool
-    -> [Text]
     -> ModeMap (Sample (Entity Note))
     -> Doc AnsiStyle
-prettyTaskSections isBrief tags samples = if null tags
-    then tasks
-    else tagHeader tags tasks
+prettyTaskSections isBrief samples = tasks
   where
-    tagHeader t = withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
     tasks = stack isBrief
         $   [ prettyTaskSample isBrief mode sample
             | (mode, sample) <- Map.assocs samples
