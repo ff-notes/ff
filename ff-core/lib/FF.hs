@@ -28,6 +28,8 @@ module FF
     getWikiSamples,
     loadTasks,
     loadAll,
+    loadAllTagTexts,
+    loadTagsByRefs,
     noDataDirectoryMessage,
     splitModes,
     sponsors,
@@ -38,15 +40,15 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Monad (unless, void, when, join)
+import Control.Monad (filterM, unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
 import Data.Bool (bool)
-import Data.Foldable (asum, for_, toList)
+import Data.Foldable (asum, for_, toList, traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List (find, genericLength, intersect, nub, sortOn, (\\))
+import Data.List (genericLength, intersect, nub, sortOn, (\\))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust)
@@ -56,7 +58,7 @@ import qualified Data.Text.IO as Text
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
-import FF.Options (Agenda(..), Assign (Clear, Set), Edit (..), New (..), assignToMaybe)
+import FF.Options (Assign (Clear, Set), Edit (..), New (..), assignToMaybe)
 import FF.Types
   ( Contact (..),
     ContactId,
@@ -76,6 +78,7 @@ import FF.Types
     contact_status_clear,
     emptySample,
     loadNote,
+    loadTag,
     note_end_clear,
     note_end_read,
     note_end_set,
@@ -89,6 +92,7 @@ import FF.Types
     note_text_zoom,
     note_tags_clear,
     note_tags_set,
+    note_tags_add,
     note_tags_read,
     note_track_read,
     taskMode
@@ -101,8 +105,6 @@ import RON.Data
     readObject,
     runObjectState
     )
-import RON.Data.ORSet (ORSet(ORSet))
-import qualified RON.Data.ORSet as ORSet
 import RON.Data.RGA (RGA (RGA))
 import qualified RON.Data.RGA as RGA
 import RON.Error (MonadE, throwErrorText)
@@ -111,6 +113,7 @@ import RON.Storage
   ( Collection,
     DocId,
     createDocument,
+    decodeDocId,
     docIdFromUuid,
     loadDocument
     )
@@ -118,9 +121,8 @@ import RON.Storage.Backend
   ( Document (Document, objectFrame),
     MonadStorage (getDocuments),
     createVersion,
-    getCollections
     )
-import RON.Types (ObjectFrame (ObjectFrame, uuid))
+import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
 import System.Directory
   ( doesDirectoryExist,
     findExecutable,
@@ -153,6 +155,56 @@ loadContacts :: MonadStorage m => Bool -> m [Entity Contact]
 loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
+
+-- | Load tags.
+loadAllTags :: MonadStorage m => m [Entity Tag]
+loadAllTags = getDocuments >>= traverse loadTag
+
+-- Load tags as texts
+loadAllTagTexts :: MonadStorage m => m [Text]
+loadAllTagTexts =
+  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAllTags
+
+loadRefsByTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+loadRefsByTags queryTags = do
+    allTags <- loadAllTags
+    map (docIdToRef . entityId) <$> filterM compareTags allTags
+  where
+    compareTags tag = case tag_text $ entityVal tag of
+      Nothing -> pure False
+      Just txt -> pure $ elem txt queryTags
+
+loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
+loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
+  tag_text . entityVal <$> loadTag (refToDocId ref)
+
+-- | Create tag objects with given texts.
+createTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+createTags tags = do
+  objects <- traverse (newObjectFrame . Tag . Just) tags
+  traverse_ createDocument objects
+  pure $ map (ObjectRef . uuid) objects
+
+-- | Add new tags to Collection of tags.
+--
+-- It not adds tags that are in the collection already.
+-- It returns list of reference that should be added to note_tags.
+-- List of reference may content ones that note_tags has already.
+addTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+addTags inputedTags = do
+  let nubbedTags = nub inputedTags
+  allTags <- loadAllTagTexts
+  existRefs <- loadRefsByTags nubbedTags
+  let newTags = nubbedTags \\ allTags
+  case (null newTags, null existRefs) of
+    (False, False) -> do
+      createdTags <- createTags newTags
+      pure $ existRefs <> createdTags
+    (True, False) -> pure existRefs
+    (False, True) -> createTags newTags
+    _ -> pure []
+
+-- | Remove tags from Collection and references, if
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
@@ -398,7 +450,6 @@ cmdEdit edit = case edit of
     { ids = nid :| []
     , text, start = Nothing
     , end = Nothing
-    , addTags = []
     , deleteTags = []
     } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
@@ -410,7 +461,7 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, deleteTags} ->
+  Edit {ids, text, start, end} ->
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -545,8 +596,13 @@ whenJust m f = case m of
   Nothing -> pure ()
   Just x -> f x
 
-onlySpace :: Text -> Text
-onlySpace = Text.map (\c -> bool c ' ' (c =='\n' || c == '\t'))
-
 sponsors :: [Text]
 sponsors = ["Nadezda"]
+
+refToDocId :: ObjectRef a -> DocId a
+refToDocId (ObjectRef uid) = docIdFromUuid uid
+
+docIdToRef :: DocId a -> ObjectRef a
+docIdToRef docId = case decodeDocId docId of
+  Nothing -> error "Decode UUID from DocId failed. DocId is "
+  Just (_,uid) -> ObjectRef uid
