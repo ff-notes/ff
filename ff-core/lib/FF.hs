@@ -323,6 +323,7 @@ cmdNewNote New {text, start, end, isWiki} today = do
           note_start  = Just noteStart,
           note_status = Just status,
           note_text   = Just $ RGA $ Text.unpack text,
+          note_tags   = [],
           note_track  = Nothing
           }
   obj@ObjectFrame {uuid} <- newObjectFrame note

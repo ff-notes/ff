@@ -137,10 +137,11 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Note
     #haskell {field_prefix "note_"}
-    status  NoteStatus  #ron{merge LWW}
+    status  NoteStatus      #ron{merge LWW}
     text    RgaString
-    start   Day         #ron{merge LWW}
-    end     Day         #ron{merge LWW}
+    start   Day             #ron{merge LWW}
+    end     Day             #ron{merge LWW}
+    tags    (ObjectRef Tag) #ron{merge set}
     track   Track)
 |]
 
@@ -280,6 +281,7 @@ readNoteFromV2 = do
         note_start  = noteV2_start,
         note_status = noteV2_status,
         note_text   = noteV2_text,
+        note_tags   = [],
         note_track  = trackFromV2 <$> noteV2_track
         }
 

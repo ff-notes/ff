@@ -95,6 +95,7 @@ prop_smoke = property $ do
                       note_text   = Just $ RGA "helloworld",
                       note_start  = Just $ fromGregorian 22 11 24,
                       note_end    = Just $ fromGregorian 17 06 19,
+                      note_tags   = [],
                       note_track  = Nothing
                       }
                 ],
@@ -220,6 +221,7 @@ prop_repo =
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
                     note_end    = Just $ fromGregorian 2018 06 15,
+                    note_tags   = [],
                     note_track  = Just
                       Track
                         { track_provider   = Just "github",

@@ -8,6 +8,7 @@ and this project adheres to
 ## [Unreleased]
 ### Added
 - `Tag` type and collection
+- `Note.tags` field
 
 ## [0.13] - 2019-09-10
 ### Added
