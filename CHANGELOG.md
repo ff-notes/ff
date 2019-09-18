@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- `Tag` type and collection
 
 ## [0.13] - 2019-09-10
 ### Added
