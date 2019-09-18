@@ -78,7 +78,6 @@ import FF.Types
     contact_status_clear,
     emptySample,
     loadNote,
-    loadTag,
     note_end_clear,
     note_end_read,
     note_end_set,
@@ -156,18 +155,14 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- | Load tags.
-loadAllTags :: MonadStorage m => m [Entity Tag]
-loadAllTags = getDocuments >>= traverse loadTag
-
 -- Load tags as texts
 loadAllTagTexts :: MonadStorage m => m [Text]
 loadAllTagTexts =
-  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAllTags
+  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
 
 loadRefsByTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
 loadRefsByTags queryTags = do
-    allTags <- loadAllTags
+    allTags <- loadAll
     map (docIdToRef . entityId) <$> filterM compareTags allTags
   where
     compareTags tag = case tag_text $ entityVal tag of
@@ -176,7 +171,7 @@ loadRefsByTags queryTags = do
 
 loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
-  tag_text . entityVal <$> loadTag (refToDocId ref)
+  tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
 createTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]

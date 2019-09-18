@@ -259,14 +259,6 @@ data Entity a = Entity {entityId :: DocId a, entityVal :: a}
 
 type EntitySample a = Sample (Entity a)
 
-loadTag :: MonadStorage m => TagId -> m (Entity Tag)
-loadTag docid = do
-  Document {objectFrame} <- loadDocument docid
-  let tryCurrentEncoding = evalObjectState objectFrame readObject
-  case tryCurrentEncoding of
-    Right tag -> pure $ Entity docid tag
-    Left e1 -> throwError $ Error "loadTag" [e1]
-
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)
 loadNote docid = do
