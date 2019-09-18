@@ -77,7 +77,6 @@ import FF.Types
     contact_status_clear,
     emptySample,
     loadNote,
-    loadTag,
     note_end_clear,
     note_end_read,
     note_end_set,
@@ -151,7 +150,7 @@ loadContacts isArchived =
 
 -- | Load tags.
 loadAllTags :: MonadStorage m => m [Entity Tag]
-loadAllTags = getDocuments >>= traverse loadTag
+loadAllTags = getDocuments >>= traverse load
 
 -- Load tags as texts
 loadAllTagTexts :: MonadStorage m => m [Text]
