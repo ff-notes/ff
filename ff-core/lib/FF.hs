@@ -148,14 +148,10 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- | Load tags.
-loadAllTags :: MonadStorage m => m [Entity Tag]
-loadAllTags = getDocuments >>= traverse load
-
 -- Load tags as texts
 loadAllTagTexts :: MonadStorage m => m [Text]
 loadAllTagTexts =
-  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAllTags
+  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
