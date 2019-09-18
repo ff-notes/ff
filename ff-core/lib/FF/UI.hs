@@ -10,11 +10,12 @@ module FF.UI (
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
     prettyWikiSample,
     sampleLabel,
-    withHeader,
+    withHeader
 ) where
 
 import           Data.Char (isSpace)
@@ -191,6 +192,12 @@ prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
   where
     name = fromRgaM contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
+
+prettyTagsList :: [Text] -> Doc AnsiStyle
+prettyTagsList tags =
+  if null tags
+    then red "There are no tags."
+    else withHeader "All tags:" $ fillSep [green "|" <+> pretty t | t <- tags]
 
 wrapLines :: Text -> Doc ann
 wrapLines =

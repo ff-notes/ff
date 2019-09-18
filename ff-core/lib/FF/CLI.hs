@@ -47,6 +47,7 @@ import FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    loadAllTagTexts,
     noDataDirectoryMessage,
     sponsors,
     updateTrackedNotes
@@ -78,6 +79,7 @@ import FF.UI
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
     prettyWikiSample,
@@ -185,6 +187,9 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       pprint $ prettyNoteList isBrief notes
+    CmdTags -> do
+      allTags <- loadAllTagTexts
+      pprint $ prettyTagsList allTags
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief
