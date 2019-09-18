@@ -22,7 +22,7 @@ and this project adheres to
   status `Deleted`
 
 ### Fixed
-- GTK build.
+- GTK build
 
 ## [0.12] - 2019-08-14
 ### Added
@@ -32,7 +32,7 @@ and this project adheres to
   - Add a test to check if `ff --help` section at the README updated.
 
 ### Changed
-- Base data type from LWW to OR-Set.
+- Base data type from LWW to OR-Set
 
 ## [0.11] - 2019-03-02
 ### Added
