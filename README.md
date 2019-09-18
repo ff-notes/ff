@@ -103,6 +103,7 @@ Ubuntu:
       postpone                 make a task start later
       search                   search for notes with the given text
       show                     show note by id
+      tags                     show tags of all notes
       sponsors                 show project sponsors
       track                    track issues from external sources
       unarchive                restore the note from archive
