@@ -121,6 +121,10 @@ instance ReplicatedAsPayload NoteStatus where
     externalId  String  #ron{merge LWW}
     url         String  #ron{merge LWW})
 
+  (struct_set Tag
+    #haskell {field_prefix "tag_"}
+    text String #ron{merge LWW})
+
   ; TODO(2019-08-08, #163, cblp) remove a year after release of Note(3)
   ; ff 0.12 is released on 2019-08-14
   (struct_lww NoteV2
@@ -164,9 +168,15 @@ deriving instance Hashable Track
 
 deriving instance Show Track
 
+deriving instance Eq Tag
+
+deriving instance Show Tag
+
 type NoteId = DocId Note
 
 type ContactId = DocId Contact
+
+type TagId = DocId Tag
 
 instance Collection Note where
 
@@ -177,6 +187,10 @@ instance Collection Note where
 instance Collection Contact where
 
   collectionName = "contact"
+
+instance Collection Tag where
+
+  collectionName = "tag"
 
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
