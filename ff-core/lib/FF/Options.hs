@@ -19,32 +19,56 @@ module FF.Options (
     Track (..),
     assignToMaybe,
     parseOptions,
-    showHelp,
+    showHelp
 ) where
 
-import           Control.Applicative (optional, some, (<|>))
-import           Data.List.NonEmpty (NonEmpty)
+import Control.Applicative (optional, some, (<|>))
+import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
-import           Data.Semigroup ((<>))
-import           Data.Text (Text)
-import           Data.Time (Day)
-import           Options.Applicative (Completer, ParseError (ShowHelpText),
-                                      Parser, ParserInfo, ParserPrefs, argument,
-                                      auto, command, completer,
-                                      customExecParser, defaultPrefs, flag',
-                                      fullDesc, help, helper, info,
-                                      listCompleter, listIOCompleter, long,
-                                      metavar, option, parserFailure,
-                                      prefDisambiguate, prefMultiSuffix,
-                                      prefShowHelpOnError, progDesc,
-                                      renderFailure, short, str, strArgument,
-                                      strOption, subparser, switch, (<**>))
-import           RON.Storage.Backend (DocId (DocId), getDocuments)
-import           RON.Storage.FS (Collection, runStorage)
-import qualified RON.Storage.FS as StorageFS
-
-import           FF.Types (ContactId, Limit, Note, NoteId)
+import Data.Semigroup ((<>))
+import Data.Text (Text)
+import Data.Time (Day)
+import FF.Types (ContactId, Limit, Note, NoteId)
 import qualified FF.Types
+import Options.Applicative
+  ( (<**>),
+    Completer,
+    ParseError (ShowHelpText),
+    Parser,
+    ParserInfo,
+    ParserPrefs,
+    argument,
+    auto,
+    command,
+    completer,
+    customExecParser,
+    defaultPrefs,
+    flag',
+    fullDesc,
+    help,
+    helper,
+    info,
+    listCompleter,
+    listIOCompleter,
+    long,
+    metavar,
+    option,
+    parserFailure,
+    prefDisambiguate,
+    prefMultiSuffix,
+    prefShowHelpOnError,
+    progDesc,
+    renderFailure,
+    short,
+    str,
+    strArgument,
+    strOption,
+    subparser,
+    switch
+    )
+import RON.Storage.Backend (DocId (DocId), getDocuments)
+import RON.Storage.FS (Collection, runStorage)
+import qualified RON.Storage.FS as StorageFS
 
 data Cmd
     = CmdConfig (Maybe Config)
@@ -61,6 +85,7 @@ data CmdAction
     | CmdPostpone   [NoteId]
     | CmdSearch     Search
     | CmdShow       [NoteId]
+    | CmdTags
     | CmdSponsors
     | CmdTrack      Track
     | CmdUnarchive  [NoteId]
@@ -148,6 +173,7 @@ parser h =
         , action  "postpone"  iCmdPostpone
         , action  "search"    iCmdSearch
         , action  "show"      iCmdShow
+        , action  "tags"      iCmdTags
         , action  "sponsors"  iCmdSponsors
         , action  "track"     iCmdTrack
         , action  "unarchive" iCmdUnarchive
@@ -169,6 +195,7 @@ parser h =
     iCmdPostpone  = i cmdPostpone   "make a task start later"
     iCmdSearch    = i cmdSearch     "search for notes with the given text"
     iCmdShow      = i cmdShow       "show note by id"
+    iCmdTags      = i cmdTags       "show tags of all notes"
     iCmdSponsors  = i cmdSponsors   "show project sponsors"
     iCmdTrack     = i cmdTrack      "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive  "restore the note from archive"
@@ -186,6 +213,7 @@ parser h =
     cmdSearch    =      CmdSearch    <$> search
     cmdShow      =      CmdShow      <$> some noteid
     cmdSponsors  = pure CmdSponsors
+    cmdTags      = pure CmdTags
     cmdTrack     =      CmdTrack     <$> track
     cmdUnarchive =      CmdUnarchive <$> some noteid
     cmdUpgrade   = pure CmdUpgrade

@@ -27,6 +27,8 @@ module FF
     getUtcToday,
     getWikiSamples,
     loadTasks,
+    loadAll,
+    loadAllTagTexts,
     noDataDirectoryMessage,
     splitModes,
     sponsors,
@@ -69,11 +71,13 @@ import FF.Types
     NoteStatus (..),
     Sample (..),
     Status (..),
+    Tag (..),
     Track (..),
     contact_name_clear,
     contact_status_clear,
     emptySample,
     loadNote,
+    loadTag,
     note_end_clear,
     note_end_read,
     note_end_set,
@@ -144,6 +148,15 @@ loadContacts :: MonadStorage m => Bool -> m [Entity Contact]
 loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
+
+-- | Load tags.
+loadAllTags :: MonadStorage m => m [Entity Tag]
+loadAllTags = getDocuments >>= traverse loadTag
+
+-- Load tags as texts
+loadAllTagTexts :: MonadStorage m => m [Text]
+loadAllTagTexts =
+  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAllTags
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
