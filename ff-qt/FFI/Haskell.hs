@@ -13,7 +13,7 @@ import qualified RON.Storage.FS as StorageFS
 
 import           FF (cmdDone, cmdEdit, cmdPostpone)
 import           FF.Options (Assign (Clear, Set),
-                             Edit (Edit, end, ids, start, text))
+                             Edit (Edit, end, ids, start, text, newTags, deleteTags))
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
@@ -34,7 +34,7 @@ c_assignStart storagePtr noteIdStr year month day = do
             , text = Nothing
             , start
             , end = Nothing
-            , addTags = []
+            , newTags = []
             , deleteTags = []
             }
 
@@ -57,8 +57,8 @@ c_assignEnd storagePtr noteIdStr year month day = do
             , text = Nothing
             , end
             , start = Nothing
-            , addTags = []
-            , deleteTags = Nothing
+            , newTags = []
+            , deleteTags = []
             }
 
 foreign export ccall c_done :: StablePtr StorageFS.Handle -> CString -> IO ()
