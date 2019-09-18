@@ -90,7 +90,6 @@ import FF.Types
     note_text_clear,
     note_text_zoom,
     note_tags_clear,
-    note_tags_set,
     note_tags_add,
     note_tags_remove,
     note_tags_read,
@@ -199,7 +198,18 @@ addTags inputedTags = do
     (False, True) -> createTags newTags
     _ -> pure []
 
--- | Remove tags from Collection and references, if
+-- | Load notes tagged at least a one tag from user input.
+--   Maybe it is better to load notes tagged by all tags from user input?
+loadTasksByTags :: MonadStorage m => [Text] -> m [Entity Note]
+loadTasksByTags tagsInput = do
+    notes <- loadAllNotes
+    filterM (selectInputed . note_tags . entityVal) notes
+  where
+    selectInputed :: MonadStorage m => [ObjectRef Tag] -> m Bool
+    selectInputed [] = pure False
+    selectInputed refs = do
+      tags <- loadTagsByRefs refs
+      pure $ (not . null) $ intersect tagsInput tags
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
@@ -250,7 +260,8 @@ getTaskSamplesWith
   -> [Text]
   -> m (ModeMap NoteSample)
 getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today tags = do
-  tasks <- loadTasks isArchived
+  tasks <- if null tags then loadTasks isArchived
+    else loadTasksByTags tags
   pure
     . takeSamples limit
     . shuffleOrSort
