@@ -209,7 +209,7 @@ parser h =
         long "brief" <> short 'b' <> help "List only note titles and ids"
     agenda = Agenda
         <$> optional limitOption
-        <*> tags
+        <*> filterTags
     track = Track
         <$> dryRunOption
         <*> optional repo
@@ -237,14 +237,14 @@ parser h =
         <*> optional startDateOption
         <*> optional endDateOption
         <*> wiki
-        <*> tags
+        <*> addTags'
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional assignEnd
-        <*> tags
-        <*> deleteTags
+        <*> addTags'
+        <*> deleteTags'
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -252,7 +252,7 @@ parser h =
         <*> searchC
         <*> searchA
         <*> optional limitOption
-        <*> tags
+        <*> filterTags
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -262,9 +262,11 @@ parser h =
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
-    tags = many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Tag"
-    deleteTags = many $ strOption
+    filterTags = many $ strOption
+        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
+    addTags' = many $ strOption
+        $ long "tag" <> metavar "TAG" <> help "Add tags"
+    deleteTags' = many $ strOption
         $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =

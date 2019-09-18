@@ -1,4 +1,3 @@
-{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -18,7 +17,7 @@ import Data.Foldable (asum, for_)
 import Data.Functor (($>))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
-import Data.Text (Text, snoc)
+import Data.Text (snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
   ( Doc,
@@ -159,10 +158,10 @@ runCmdAction ui cmd isBrief = do
       samples <- getTaskSamples False ui limit today tags
       let noteTags =
             [ map (note_tags . entityVal) items
-            | (mode, Sample{items}) <- Map.assocs samples
+            | (_, Sample{items}) <- Map.assocs samples
             ]
-      noteTags <- traverse (traverse loadTagsByRefs) noteTags
-      pprint $ prettyTaskSections isBrief tags noteTags samples
+      noteTags' <- traverse (traverse loadTagsByRefs) noteTags
+      pprint $ prettyTaskSections isBrief tags noteTags' samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
@@ -191,9 +190,9 @@ runCmdAction ui cmd isBrief = do
       (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
       let noteTags =
             [ map (note_tags . entityVal) items
-            | (mode, Sample{items}) <- Map.assocs tasks
+            | (_, Sample{items}) <- Map.assocs tasks
             ]
-      noteTags <- traverse (traverse loadTagsByRefs) noteTags
+      noteTags' <- traverse (traverse loadTagsByRefs) noteTags
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -203,7 +202,7 @@ runCmdAction ui cmd isBrief = do
             inTasks
             inWikis
             inContacts
-            noteTags
+            noteTags'
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       tags <- traverse (loadTagsByRefs . note_tags . entityVal) notes

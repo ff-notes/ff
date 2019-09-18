@@ -89,7 +89,7 @@ Ubuntu:
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
-      --tag TAG...             Tag
+      --tag TAG...             Filter by tag
       -h,--help                Show this help text
 
     Available commands:
