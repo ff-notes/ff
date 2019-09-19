@@ -106,7 +106,7 @@ data Edit = Edit
     , text       :: Maybe Text
     , start      :: Maybe Day
     , end        :: Maybe (Assign Day)
-    , newTags    :: [Text]
+    , addTags    :: [Text]
     , deleteTags :: [Text]
     }
     deriving (Show)
@@ -237,14 +237,14 @@ parser h =
         <*> optional startDateOption
         <*> optional endDateOption
         <*> wiki
-        <*> addTags'
+        <*> addTagsOption
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional assignEnd
-        <*> addTags'
-        <*> deleteTags'
+        <*> addTagsOption
+        <*> deleteTagsOption
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -264,9 +264,9 @@ parser h =
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     filterTags = many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
-    addTags' = many $ strOption
+    addTagsOption = many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Add tags"
-    deleteTags' = many $ strOption
+    deleteTagsOption = many $ strOption
         $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =

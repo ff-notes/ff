@@ -17,6 +17,7 @@ import Data.Foldable (asum, for_)
 import Data.Functor (($>))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
+import qualified Data.Set as Set
 import Data.Text (snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
@@ -76,7 +77,8 @@ import FF.Options
     parseOptions
     )
 import qualified FF.Options as Options
-import FF.Types (Entity (..), Note (note_tags), Sample (..), loadNote)
+import FF.Types (Entity (..), ModeMap, Note (note_tags),
+                NoteView (..), NoteSample, Sample (..), loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -156,57 +158,48 @@ runCmdAction ui cmd isBrief = do
   case cmd of
     CmdAgenda Agenda{limit,tags} -> do
       samples <- getTaskSamples False ui limit today tags
-      let noteTags =
-            [ map (note_tags . entityVal) items
-            | (_, Sample{items}) <- Map.assocs samples
-            ]
-      noteTags' <- traverse (traverse loadTagsByRefs) noteTags
-      pprint $ prettyTaskSections isBrief tags noteTags' samples
+      samples' <- mapToNoteView samples
+      pprint $ prettyTaskSections isBrief tags samples'
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
-        tags <- loadTagsByRefs $ note_tags $ entityVal note
-        pprint $ withHeader "Deleted:" $ prettyNote isBrief tags note
+        noteview <- toNoteView note
+        pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
-        tags <- loadTagsByRefs $ note_tags $ entityVal note
-        pprint $ withHeader "Archived:" $ prettyNote isBrief tags note
+        noteview <- toNoteView note
+        pprint $ withHeader "Archived:" $ prettyNote isBrief noteview
     CmdEdit edit -> do
       notes <- cmdEdit edit
-      tags <- traverse (loadTagsByRefs . note_tags . entityVal) notes
-      pprint $ withHeader "Edited:" $ prettyNoteList isBrief tags notes
+      notes' <- traverse toNoteView notes
+      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes'
     CmdNew new -> do
       note <- cmdNewNote new today
-      tags <- loadTagsByRefs $ note_tags $ entityVal note
-      pprint $ withHeader "Added:" $ prettyNote isBrief tags note
+      noteview <- toNoteView note
+      pprint $ withHeader "Added:" $ prettyNote isBrief noteview
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
-        tags <- loadTagsByRefs $ note_tags $ entityVal note
-        pprint $ withHeader "Postponed:" $ prettyNote isBrief tags note
+        noteview <- toNoteView note
+        pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
-      let noteTags =
-            [ map (note_tags . entityVal) items
-            | (_, Sample{items}) <- Map.assocs tasks
-            ]
-      noteTags' <- traverse (traverse loadTagsByRefs) noteTags
+      tasks' <- mapToNoteView tasks
       pprint
         $ prettyTasksWikisContacts
             isBrief
-            tasks
+            tasks'
             wikis
             contacts
             inTasks
             inWikis
             inContacts
-            noteTags'
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
-      tags <- traverse (loadTagsByRefs . note_tags . entityVal) notes
-      pprint $ prettyNoteList isBrief tags notes
+      notes' <- traverse toNoteView notes
+      pprint $ prettyNoteList isBrief notes'
     CmdTags -> do
       allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags
@@ -216,8 +209,8 @@ runCmdAction ui cmd isBrief = do
     CmdUnarchive tasks ->
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
-        tags <- loadTagsByRefs $ note_tags $ entityVal task
-        pprint . withHeader "Unarchived:" $ prettyNote isBrief tags task
+        noteview <- toNoteView task
+        pprint . withHeader "Unarchived:" $ prettyNote isBrief noteview
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
@@ -231,8 +224,9 @@ cmdTrack Track {dryRun, address, limit} today isBrief
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
       pprint
-        $ prettyTaskSections isBrief [] []
-        $ (Entity (DocId "") <$>)
+        $ prettyTaskSections isBrief []
+        $ (flip NoteView Set.empty <$>)
+        . (Entity (DocId "") <$>)
         <$> samples
   | otherwise =
     do
@@ -293,3 +287,20 @@ pprint doc = liftIO $ do
 
 fromEither :: Either a a -> a
 fromEither = either id id
+
+mapToNoteView
+  :: MonadStorage m
+  => ModeMap NoteSample
+  -> m (ModeMap (Sample NoteView))
+mapToNoteView samples = do
+  let repackSample _ Sample{items, total} = do
+        notevies <- mapM toNoteView items
+        pure $ Sample notevies total
+  Map.traverseWithKey repackSample samples
+
+toNoteView :: MonadStorage m => Entity Note -> m NoteView
+toNoteView item = do
+  let refs = note_tags $ entityVal item
+  tags <- loadTagsByRefs refs
+  let noteview = NoteView item $ Set.fromList tags
+  pure noteview

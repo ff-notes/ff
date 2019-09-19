@@ -43,7 +43,7 @@ deriveToJSON defaultOptions ''Note
 
 deriveToJSON defaultOptions ''UUID
 
-deriveToJSON defaultOptions 'ObjectRef
+deriveToJSON defaultOptions ''ObjectRef
 
 deriveToJSON defaultOptions ''NoteStatus
 

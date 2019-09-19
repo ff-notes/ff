@@ -184,8 +184,8 @@ createTags tags = do
 -- It not adds tags that are in the collection already.
 -- It returns list of reference that should be added to note_tags.
 -- List of reference may content ones that note_tags has already.
-addTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
-addTags inputedTags = do
+addNoteTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+addNoteTags inputedTags = do
   let nubbedTags = nub inputedTags
   allTags <- loadAllTagTexts
   existRefs <- loadRefsByTags nubbedTags
@@ -387,7 +387,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
-  refs <- addTags tags
+  refs <- addNoteTags tags
   let note = Note
         { note_end,
           note_start  = Just noteStart,
@@ -460,7 +460,7 @@ cmdEdit edit = case edit of
     { ids = nid :| []
     , text, start = Nothing
     , end = Nothing
-    , newTags = []
+    , addTags = []
     , deleteTags = []
     } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
@@ -472,8 +472,8 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end, newTags, deleteTags} -> do
-    refsAdd <- addTags newTags
+  Edit {ids, text, start, end, addTags, deleteTags} -> do
+    refsAdd <- addNoteTags addTags
     refsDelete <- loadRefsByTags deleteTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
@@ -502,7 +502,7 @@ cmdEdit edit = case edit of
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
         -- add new tags
-        unless (null newTags) $ do
+        unless (null addTags) $ do
           currentRefs <- note_tags_read
           -- drop tags that note_tags has already
           let newRefs = refsAdd \\ currentRefs
