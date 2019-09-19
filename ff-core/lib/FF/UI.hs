@@ -35,7 +35,7 @@ import           Data.Time (Day)
 import qualified Data.Set as Set
 import           FF (fromRgaM)
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
-                           Note (..), NoteSample, NoteStatus (Wiki), NoteView (..),
+                           Note (..), NoteStatus (Wiki), NoteView (..),
                            Sample (..), TaskMode (..), Track (..), omitted)
 import           RON.Storage.Backend (DocId (DocId))
 
@@ -53,7 +53,7 @@ prettyDocId (DocId name) = pretty name
 prettyTasksWikisContacts
     :: Bool                      -- ^ is output brief
     -> ModeMap (Sample NoteView) -- ^ tasks
-    -> NoteSample                -- ^ wikis
+    -> (Sample NoteView)         -- ^ wikis
     -> ContactSample             -- ^ contacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
@@ -86,7 +86,7 @@ prettyContactSample isBrief samples = stack isBrief $
             withHeader "Contacts:" . stack isBrief $
             map ((bullet <>) . indent 1 . prettyContact isBrief) items
 
-prettyWikiSample :: Bool -> NoteSample -> Doc AnsiStyle
+prettyWikiSample :: Bool -> Sample NoteView -> Doc AnsiStyle
 prettyWikiSample isBrief samples = stack isBrief $
     prettyWikiSample' samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
@@ -100,7 +100,6 @@ prettyWikiSample isBrief samples = stack isBrief $
             map ( (bullet <>)
                 . indent 1
                 . prettyNote isBrief
-                . flip NoteView Set.empty
                 ) items
 
 prettyNoteList :: Bool -> [NoteView] -> Doc AnsiStyle

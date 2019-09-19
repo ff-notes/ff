@@ -187,11 +187,12 @@ runCmdAction ui cmd isBrief = do
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
       tasks' <- mapToNoteView tasks
+      wikis' <- repackSample wikis
       pprint
         $ prettyTasksWikisContacts
             isBrief
             tasks'
-            wikis
+            wikis'
             contacts
             inTasks
             inWikis
@@ -216,7 +217,8 @@ runCmdAction ui cmd isBrief = do
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
       wikis <- getWikiSamples False ui mlimit today
-      pprint $ prettyWikiSample isBrief wikis
+      wikis' <- repackSample wikis
+      pprint $ prettyWikiSample isBrief wikis'
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
@@ -292,11 +294,12 @@ mapToNoteView
   :: MonadStorage m
   => ModeMap NoteSample
   -> m (ModeMap (Sample NoteView))
-mapToNoteView samples = do
-  let repackSample _ Sample{items, total} = do
-        notevies <- mapM toNoteView items
-        pure $ Sample notevies total
-  Map.traverseWithKey repackSample samples
+mapToNoteView = Map.traverseWithKey (\_ v -> repackSample v)
+
+repackSample :: MonadStorage m => NoteSample -> m (Sample NoteView)
+repackSample Sample{items, total} = do
+  notevies <- mapM toNoteView items
+  pure $ Sample notevies total
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
