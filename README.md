@@ -81,7 +81,7 @@ Ubuntu:
 
     $ ff --help
     Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
-            [-l|--limit ARG])
+            [-l|--limit ARG] [--tag TAG]...)
       A note taker and task tracker
 
     Available options:
@@ -89,6 +89,7 @@ Ubuntu:
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
+      --tag TAG...             Filter by tag
       -h,--help                Show this help text
 
     Available commands:

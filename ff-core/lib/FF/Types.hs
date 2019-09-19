@@ -34,6 +34,7 @@ import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, maybeToList)
 import Data.Text (Text)
 import Data.Time (diffDays)
+import Data.Set (Set)
 import FF.CrdtAesonInstances ()
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
@@ -196,6 +197,11 @@ instance Collection Tag where
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
 
+data Entity a = Entity {entityId :: DocId a, entityVal :: a}
+  deriving (Eq, Show)
+
+type EntitySample a = Sample (Entity a)
+
 type ContactSample = EntitySample Contact
 
 type NoteSample = EntitySample Note
@@ -206,6 +212,13 @@ emptySample = Sample {items = [], total = 0}
 -- | Number of notes omitted from the sample.
 omitted :: Sample a -> Natural
 omitted Sample {total, items} = total - genericLength items
+
+data NoteView = NoteView
+  { note :: Entity Note
+  , tags :: Set Text
+  }
+
+type ModeMap = Map TaskMode
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
@@ -249,14 +262,7 @@ taskMode today Note {note_start, note_end} = case note_end of
     starting     = helper Starting
     helper m x y = m . fromIntegral $ diffDays x y
 
-type ModeMap = Map TaskMode
-
 type Limit = Natural
-
-data Entity a = Entity {entityId :: DocId a, entityVal :: a}
-  deriving (Eq, Show)
-
-type EntitySample a = Sample (Entity a)
 
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)

@@ -17,6 +17,7 @@ import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
@@ -29,6 +30,7 @@ import FF.Types
     NoteStatus (TaskStatus),
     Sample (..),
     Status (Active),
+    Tag(..),
     TaskMode (Overdue),
     Track (..),
     entityVal,
@@ -53,12 +55,15 @@ import RON.Data
     newObjectFrame
     )
 import RON.Data.RGA (RGA (RGA))
+import RON.Data.ORSet (ORSet(..))
 import RON.Storage.Backend (DocId (DocId))
 import RON.Storage.Test (TestDB, runStorageSim)
 import RON.Text (parseObject, serializeObject)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
 import Test.Tasty.TH (testGroupGenerator)
+import RON.Types (ObjectRef (ObjectRef))
+import qualified RON.UUID as UUID
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -68,7 +73,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today
+      $ getTaskSamples False defaultConfigUI agendaLimit today []
   Map.empty === agenda
   fs        === fs'
   where
@@ -79,7 +84,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today
+      $ getTaskSamples False defaultConfigUI agendaLimit today []
   agenda === agenda'
   fs123  === fs'
   where
