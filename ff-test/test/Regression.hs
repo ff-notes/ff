@@ -7,8 +7,8 @@
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 module Regression
-  ( mkRegressionTest
-    )
+  ( mkRegressionTest,
+  )
 where
 
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
@@ -22,36 +22,36 @@ import FF.Types
     Status,
     Tag,
     Track,
-    loadNote
-    )
-import RON.Data.RGA (RGA)
+    loadNote,
+  )
 import RON.Data.ORSet (ORSet)
+import RON.Data.RGA (RGA)
 import RON.Storage (CollectionName)
 import RON.Storage.Backend (getCollections, getDocuments)
 import RON.Storage.FS (Handle, newHandle, runStorage)
-import RON.Types (ObjectRef (ObjectRef), UUID)
+import RON.Types (ObjectRef, UUID)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsFileDiff)
 
-deriveToJSON defaultOptions ''RGA
-
-deriveToJSON defaultOptions ''ORSet
-
 deriveToJSON defaultOptions ''Note
-
-deriveToJSON defaultOptions ''UUID
-
-$(deriveToJSON defaultOptions 'ObjectRef)
 
 deriveToJSON defaultOptions ''NoteStatus
 
+deriveToJSON defaultOptions ''ObjectRef
+
+deriveToJSON defaultOptions ''ORSet
+
+deriveToJSON defaultOptions ''RGA
+
 deriveToJSON defaultOptions ''Status
+
+deriveToJSON defaultOptions ''Tag
 
 deriveToJSON defaultOptions ''Track
 
-deriveToJSON defaultOptions ''Tag
+deriveToJSON defaultOptions ''UUID
 
 mkRegressionTest :: IO (FilePath -> TestTree)
 mkRegressionTest = do
@@ -60,7 +60,7 @@ mkRegressionTest = do
   tests <-
     for collections $ \collection -> case collection of
       "note" -> testNoteCollection h collection
-      _      -> fail $ "unsupported type " ++ show collection
+      _ -> fail $ "unsupported type " ++ show collection
   pure $ \tmp -> testGroup "regression" [test tmp | test <- tests]
 
 testNoteCollection :: Handle -> CollectionName -> IO (FilePath -> TestTree)
