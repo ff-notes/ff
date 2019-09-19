@@ -53,7 +53,7 @@ prettyDocId (DocId name) = pretty name
 prettyTasksWikisContacts
     :: Bool                      -- ^ is output brief
     -> ModeMap (Sample NoteView) -- ^ tasks
-    -> (Sample NoteView)         -- ^ wikis
+    -> Sample NoteView           -- ^ wikis
     -> ContactSample             -- ^ contacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
