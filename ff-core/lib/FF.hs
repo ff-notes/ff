@@ -237,7 +237,7 @@ getTaskSamplesWith
   allTasks <- loadTasks isArchived
   let tasks = filter
         ( \NoteView{..}
-        -> tagsRequested == intersect tagsRequested (Set.toList tags)
+        -> Set.fromList tagsRequested `Set.isSubsetOf` tags
         ) allTasks
   pure
     . takeSamples limit

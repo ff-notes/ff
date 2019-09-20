@@ -161,9 +161,10 @@ prettyTaskSections
     -> [Text] -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
-prettyTaskSections isBrief tagsRequested samples = if null tagsRequested
-    then tasks
-    else tagHeader tagsRequested tasks
+prettyTaskSections isBrief tagsRequested samples =
+    case tagsRequested of
+        [] -> tasks
+        _ -> tagHeader tagsRequested tasks
   where
     tagHeader t = withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
     tasks = stack isBrief
