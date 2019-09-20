@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
@@ -29,11 +30,14 @@ module FF
     loadTasks,
     loadAll,
     loadAllTagTexts,
+    loadTagsByRefs,
     noDataDirectoryMessage,
     splitModes,
     sponsors,
     takeSamples,
-    updateTrackedNotes
+    toNoteView,
+    updateTrackedNotes,
+    viewNoteSample
     )
 where
 
@@ -51,6 +55,7 @@ import Data.List (genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -69,6 +74,7 @@ import FF.Types
     NoteId,
     NoteSample,
     NoteStatus (..),
+    NoteView (..),
     Sample (..),
     Status (..),
     Tag (..),
@@ -89,6 +95,7 @@ import FF.Types
     note_tags_clear,
     note_text_clear,
     note_text_zoom,
+    note_tags_clear,
     note_track_read,
     taskMode,
   )
@@ -115,7 +122,7 @@ import RON.Storage.Backend
   ( Document (Document, objectFrame),
     MonadStorage (getDocuments),
     )
-import RON.Types (ObjectFrame (ObjectFrame, uuid))
+import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
 import System.Directory
   ( doesDirectoryExist,
     findExecutable,
@@ -149,10 +156,25 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- Load tags as texts
+-- Load all tags as texts
 loadAllTagTexts :: MonadStorage m => m [Text]
 loadAllTagTexts =
   fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
+
+loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
+loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
+  tag_text . entityVal <$> load (refToDocId ref)
+
+toNoteView :: MonadStorage m => Entity Note -> m NoteView
+toNoteView item = do
+  let refs = note_tags $ entityVal item
+  tags <- loadTagsByRefs refs
+  pure $ NoteView item $ Set.fromList tags
+
+viewNoteSample :: MonadStorage m => Sample (Entity Note) -> m NoteSample
+viewNoteSample Sample{items, total} = do
+  noteviews <- mapM toNoteView items
+  pure $ Sample noteviews total
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
@@ -174,8 +196,11 @@ fromRga (RGA xs) = xs
 fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
-loadTasks :: MonadStorage m => Bool -> m [Entity Note]
-loadTasks isArchived = filter isArchived' <$> loadAllNotes
+loadTasks :: MonadStorage m => Bool -> m [NoteView]
+loadTasks isArchived = do
+  notes <- loadAllNotes
+  let filtered = filter isArchived' notes
+  traverse toNoteView filtered
   where
     isArchived' =
       (Just (TaskStatus $ searchStatus isArchived) ==) . note_status . entityVal
@@ -189,6 +214,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text] -- ^ tags requested
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -199,22 +225,43 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text] -- ^ tags requested
   -> m (ModeMap NoteSample)
-getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today = do
-  tasks <- loadTasks isArchived
+getTaskSamplesWith
+  predicate
+  isArchived
+  ConfigUI {shuffle}
+  limit
+  today
+  tagsRequested
+  = do
+  allTasks <- loadTasks isArchived
+  let tasks = filter
+        ( \NoteView{..}
+        -> Set.fromList tagsRequested `Set.isSubsetOf` tags
+        ) allTasks
   pure
     . takeSamples limit
     . shuffleOrSort
-    . splitModesBy entityVal today
-    $ filter (predicate . Text.pack . fromRgaM . note_text . entityVal) tasks
+    . splitModesBy (entityVal . note) today
+    $ filter
+      ( predicate
+      . Text.pack
+      . fromRgaM
+      . note_text
+      . entityVal
+      . note
+      ) tasks
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+    shuffleOrSort :: ModeMap [NoteView] -> ModeMap [NoteView]
     shuffleOrSort
       | shuffle = shuffleTraverseItems gen
       | otherwise =
         -- in sorting by entityId no business-logic is involved,
         -- it's just for determinism
-        fmap $ sortOn $ note_start . entityVal &&& entityId
+        fmap $ sortOn (\NoteView{..} ->
+            note_start . entityVal &&& entityId $ note)
 
 getWikiSamples
   :: MonadStorage m
@@ -243,7 +290,7 @@ getWikiSamplesWith predicate archive ConfigUI {shuffle} limit today =
       let wikis2 = case limit of
             Nothing -> wikis1
             Just l  -> take (fromIntegral l) wikis1
-      pure . toSample $ shuffleOrSort wikis2
+      viewNoteSample $ toSample $ shuffleOrSort wikis2
   where
     predicate' = predicate . Text.pack . fromRgaM . note_text . entityVal
     toSample ys = Sample ys $ genericLength ys
@@ -266,13 +313,13 @@ shuf xs = do
 shuffleTraverseItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
 
-splitModesBy :: (note -> Note) -> Day -> [note] -> ModeMap [note]
+splitModesBy :: (noteview -> Note) -> Day -> [noteview] -> ModeMap [noteview]
 splitModesBy f today = Map.unionsWith (++) . map singleton
   where
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
-splitModes :: Day -> [Note] -> ModeMap [Note]
-splitModes = splitModesBy identity
+splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
+splitModes = splitModesBy (entityVal . note)
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
@@ -362,10 +409,11 @@ cmdSearch
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [Text] -- ^ requsted tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr archive ui limit today = do
+cmdSearch substr archive ui limit today tags = do
   -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step
-  tasks <- getTaskSamplesWith predicate archive ui limit today
+  tasks <- getTaskSamplesWith predicate archive ui limit today tags
   wikis <- getWikiSamplesWith predicate archive ui limit today
   contacts <- getContactSamplesWith predicate archive
   pure (tasks, wikis, contacts)
@@ -517,9 +565,6 @@ noDataDirectoryMessage :: String
 noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
 
-identity :: a -> a
-identity x = x
-
 whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of
   Nothing -> pure ()
@@ -527,3 +572,6 @@ whenJust m f = case m of
 
 sponsors :: [Text]
 sponsors = ["Nadezda"]
+
+refToDocId :: ObjectRef a -> DocId a
+refToDocId (ObjectRef uid) = docIdFromUuid uid

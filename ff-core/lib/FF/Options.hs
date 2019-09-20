@@ -5,6 +5,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Options (
+    Agenda (..),
     Assign (..),
     Cmd (..),
     CmdAction (..),
@@ -22,7 +23,7 @@ module FF.Options (
     showHelp
 ) where
 
-import           Control.Applicative (optional, some, (<|>))
+import           Control.Applicative (many, optional, some, (<|>))
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
@@ -51,7 +52,7 @@ data Cmd
     | CmdVersion
 
 data CmdAction
-    = CmdAgenda     (Maybe Limit)
+    = CmdAgenda     Agenda
     | CmdContact    (Maybe Contact)
     | CmdDelete     [NoteId]
     | CmdDone       [NoteId]
@@ -95,6 +96,11 @@ assignToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
+data Agenda = Agenda
+    { limit :: Maybe Limit
+    , tags  :: [Text]
+    }
+
 data Edit = Edit
     { ids   :: NonEmpty NoteId
     , text  :: Maybe Text
@@ -117,6 +123,7 @@ data Search = Search
     , inContacts :: Bool
     , inArchived :: Bool
     , limit      :: Maybe Limit
+    , tags       :: [Text]
     }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -178,7 +185,7 @@ parser h =
                                     \ recent format"
     iCmdWiki      = i cmdWiki       "show all wiki notes"
 
-    cmdAgenda    =      CmdAgenda    <$> optional limitOption
+    cmdAgenda    =      CmdAgenda    <$> agenda
     cmdContact   =      CmdContact   <$> optional contact
     cmdDelete    =      CmdDelete    <$> some noteid
     cmdDone      =      CmdDone      <$> some noteid
@@ -197,6 +204,9 @@ parser h =
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption = switch $
         long "brief" <> short 'b' <> help "List only note titles and ids"
+    agenda = Agenda
+        <$> optional limitOption
+        <*> filterTags
     track = Track
         <$> dryRunOption
         <*> optional repo
@@ -236,6 +246,7 @@ parser h =
         <*> searchC
         <*> searchA
         <*> optional limitOption
+        <*> filterTags
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -244,7 +255,9 @@ parser h =
         switch $ long "archived" <> short 'a' <> help "Search among archived"
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
-    noteTextArgument = strArgument $ metavar "TEXT" <> help "note text"
+    noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
+    filterTags = many $ strOption
+        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"

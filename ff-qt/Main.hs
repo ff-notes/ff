@@ -31,6 +31,7 @@ import FF.Types
     Note (Note),
     NoteId,
     NoteStatus (TaskStatus),
+    NoteView(note),
     Status (Active),
     entityId,
     entityVal,
@@ -93,7 +94,7 @@ main = do
   _ <-
     forkIO $ do
       activeTasks <- runStorage storage (loadTasks False)
-      for_ activeTasks $ upsertTask mainWindow
+      for_ activeTasks $ upsertTask mainWindow . note
   -- update the view with future changes
   _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
   -- run UI

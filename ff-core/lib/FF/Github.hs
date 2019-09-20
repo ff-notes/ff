@@ -15,6 +15,7 @@ import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
@@ -29,11 +30,13 @@ import           GitHub (FetchCount (..), Issue (Issue), IssueRepoMod,
                          stateOpen, unIssueNumber)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           RON.Data.RGA (RGA (RGA))
+import           RON.Storage.Backend (DocId (DocId))
 import           System.Process.Typed (proc, readProcessStdout_)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Limit, ModeMap, Note (..), NoteStatus (..), Sample,
-                           Status (..), Track (..))
+import           FF.Types (Entity (..), Limit, ModeMap, Note (..), NoteSample,
+                           NoteStatus (..), NoteView (..), Status (..),
+                           Track (..))
 
 getIssues
     :: Maybe Text
@@ -81,7 +84,7 @@ getOpenIssueSamples
     :: Maybe Text
     -> Maybe Limit
     -> Day
-    -> ExceptT Text IO (ModeMap (Sample Note))
+    -> ExceptT Text IO (ModeMap NoteSample)
 getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
@@ -93,11 +96,11 @@ getIssueViews mAddress mlimit = do
 
 sampleMap
     :: Foldable t
-    => Text -> Maybe Limit -> Day -> t Issue -> ModeMap (Sample Note)
+    => Text -> Maybe Limit -> Day -> t Issue -> ModeMap NoteSample
 sampleMap address mlimit today
     = takeSamples mlimit
     . splitModes today
-    . map (issueToNote address)
+    . map (flip NoteView Set.empty . Entity (DocId "") . issueToNote address)
     . maybe id (take . fromIntegral) mlimit
     . toList
 

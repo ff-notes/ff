@@ -50,7 +50,8 @@ import FF
     loadAllTagTexts,
     noDataDirectoryMessage,
     sponsors,
-    updateTrackedNotes
+    toNoteView,
+    updateTrackedNotes,
     )
 import FF.Config
   ( Config (..),
@@ -62,7 +63,8 @@ import FF.Config
     )
 import FF.Github (getIssueViews, getOpenIssueSamples)
 import FF.Options
-  ( Cmd (..),
+  ( Agenda (..),
+    Cmd (..),
     CmdAction (..),
     Contact (..),
     DataDir (..),
@@ -73,7 +75,7 @@ import FF.Options
     parseOptions
     )
 import qualified FF.Options as Options
-import FF.Types (Entity (..), loadNote)
+import FF.Types (loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -86,7 +88,7 @@ import FF.UI
     withHeader
     )
 import FF.Upgrade (upgradeDatabase)
-import RON.Storage.Backend (DocId (DocId), MonadStorage)
+import RON.Storage.Backend (MonadStorage)
 import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
@@ -151,30 +153,35 @@ runCmdAction
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda mlimit -> do
-      notes <- getTaskSamples False ui mlimit today
-      pprint $ prettyTaskSections isBrief notes
+    CmdAgenda Agenda{limit,tags} -> do
+      samples <- getTaskSamples False ui limit today tags
+      pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
-        pprint $ withHeader "Deleted:" $ prettyNote isBrief note
+        noteview <- toNoteView note
+        pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
-        pprint $ withHeader "Archived:" $ prettyNote isBrief note
+        noteview <- toNoteView note
+        pprint $ withHeader "Archived:" $ prettyNote isBrief noteview
     CmdEdit edit -> do
       notes <- cmdEdit edit
-      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes
+      notes' <- traverse toNoteView notes
+      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes'
     CmdNew new -> do
       note <- cmdNewNote new today
-      pprint $ withHeader "Added:" $ prettyNote isBrief note
+      noteview <- toNoteView note
+      pprint $ withHeader "Added:" $ prettyNote isBrief noteview
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
-        pprint $ withHeader "Postponed:" $ prettyNote isBrief note
+        noteview <- toNoteView note
+        pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today
+      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -184,9 +191,11 @@ runCmdAction ui cmd isBrief = do
             inTasks
             inWikis
             inContacts
+            tags
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
-      pprint $ prettyNoteList isBrief notes
+      notes' <- traverse toNoteView notes
+      pprint $ prettyNoteList isBrief notes'
     CmdTags -> do
       allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags
@@ -196,7 +205,8 @@ runCmdAction ui cmd isBrief = do
     CmdUnarchive tasks ->
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
-        pprint . withHeader "Unarchived:" $ prettyNote isBrief task
+        noteview <- toNoteView task
+        pprint . withHeader "Unarchived:" $ prettyNote isBrief noteview
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
@@ -209,10 +219,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
-      pprint
-        $ prettyTaskSections isBrief
-        $ (Entity (DocId "") <$>)
-        <$> samples
+      pprint $ prettyTaskSections isBrief [] samples
   | otherwise =
     do
       notes <- liftIO $ run $ getIssueViews address limit
