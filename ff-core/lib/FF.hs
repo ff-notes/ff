@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,7 +43,7 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Monad (filterM, unless, void, when)
+import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
@@ -174,18 +175,6 @@ viewNoteSample Sample{items, total} = do
   noteviews <- mapM toNoteView items
   pure $ Sample noteviews total
 
--- | Load notes filtered by all requested tags.
--- When no tags requested it loads no notes.
-filterTasksByTags :: MonadStorage m => [Text] -> [Entity Note] -> m [Entity Note]
-filterTasksByTags tagsRequested =
-    filterM (selectByTags . note_tags . entityVal)
-  where
-    selectByTags :: MonadStorage m => [ObjectRef Tag] -> m Bool
-    selectByTags [] = pure False
-    selectByTags refs = do
-      tags <- loadTagsByRefs refs
-      pure $ tagsRequested == intersect tagsRequested tags
-
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
 
@@ -206,8 +195,11 @@ fromRga (RGA xs) = xs
 fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
-loadTasks :: MonadStorage m => Bool -> m [Entity Note]
-loadTasks isArchived = filter isArchived' <$> loadAllNotes
+loadTasks :: MonadStorage m => Bool -> m [NoteView]
+loadTasks isArchived = do
+  notes <- loadAllNotes
+  let filtered = filter isArchived' notes
+  traverse toNoteView filtered
   where
     isArchived' =
       (Just (TaskStatus $ searchStatus isArchived) ==) . note_status . entityVal
@@ -221,7 +213,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> [Text] -- ^ tags to filter
+  -> [Text] -- ^ tags requested
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -232,28 +224,43 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> [Text] -- ^ tags to filter
+  -> [Text] -- ^ tags requested
   -> m (ModeMap NoteSample)
-getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today tags = do
+getTaskSamplesWith
+  predicate
+  isArchived
+  ConfigUI {shuffle}
+  limit
+  today
+  tagsRequested
+  = do
   allTasks <- loadTasks isArchived
-  -- Filter notes by requested tags
-  filtered <- filterTasksByTags tags allTasks
-  let tasks = case filtered of
-        [] -> allTasks
-        _ -> filtered
-  traverse viewNoteSample
+  let tasks = filter
+        ( \NoteView{..}
+        -> tagsRequested == intersect tagsRequested (Set.toList tags)
+        ) allTasks
+  pure
     . takeSamples limit
     . shuffleOrSort
-    . splitModesBy entityVal today
-    $ filter (predicate . Text.pack . fromRgaM . note_text . entityVal) tasks
+    . splitModesBy (entityVal . note) today
+    $ filter
+      ( predicate
+      . Text.pack
+      . fromRgaM
+      . note_text
+      . entityVal
+      . note
+      ) tasks
   where
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+    shuffleOrSort :: ModeMap [NoteView] -> ModeMap [NoteView]
     shuffleOrSort
       | shuffle = shuffleTraverseItems gen
       | otherwise =
         -- in sorting by entityId no business-logic is involved,
         -- it's just for determinism
-        fmap $ sortOn $ note_start . entityVal &&& entityId
+        fmap $ sortOn (\NoteView{..} ->
+            note_start . entityVal &&& entityId $ note)
 
 getWikiSamples
   :: MonadStorage m
@@ -305,13 +312,13 @@ shuf xs = do
 shuffleTraverseItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
 
-splitModesBy :: (note -> Note) -> Day -> [note] -> ModeMap [note]
+splitModesBy :: (noteview -> Note) -> Day -> [noteview] -> ModeMap [noteview]
 splitModesBy f today = Map.unionsWith (++) . map singleton
   where
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
-splitModes :: Day -> [Note] -> ModeMap [Note]
-splitModes = splitModesBy identity
+splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
+splitModes = splitModesBy (entityVal . note)
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
@@ -556,9 +563,6 @@ getDataDir Config {dataDir} = do
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
-
-identity :: a -> a
-identity x = x
 
 whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of

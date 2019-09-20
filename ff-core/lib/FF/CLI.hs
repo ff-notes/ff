@@ -16,7 +16,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
 import Data.Functor (($>))
 import Data.Maybe (isNothing)
-import qualified Data.Set as Set
 import Data.Text (snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
@@ -76,7 +75,7 @@ import FF.Options
     parseOptions
     )
 import qualified FF.Options as Options
-import FF.Types (Entity (..), NoteView (..), loadNote)
+import FF.Types (loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -89,7 +88,7 @@ import FF.UI
     withHeader
     )
 import FF.Upgrade (upgradeDatabase)
-import RON.Storage.Backend (DocId (DocId), MonadStorage)
+import RON.Storage.Backend (MonadStorage)
 import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
@@ -220,11 +219,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
-      pprint
-        $ prettyTaskSections isBrief []
-        $ (flip NoteView Set.empty <$>)
-        . (Entity (DocId "") <$>)
-        <$> samples
+      pprint $ prettyTaskSections isBrief [] samples
   | otherwise =
     do
       notes <- liftIO $ run $ getIssueViews address limit
