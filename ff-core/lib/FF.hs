@@ -86,11 +86,12 @@ import FF.Types
     note_status_clear,
     note_status_read,
     note_status_set,
+    note_tags_clear,
     note_text_clear,
     note_text_zoom,
     note_track_read,
-    taskMode
-    )
+    taskMode,
+  )
 import RON.Data
   ( MonadObjectState,
     ObjectStateT,
@@ -378,6 +379,7 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_text_clear
   note_start_clear
   note_end_clear
+  note_tags_clear
 
 cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
 cmdDone nid = modifyAndView nid $ do
