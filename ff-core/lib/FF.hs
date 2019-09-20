@@ -34,7 +34,9 @@ module FF
     splitModes,
     sponsors,
     takeSamples,
-    updateTrackedNotes
+    toNoteView,
+    updateTrackedNotes,
+    viewNoteSample
     )
 where
 
@@ -52,6 +54,7 @@ import Data.List (genericLength, intersect, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust)
+import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -70,6 +73,7 @@ import FF.Types
     NoteId,
     NoteSample,
     NoteStatus (..),
+    NoteView (..),
     Sample (..),
     Status (..),
     Tag (..),
@@ -150,7 +154,7 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- Load tags as texts
+-- Load all tags as texts
 loadAllTagTexts :: MonadStorage m => m [Text]
 loadAllTagTexts =
   fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
@@ -159,18 +163,28 @@ loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
   tag_text . entityVal <$> load (refToDocId ref)
 
--- | Load notes tagged at least a one tag from user input.
---   Maybe it is better to load notes tagged by all tags from user input?
-loadTasksByTags :: MonadStorage m => [Text] -> m [Entity Note]
-loadTasksByTags tagsInput = do
-    notes <- loadAllNotes
-    filterM (selectInputed . note_tags . entityVal) notes
+toNoteView :: MonadStorage m => Entity Note -> m NoteView
+toNoteView item = do
+  let refs = note_tags $ entityVal item
+  tags <- loadTagsByRefs refs
+  pure $ NoteView item $ Set.fromList tags
+
+viewNoteSample :: MonadStorage m => Sample (Entity Note) -> m NoteSample
+viewNoteSample Sample{items, total} = do
+  noteviews <- mapM toNoteView items
+  pure $ Sample noteviews total
+
+-- | Load notes filtered by all requested tags.
+-- When no tags requested it loads no notes.
+filterTasksByTags :: MonadStorage m => [Text] -> [Entity Note] -> m [Entity Note]
+filterTasksByTags tagsRequested =
+    filterM (selectByTags . note_tags . entityVal)
   where
-    selectInputed :: MonadStorage m => [ObjectRef Tag] -> m Bool
-    selectInputed [] = pure False
-    selectInputed refs = do
+    selectByTags :: MonadStorage m => [ObjectRef Tag] -> m Bool
+    selectByTags [] = pure False
+    selectByTags refs = do
       tags <- loadTagsByRefs refs
-      pure $ (not . null) $ intersect tagsInput tags
+      pure $ tagsRequested == intersect tagsRequested tags
 
 getContactSamples :: MonadStorage m => Bool -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
@@ -207,7 +221,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> [Text]
+  -> [Text] -- ^ tags to filter
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -218,12 +232,16 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> [Text]
+  -> [Text] -- ^ tags to filter
   -> m (ModeMap NoteSample)
 getTaskSamplesWith predicate isArchived ConfigUI {shuffle} limit today tags = do
-  tasks <- if null tags then loadTasks isArchived
-    else loadTasksByTags tags
-  pure
+  allTasks <- loadTasks isArchived
+  -- Filter notes by requested tags
+  filtered <- filterTasksByTags tags allTasks
+  let tasks = case filtered of
+        [] -> allTasks
+        _ -> filtered
+  traverse viewNoteSample
     . takeSamples limit
     . shuffleOrSort
     . splitModesBy entityVal today
@@ -264,7 +282,7 @@ getWikiSamplesWith predicate archive ConfigUI {shuffle} limit today =
       let wikis2 = case limit of
             Nothing -> wikis1
             Just l  -> take (fromIntegral l) wikis1
-      pure . toSample $ shuffleOrSort wikis2
+      viewNoteSample $ toSample $ shuffleOrSort wikis2
   where
     predicate' = predicate . Text.pack . fromRgaM . note_text . entityVal
     toSample ys = Sample ys $ genericLength ys
@@ -386,7 +404,7 @@ cmdSearch
   -> [Text]
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr archive ui limit today tags = do
-  -- TODO(cblp, 2018-12-21) search tasks and wikis in one step
+  -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step
   tasks <- getTaskSamplesWith predicate archive ui limit today tags
   wikis <- getWikiSamplesWith predicate archive ui limit today
   contacts <- getContactSamplesWith predicate archive

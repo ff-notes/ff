@@ -204,7 +204,7 @@ type EntitySample a = Sample (Entity a)
 
 type ContactSample = EntitySample Contact
 
-type NoteSample = EntitySample Note
+type NoteSample = Sample NoteView
 
 emptySample :: Sample a
 emptySample = Sample {items = [], total = 0}
