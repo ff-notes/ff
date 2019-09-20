@@ -154,6 +154,10 @@ deriving instance Eq Note
 
 deriving instance Show Note
 
+deriving instance Eq NoteView
+
+deriving instance Show NoteView
+
 deriving instance Bounded Status
 
 deriving instance Enum Status
@@ -204,7 +208,7 @@ type EntitySample a = Sample (Entity a)
 
 type ContactSample = EntitySample Contact
 
-type NoteSample = EntitySample Note
+type NoteSample = Sample NoteView
 
 emptySample :: Sample a
 emptySample = Sample {items = [], total = 0}

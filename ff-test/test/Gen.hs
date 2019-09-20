@@ -4,7 +4,6 @@ module Gen (config, contact, day, note) where
 
 import           Prelude hiding (maybe)
 
-import           Data.Maybe (fromJust)
 import           Data.Text (Text)
 import           Data.Text.Encoding (encodeUtf8)
 import           Data.Time (Day, fromGregorian)
@@ -12,14 +11,13 @@ import           Hedgehog (Gen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, list,
                                maybe, string, text, unicode)
 import qualified Hedgehog.Range as Range
-import           RON.Data.ORSet (ORSet (..))
 import           RON.Data.RGA (RGA (RGA))
 import           RON.Types (ObjectRef (ObjectRef), UUID)
 import qualified RON.UUID as UUID
 
 import           FF.Config (Config (..), ConfigUI (..))
 import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
-                           Tag (..), Track (..))
+                           Track (..))
 
 config :: Gen Config
 config = do

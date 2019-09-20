@@ -15,9 +15,7 @@ import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_)
 import Data.Functor (($>))
-import qualified Data.Map.Strict as Map
 import Data.Maybe (isNothing)
-import qualified Data.Set as Set
 import Data.Text (snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
@@ -50,10 +48,10 @@ import FF
     getUtcToday,
     getWikiSamples,
     loadAllTagTexts,
-    loadTagsByRefs,
     noDataDirectoryMessage,
     sponsors,
-    updateTrackedNotes
+    toNoteView,
+    updateTrackedNotes,
     )
 import FF.Config
   ( Config (..),
@@ -77,8 +75,7 @@ import FF.Options
     parseOptions
     )
 import qualified FF.Options as Options
-import FF.Types (Entity (..), ModeMap, Note (note_tags),
-                NoteView (..), NoteSample, Sample (..), loadNote)
+import FF.Types (loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -91,7 +88,7 @@ import FF.UI
     withHeader
     )
 import FF.Upgrade (upgradeDatabase)
-import RON.Storage.Backend (DocId (DocId), MonadStorage)
+import RON.Storage.Backend (MonadStorage)
 import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
@@ -158,8 +155,7 @@ runCmdAction ui cmd isBrief = do
   case cmd of
     CmdAgenda Agenda{limit,tags} -> do
       samples <- getTaskSamples False ui limit today tags
-      samples' <- mapToNoteView samples
-      pprint $ prettyTaskSections isBrief tags samples'
+      pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
@@ -186,17 +182,16 @@ runCmdAction ui cmd isBrief = do
         pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
-      tasks' <- mapToNoteView tasks
-      wikis' <- repackSample wikis
       pprint
         $ prettyTasksWikisContacts
             isBrief
-            tasks'
-            wikis'
+            tasks
+            wikis
             contacts
             inTasks
             inWikis
             inContacts
+            tags
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse toNoteView notes
@@ -217,19 +212,14 @@ runCmdAction ui cmd isBrief = do
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
       wikis <- getWikiSamples False ui mlimit today
-      wikis' <- repackSample wikis
-      pprint $ prettyWikiSample isBrief wikis'
+      pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
-      pprint
-        $ prettyTaskSections isBrief []
-        $ (flip NoteView Set.empty <$>)
-        . (Entity (DocId "") <$>)
-        <$> samples
+      pprint $ prettyTaskSections isBrief [] samples
   | otherwise =
     do
       notes <- liftIO $ run $ getIssueViews address limit
@@ -289,21 +279,3 @@ pprint doc = liftIO $ do
 
 fromEither :: Either a a -> a
 fromEither = either id id
-
-mapToNoteView
-  :: MonadStorage m
-  => ModeMap NoteSample
-  -> m (ModeMap (Sample NoteView))
-mapToNoteView = Map.traverseWithKey (\_ v -> repackSample v)
-
-repackSample :: MonadStorage m => NoteSample -> m (Sample NoteView)
-repackSample Sample{items, total} = do
-  notevies <- mapM toNoteView items
-  pure $ Sample notevies total
-
-toNoteView :: MonadStorage m => Entity Note -> m NoteView
-toNoteView item = do
-  let refs = note_tags $ entityVal item
-  tags <- loadTagsByRefs refs
-  let noteview = NoteView item $ Set.fromList tags
-  pure noteview

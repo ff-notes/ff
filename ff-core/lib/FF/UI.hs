@@ -23,6 +23,7 @@ import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust)
 import           Data.Semigroup ((<>))
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
@@ -32,11 +33,11 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
 import           Data.Time (Day)
-import qualified Data.Set as Set
 import           FF (fromRgaM)
 import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
-                           Note (..), NoteStatus (Wiki), NoteView (..),
-                           Sample (..), TaskMode (..), Track (..), omitted)
+                           Note (..), NoteSample, NoteStatus (Wiki),
+                           NoteView (..), Sample (..), TaskMode (..),
+                           Track (..), omitted)
 import           RON.Storage.Backend (DocId (DocId))
 
 -- | Header with fixed yellow color.
@@ -52,15 +53,16 @@ prettyDocId (DocId name) = pretty name
 
 prettyTasksWikisContacts
     :: Bool                      -- ^ is output brief
-    -> ModeMap (Sample NoteView) -- ^ tasks
-    -> (Sample NoteView)         -- ^ wikis
+    -> ModeMap NoteSample        -- ^ tasks
+    -> NoteSample                -- ^ wikis
     -> ContactSample             -- ^ contacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
     -> Bool                      -- ^ does search involve contacts
+    -> [Text]                    -- ^ tags to filter notes
     -> Doc AnsiStyle
 prettyTasksWikisContacts
-        isBrief tasks wiki contacts involveTasks involveWikis involveContacts =
+        isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
     case (involveTasks, involveWikis, involveContacts) of
         (True,  False, False) -> ts
         (False, True,  False) -> ws
@@ -70,7 +72,7 @@ prettyTasksWikisContacts
         (True,  False, True ) -> vsep [ts, cs]
         (_,     _,     _    ) -> vsep [ts, ws, cs]
   where
-    ts = prettyTaskSections  isBrief [] tasks
+    ts = prettyTaskSections  isBrief tags tasks
     ws = prettyWikiSample    isBrief wiki
     cs = prettyContactSample isBrief contacts
 
@@ -156,12 +158,13 @@ title
 
 prettyTaskSections
     :: Bool
-    -> [Text] -- ^ inputed tags
-    -> ModeMap (Sample NoteView)
+    -> [Text] -- ^ requested tags
+    -> ModeMap NoteSample
     -> Doc AnsiStyle
-prettyTaskSections isBrief inputedTags samples = if null inputedTags
-    then tasks
-    else tagHeader inputedTags tasks
+prettyTaskSections isBrief tagsRequested samples =
+    case tagsRequested of
+        [] -> tasks
+        _ -> tagHeader tagsRequested tasks
   where
     tagHeader t = withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
     tasks = stack isBrief
@@ -171,7 +174,7 @@ prettyTaskSections isBrief inputedTags samples = if null inputedTags
         ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
     numOmitted = sum $ fmap omitted samples
 
-prettyTaskSample :: Bool -> TaskMode -> Sample NoteView -> Doc AnsiStyle
+prettyTaskSample :: Bool -> TaskMode -> NoteSample -> Doc AnsiStyle
 prettyTaskSample isBrief mode = \case
     Sample{total = 0} -> red "No notes to show"
     Sample{total, items} ->

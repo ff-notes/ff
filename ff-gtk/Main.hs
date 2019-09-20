@@ -26,6 +26,7 @@ import FF.Types
     Note (Note),
     NoteId,
     NoteStatus (TaskStatus),
+    NoteView (note),
     Status (Active)
     )
 import qualified FF.Types
@@ -121,7 +122,7 @@ main = do
 initiallyLoadActiveTasks :: StorageFS.Handle -> Producer Event IO ()
 initiallyLoadActiveTasks storage = do
   activeTasks <- lift $ runStorage storage $ loadTasks False
-  each $ map UpsertTask activeTasks
+  each $ map (UpsertTask . note) activeTasks
 
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do

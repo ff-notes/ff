@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
@@ -28,9 +29,9 @@ import FF.Types
   ( Limit,
     Note (..),
     NoteStatus (TaskStatus),
+    NoteView (NoteView),
     Sample (..),
     Status (Active),
-    Tag(..),
     TaskMode (Overdue),
     Track (..),
     entityVal,
@@ -55,7 +56,6 @@ import RON.Data
     newObjectFrame
     )
 import RON.Data.RGA (RGA (RGA))
-import RON.Data.ORSet (ORSet(..))
 import RON.Storage.Backend (DocId (DocId))
 import RON.Storage.Test (TestDB, runStorageSim)
 import RON.Text (parseObject, serializeObject)
@@ -93,7 +93,7 @@ prop_smoke = property $ do
         (Overdue 365478)
         Sample
           { items =
-              [ Entity
+              [ NoteView (Entity
                   (DocId "B00000000002D-200000000002D")
                   Note
                     { note_status = Just $ TaskStatus Active,
@@ -102,7 +102,7 @@ prop_smoke = property $ do
                       note_end    = Just $ fromGregorian 17 06 19,
                       note_tags   = [],
                       note_track  = Nothing
-                      }
+                      }) Set.empty
                 ],
             total = 1
             }
@@ -232,7 +232,7 @@ prop_repo =
         (Overdue 10)
         Sample
           { items =
-              [ Note
+              [ NoteView (Entity (DocId "") Note
                   { note_status = Just $ TaskStatus Active,
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
@@ -246,8 +246,8 @@ prop_repo =
                           track_url        = Just
                             "https://github.com/ff-notes/ff/issues/60"
                           }
-                    }
-                ],
+                    }) Set.empty
+              ],
             total = 1
             }
 
