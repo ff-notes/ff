@@ -18,6 +18,7 @@ import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Set as Set
 import qualified Data.Text as Text
+import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
@@ -61,6 +62,8 @@ import RON.Text (parseObject, serializeObject)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
 import Test.Tasty.TH (testGroupGenerator)
+import RON.Types (ObjectRef (ObjectRef))
+import qualified RON.UUID as UUID
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -155,32 +158,43 @@ prop_new =
   let text  = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
+      tags  = ["список"]
       fs =
         Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B0000000098JM-2000000000012"
+          $ Map.singleton "B00000000KJ6M-2000000000012"
           $ map encodeUtf8
           $ mconcat
-              [ [ "*set\t#B/0000000Drz+000000000Y\t!",
-                  "\t@`}IOM\t>end 3150 1 2",
-                  "\t@}QUM\t>start 2154 5 6",
-                  "\t@}_QM\t>status >Active",
-                  "\t@}mnM\t>text >B/0000000qnM+000000000Y"
-                  ],
-                [ "*rga\t#}qnM\t@0\t!",
-                  "\t@`}y_h\t'М'",
-                  "\t@)i\t'и'",
-                  "\t@)j\t'р'",
+              [ [ "*set #B/0000000Drz+000000000Y !",
+                  "\t@`}IOM >end 3150 1 2",
+                  "\t@}QUM >start 2154 5 6",
+                  "\t@}_QM >status >Active",
+                  "\t@}mnM >tags >B/0000001TnM+000000000Y",
+                  "\t@{1inM >text >B/0000001ynM+000000000Y",
+                  "\t@{2Q9r >track",
+
+                  "#}ynM @0 !",
+                  "\t@`{1DnM >text 'список'",
+
+                  "#{1TnM @0 !",
+                  "\t@`{0qnM >{0ynM"
+                ],
+                [ "*rga #}ynM @0 !",
+                  "\t@`{2D_h 'М'",
+                  "\t@)i 'и'",
+                  "\t@)j 'р'",
                   "."
-                  ]
                 ]
+              ]
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False} today
-        let Note {note_text, note_start, note_end} = entityVal note
+            $ cmdNewNote New {text, start, end, isWiki = False, tags} today
+        tags' <- traverse (UUID.mkName . TE.encodeUtf8) tags
+        let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start                         === note_start
         end                           === note_end
+        map ObjectRef tags'           === note_tags
         fs                            === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property

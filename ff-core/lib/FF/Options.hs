@@ -114,6 +114,7 @@ data New = New
     , start  :: Maybe Day
     , end    :: Maybe Day
     , isWiki :: Bool
+    , tags   :: [Text]
     }
 
 data Search = Search
@@ -234,6 +235,7 @@ parser h =
         <*> optional startDateOption
         <*> optional endDateOption
         <*> wiki
+        <*> addTagsOption
     edit = Edit
         <$> (NonEmpty.fromList <$> some noteid)
         <*> optional noteTextOption
@@ -258,6 +260,8 @@ parser h =
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     filterTags = many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
+    addTagsOption = many $ strOption
+        $ long "tag" <> metavar "TAG" <> help "Add tags"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
         option auto $ long "limit" <> short 'l' <> help "Number of issues"
