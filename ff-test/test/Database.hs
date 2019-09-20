@@ -16,6 +16,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
@@ -27,6 +28,7 @@ import FF.Types
   ( Limit,
     Note (..),
     NoteStatus (TaskStatus),
+    NoteView (NoteView),
     Sample (..),
     Status (Active),
     TaskMode (Overdue),
@@ -88,7 +90,7 @@ prop_smoke = property $ do
         (Overdue 365478)
         Sample
           { items =
-              [ Entity
+              [ NoteView (Entity
                   (DocId "B00000000002D-200000000002D")
                   Note
                     { note_status = Just $ TaskStatus Active,
@@ -97,7 +99,7 @@ prop_smoke = property $ do
                       note_end    = Just $ fromGregorian 17 06 19,
                       note_tags   = [],
                       note_track  = Nothing
-                      }
+                      }) Set.empty
                 ],
             total = 1
             }

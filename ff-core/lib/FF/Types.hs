@@ -154,6 +154,10 @@ deriving instance Eq Note
 
 deriving instance Show Note
 
+deriving instance Eq NoteView
+
+deriving instance Show NoteView
+
 deriving instance Bounded Status
 
 deriving instance Enum Status
