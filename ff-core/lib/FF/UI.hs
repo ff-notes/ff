@@ -88,7 +88,7 @@ prettyContactSample isBrief samples = stack isBrief $
             withHeader "Contacts:" . stack isBrief $
             map ((bullet <>) . indent 1 . prettyContact isBrief) items
 
-prettyWikiSample :: Bool -> Sample NoteView -> Doc AnsiStyle
+prettyWikiSample :: Bool -> NoteSample -> Doc AnsiStyle
 prettyWikiSample isBrief samples = stack isBrief $
     prettyWikiSample' samples :
     [pretty numOmitted <> " task(s) omitted" | numOmitted > 0]
