@@ -218,7 +218,7 @@ prop_repo =
         (Overdue 10)
         Sample
           { items =
-              [ Note
+              [ NoteView (Entity (DocId "") Note
                   { note_status = Just $ TaskStatus Active,
                     note_text   = Just $ RGA "import issues (GitHub -> ff)",
                     note_start  = Just $ fromGregorian 2018 06 21,
@@ -232,8 +232,8 @@ prop_repo =
                           track_url        = Just
                             "https://github.com/ff-notes/ff/issues/60"
                           }
-                    }
-                ],
+                    }) Set.empty
+              ],
             total = 1
             }
 

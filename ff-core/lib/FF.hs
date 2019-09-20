@@ -408,7 +408,7 @@ cmdSearch
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> [Text]
+  -> [Text] -- ^ requsted tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr archive ui limit today tags = do
   -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step

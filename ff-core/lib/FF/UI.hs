@@ -158,7 +158,7 @@ title
 
 prettyTaskSections
     :: Bool
-    -> [Text] -- ^ inputed tags
+    -> [Text] -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
 prettyTaskSections isBrief tagsRequested samples = if null tagsRequested
