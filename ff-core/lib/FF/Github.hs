@@ -15,7 +15,6 @@ import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
@@ -97,12 +96,21 @@ getIssueViews mAddress mlimit = do
 sampleMap
     :: Foldable t
     => Text -> Maybe Limit -> Day -> t Issue -> ModeMap NoteSample
-sampleMap address mlimit today
-    = takeSamples mlimit
-    . splitModes today
-    . map (flip NoteView Set.empty . Entity (DocId "") . issueToNote address)
-    . maybe id (take . fromIntegral) mlimit
-    . toList
+sampleMap address mlimit today issues =
+    takeSamples mlimit
+    $ splitModes today
+        [ NoteView
+            { note = Entity {entityId = DocId "", entityVal = note}
+            , tags = mempty
+            }
+        | issue <- sample
+        , let note = issueToNote address issue
+        ]
+  where
+    issues' = toList issues
+    sample = case mlimit of
+        Nothing -> issues'
+        Just n -> take (fromIntegral n) issues'
 
 noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [Note]
 noteViewList address mlimit =
