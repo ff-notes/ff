@@ -313,7 +313,7 @@ shuf xs = do
 shuffleTraverseItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
 
-splitModesBy :: (noteview -> Note) -> Day -> [noteview] -> ModeMap [noteview]
+splitModesBy :: (note -> Note) -> Day -> [note] -> ModeMap [note]
 splitModesBy f today = Map.unionsWith (++) . map singleton
   where
     singleton task = Map.singleton (taskMode today $ f task) [task]
