@@ -25,7 +25,6 @@ import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust)
 import           Data.Semigroup ((<>))
 import           Data.Set (Set)
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
@@ -134,12 +133,13 @@ prettyNote isBrief (NoteView Entity{..} tags) = case isBrief of
                     , Just end <- [note_end]
                     ]
                 ]
-            ++  [ green "|" <+> cyan "tags" <+> pretty tags' | not $ null tags']
+            ++  [ green "|" <+> cyan "tags" <+> pretty (toList tags)
+                | not $ null tags
+                ]
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
   where
-    tags' = Set.toList tags
     Note
       { note_end
       , note_start
