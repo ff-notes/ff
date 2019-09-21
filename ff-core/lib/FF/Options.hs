@@ -27,6 +27,8 @@ import           Control.Applicative (many, optional, some, (<|>))
 import           Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as NonEmpty
 import           Data.Semigroup ((<>))
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import           Data.Time (Day)
 import           FF.Types (ContactId, Limit, Note, NoteId)
@@ -98,7 +100,7 @@ assignToMaybe = \case
 
 data Agenda = Agenda
     { limit :: Maybe Limit
-    , tags  :: [Text]
+    , tags  :: Set Text
     }
 
 data Edit = Edit
@@ -123,7 +125,7 @@ data Search = Search
     , inContacts :: Bool
     , inArchived :: Bool
     , limit      :: Maybe Limit
-    , tags       :: [Text]
+    , tags       :: Set Text
     }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -256,7 +258,8 @@ parser h =
     noteid = argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
-    filterTags = many $ strOption
+    filterTags =
+        fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =

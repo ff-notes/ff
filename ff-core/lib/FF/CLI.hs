@@ -25,8 +25,8 @@ import Data.Text.Prettyprint.Doc
     layoutPageWidth,
     layoutSmart,
     pretty,
-    vsep
-    )
+    vsep,
+  )
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import Data.Time (Day)
 import Data.Traversable (for)
@@ -52,15 +52,15 @@ import FF
     sponsors,
     toNoteView,
     updateTrackedNotes,
-    )
+  )
 import FF.Config
   ( Config (..),
     ConfigUI (..),
     appName,
     loadConfig,
     printConfig,
-    saveConfig
-    )
+    saveConfig,
+  )
 import FF.Github (getIssueViews, getOpenIssueSamples)
 import FF.Options
   ( Agenda (..),
@@ -72,8 +72,8 @@ import FF.Options
     Search (..),
     Shuffle (..),
     Track (..),
-    parseOptions
-    )
+    parseOptions,
+  )
 import qualified FF.Options as Options
 import FF.Types (loadNote)
 import FF.UI
@@ -85,8 +85,8 @@ import FF.UI
     prettyTaskSections,
     prettyTasksWikisContacts,
     prettyWikiSample,
-    withHeader
-    )
+    withHeader,
+  )
 import FF.Upgrade (upgradeDatabase)
 import RON.Storage.Backend (MonadStorage)
 import RON.Storage.FS (runStorage)
@@ -107,14 +107,14 @@ cli version = do
   Options {brief, customDir, cmd} <- parseOptions handle'
   handle <-
     case customDir of
-      Nothing   -> pure handle'
+      Nothing -> pure handle'
       Just path -> Just <$> StorageFS.newHandle path
   case cmd of
     CmdConfig param -> runCmdConfig cfg param
     CmdVersion -> runCmdVersion version
     CmdAction action -> case handle of
       Nothing -> fail noDataDirectoryMessage
-      Just h  -> runStorage h $ runCmdAction ui action brief
+      Just h -> runStorage h $ runCmdAction ui action brief
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config {dataDir, ui} = \case
@@ -122,7 +122,7 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
   Just (Options.ConfigDataDir mDir) -> do
     dir <-
       case mDir of
-        Nothing                -> pure dataDir
+        Nothing -> pure dataDir
         Just (DataDirJust dir) -> saveDataDir dir
         Just DataDirYandexDisk -> do
           home <- getHomeDirectory
@@ -130,14 +130,14 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
             [ trySaveDataDir $ home </> "Yandex.Disk",
               trySaveDataDir $ home </> "Yandex.Disk.localized",
               fail "Cant't detect Yandex.Disk directory"
-              ]
+            ]
     printConfig dir
   Just (Options.ConfigUI mShuffle) -> do
     ui' <-
       case mShuffle of
-        Nothing      -> pure ui
+        Nothing -> pure ui
         Just Shuffle -> saveShuffle True
-        Just Sort    -> saveShuffle False
+        Just Sort -> saveShuffle False
     printConfig ui'
   where
     trySaveDataDir baseDir = do
@@ -153,7 +153,7 @@ runCmdAction
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda Agenda{limit,tags} -> do
+    CmdAgenda Agenda {limit, tags} -> do
       samples <- getTaskSamples False ui limit today tags
       pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
@@ -219,14 +219,14 @@ cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
-      pprint $ prettyTaskSections isBrief [] samples
+      pprint $ prettyTaskSections isBrief mempty samples
   | otherwise =
     do
       notes <- liftIO $ run $ getIssueViews address limit
       updateTrackedNotes notes
       liftIO $ putStrLn
         $ show (length notes)
-        ++ " issues synchronized with the local database"
+          ++ " issues synchronized with the local database"
   where
     run getter = do
       hPutStr stderr "fetching"
@@ -265,7 +265,7 @@ runCmdVersion version =
           ", Git revision ",
           $(gitHash),
           if $(gitDirty) then ", dirty" else ""
-          ]
+        ]
 
 pprint :: MonadIO io => Doc AnsiStyle -> io ()
 pprint doc = liftIO $ do
