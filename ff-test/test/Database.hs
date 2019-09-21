@@ -225,7 +225,8 @@ prop_repo =
                              (DocId "")
                              Note
                                { note_status = Just $ TaskStatus Active,
-                                 note_text = Just $ RGA "import issues (GitHub -> ff)",
+                                 note_text =
+                                   Just $ RGA "import issues (GitHub -> ff)",
                                  note_start = Just $ fromGregorian 2018 06 21,
                                  note_end = Just $ fromGregorian 2018 06 15,
                                  note_tags = [],
