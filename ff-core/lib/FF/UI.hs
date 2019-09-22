@@ -23,6 +23,7 @@ import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust)
 import           Data.Semigroup ((<>))
+import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
@@ -218,11 +219,11 @@ prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
     name = fromRgaM contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
 
-prettyTagsList :: [Text] -> Doc AnsiStyle
+prettyTagsList :: Set Text -> Doc AnsiStyle
 prettyTagsList tags =
   if null tags
     then red "There are no tags."
-    else withHeader "All tags:" $ fillSep [green "|" <+> pretty t | t <- tags]
+    else withHeader "All tags:" $ fillSep [green "|" <+> pretty t | t <- Set.toList tags]
 
 wrapLines :: Text -> Doc ann
 wrapLines =

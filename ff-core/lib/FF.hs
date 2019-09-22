@@ -51,10 +51,11 @@ import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList, traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List (genericLength, nub, sortOn, (\\))
+import Data.List (genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust)
+import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import qualified Data.Text as Text
@@ -158,11 +159,11 @@ loadContacts isArchived =
     <$> loadAll
 
 -- Load all tags as texts
-loadAllTagTexts :: MonadStorage m => m [Text]
+loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts =
-  fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
+  Set.fromList . fromMaybe [] . traverse (tag_text . entityVal) <$> loadAll
 
-loadRefsByTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+loadRefsByTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
 loadRefsByTags queryTags = do
     allTags <- loadAll
     map (docIdToRef . entityId) <$> filterM compareTags allTags
@@ -176,28 +177,27 @@ loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
   tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
-createTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
+createTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
 createTags tags = do
-  objects <- traverse (newObjectFrame . Tag . Just) tags
+  objects <- traverse (newObjectFrame . Tag . Just) $ Set.toList tags
   traverse_ createDocument objects
   pure $ map (ObjectRef . uuid) objects
 
 -- | Add new tags to Collection of tags.
 --
--- It not adds tags that are in the collection already.
--- It returns list of reference that should be added to note_tags.
--- List of reference may content ones that note_tags has already.
-addNoteTags :: MonadStorage m => [Text] -> m [ObjectRef Tag]
-addNoteTags inputedTags = do
-  let nubbedTags = nub inputedTags
+-- It doesn't create tags that are in the collection already.
+-- It returns references that should be added to note_tags.
+-- References may content ones that note_tags has already.
+createNewTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+createNewTags tags = do
   allTags <- loadAllTagTexts
-  existRefs <- loadRefsByTags nubbedTags
-  let newTags = nubbedTags \\ allTags
-  case (null newTags, null existRefs) of
+  existentRef <- loadRefsByTags tags
+  let newTags = tags Set.\\ allTags
+  case (null newTags, null existentRef) of
     (False, False) -> do
       createdTags <- createTags newTags
-      pure $ existRefs <> createdTags
-    (True, False) -> pure existRefs
+      pure $ existentRef <> createdTags
+    (True, False) -> pure existentRef
     (False, True) -> createTags newTags
     _ -> pure []
 
@@ -410,7 +410,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
-  refs <- addNoteTags tags
+  refs <- createNewTags $ Set.fromList tags
   let note = Note
         { note_end,
           note_start  = Just noteStart,

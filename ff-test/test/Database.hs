@@ -158,34 +158,45 @@ prop_new =
   let text  = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
-      tags  = ["список"]
-      fs =
-        Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B00000000KJ6M-2000000000012"
-          $ map encodeUtf8
-          $ mconcat
-              [ [ "*set #B/0000000Drz+000000000Y !",
-                  "\t@`}IOM >end 3150 1 2",
-                  "\t@}QUM >start 2154 5 6",
-                  "\t@}_QM >status >Active",
-                  "\t@}mnM >tags >B/0000001TnM+000000000Y",
-                  "\t@{1inM >text >B/0000001ynM+000000000Y",
-                  "\t@{2Q9r >track",
-
-                  "#}ynM @0 !",
-                  "\t@`{1DnM >text 'список'",
-
-                  "#{1TnM @0 !",
-                  "\t@`{0qnM >{0ynM"
+      tags  = ["список", "тэг"]
+      fs = Map.unions
+        [ Map.singleton "note" $ Map.singleton "B3QET9URTA04S-2007GRROP9V0V"
+            $ Map.singleton "B3QET9SI4OM3A-2007GRROP9V0V"
+            $ map encodeUtf8
+            $ mconcat
+                [ [ "*set #B/7esKx_J5Hd+00xDwmaFlV  !",
+                    "\t@`}IOM >end 3150 1 2",
+                    "\t@}QUM  >start 2154 5 6",
+                    "\t@]OD >status >Active",
+                    "\t@]PN >tags >B/7esKx_IcyX+00xDwmaFlV",
+                    "\t@]QJ >tags >B/7esKx_IdIP+00xDwmaFlV",
+                    "\t@]RV >text >B/7esKx_J5TL+00xDwmaFlV"
+                  ],
+                  [ "*rga #]TL @0 !",
+                    "\t@`]UE  'M'",
+                    "\t@)F  'и'",
+                    "\t@)G  'р'",
+                    "."
+                  ]
                 ],
-                [ "*rga #}ynM @0 !",
-                  "\t@`{2D_h 'М'",
-                  "\t@)i 'и'",
-                  "\t@)j 'р'",
-                  "."
-                ]
-              ]
-   in property $ do
+          Map.singleton "tag" $ Map.unions
+            [ Map.singleton "B3QET9SI4KVR1-2007GRROP9V0V"
+                $ Map.singleton "B3QET9SI4L1CB-2007GRROP9V0V"
+                $ map encodeUtf8
+                  [ "*set #B/7esKx_IcyX+00xDwmaFlV  !",
+                    "\t@`}dEK >text 'Список'",
+                    "."
+                  ],
+              Map.singleton "B3QET9SI4L14P-2007GRROP9V0V"
+                $ Map.singleton "B3QET9SI4OIFO-2007GRROP9V0V"
+                $ map encodeUtf8
+                  [ "*set #B/7esKx_IdIP+00xDwmaFlV  !",
+                    "\t@`]K5  >text 'Тэг'",
+                    "."
+                  ]
+            ]
+        ]
+  in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
