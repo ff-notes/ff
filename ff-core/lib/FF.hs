@@ -187,8 +187,8 @@ createTags tags =
 -- It doesn't create tags that are in the collection already.
 -- It returns references that should be added to note_tags.
 -- References may content ones that note_tags has already.
-createNewTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
-createNewTags tags = do
+getOrCreateTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+getOrCreateTags tags = do
   allTags <- loadAllTagTexts
   existentTagRefs <- loadTagRefsByText tags
   let newTags = tags \\ allTags
@@ -409,7 +409,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
-  refs <- createNewTags $ Set.fromList tags
+  refs <- getOrCreateTags $ Set.fromList tags
   let note = Note
         { note_end,
           note_start = Just noteStart,
