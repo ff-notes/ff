@@ -15,10 +15,10 @@ import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
+import Data.Maybe (mapMaybe)
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
@@ -161,40 +161,40 @@ prop_new =
   let text = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
-      tags  = ["список", "тэг"]
+      tags  = ["Список", "тэг"]
       fs = Map.unions
-        [ Map.singleton "note" $ Map.singleton "B3QET9URTA04S-2007GRROP9V0V"
-            $ Map.singleton "B3QET9SI4OM3A-2007GRROP9V0V"
+        [ Map.singleton "note" $ Map.singleton "B000000007N4M-2000000000012"
+            $ Map.singleton "B00000000P8JM-2000000000012"
             $ map encodeUtf8
             $ mconcat
-                [ [ "*set #B/7esKx_J5Hd+00xDwmaFlV  !",
-                    "\t@`}IOM >end 3150 1 2",
-                    "\t@}QUM  >start 2154 5 6",
-                    "\t@]OD >status >Active",
-                    "\t@]PN >tags >B/7esKx_IcyX+00xDwmaFlV",
-                    "\t@]QJ >tags >B/7esKx_IdIP+00xDwmaFlV",
-                    "\t@]RV >text >B/7esKx_J5TL+00xDwmaFlV"
+                [ [ "*set\t#B/0000000ynM+000000000Y\t!",
+                    "\t@`{1DnM\t>end 3150 1 2",
+                    "\t@}TnM\t>start 2154 5 6",
+                    "\t@}inM\t>status >Active",
+                    "\t@}ynM\t>tags >B/0000000Drz+000000000Y",
+                    "\t@{2DnM\t>tags >B/0000000QUM+000000000Y",
+                    "\t@}TnM\t>text >B/0000002inM+000000000Y"
                   ],
-                  [ "*rga #]TL @0 !",
-                    "\t@`]UE  'M'",
-                    "\t@)F  'и'",
-                    "\t@)G  'р'",
+                  [ "*rga\t#{2inM\t@0\t!",
+                    "\t@`}y_h\t'М'",
+                    "\t@)i\t'и'",
+                    "\t@)j\t'р'",
                     "."
                   ]
                 ],
           Map.singleton "tag" $ Map.unions
-            [ Map.singleton "B3QET9SI4KVR1-2007GRROP9V0V"
-                $ Map.singleton "B3QET9SI4L1CB-2007GRROP9V0V"
+            [ Map.singleton "B000000001NDU-2000000000012"
+                $ Map.singleton "B00000000674M-2000000000012"
                 $ map encodeUtf8
-                  [ "*set #B/7esKx_IcyX+00xDwmaFlV  !",
-                    "\t@`}dEK >text 'Список'",
+                  [ "*set\t#B/0000000Drz+000000000Y\t!",
+                    "\t@`}IOM\t>text 'Список'",
                     "."
                   ],
-              Map.singleton "B3QET9SI4L14P-2007GRROP9V0V"
-                $ Map.singleton "B3QET9SI4OIFO-2007GRROP9V0V"
+              Map.singleton "B0000000039SM-2000000000012"
+                $ Map.singleton "B000000006N4M-2000000000012"
                 $ map encodeUtf8
-                  [ "*set #B/7esKx_IdIP+00xDwmaFlV  !",
-                    "\t@`]K5  >text 'Тэг'",
+                  [ "*set\t#B/0000000QUM+000000000Y\t!",
+                    "\t@`}_QM\t>text 'тэг'",
                     "."
                   ]
             ]
@@ -203,7 +203,8 @@ prop_new =
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
-        tags' <- traverse (UUID.mkName . TE.encodeUtf8) tags
+        let tags' = mapMaybe UUID.decodeBase32
+              ["B000000001NDU-2000000000012", "B0000000039SM-2000000000012"]
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start === note_start
