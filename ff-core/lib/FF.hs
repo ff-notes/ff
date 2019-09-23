@@ -56,7 +56,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import qualified Data.Set as Set
-import Data.Set (Set, isSubsetOf, (\\))
+import Data.Set (Set, (\\), isSubsetOf)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -161,10 +161,10 @@ loadContacts isArchived =
 loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
-loadRefsByTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
-loadRefsByTags queryTags = do
-    allTags <- loadAll
-    map (docIdToRef . entityId) <$> filterM compareTags allTags
+loadTagRefsByText :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+loadTagRefsByText queryTags = do
+  allTags <- loadAll
+  map (docIdToRef . entityId) <$> filterM compareTags allTags
   where
     compareTags tag = case tag_text $ entityVal tag of
       Nothing -> pure False
@@ -178,7 +178,7 @@ loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
 createTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
 createTags tags =
   for (toList tags) $ \tag -> do
-    tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
+    tagFrame@ObjectFrame {uuid} <- newObjectFrame Tag {tag_text = Just tag}
     createDocument tagFrame
     pure $ ObjectRef uuid
 
@@ -190,15 +190,13 @@ createTags tags =
 createNewTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
 createNewTags tags = do
   allTags <- loadAllTagTexts
-  existentRef <- loadRefsByTags tags
+  existentTagRefs <- loadTagRefsByText tags
   let newTags = tags \\ allTags
-  case (null newTags, null existentRef) of
-    (False, False) -> do
+  if null newTags
+    then pure existentTagRefs
+    else do
       createdTags <- createTags newTags
-      pure $ existentRef <> createdTags
-    (True, False) -> pure existentRef
-    (False, True) -> createTags newTags
-    _ -> pure []
+      pure $ existentTagRefs <> createdTags
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
@@ -416,10 +414,10 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
         { note_end,
           note_start = Just noteStart,
           note_status = Just status,
-          note_text   = Just $ RGA $ Text.unpack text,
-          note_tags   = refs,
-          note_track  = Nothing
-          }
+          note_text = Just $ RGA $ Text.unpack text,
+          note_tags = refs,
+          note_track = Nothing
+        }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
@@ -616,4 +614,4 @@ refToDocId (ObjectRef uid) = docIdFromUuid uid
 docIdToRef :: DocId a -> ObjectRef a
 docIdToRef docId = case decodeDocId docId of
   Nothing -> error "Decode UUID from DocId failed. DocId is "
-  Just (_,uid) -> ObjectRef uid
+  Just (_, uid) -> ObjectRef uid
