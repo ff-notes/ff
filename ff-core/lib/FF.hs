@@ -43,12 +43,12 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Monad (unless, void, when)
+import Control.Monad (filterM, unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
 import Data.Bool (bool)
-import Data.Foldable (asum, for_, toList)
+import Data.Foldable (asum, for_, toList, traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.List (genericLength, sortOn)
@@ -114,6 +114,7 @@ import RON.Storage
   ( Collection,
     DocId,
     createDocument,
+    decodeDocId,
     docIdFromUuid,
     loadDocument,
     modify,
@@ -160,9 +161,43 @@ loadContacts isArchived =
 loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
+loadRefsByTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+loadRefsByTags queryTags = do
+    allTags <- loadAll
+    map (docIdToRef . entityId) <$> filterM compareTags allTags
+  where
+    compareTags tag = case tag_text $ entityVal tag of
+      Nothing -> pure False
+      Just txt -> pure $ elem txt queryTags
+
 loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
   tag_text . entityVal <$> load (refToDocId ref)
+
+-- | Create tag objects with given texts.
+createTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+createTags tags = do
+  objects <- traverse (newObjectFrame . Tag . Just) $ Set.toList tags
+  traverse_ createDocument objects
+  pure $ map (ObjectRef . uuid) objects
+
+-- | Add new tags to Collection of tags.
+--
+-- It doesn't create tags that are in the collection already.
+-- It returns references that should be added to note_tags.
+-- References may content ones that note_tags has already.
+createNewTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+createNewTags tags = do
+  allTags <- loadAllTagTexts
+  existentRef <- loadRefsByTags tags
+  let newTags = tags Set.\\ allTags
+  case (null newTags, null existentRef) of
+    (False, False) -> do
+      createdTags <- createTags newTags
+      pure $ existentRef <> createdTags
+    (True, False) -> pure existentRef
+    (False, True) -> createTags newTags
+    _ -> pure []
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
@@ -367,7 +402,7 @@ updateTrackedNotes newNotes = do
   for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
-cmdNewNote New {text, start, end, isWiki} today = do
+cmdNewNote New {text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
@@ -375,14 +410,15 @@ cmdNewNote New {text, start, end, isWiki} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
+  refs <- createNewTags $ Set.fromList tags
   let note = Note
         { note_end,
           note_start = Just noteStart,
           note_status = Just status,
-          note_text = Just $ RGA $ Text.unpack text,
-          note_tags = [],
-          note_track = Nothing
-        }
+          note_text   = Just $ RGA $ Text.unpack text,
+          note_tags   = refs,
+          note_track  = Nothing
+          }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
@@ -575,3 +611,8 @@ sponsors = ["Nadezda"]
 
 refToDocId :: ObjectRef a -> DocId a
 refToDocId (ObjectRef uid) = docIdFromUuid uid
+
+docIdToRef :: DocId a -> ObjectRef a
+docIdToRef docId = case decodeDocId docId of
+  Nothing -> error "Decode UUID from DocId failed. DocId is "
+  Just (_,uid) -> ObjectRef uid
