@@ -19,11 +19,12 @@ module FF.UI (
 ) where
 
 import           Data.Char (isSpace)
+import           Data.Foldable (toList)
 import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust)
 import           Data.Semigroup ((<>))
-import qualified Data.Set as Set
+import           Data.Set (Set)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
@@ -59,7 +60,7 @@ prettyTasksWikisContacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
     -> Bool                      -- ^ does search involve contacts
-    -> [Text]                    -- ^ tags to filter notes
+    -> Set Text                  -- ^ tags to filter notes
     -> Doc AnsiStyle
 prettyTasksWikisContacts
         isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
@@ -132,12 +133,13 @@ prettyNote isBrief (NoteView Entity{..} tags) = case isBrief of
                     , Just end <- [note_end]
                     ]
                 ]
-            ++  [ green "|" <+> cyan "tags" <+> pretty tags' | not $ null tags']
+            ++  [ green "|" <+> cyan "tags" <+> pretty (toList tags)
+                | not $ null tags
+                ]
             ++  [ green "|" <+> cyan "tracking" <+> pretty track_url
                 | Just Track{..} <- [note_track]
                 ]
   where
-    tags' = Set.toList tags
     Note
       { note_end
       , note_start
@@ -158,20 +160,22 @@ title
 
 prettyTaskSections
     :: Bool
-    -> [Text] -- ^ requested tags
+    -> Set Text -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
-prettyTaskSections isBrief tagsRequested samples =
-    case tagsRequested of
-        [] -> tasks
-        _ -> tagHeader tagsRequested tasks
+prettyTaskSections isBrief tagsRequested samples
+    | null tagsRequested = tasks
+    | otherwise = tagHeader tagsRequested tasks
   where
-    tagHeader t = withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
+    tagHeader t =
+        withHeader ("Filtered by tags: " <> Text.intercalate ", " (toList t))
     tasks = stack isBrief
         $   [ prettyTaskSample isBrief mode sample
             | (mode, sample) <- Map.assocs samples
             ]
-        ++  [magenta (pretty numOmitted) <> yellow " task(s) omitted" | numOmitted > 0]
+        ++  [ magenta (pretty numOmitted) <> yellow " task(s) omitted"
+            | numOmitted > 0
+            ]
     numOmitted = sum $ fmap omitted samples
 
 prettyTaskSample :: Bool -> TaskMode -> NoteSample -> Doc AnsiStyle
@@ -218,11 +222,12 @@ prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
     name = fromRgaM contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId
 
-prettyTagsList :: [Text] -> Doc AnsiStyle
-prettyTagsList tags =
-  if null tags
-    then red "There are no tags."
-    else withHeader "All tags:" $ fillSep [green "|" <+> pretty t | t <- tags]
+prettyTagsList :: Set Text -> Doc AnsiStyle
+prettyTagsList tags
+    | null tags = red "There are no tags."
+    | otherwise =
+        withHeader "All tags:" $
+        fillSep [green "|" <+> pretty t | t <- toList tags]
 
 wrapLines :: Text -> Doc ann
 wrapLines =

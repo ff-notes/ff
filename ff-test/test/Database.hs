@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -6,19 +7,18 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Database
-  ( databaseTests
-    )
+  ( databaseTests,
+  )
 where
 
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
+import Data.Maybe (mapMaybe)
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
-import qualified Data.Set as Set
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as TE
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
@@ -29,14 +29,14 @@ import FF.Types
   ( Limit,
     Note (..),
     NoteStatus (TaskStatus),
-    NoteView (NoteView),
-    Sample (..),
+    NoteView (NoteView, note, tags),
+    Sample (Sample, items, total),
     Status (Active),
     TaskMode (Overdue),
     Track (..),
     entityVal,
-    pattern Entity
-    )
+    pattern Entity,
+  )
 import FF.Upgrade (upgradeDatabase)
 import qualified Gen
 import GitHub
@@ -44,8 +44,8 @@ import GitHub
     IssueNumber (IssueNumber),
     IssueState (..),
     Milestone (..),
-    URL (..)
-    )
+    URL (..),
+  )
 import GitHub.Data.Definitions (SimpleUser (..))
 import GitHub.Data.Id (Id (..))
 import GitHub.Data.Name (Name (..))
@@ -53,8 +53,8 @@ import Hedgehog ((===), Gen, Property, evalEither, forAll, property)
 import RON.Data
   ( ReplicatedAsObject (readObject),
     evalObjectState,
-    newObjectFrame
-    )
+    newObjectFrame,
+  )
 import RON.Data.RGA (RGA (RGA))
 import RON.Storage.Backend (DocId (DocId))
 import RON.Storage.Test (TestDB, runStorageSim)
@@ -73,9 +73,9 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today []
+      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
   Map.empty === agenda
-  fs        === fs'
+  fs === fs'
   where
     fs = Map.empty
 
@@ -84,28 +84,31 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today []
+      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
   agenda === agenda'
-  fs123  === fs'
+  fs123 === fs'
   where
     agenda =
       Map.singleton
         (Overdue 365478)
         Sample
           { items =
-              [ NoteView (Entity
-                  (DocId "B00000000002D-200000000002D")
-                  Note
-                    { note_status = Just $ TaskStatus Active,
-                      note_text   = Just $ RGA "helloworld",
-                      note_start  = Just $ fromGregorian 22 11 24,
-                      note_end    = Just $ fromGregorian 17 06 19,
-                      note_tags   = [],
-                      note_track  = Nothing
-                      }) Set.empty
-                ],
+              [ NoteView
+                  { note = Entity
+                             (DocId "B00000000002D-200000000002D")
+                             Note
+                               { note_status = Just $ TaskStatus Active,
+                                 note_text = Just $ RGA "helloworld",
+                                 note_start = Just $ fromGregorian 22 11 24,
+                                 note_end = Just $ fromGregorian 17 06 19,
+                                 note_tags = [],
+                                 note_track = Nothing
+                               },
+                    tags = mempty
+                  }
+              ],
             total = 1
-            }
+          }
 
 fs123 :: TestDB
 fs123 =
@@ -127,7 +130,7 @@ fs123 =
                   @9+7            'l'
                   @A+7            'o'
                 |]
-            ),
+          ),
           ( "event 3 99",
             BSLC.lines
               [i|
@@ -144,8 +147,8 @@ fs123 =
                   @7+5            'l'
                   @8+5            'd'
                 |]
-            )
-          ]
+          )
+        ]
 
 agendaLimit :: Maybe Limit
 agendaLimit = Just 10
@@ -155,47 +158,59 @@ today = fromGregorian 1018 02 10
 
 prop_new :: Property
 prop_new =
-  let text  = "Мир"
+  let text = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end   = Just $ fromGregorian 3150 1 2
-      tags  = ["список"]
-      fs =
-        Map.singleton "note" $ Map.singleton "B000000001NDU-2000000000012"
-          $ Map.singleton "B00000000KJ6M-2000000000012"
-          $ map encodeUtf8
-          $ mconcat
-              [ [ "*set #B/0000000Drz+000000000Y !",
-                  "\t@`}IOM >end 3150 1 2",
-                  "\t@}QUM >start 2154 5 6",
-                  "\t@}_QM >status >Active",
-                  "\t@}mnM >tags >B/0000001TnM+000000000Y",
-                  "\t@{1inM >text >B/0000001ynM+000000000Y",
-                  "\t@{2Q9r >track",
-
-                  "#}ynM @0 !",
-                  "\t@`{1DnM >text 'список'",
-
-                  "#{1TnM @0 !",
-                  "\t@`{0qnM >{0ynM"
+      tags  = ["Список", "тэг"]
+      fs = Map.unions
+        [ Map.singleton "note" $ Map.singleton "B000000007N4M-2000000000012"
+            $ Map.singleton "B00000000P8JM-2000000000012"
+            $ map encodeUtf8
+            $ mconcat
+                [ [ "*set\t#B/0000000ynM+000000000Y\t!",
+                    "\t@`{1DnM\t>end 3150 1 2",
+                    "\t@}TnM\t>start 2154 5 6",
+                    "\t@}inM\t>status >Active",
+                    "\t@}ynM\t>tags >B/0000000Drz+000000000Y",
+                    "\t@{2DnM\t>tags >B/0000000QUM+000000000Y",
+                    "\t@}TnM\t>text >B/0000002inM+000000000Y"
+                  ],
+                  [ "*rga\t#{2inM\t@0\t!",
+                    "\t@`}y_h\t'М'",
+                    "\t@)i\t'и'",
+                    "\t@)j\t'р'",
+                    "."
+                  ]
                 ],
-                [ "*rga #}ynM @0 !",
-                  "\t@`{2D_h 'М'",
-                  "\t@)i 'и'",
-                  "\t@)j 'р'",
-                  "."
-                ]
-              ]
-   in property $ do
+          Map.singleton "tag" $ Map.unions
+            [ Map.singleton "B000000001NDU-2000000000012"
+                $ Map.singleton "B00000000674M-2000000000012"
+                $ map encodeUtf8
+                  [ "*set\t#B/0000000Drz+000000000Y\t!",
+                    "\t@`}IOM\t>text 'Список'",
+                    "."
+                  ],
+              Map.singleton "B0000000039SM-2000000000012"
+                $ Map.singleton "B000000006N4M-2000000000012"
+                $ map encodeUtf8
+                  [ "*set\t#B/0000000QUM+000000000Y\t!",
+                    "\t@`}_QM\t>text 'тэг'",
+                    "."
+                  ]
+            ]
+        ]
+  in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
             $ cmdNewNote New {text, start, end, isWiki = False, tags} today
-        tags' <- traverse (UUID.mkName . TE.encodeUtf8) tags
+        let tags' = mapMaybe UUID.decodeBase32
+              ["B000000001NDU-2000000000012", "B0000000039SM-2000000000012"]
         let Note {note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
-        start                         === note_start
-        end                           === note_end
-        map ObjectRef tags'           === note_tags
-        fs                            === fs'
+        start === note_start
+        end === note_end
+        map ObjectRef tags' === note_tags
+        fs === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property
 jsonRoundtrip genA = property $ do
@@ -219,8 +234,8 @@ prop_Config_JSON = jsonRoundtrip Gen.config
 test_RON_Tests :: [TestTree]
 test_RON_Tests =
   [ testProperty "Contact" $ ronRoundtrip Gen.contact,
-    testProperty "Note"    $ ronRoundtrip Gen.note
-    ]
+    testProperty "Note" $ ronRoundtrip Gen.note
+  ]
 
 prop_repo :: Property
 prop_repo =
@@ -232,24 +247,30 @@ prop_repo =
         (Overdue 10)
         Sample
           { items =
-              [ NoteView (Entity (DocId "") Note
-                  { note_status = Just $ TaskStatus Active,
-                    note_text   = Just $ RGA "import issues (GitHub -> ff)",
-                    note_start  = Just $ fromGregorian 2018 06 21,
-                    note_end    = Just $ fromGregorian 2018 06 15,
-                    note_tags   = [],
-                    note_track  = Just
-                      Track
-                        { track_provider   = Just "github",
-                          track_source     = Just "ff-notes/ff",
-                          track_externalId = Just "60",
-                          track_url        = Just
-                            "https://github.com/ff-notes/ff/issues/60"
-                          }
-                    }) Set.empty
+              [ NoteView
+                  { note = Entity
+                             (DocId "")
+                             Note
+                               { note_status = Just $ TaskStatus Active,
+                                 note_text =
+                                   Just $ RGA "import issues (GitHub -> ff)",
+                                 note_start = Just $ fromGregorian 2018 06 21,
+                                 note_end = Just $ fromGregorian 2018 06 15,
+                                 note_tags = [],
+                                 note_track = Just Track
+                                   { track_provider = Just "github",
+                                     track_source = Just "ff-notes/ff",
+                                     track_externalId = Just "60",
+                                     track_url =
+                                       Just
+                                         "https://github.com/ff-notes/ff/issues/60"
+                                   }
+                               },
+                    tags = mempty
+                  }
               ],
             total = 1
-            }
+          }
 
 todayForIssues :: Day
 todayForIssues = fromGregorian 2018 06 25
@@ -259,43 +280,41 @@ limit = Just 1
 
 issues :: [Issue]
 issues =
-  pure
-    Issue
-      { issueClosedAt = Nothing,
-        issueUpdatedAt =
-          UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60 + 41),
-        issueEventsUrl = api "issues/60/events",
-        issueHtmlUrl = Just $ URL "https://github.com/ff-notes/ff/issues/60",
-        issueClosedBy = Nothing,
-        issueLabels = mempty,
-        issueNumber = IssueNumber 60,
-        issueAssignees = mempty,
-        issueUser = cblp,
-        issueTitle = "import issues (GitHub -> ff)",
-        issuePullRequest = Nothing,
-        issueUrl = api "issues/60",
-        issueCreatedAt =
-          UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60),
-        issueBody = Just "",
-        issueState = StateOpen,
-        issueId = Id 334520780,
-        issueComments = 0,
-        issueMilestone = Just
-          Milestone
-            { milestoneCreator = cblp,
-              milestoneDueOn =
-                Just $ UTCTime (fromGregorian 2018 06 15) (7 * 3600),
-              milestoneOpenIssues = 5,
-              milestoneNumber = Id 1,
-              milestoneClosedIssues = 0,
-              milestoneDescription = Just "",
-              milestoneTitle = "GitHub sync",
-              milestoneUrl = api "milestones/1",
-              milestoneCreatedAt =
-                UTCTime (fromGregorian 2018 06 16) (9 * 3600 + 15 * 60 + 35),
-              milestoneState = "open"
-              }
+  pure Issue
+    { issueClosedAt = Nothing,
+      issueUpdatedAt =
+        UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60 + 41),
+      issueEventsUrl = api "issues/60/events",
+      issueHtmlUrl = Just $ URL "https://github.com/ff-notes/ff/issues/60",
+      issueClosedBy = Nothing,
+      issueLabels = mempty,
+      issueNumber = IssueNumber 60,
+      issueAssignees = mempty,
+      issueUser = cblp,
+      issueTitle = "import issues (GitHub -> ff)",
+      issuePullRequest = Nothing,
+      issueUrl = api "issues/60",
+      issueCreatedAt =
+        UTCTime (fromGregorian 2018 06 21) (14 * 3600 + 30 * 60),
+      issueBody = Just "",
+      issueState = StateOpen,
+      issueId = Id 334520780,
+      issueComments = 0,
+      issueMilestone = Just Milestone
+        { milestoneCreator = cblp,
+          milestoneDueOn =
+            Just $ UTCTime (fromGregorian 2018 06 15) (7 * 3600),
+          milestoneOpenIssues = 5,
+          milestoneNumber = Id 1,
+          milestoneClosedIssues = 0,
+          milestoneDescription = Just "",
+          milestoneTitle = "GitHub sync",
+          milestoneUrl = api "milestones/1",
+          milestoneCreatedAt =
+            UTCTime (fromGregorian 2018 06 16) (9 * 3600 + 15 * 60 + 35),
+          milestoneState = "open"
         }
+    }
   where
     api x = URL $ "https://api.github.com/repos/ff-notes/ff/" <> x
     cblp = SimpleUser
@@ -304,7 +323,7 @@ issues =
         simpleUserAvatarUrl =
           URL "https://avatars0.githubusercontent.com/u/63495?v=4",
         simpleUserUrl = URL "https://api.github.com/users/cblp"
-        }
+      }
 
 prop_json2ron :: Property
 prop_json2ron = property $ do
@@ -331,7 +350,7 @@ fs123jsonAndLww =
                       "status": ["Active",   29, 30],
                       "text"  : ["hello",     6,  7]
                       }|]
-                  ),
+                ),
                 ( "event 2 78",
                   BSLC.lines
                     [i|{
@@ -340,9 +359,9 @@ fs123jsonAndLww =
                       "status": ["Active",   27, 28],
                       "text"  : ["world",     4,  5]
                       }|]
-                  )
-                ]
-            ),
+                )
+              ]
+          ),
           ( "000000000008M-000000000001J",
             Map.singleton "event 3 24"
               $ mconcat
@@ -352,14 +371,14 @@ fs123jsonAndLww =
                       "\t@B/6n7T8JWK0T+000000000U :status >Active",
                       "\t@` :text >)P",
                       "\t:track >)Q"
-                      ],
+                    ],
                     [ "*lww #)Q !",
                       "\t:externalId '54'",
                       "\t:provider 'github'",
                       "\t:source 'ff-notes/ff'",
                       "\t:url 'https://github.com/ff-notes/ff/pull/54'",
                       "*rga #)P @0 :0 !"
-                      ],
+                    ],
                     [ "\t@B/6n7T8JWK06+0000000007 'h'",
                       "\t@)7 'e'",
                       "\t@)8 'l'",
@@ -371,10 +390,10 @@ fs123jsonAndLww =
                       "\t@)7 'l'",
                       "\t@)8 'd'",
                       "."
-                      ]
                     ]
-            )
-          ]
+                  ]
+          )
+        ]
 
 fs123merged :: TestDB
 fs123merged =
@@ -388,7 +407,7 @@ fs123merged =
                       "\t@}IOM\t>start 22 11 24",
                       "\t@}QUM\t>status >Active",
                       "\t@}_QM\t>text >000000004L$000000000o"
-                      ],
+                    ],
                     [ "*rga\t#)L\t@0\t!",
                       "\t@B/6n7T8JWK06+0000000007\t'h'",
                       "\t@)7\t'e'",
@@ -401,9 +420,9 @@ fs123merged =
                       "\t@)7\t'l'",
                       "\t@)8\t'd'",
                       "."
-                      ]
                     ]
-            ),
+                  ]
+          ),
           ( "000000000008M-000000000001J",
             Map.singleton "B00000000NN4M-2000000000012"
               $ mconcat
@@ -413,7 +432,7 @@ fs123merged =
                       "\t@{1DnM\t>status >Active",
                       "\t@}TnM\t>text >000000004P$000000000o",
                       "\t@}inM\t>track >000000004Q$000000000o"
-                      ],
+                    ],
                     [ "*rga\t#)P\t@0\t!",
                       "\t@B/6n7T8JWK06+0000000007\t'h'",
                       "\t@)7\t'e'",
@@ -425,14 +444,14 @@ fs123merged =
                       "\t@)6\t'r'",
                       "\t@)7\t'l'",
                       "\t@)8\t'd'"
-                      ],
+                    ],
                     [ "*set\t#)Q\t@0\t!",
                       "\t@B/0000001ynM+000000000Y\t>externalId '54'",
                       "\t@{2DnM\t>provider 'github'",
                       "\t@}TnM\t>source 'ff-notes/ff'",
                       "\t@}inM\t>url 'https://github.com/ff-notes/ff/pull/54'",
                       "."
-                      ]
                     ]
-            )
-          ]
+                  ]
+          )
+        ]
