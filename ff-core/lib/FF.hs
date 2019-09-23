@@ -188,12 +188,14 @@ createTags tags =
 -- It returns references that should be added to note_tags.
 -- References may content ones that note_tags has already.
 getOrCreateTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
-getOrCreateTags tags = do
-  allTags <- loadAllTagTexts
-  existentTagRefs <- loadTagRefsByText tags
-  let newTags = tags \\ allTags
-  createdTagRefs <- createTags newTags
-  pure $ existentTagRefs <> createdTagRefs
+getOrCreateTags tags
+  | null tags = pure []
+  | otherwise = do
+    allTags <- loadAllTagTexts
+    existentTagRefs <- loadTagRefsByText tags
+    let newTags = tags \\ allTags
+    createdTagRefs <- createTags newTags
+    pure $ existentTagRefs <> createdTagRefs
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
