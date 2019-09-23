@@ -51,7 +51,7 @@ import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList, traverse_)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.List (genericLength, sortOn)
+import Data.List (genericLength, sortOn, (\\))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
@@ -96,6 +96,8 @@ import FF.Types
     note_tags_clear,
     note_text_clear,
     note_text_zoom,
+    note_tags_add,
+    note_tags_read,
     note_track_read,
     taskMode,
   )
@@ -479,8 +481,12 @@ cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
-  Edit {ids = nid :| [], text, start = Nothing, end = Nothing} ->
-    fmap (: []) $ modifyAndView nid $ do
+  Edit
+    { ids = nid :| []
+    , text, start = Nothing
+    , end = Nothing
+    , addTags = []
+    } -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
@@ -490,7 +496,8 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end} ->
+  Edit {ids, text, start, end, addTags} -> do
+    refsAdd <- createNewTags $ Set.fromList addTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -511,12 +518,18 @@ cmdEdit edit = case edit of
               end' = end >>= assignToMaybe
           whenJust newStartEnd
             $ uncurry assertStartBeforeEnd
-        -- update
+        -- update commands
         whenJust end $ \case
           Clear -> note_end_clear
           Set e -> note_end_set e
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
+        -- add new tags
+        unless (null addTags) $ do
+          currentRefs <- note_tags_read
+          -- drop tags if note_tags has them already
+          let newRefs = refsAdd \\ currentRefs
+          mapM_ note_tags_add newRefs
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

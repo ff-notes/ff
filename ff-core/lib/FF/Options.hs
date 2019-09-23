@@ -104,10 +104,11 @@ data Agenda = Agenda
     }
 
 data Edit = Edit
-    { ids   :: NonEmpty NoteId
-    , text  :: Maybe Text
-    , start :: Maybe Day
-    , end   :: Maybe (Assign Day)
+    { ids        :: NonEmpty NoteId
+    , text       :: Maybe Text
+    , start      :: Maybe Day
+    , end        :: Maybe (Assign Day)
+    , addTags    :: [Text]
     }
     deriving (Show)
 
@@ -243,6 +244,7 @@ parser h =
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional assignEnd
+        <*> addTagsOption
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
