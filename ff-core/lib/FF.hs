@@ -192,11 +192,8 @@ getOrCreateTags tags = do
   allTags <- loadAllTagTexts
   existentTagRefs <- loadTagRefsByText tags
   let newTags = tags \\ allTags
-  if null newTags
-    then pure existentTagRefs
-    else do
-      createdTags <- createTags newTags
-      pure $ existentTagRefs <> createdTags
+  createdTagRefs <- createTags newTags
+  pure $ existentTagRefs <> createdTagRefs
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
