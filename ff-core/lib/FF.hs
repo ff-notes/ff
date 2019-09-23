@@ -48,7 +48,7 @@ import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
 import Data.Bool (bool)
-import Data.Foldable (asum, for_, toList, traverse_)
+import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.List (genericLength, sortOn)
@@ -56,7 +56,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import qualified Data.Set as Set
-import Data.Set (Set, isSubsetOf)
+import Data.Set (Set, isSubsetOf, (\\))
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -176,10 +176,11 @@ loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
 
 -- | Create tag objects with given texts.
 createTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
-createTags tags = do
-  objects <- traverse (newObjectFrame . Tag . Just) $ Set.toList tags
-  traverse_ createDocument objects
-  pure $ map (ObjectRef . uuid) objects
+createTags tags =
+  for (toList tags) $ \tag -> do
+    tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
+    createDocument tagFrame
+    pure $ ObjectRef uuid
 
 -- | Add new tags to Collection of tags.
 --
@@ -190,7 +191,7 @@ createNewTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
 createNewTags tags = do
   allTags <- loadAllTagTexts
   existentRef <- loadRefsByTags tags
-  let newTags = tags Set.\\ allTags
+  let newTags = tags \\ allTags
   case (null newTags, null existentRef) of
     (False, False) -> do
       createdTags <- createTags newTags
