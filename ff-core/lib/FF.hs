@@ -172,7 +172,7 @@ loadTagRefsByText queryTags = do
   pure
     $ HashSet.fromList
         [ docIdToRef entityId
-          | Entity {entityId, entityVal = Tag{tag_text = Just tag}} <- allTags,
+          | Entity {entityId, entityVal = Tag {tag_text = Just tag}} <- allTags,
             tag `elem` queryTags
         ]
 
@@ -491,16 +491,18 @@ cmdEdit edit = case edit of
       start = Nothing,
       end = Nothing,
       addTags
-    } | null addTags -> fmap (: []) $ modifyAndView nid $ do
-      assertNoteIsNative
-      note_text_zoom $ do
-        noteText' <-
-          case text of
-            Just noteText' -> pure noteText'
-            Nothing -> do
-              noteText <- RGA.getText
-              liftIO $ runExternalEditor noteText
-        RGA.editText noteText'
+    }
+      | null addTags ->
+        fmap (: []) $ modifyAndView nid $ do
+          assertNoteIsNative
+          note_text_zoom $ do
+            noteText' <-
+              case text of
+                Just noteText' -> pure noteText'
+                Nothing -> do
+                  noteText <- RGA.getText
+                  liftIO $ runExternalEditor noteText
+            RGA.editText noteText'
   Edit {ids, text, start, end, addTags} -> do
     refsAdd <- getOrCreateTags addTags
     fmap toList . for ids $ \nid ->
