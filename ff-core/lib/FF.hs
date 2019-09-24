@@ -43,7 +43,7 @@ where
 
 import Control.Applicative ((<|>))
 import Control.Arrow ((&&&))
-import Control.Monad (filterM, unless, void, when)
+import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
@@ -95,11 +95,11 @@ import FF.Types
     note_status_clear,
     note_status_read,
     note_status_set,
+    note_tags_add,
     note_tags_clear,
+    note_tags_read,
     note_text_clear,
     note_text_zoom,
-    note_tags_add,
-    note_tags_read,
     note_track_read,
     taskMode,
   )
@@ -167,13 +167,13 @@ loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
 loadTagRefsByText :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 loadTagRefsByText queryTags = do
-    allTags <- loadAll
-    tags <- filterM compareTags allTags
-    pure $ HashSet.fromList $ map (docIdToRef . entityId) tags
+  allTags <- loadAll
+  let tags = filter compareTags allTags
+  pure $ HashSet.fromList $ map (docIdToRef . entityId) tags
   where
     compareTags tag = case tag_text $ entityVal tag of
-      Nothing -> pure False
-      Just txt -> pure $ elem txt queryTags
+      Nothing -> False
+      Just txt -> txt `elem` queryTags
 
 loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
@@ -181,11 +181,13 @@ loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
 
 -- | Create tag objects with given texts.
 createTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
-createTags tags = fmap HashSet.fromList $
-  for (toList tags) $ \tag -> do
-    tagFrame@ObjectFrame {uuid} <- newObjectFrame Tag {tag_text = Just tag}
-    createDocument tagFrame
-    pure $ ObjectRef uuid
+createTags tags =
+  fmap HashSet.fromList
+    $ for (toList tags)
+    $ \tag -> do
+      tagFrame@ObjectFrame {uuid} <- newObjectFrame Tag {tag_text = Just tag}
+      createDocument tagFrame
+      pure $ ObjectRef uuid
 
 -- | Add new tags to Collection of tags.
 --
@@ -418,10 +420,10 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
         { note_end,
           note_start = Just noteStart,
           note_status = Just status,
-          note_text   = Just $ RGA $ Text.unpack text,
-          note_tags   = toList refs,
-          note_track  = Nothing
-          }
+          note_text = Just $ RGA $ Text.unpack text,
+          note_tags = toList refs,
+          note_track = Nothing
+        }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
@@ -483,10 +485,11 @@ cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
   Edit
-    { ids = nid :| []
-    , text, start = Nothing
-    , end = Nothing
-    , addTags
+    { ids = nid :| [],
+      text,
+      start = Nothing,
+      end = Nothing,
+      addTags
     } | null addTags -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
