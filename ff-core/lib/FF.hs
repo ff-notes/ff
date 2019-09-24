@@ -521,10 +521,10 @@ cmdEdit edit = case edit of
               end' = end >>= assignToMaybe
           whenJust newStartEnd
             $ uncurry assertStartBeforeEnd
+        -- update
         whenJust end $ \case
           Clear -> note_end_clear
           Set e -> note_end_set e
-        -- update
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
         -- add new tags
