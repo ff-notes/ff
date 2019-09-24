@@ -14,7 +14,7 @@ import qualified RON.Storage.FS as StorageFS
 
 import           FF (cmdDone, cmdEdit, cmdPostpone)
 import           FF.Options (Assign (Clear, Set),
-                             Edit (Edit, end, ids, start, text, addTags))
+                             Edit (Edit, end, ids, start, text, addTags, deleteTags))
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
@@ -30,14 +30,14 @@ c_assignStart storagePtr noteIdStr year month day = do
             fromGregorian
                 (fromIntegral year) (fromIntegral month) (fromIntegral day)
     void $ runStorage storageHandle $
-        cmdEdit
-            Edit
-                { ids = DocId noteId :| []
-                , text = Nothing
-                , start
-                , end = Nothing
-                , addTags = Set.empty
-                }
+        cmdEdit Edit
+            { ids = DocId noteId :| []
+            , text = Nothing
+            , start
+            , end = Nothing
+            , addTags = Set.empty
+            , deleteTags = Set.empty
+            }
 
 foreign export ccall c_assignEnd
     :: StablePtr StorageFS.Handle -> CString -> CInt -> CInt -> CInt -> IO ()
@@ -53,14 +53,14 @@ c_assignEnd storagePtr noteIdStr year month day = do
                 fromGregorian
                     (fromIntegral year) (fromIntegral month) (fromIntegral day)
     void $ runStorage storageHandle $
-        cmdEdit
-            Edit
-                { ids = DocId noteId :| []
-                , text = Nothing
-                , end
-                , start = Nothing
-                , addTags = Set.empty
-                }
+        cmdEdit Edit
+            { ids = DocId noteId :| []
+            , text = Nothing
+            , end
+            , start = Nothing
+            , addTags = Set.empty
+            , deleteTags = Set.empty
+            }
 
 foreign export ccall c_done :: StablePtr StorageFS.Handle -> CString -> IO ()
 c_done :: StablePtr StorageFS.Handle -> CString -> IO ()

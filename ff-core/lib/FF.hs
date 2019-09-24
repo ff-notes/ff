@@ -98,6 +98,7 @@ import FF.Types
     note_tags_add,
     note_tags_clear,
     note_tags_read,
+    note_tags_remove,
     note_text_clear,
     note_text_zoom,
     note_track_read,
@@ -490,9 +491,10 @@ cmdEdit edit = case edit of
       text,
       start = Nothing,
       end = Nothing,
-      addTags
+      addTags,
+      deleteTags
     }
-      | null addTags ->
+      | null addTags && null deleteTags ->
         fmap (: []) $ modifyAndView nid $ do
           assertNoteIsNative
           note_text_zoom $ do
@@ -503,8 +505,9 @@ cmdEdit edit = case edit of
                   noteText <- RGA.getText
                   liftIO $ runExternalEditor noteText
             RGA.editText noteText'
-  Edit {ids, text, start, end, addTags} -> do
+  Edit {ids, text, start, end, addTags, deleteTags} -> do
     refsAdd <- getOrCreateTags addTags
+    refsDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -537,6 +540,9 @@ cmdEdit edit = case edit of
           -- skip tags if note_tags has them already
           let newRefs = HashSet.difference refsAdd currentRefs
           mapM_ note_tags_add newRefs
+        -- delete tags
+        unless (null deleteTags) $
+          mapM_ note_tags_remove refsDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do
