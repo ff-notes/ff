@@ -176,7 +176,7 @@ loadRefsByTags queryTags = do
       Just txt -> pure $ elem txt queryTags
 
 loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
-loadTagsByRefs refs = fmap catMaybes $ for (HashSet.toList refs) $ \ref ->
+loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
   tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
@@ -421,7 +421,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
           note_start = Just noteStart,
           note_status = Just status,
           note_text   = Just $ RGA $ Text.unpack text,
-          note_tags   = HashSet.toList refs,
+          note_tags   = toList refs,
           note_track  = Nothing
           }
   obj@ObjectFrame {uuid} <- newObjectFrame note
@@ -524,6 +524,7 @@ cmdEdit edit = case edit of
         whenJust end $ \case
           Clear -> note_end_clear
           Set e -> note_end_set e
+        -- update
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
         -- add new tags
