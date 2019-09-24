@@ -15,6 +15,7 @@ import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import Data.Maybe (mapMaybe)
 import Data.Semigroup ((<>))
 import Data.String.Interpolate.IsString (i)
@@ -161,7 +162,7 @@ prop_new =
   let text = "Мир"
       start = Just $ fromGregorian 2154 5 6
       end = Just $ fromGregorian 3150 1 2
-      tags = ["Список", "тэг"]
+      tags = Set.fromList ["Список", "тэг"]
       fs =
         Map.unions
           [ Map.singleton "note" $ Map.singleton "B000000007N4M-2000000000012"

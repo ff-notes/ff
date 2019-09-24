@@ -51,6 +51,8 @@ import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import Data.HashSet (HashSet)
+import qualified Data.HashSet as HashSet
 import Data.List (genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
@@ -96,6 +98,8 @@ import FF.Types
     note_tags_clear,
     note_text_clear,
     note_text_zoom,
+    note_tags_add,
+    note_tags_read,
     note_track_read,
     taskMode,
   )
@@ -161,22 +165,23 @@ loadContacts isArchived =
 loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
-loadTagRefsByText :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+loadTagRefsByText :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 loadTagRefsByText queryTags = do
-  allTags <- loadAll
-  map (docIdToRef . entityId) <$> filterM compareTags allTags
+    allTags <- loadAll
+    tags <- filterM compareTags allTags
+    pure $ HashSet.fromList $ map (docIdToRef . entityId) tags
   where
     compareTags tag = case tag_text $ entityVal tag of
       Nothing -> pure False
       Just txt -> pure $ elem txt queryTags
 
-loadTagsByRefs :: MonadStorage m => [ObjectRef Tag] -> m [Text]
-loadTagsByRefs refs = fmap catMaybes $ for refs $ \ref ->
+loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
+loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
   tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
-createTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
-createTags tags =
+createTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
+createTags tags = fmap HashSet.fromList $
   for (toList tags) $ \tag -> do
     tagFrame@ObjectFrame {uuid} <- newObjectFrame Tag {tag_text = Just tag}
     createDocument tagFrame
@@ -187,9 +192,9 @@ createTags tags =
 -- It doesn't create tags that are in the collection already.
 -- It returns references that should be added to note_tags.
 -- References may content ones that note_tags has already.
-getOrCreateTags :: MonadStorage m => Set Text -> m [ObjectRef Tag]
+getOrCreateTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 getOrCreateTags tags
-  | null tags = pure []
+  | null tags = pure HashSet.empty
   | otherwise = do
     allTags <- loadAllTagTexts
     existentTagRefs <- loadTagRefsByText tags
@@ -199,7 +204,7 @@ getOrCreateTags tags
 
 toNoteView :: MonadStorage m => Entity Note -> m NoteView
 toNoteView item = do
-  let refs = note_tags $ entityVal item
+  let refs = HashSet.fromList $ note_tags $ entityVal item
   tags <- loadTagsByRefs refs
   pure $ NoteView item $ Set.fromList tags
 
@@ -408,15 +413,15 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
       _ | not isWiki -> pure (TaskStatus Active, end, start')
       Nothing -> pure (Wiki, Nothing, today)
       Just _ -> throwError "A wiki must have no end date."
-  refs <- getOrCreateTags $ Set.fromList tags
+  refs <- getOrCreateTags tags
   let note = Note
         { note_end,
           note_start = Just noteStart,
           note_status = Just status,
-          note_text = Just $ RGA $ Text.unpack text,
-          note_tags = refs,
-          note_track = Nothing
-        }
+          note_text   = Just $ RGA $ Text.unpack text,
+          note_tags   = toList refs,
+          note_track  = Nothing
+          }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
@@ -477,8 +482,12 @@ cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
-  Edit {ids = nid :| [], text, start = Nothing, end = Nothing} ->
-    fmap (: []) $ modifyAndView nid $ do
+  Edit
+    { ids = nid :| []
+    , text, start = Nothing
+    , end = Nothing
+    , addTags
+    } | null addTags -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
@@ -488,7 +497,8 @@ cmdEdit edit = case edit of
               noteText <- RGA.getText
               liftIO $ runExternalEditor noteText
         RGA.editText noteText'
-  Edit {ids, text, start, end} ->
+  Edit {ids, text, start, end, addTags} -> do
+    refsAdd <- getOrCreateTags addTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -515,6 +525,12 @@ cmdEdit edit = case edit of
           Set e -> note_end_set e
         whenJust start note_start_set
         whenJust text $ note_text_zoom . RGA.editText
+        -- add new tags
+        unless (null addTags) $ do
+          currentRefs <- HashSet.fromList <$> note_tags_read
+          -- skip tags if note_tags has them already
+          let newRefs = HashSet.difference refsAdd currentRefs
+          mapM_ note_tags_add newRefs
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
 cmdPostpone nid = modifyAndView nid $ do

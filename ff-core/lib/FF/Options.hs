@@ -104,10 +104,11 @@ data Agenda = Agenda
     }
 
 data Edit = Edit
-    { ids   :: NonEmpty NoteId
-    , text  :: Maybe Text
-    , start :: Maybe Day
-    , end   :: Maybe (Assign Day)
+    { ids        :: NonEmpty NoteId
+    , text       :: Maybe Text
+    , start      :: Maybe Day
+    , end        :: Maybe (Assign Day)
+    , addTags    :: Set Text
     }
     deriving (Show)
 
@@ -116,7 +117,7 @@ data New = New
     , start  :: Maybe Day
     , end    :: Maybe Day
     , isWiki :: Bool
-    , tags   :: [Text]
+    , tags   :: Set Text
     }
 
 data Search = Search
@@ -243,6 +244,7 @@ parser h =
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional assignEnd
+        <*> addTagsOption
     search = Search
         <$> strArgument (metavar "TEXT")
         <*> searchT
@@ -263,7 +265,8 @@ parser h =
     filterTags =
         fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
-    addTagsOption = many $ strOption
+    addTagsOption =
+        fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Add tags"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
