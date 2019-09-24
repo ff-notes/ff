@@ -24,9 +24,8 @@ module FF.Options
   )
 where
 
-import Control.Applicative ((<|>), many, optional, some)
-import Data.List.NonEmpty (NonEmpty)
-import qualified Data.List.NonEmpty as NonEmpty
+import Control.Applicative ((<|>), many, optional)
+import Data.List.NonEmpty (NonEmpty, some1)
 import Data.Semigroup ((<>))
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -82,17 +81,17 @@ data Cmd
 data CmdAction
   = CmdAgenda Agenda
   | CmdContact (Maybe Contact)
-  | CmdDelete [NoteId]
-  | CmdDone [NoteId]
+  | CmdDelete (NonEmpty NoteId)
+  | CmdDone (NonEmpty NoteId)
   | CmdEdit Edit
   | CmdNew New
-  | CmdPostpone [NoteId]
+  | CmdPostpone (NonEmpty NoteId)
   | CmdSearch Search
-  | CmdShow [NoteId]
+  | CmdShow (NonEmpty NoteId)
   | CmdSponsors
   | CmdTags
   | CmdTrack Track
-  | CmdUnarchive [NoteId]
+  | CmdUnarchive (NonEmpty NoteId)
   | CmdUpgrade
   | CmdWiki (Maybe Limit)
 
@@ -224,17 +223,17 @@ parser h =
     iCmdWiki = i cmdWiki "show all wiki notes"
     cmdAgenda = CmdAgenda <$> agenda
     cmdContact = CmdContact <$> optional contact
-    cmdDelete = CmdDelete <$> some noteid
-    cmdDone = CmdDone <$> some noteid
+    cmdDelete = CmdDelete <$> some1 noteid
+    cmdDone = CmdDone <$> some1 noteid
     cmdEdit = CmdEdit <$> edit
     cmdNew = CmdNew <$> new
-    cmdPostpone = CmdPostpone <$> some noteid
+    cmdPostpone = CmdPostpone <$> some1 noteid
     cmdSearch = CmdSearch <$> search
-    cmdShow = CmdShow <$> some noteid
+    cmdShow = CmdShow <$> some1 noteid
     cmdSponsors = pure CmdSponsors
     cmdTags = pure CmdTags
     cmdTrack = CmdTrack <$> track
-    cmdUnarchive = CmdUnarchive <$> some noteid
+    cmdUnarchive = CmdUnarchive <$> some1 noteid
     cmdUpgrade = pure CmdUpgrade
     cmdWiki = CmdWiki <$> optional limitOption
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
@@ -274,7 +273,7 @@ parser h =
         <*> addTagsOption
     edit =
       Edit
-        <$> (NonEmpty.fromList <$> some noteid)
+        <$> some1 noteid
         <*> optional noteTextOption
         <*> optional startDateOption
         <*> optional assignEnd

@@ -13,7 +13,7 @@ import Control.Concurrent.Async (race)
 import Control.Monad (forever, guard, when)
 import Control.Monad.Except (runExceptT)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (asum, for_)
+import Data.Foldable (asum, for_, toList)
 import Data.Functor (($>))
 import Data.Maybe (isNothing)
 import Data.Text (snoc)
@@ -195,7 +195,7 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse toNoteView notes
-      pprint $ prettyNoteList isBrief notes'
+      pprint $ prettyNoteList isBrief $ toList notes'
     CmdTags -> do
       allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags
