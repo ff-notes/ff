@@ -11,6 +11,7 @@ and this project adheres to
 - `Note.tags` field
 - `ff agenda --tag=...` to show only tasks with specific tags
 - `ff add --tag=...` to add a task with tags
+- `ff edit --tag=...` to add tags to a task
 
 ## [0.13] - 2019-09-10
 ### Added

@@ -12,7 +12,7 @@ extra-deps:
   - crdt-10.4
   - github-0.22
   - git: https://github.com/ff-notes/ron.git
-    commit: f6a1a3adfe71bbb30a436f3561778b72f8852796
+    commit: f6a1a3adfe71bbb30a436f3561778b72f8852796  # ron-0.9+
     subdirs: [ron]
   - ron-rdt-0.9
   - ron-schema-0.9
