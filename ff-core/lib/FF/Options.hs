@@ -51,7 +51,6 @@ import Options.Applicative
     help,
     helper,
     info,
-    listCompleter,
     listIOCompleter,
     long,
     metavar,
@@ -351,10 +350,10 @@ parser h =
     completeNoteIds = docIdCompleter @Note
     completeContactIds = docIdCompleter @FF.Types.Contact
     docIdCompleter :: forall a. Collection a => Completer
-    docIdCompleter = case h of
-      Nothing -> listCompleter []
-      Just h' ->
-        listIOCompleter $ map unDocId <$> runStorage h' (getDocuments @_ @a)
+    docIdCompleter = listIOCompleter
+      $ map unDocId <$> case h of
+        Nothing -> pure []
+        Just h' -> runStorage h' (getDocuments @_ @a)
     unDocId (DocId name) = name
     readDocId = DocId <$> str
 
