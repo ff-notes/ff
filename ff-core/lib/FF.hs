@@ -488,7 +488,8 @@ cmdEdit edit = case edit of
     , text, start = Nothing
     , end = Nothing
     , addTags
-    } | null addTags -> fmap (: []) $ modifyAndView nid $ do
+    , deleteTags
+    } | null addTags && null deleteTags -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
