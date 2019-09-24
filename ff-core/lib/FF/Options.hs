@@ -109,7 +109,7 @@ data Edit = Edit
     , start      :: Maybe Day
     , end        :: Maybe (Assign Day)
     , addTags    :: Set Text
-    , deleteTags :: [Text]
+    , deleteTags :: Set Text
     }
     deriving (Show)
 
@@ -270,7 +270,8 @@ parser h =
     addTagsOption =
         fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Add tags"
-    deleteTagsOption = many $ strOption
+    deleteTagsOption =
+        fmap Set.fromList $ many $ strOption
         $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =

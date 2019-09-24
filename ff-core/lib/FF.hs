@@ -489,7 +489,8 @@ cmdEdit edit = case edit of
     , text, start = Nothing
     , end = Nothing
     , addTags
-    } | null addTags -> fmap (: []) $ modifyAndView nid $ do
+    , deleteTags
+    } | null addTags && null deleteTags -> fmap (: []) $ modifyAndView nid $ do
       assertNoteIsNative
       note_text_zoom $ do
         noteText' <-
@@ -501,7 +502,7 @@ cmdEdit edit = case edit of
         RGA.editText noteText'
   Edit {ids, text, start, end, addTags, deleteTags} -> do
     refsAdd <- getOrCreateTags addTags
-    refsDelete <- loadTagRefsByText $ Set.fromList deleteTags
+    refsDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
