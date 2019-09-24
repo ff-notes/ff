@@ -1,0 +1,12 @@
+note_start: 2019-09-18
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/171
+  track_source: ff-notes/ff
+  track_externalId: '171'
+  track_provider: github
+note_text: Do not use git repo as a database if there is no .ff yet
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Active
+note_tags: []

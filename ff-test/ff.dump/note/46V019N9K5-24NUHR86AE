@@ -10,5 +10,5 @@ note_text: "Tags\n\nA tag is a document in the _ff_ database.\r\n\r\nIt must con
 note_end: null
 note_status:
   tag: TaskStatus
-  contents: Active
+  contents: Archived
 note_tags: []
