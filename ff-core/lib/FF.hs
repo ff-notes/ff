@@ -161,19 +161,20 @@ loadContacts isArchived =
   filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
     <$> loadAll
 
--- Load all tags as texts
+-- | Load all tags as texts
 loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
+-- | Load 'Tag' references only for text strings existing in the collection.
 loadTagRefsByText :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 loadTagRefsByText queryTags = do
   allTags <- loadAll
-  let tags = filter compareTags allTags
-  pure $ HashSet.fromList $ map (docIdToRef . entityId) tags
-  where
-    compareTags tag = case tag_text $ entityVal tag of
-      Nothing -> False
-      Just txt -> txt `elem` queryTags
+  pure
+    $ HashSet.fromList
+        [ docIdToRef entityId
+          | Entity {entityId, entityVal = Tag{tag_text = Just tag}} <- allTags,
+            tag `elem` queryTags
+        ]
 
 loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
