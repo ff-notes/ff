@@ -35,6 +35,7 @@ library ff-qt-ffi
     build-depends:
         -- global
         time,
+        containers,
         -- organization
         ron-storage,
         -- project

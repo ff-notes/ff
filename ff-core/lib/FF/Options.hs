@@ -108,7 +108,7 @@ data Edit = Edit
     , text       :: Maybe Text
     , start      :: Maybe Day
     , end        :: Maybe (Assign Day)
-    , addTags    :: [Text]
+    , addTags    :: Set Text
     , deleteTags :: [Text]
     }
     deriving (Show)
@@ -118,7 +118,7 @@ data New = New
     , start  :: Maybe Day
     , end    :: Maybe Day
     , isWiki :: Bool
-    , tags   :: [Text]
+    , tags   :: Set Text
     }
 
 data Search = Search
@@ -267,7 +267,8 @@ parser h =
     filterTags =
         fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
-    addTagsOption = many $ strOption
+    addTagsOption =
+        fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Add tags"
     deleteTagsOption = many $ strOption
         $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"

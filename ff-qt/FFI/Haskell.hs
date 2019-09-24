@@ -4,6 +4,7 @@ module FFI.Haskell where
 
 import           Control.Monad (void)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
+import qualified Data.Set as Set
 import           Data.Time (fromGregorian)
 import           Foreign.C (CInt (CInt), CString, peekCAString)
 import           Foreign.StablePtr (StablePtr, deRefStablePtr)
@@ -34,7 +35,7 @@ c_assignStart storagePtr noteIdStr year month day = do
             , text = Nothing
             , start
             , end = Nothing
-            , addTags = []
+            , addTags = Set.empty
             , deleteTags = []
             }
 
@@ -57,7 +58,7 @@ c_assignEnd storagePtr noteIdStr year month day = do
             , text = Nothing
             , end
             , start = Nothing
-            , addTags = []
+            , addTags = Set.empty
             , deleteTags = []
             }
 

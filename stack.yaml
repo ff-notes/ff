@@ -11,7 +11,9 @@ extra-deps:
   # ff-core:
   - crdt-10.4
   - github-0.22
-  - ron-0.9
+  - git: https://github.com/ff-notes/ron.git
+    commit: f6a1a3adfe71bbb30a436f3561778b72f8852796
+    subdirs: [ron]
   - ron-rdt-0.9
   - ron-schema-0.9
   - ron-storage-0.10
