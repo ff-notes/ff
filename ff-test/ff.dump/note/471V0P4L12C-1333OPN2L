@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '63'
   track_provider: github
+note_links: []
 note_text: "Add test for github list\n\nТест не проходит:\r\n```haskell\r\n> case_repo\r\n***
   Exception: HUnitFailure (Just (SrcLoc {srcLocPackage = \"main\", srcLocModule =
   \"Main\", srcLocFile = \"/media/metaxis/stock/Coding/Haskell/ff/ff-core/test/Main.hs\",

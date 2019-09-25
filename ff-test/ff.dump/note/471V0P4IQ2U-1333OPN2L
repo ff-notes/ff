@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '82'
   track_provider: github
+note_links: []
 note_text: |
   Archive issue after the one closed on github
 

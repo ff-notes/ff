@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '160'
   track_provider: github
+note_links: []
 note_text: |
   Fix Travis config for GTK
 

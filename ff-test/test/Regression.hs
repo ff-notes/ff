@@ -16,6 +16,7 @@ import Data.Traversable (for)
 import Data.Yaml (encodeFile)
 import FF.Types
   ( Entity (Entity, entityVal),
+    Link,
     Note,
     NoteId,
     NoteStatus,
@@ -34,6 +35,8 @@ import System.Directory (createDirectoryIfMissing)
 import System.FilePath ((</>), takeDirectory)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsFileDiff)
+
+deriveToJSON defaultOptions ''Link
 
 deriveToJSON defaultOptions ''Note
 

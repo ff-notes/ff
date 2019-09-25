@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '139'
   track_provider: github
+note_links: []
 note_text: "Comprehensible tracked task error message\n\nThis error message is not
   comprehensible:\r\n\r\n```\r\n$ ff done 4710P17JRPQ-1333OPN2L\r\nff: Error \"A tracked
   note must be modified in its source.\" []\r\n```\r\n\r\nShould be something like\r\n```\r\nff:

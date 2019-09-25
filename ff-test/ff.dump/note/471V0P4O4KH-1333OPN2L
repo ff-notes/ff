@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '26'
   track_provider: github
+note_links: []
 note_text: "Subcommand to delete notes\n\nstatus = Deleted\r\nset some empty or nonsense
   values to other fields  "
 note_end: null

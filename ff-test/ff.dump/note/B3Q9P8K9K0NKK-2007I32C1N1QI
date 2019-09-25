@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '125'
   track_provider: github
+note_links: []
 note_text: "ff-qt: use delegates for tasks\n\nNow `setIndexWidget` is used.\r\n\r\nhttps://doc.qt.io/qt-5/qtwidgets-itemviews-stardelegate-example.html\r\ndelegate::paint\r\nhttps://doc.qt.io/qt-5/qstylepainter.html\r\nhttps://doc.qt.io/qt-5/qstyle.html#ComplexControl-enum"
 note_end: null
 note_status:

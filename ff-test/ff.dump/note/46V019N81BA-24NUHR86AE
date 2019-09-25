@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '60'
   track_provider: github
+note_links: []
 note_text: "import issues (GitHub -> ff)\n\n- [ ] implement this feature\r\n- [ ]
   import ff notes"
 note_end: null

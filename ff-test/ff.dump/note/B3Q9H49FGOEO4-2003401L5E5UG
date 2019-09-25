@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '117'
   track_provider: github
+note_links: []
 note_text: Remove JSON support after 2019-11-03
 note_end: null
 note_status:

@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '113'
   track_provider: github
+note_links: []
 note_text: "Add colors\n\nResolve #95 \r\n<!-- Reviewable:start -->\r\nThis change
   is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\"
   alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/113)\r\n<!-- Reviewable:end

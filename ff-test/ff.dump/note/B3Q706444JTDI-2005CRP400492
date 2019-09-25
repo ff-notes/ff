@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '97'
   track_provider: github
+note_links: []
 note_text: Disallow dates when adding wiki notes
 note_end: null
 note_status:

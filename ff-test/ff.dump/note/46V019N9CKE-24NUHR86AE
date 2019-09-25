@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '21'
   track_provider: github
+note_links: []
 note_text: "Contexts\n\nImplement type (or types?) for different contexts (as in GTD)\r\n-
   location:\r\n  - predefined: Moscow, London\r\n  - user-defined: work, home\r\n-
   time: Monday, weekend, morning\r\n- user state: on the internet, on phone"

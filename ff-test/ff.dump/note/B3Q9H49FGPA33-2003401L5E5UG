@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '114'
   track_provider: github
+note_links: []
 note_text: "VS code extension\n\nWould be great with git integration.\r\n\r\nSome
   prior art:\r\n* https://marketplace.visualstudio.com/items?itemName=wayou.vscode-todo-highlight\r\n*
   https://www.npmjs.com/package/vscode-todo-plus\r\n"

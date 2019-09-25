@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '99'
   track_provider: github
+note_links: []
 note_text: "Search in all docs\n\nПеределал немного wiki вывод, чтобы он не захватывал
   `mode`, который для него не актуален.\r\nВ связи с этим ряд других функций оптимизировал.
   \r\n- [x] Но вот как `shuffleItems` под вики, пока не понял.\r\n- [x] И остается

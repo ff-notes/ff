@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '37'
   track_provider: github
+note_links: []
 note_text: Unit test for parsing config
 note_end: null
 note_status:

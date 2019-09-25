@@ -4,6 +4,7 @@ note_track:
   track_source: ff-notes/ff
   track_externalId: '24'
   track_provider: github
+note_links: []
 note_text: "Version option\n\n- [x] `-V,--version`\r\n- [x] Add changelog line\r\n-
   [x] Include git revision (`git rev-parse HEAD`, `git rev-parse --symbolic-full-name
   HEAD`)\r\n- [x] git dirtiness (count lines of `git status --short`)."
