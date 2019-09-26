@@ -13,6 +13,8 @@ and this project adheres to
 - `ff add --tag=...` to add a task with tags
 - `ff edit --tag=...` to add tags to a task
 - `ff edit --delete-tag=...` to remove tags from a task
+- `Link` type and collection
+- `Note.links` field
 
 ## [0.13] - 2019-09-10
 ### Added
