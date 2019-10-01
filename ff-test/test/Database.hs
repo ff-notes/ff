@@ -74,7 +74,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
   Map.empty === agenda
   fs === fs'
   where
@@ -85,7 +85,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
   agenda === agenda'
   fs123 === fs'
   where

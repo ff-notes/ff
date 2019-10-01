@@ -121,7 +121,7 @@ main = do
 
 initiallyLoadActiveTasks :: StorageFS.Handle -> Producer Event IO ()
 initiallyLoadActiveTasks storage = do
-  activeTasks <- lift $ runStorage storage $ loadTasks False
+  activeTasks <- lift $ runStorage storage $ loadTasks Active
   each $ map (UpsertTask . note) activeTasks
 
 getDataDirOrFail :: IO FilePath

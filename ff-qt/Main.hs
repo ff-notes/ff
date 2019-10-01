@@ -93,7 +93,7 @@ main = do
   -- load current data to the view, asynchronously
   _ <-
     forkIO $ do
-      activeTasks <- runStorage storage (loadTasks False)
+      activeTasks <- runStorage storage (loadTasks Active)
       for_ activeTasks $ upsertTask mainWindow . note
   -- update the view with future changes
   _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
