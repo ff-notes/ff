@@ -34,9 +34,8 @@ import           RON.Storage.Backend (DocId (DocId))
 import           System.Process.Typed (proc, readProcessStdout_)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Entity (..), Limit, ModeMap, Note (..), NoteSample,
-                           NoteStatus (..), NoteView (..), Status (..),
-                           Track (..))
+import           FF.Types (Entity' (..), Limit, ModeMap, Note (..), NoteSample,
+                           NoteStatus (..), Status (..), Track (..), View (..))
 
 getIssues
     :: Maybe Text
@@ -100,10 +99,7 @@ sampleMap
 sampleMap address mlimit today issues =
     takeSamples mlimit
     $ splitModes today
-        [ NoteView
-            { note = Entity {entityId = DocId "", entityVal = note}
-            , tags = mempty
-            }
+        [ Entity{entityId = DocId "", entityVal = NoteView{note, tags = mempty}}
         | issue <- sample
         , let note = issueToNote address issue
         ]

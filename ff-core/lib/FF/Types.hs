@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -32,9 +33,9 @@ import Data.List (genericLength)
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import Data.Maybe (fromJust, maybeToList)
+import Data.Set (Set)
 import Data.Text (Text)
 import Data.Time (diffDays)
-import Data.Set (Set)
 import FF.CrdtAesonInstances ()
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
@@ -46,8 +47,8 @@ import RON.Data
     payloadEncoding,
     readObject,
     stateFromChunk,
-    stateToWireChunk
-    )
+    stateToWireChunk,
+  )
 import RON.Data.LWW (lwwType)
 import RON.Data.RGA (RgaRep)
 import RON.Data.Time (Day)
@@ -60,17 +61,17 @@ import RON.Storage
     DocId,
     collectionName,
     fallbackParse,
-    loadDocument
-    )
+    loadDocument,
+  )
 import RON.Storage.Backend (Document (Document, objectFrame), MonadStorage)
 import RON.Types
   ( Atom (AUuid),
-    ObjectRef (ObjectRef),
     ObjectFrame (ObjectFrame, frame, uuid),
+    ObjectRef (ObjectRef),
     Op (Op),
     UUID,
-    WireStateChunk (WireStateChunk, stateBody, stateType)
-    )
+    WireStateChunk (WireStateChunk, stateBody, stateType),
+  )
 import qualified RON.UUID as UUID
 
 data NoteStatus = TaskStatus Status | Wiki
@@ -80,7 +81,6 @@ wiki :: UUID
 wiki = fromJust $ UUID.mkName "Wiki"
 
 instance Replicated NoteStatus where
-
   encoding = payloadEncoding
 
 instance ReplicatedAsPayload NoteStatus where
@@ -159,10 +159,6 @@ deriving instance Eq Note
 
 deriving instance Show Note
 
-deriving instance Eq NoteView
-
-deriving instance Show NoteView
-
 deriving instance Bounded Status
 
 deriving instance Enum Status
@@ -196,24 +192,29 @@ instance Collection Note where
   fallbackParse = parseNoteV1
 
 instance Collection Contact where
-
   collectionName = "contact"
 
 instance Collection Tag where
-
   collectionName = "tag"
 
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
 
-data Entity a = Entity {entityId :: DocId a, entityVal :: a}
-  deriving (Eq, Show)
+data Entity' doc val
+  = Collection doc => Entity {entityId :: DocId doc, entityVal :: val}
 
-type EntitySample a = Sample (Entity a)
+deriving instance Eq val => Eq (Entity' doc val)
 
-type ContactSample = EntitySample Contact
+deriving instance Show val => Show (Entity' doc val)
 
-type NoteSample = Sample NoteView
+-- TODO rename to EntityDoc
+type Entity doc = Entity' doc doc
+
+type EntityView doc = Entity' doc (View doc)
+
+type ContactSample = Sample (Entity Contact)
+
+type NoteSample = Sample (EntityView Note)
 
 emptySample :: Sample a
 emptySample = Sample {items = [], total = 0}
@@ -222,155 +223,156 @@ emptySample = Sample {items = [], total = 0}
 omitted :: Sample a -> Natural
 omitted Sample {total, items} = total - genericLength items
 
-data NoteView = NoteView
-  { note :: Entity Note
-  , tags :: Set Text
-  }
+data family View doc
+
+data instance View Note
+  = NoteView
+      { note :: Note,
+        tags :: Set Text
+      }
+  deriving (Eq, Show)
 
 type ModeMap = Map TaskMode
 
 -- | Sub-status of an 'Active' task from the perspective of the user.
 data TaskMode
-  = Overdue Natural  -- ^ end in past, with days
-  | EndToday         -- ^ end today
-  | EndSoon Natural  -- ^ started, end in future, with days
-  | Actual           -- ^ started, no end
+  = Overdue Natural -- ^ end in past, with days
+  | EndToday -- ^ end today
+  | EndSoon Natural -- ^ started, end in future, with days
+  | Actual -- ^ started, no end
   | Starting Natural -- ^ starting in future, with days
   deriving (Eq, Show)
 
 taskModeOrder :: TaskMode -> Int
 taskModeOrder = \case
-  Overdue _  -> 0
-  EndToday   -> 1
-  EndSoon _  -> 2
-  Actual     -> 3
+  Overdue _ -> 0
+  EndToday -> 1
+  EndSoon _ -> 2
+  Actual -> 3
   Starting _ -> 4
 
 instance Ord TaskMode where
-
-  Overdue n  <= Overdue m  = n >= m
-  EndSoon n  <= EndSoon m  = n <= m
+  Overdue n <= Overdue m = n >= m
+  EndSoon n <= EndSoon m = n <= m
   Starting n <= Starting m = n <= m
-  m1         <= m2         = taskModeOrder m1 <= taskModeOrder m2
+  m1 <= m2 = taskModeOrder m1 <= taskModeOrder m2
 
 taskMode :: Day -> Note -> TaskMode
 taskMode today Note {note_start, note_end} = case note_end of
   Nothing
     | start <= today -> Actual
-    | otherwise      -> starting start today
+    | otherwise -> starting start today
   Just e -> case compare e today of
     LT -> overdue today e
     EQ -> EndToday
     GT
       | start <= today -> endSoon e today
-      | otherwise      -> starting start today
+      | otherwise -> starting start today
   where
-    start        = fromJust note_start
-    overdue      = helper Overdue
-    endSoon      = helper EndSoon
-    starting     = helper Starting
+    start = fromJust note_start
+    overdue = helper Overdue
+    endSoon = helper EndSoon
+    starting = helper Starting
     helper m x y = m . fromIntegral $ diffDays x y
 
 type Limit = Natural
 
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (Entity Note)
-loadNote docid = do
-  Document {objectFrame} <- loadDocument docid
+loadNote entityId = do
+  Document {objectFrame} <- loadDocument entityId
   let tryCurrentEncoding = evalObjectState objectFrame readObject
   case tryCurrentEncoding of
-    Right note -> pure $ Entity docid note
+    Right entityVal -> pure Entity {entityId, entityVal}
     Left e1 -> do
       let tryNote2Encoding = evalObjectState objectFrame readNoteFromV2
       case tryNote2Encoding of
-        Right note -> pure $ Entity docid note
+        Right entityVal -> pure Entity {entityId, entityVal}
         Left e2 -> throwError $ Error "loadNote" [e1, e2]
 
 readNoteFromV2 :: (MonadE m, MonadObjectState a m) => m Note
 readNoteFromV2 = do
   ObjectRef uuid <- ask
   NoteV2 {..} <- runReaderT readObject (ObjectRef @NoteV2 uuid)
-  pure
-    Note
-      { note_end    = noteV2_end,
-        note_start  = noteV2_start,
-        note_status = noteV2_status,
-        note_text   = noteV2_text,
-        note_tags   = [],
-        note_track  = trackFromV2 <$> noteV2_track,
-        note_links  = []
-        }
+  pure Note
+    { note_end = noteV2_end,
+      note_start = noteV2_start,
+      note_status = noteV2_status,
+      note_text = noteV2_text,
+      note_tags = [],
+      note_track = trackFromV2 <$> noteV2_track,
+      note_links = []
+    }
 
 trackFromV2 :: TrackV2 -> Track
 trackFromV2 TrackV2 {..} =
   Track
     { track_externalId = trackV2_externalId,
-      track_provider   = trackV2_provider,
-      track_source     = trackV2_source,
-      track_url        = trackV2_url
-      }
+      track_provider = trackV2_provider,
+      track_source = trackV2_source,
+      track_url = trackV2_url
+    }
 
 -- * Legacy, v1
 parseNoteV1 :: MonadE m => UUID -> ByteString -> m (ObjectFrame Note)
 parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
   where
     p = withObject "Note" $ \obj -> do
-      CRDT.LWW (end :: Maybe Day) endTime    <- obj .:  "end"
-      CRDT.LWW (start :: Day) startTime      <- obj .:  "start"
-      CRDT.LWW (status :: Status) statusTime <- obj .:  "status"
-      (mTracked :: Maybe JSON.Object)        <- obj .:? "tracked"
-      text :: CRDT.RgaString                 <- obj .:  "text"
-      let endTime'    = timeFromV1 endTime
-          startTime'  = timeFromV1 startTime
+      CRDT.LWW (end :: Maybe Day) endTime <- obj .: "end"
+      CRDT.LWW (start :: Day) startTime <- obj .: "start"
+      CRDT.LWW (status :: Status) statusTime <- obj .: "status"
+      (mTracked :: Maybe JSON.Object) <- obj .:? "tracked"
+      text :: CRDT.RgaString <- obj .: "text"
+      let endTime' = timeFromV1 endTime
+          startTime' = timeFromV1 startTime
           statusTime' = timeFromV1 statusTime
-      -- let trackPayload = toPayloadM $ mTracked $> trackId
       mTrackObject <-
         case mTracked of
           Nothing -> pure Nothing
           Just tracked -> do
             externalId :: Text <- tracked .: "external_id"
-            provider   :: Text <- tracked .: "provider"
-            source     :: Text <- tracked .: "source"
-            url        :: Text <- tracked .: "url"
+            provider :: Text <- tracked .: "provider"
+            source :: Text <- tracked .: "source"
+            url :: Text <- tracked .: "url"
             pure
               $ Just
                   ( trackId,
                     mkLww
                       [ Op trackId externalIdName $ toPayload externalId,
-                        Op trackId providerName   $ toPayload provider,
-                        Op trackId sourceName     $ toPayload source,
-                        Op trackId urlName        $ toPayload url
-                        ]
-                    )
+                        Op trackId providerName $ toPayload provider,
+                        Op trackId sourceName $ toPayload source,
+                        Op trackId urlName $ toPayload url
+                      ]
+                  )
       let frame =
             Map.fromList
               $ [ ( objectId,
                     mkLww
                       $ [Op endTime' endName $ toPayload e | Just e <- [end]]
-                      ++  [ Op startTime' startName $ toPayload start,
-                            Op statusTime' statusName $ toPayload status,
-                            Op objectId textName $ toPayload textId
-                            ]
-                      ++  [ Op objectId trackName $ toPayload trackId
-                            | Just _ <- [mTracked]
-                            ]
-                    ),
+                        ++ [ Op startTime' startName $ toPayload start,
+                             Op statusTime' statusName $ toPayload status,
+                             Op objectId textName $ toPayload textId
+                           ]
+                        ++ [ Op objectId trackName $ toPayload trackId
+                             | Just _ <- [mTracked]
+                           ]
+                  ),
                   (textId, stateToWireChunk $ rgaFromV1 text) -- rgaType
-                  ]
-              ++ maybeToList mTrackObject
+                ]
+                ++ maybeToList mTrackObject
       pure ObjectFrame {uuid = objectId, frame}
     mkLww stateBody = WireStateChunk {stateType = lwwType, stateBody}
-    textId  = UUID.succValue objectId
+    textId = UUID.succValue objectId
     trackId = UUID.succValue textId
-    endName        = $(UUID.liftName "end")
-    startName      = $(UUID.liftName "start")
-    statusName     = $(UUID.liftName "status")
-    textName       = $(UUID.liftName "text")
-    trackName      = $(UUID.liftName "track")
+    endName = $(UUID.liftName "end")
+    startName = $(UUID.liftName "start")
+    statusName = $(UUID.liftName "status")
+    textName = $(UUID.liftName "text")
+    trackName = $(UUID.liftName "track")
     externalIdName = $(UUID.liftName "externalId")
-    providerName   = $(UUID.liftName "provider")
-    sourceName     = $(UUID.liftName "source")
-    urlName        = $(UUID.liftName "url")
+    providerName = $(UUID.liftName "provider")
+    sourceName = $(UUID.liftName "source")
+    urlName = $(UUID.liftName "url")
 
 timeFromV1 :: CRDT.LamportTime -> UUID
 timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =
@@ -387,14 +389,13 @@ rgaFromV1 (CRDT.RGA oldRga) =
         let event = timeFromV1 vid
             ref = case a of
               '\0' -> UUID.succValue event
-              _    -> UUID.zero
-      ]
+              _ -> UUID.zero
+    ]
 
 -- used in parseNoteV1
 deriveFromJSON defaultOptions ''Status
 
 instance FromJSON NoteStatus where
-
   parseJSON v = case v of
     "Wiki" -> pure Wiki
-    _      -> TaskStatus <$> parseJSON v
+    _ -> TaskStatus <$> parseJSON v

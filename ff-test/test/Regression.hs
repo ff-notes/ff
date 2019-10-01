@@ -15,7 +15,7 @@ import Data.Aeson.TH (defaultOptions, deriveToJSON)
 import Data.Traversable (for)
 import Data.Yaml (encodeFile)
 import FF.Types
-  ( Entity (Entity, entityVal),
+  ( Entity' (Entity, entityVal),
     Link,
     Note,
     NoteId,

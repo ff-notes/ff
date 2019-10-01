@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,7 +41,6 @@ module FF
 where
 
 import Control.Applicative ((<|>))
-import Control.Arrow ((&&&))
 import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -69,18 +67,20 @@ import FF.Types
   ( Contact (..),
     ContactId,
     ContactSample,
-    Entity (..),
+    Entity,
+    Entity' (..),
+    EntityView,
     Limit,
     ModeMap,
     Note (..),
     NoteId,
     NoteSample,
     NoteStatus (..),
-    NoteView (..),
     Sample (..),
     Status (..),
     Tag (..),
     Track (..),
+    View (..),
     contact_name_clear,
     contact_status_clear,
     loadNote,
@@ -144,7 +144,7 @@ load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
 load docid = do
   Document {objectFrame} <- loadDocument docid
   entityVal <- evalObjectState objectFrame readObject
-  pure $ Entity docid entityVal
+  pure Entity {entityId = docid, entityVal}
 
 loadAll :: (Collection a, MonadStorage m) => m [Entity a]
 loadAll = getDocuments >>= traverse load
@@ -201,11 +201,16 @@ getOrCreateTags tags
     createdTagRefs <- createTags newTags
     pure $ existentTagRefs <> createdTagRefs
 
-toNoteView :: MonadStorage m => Entity Note -> m NoteView
-toNoteView item = do
-  let refs = HashSet.fromList $ note_tags $ entityVal item
-  tags <- loadTagsByRefs refs
-  pure $ NoteView item $ Set.fromList tags
+toNoteView :: MonadStorage m => Entity Note -> m (EntityView Note)
+toNoteView Entity {entityId, entityVal} = do
+  tags <- loadTagsByRefs tagRefs
+  pure Entity
+    { entityId,
+      entityVal = NoteView {note = entityVal, tags = Set.fromList tags}
+    }
+  where
+    tagRefs = HashSet.fromList note_tags
+    Note {note_tags} = entityVal
 
 viewNoteSample :: MonadStorage m => Sample (Entity Note) -> m NoteSample
 viewNoteSample Sample {items, total} = do
@@ -232,7 +237,7 @@ fromRga (RGA xs) = xs
 fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
-loadTasks :: MonadStorage m => Status -> m [NoteView]
+loadTasks :: MonadStorage m => Status -> m [EntityView Note]
 loadTasks status = do
   notes <- loadAllNotes
   let filtered = filter isArchived notes
@@ -273,24 +278,26 @@ getTaskSamplesWith
     allTasks <- loadTasks status
     let tasks =
           filter
-            (\NoteView {tags} -> tagsRequested `isSubsetOf` tags)
+            ( \Entity {entityVal = NoteView {tags}} ->
+                tagsRequested `isSubsetOf` tags
+            )
             allTasks
     pure
       . takeSamples limit
       . shuffleOrSort
-      . splitModesBy (entityVal . note) today
+      . splitModes today
       $ filter
           ( predicate
               . Text.pack
               . fromRgaM
               . note_text
-              . entityVal
               . note
+              . entityVal
           )
           tasks
     where
       gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
-      shuffleOrSort :: ModeMap [NoteView] -> ModeMap [NoteView]
+      shuffleOrSort :: ModeMap [EntityView Note] -> ModeMap [EntityView Note]
       shuffleOrSort
         | shuffle = shuffleTraverseItems gen
         | otherwise =
@@ -298,8 +305,11 @@ getTaskSamplesWith
           -- it's just for determinism
           fmap
             $ sortOn
-                ( \NoteView {..} ->
-                    note_start . entityVal &&& entityId $ note
+                ( \Entity
+                     { entityId,
+                       entityVal = NoteView {note = Note {note_start}}
+                     } ->
+                      (note_start, entityId)
                 )
 
 getWikiSamples
@@ -351,8 +361,8 @@ splitModesBy f today = Map.unionsWith (++) . map singleton
   where
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
-splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
-splitModes = splitModesBy (entityVal . note)
+splitModes :: Day -> [EntityView Note] -> ModeMap [EntityView Note]
+splitModes = splitModesBy (note . entityVal)
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
