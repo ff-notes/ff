@@ -22,12 +22,12 @@ import qualified Data.Text.Lazy as TextL
 import qualified Data.Text.Lazy.Encoding as TextL
 import           Data.Time (Day, UTCTime (..))
 import           Data.Vector (Vector)
-import           GitHub (FetchCount (..), Issue (Issue), IssueRepoMod,
-                         IssueState (..), Milestone (..), URL (..),
-                         executeRequest', issueBody, issueCreatedAt,
+import           GitHub (FetchCount (..), Issue (..), IssueLabel (..),
+                         IssueRepoMod, IssueState (..), Milestone (..),
+                         URL (..), executeRequest', issueBody, issueCreatedAt,
                          issueHtmlUrl, issueMilestone, issueNumber, issueState,
                          issueTitle, mkOwnerName, mkRepoName, stateAll,
-                         stateOpen, unIssueNumber)
+                         stateOpen, unIssueNumber, untagName)
 import           GitHub.Endpoints.Issues (issuesForRepoR)
 import           RON.Data.RGA (RGA (RGA))
 import           RON.Storage.Backend (DocId (DocId))
@@ -89,7 +89,7 @@ getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
 
-getIssueViews :: Maybe Text -> Maybe Limit -> ExceptT Text IO [Note]
+getIssueViews :: Maybe Text -> Maybe Limit -> ExceptT Text IO [(Note, [Text])]
 getIssueViews mAddress mlimit = do
     (address, issues) <- getIssues mAddress mlimit stateAll
     pure $ noteViewList address mlimit issues
@@ -105,7 +105,7 @@ sampleMap address mlimit today issues =
             , tags = mempty
             }
         | issue <- sample
-        , let note = issueToNote address issue
+        , let (note, tags) = issueToNote address issue
         ]
   where
     issues' = toList issues
@@ -113,17 +113,17 @@ sampleMap address mlimit today issues =
         Nothing -> issues'
         Just n -> take (fromIntegral n) issues'
 
-noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [Note]
+noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [(Note, [Text])]
 noteViewList address mlimit =
     map (issueToNote address) . maybe id (take . fromIntegral) mlimit . toList
 
-issueToNote :: Text -> Issue -> Note
-issueToNote address Issue{..} = Note
+issueToNote :: Text -> Issue -> (Note, [Text])
+issueToNote address Issue{..} = (Note
     { note_status = Just $ toStatus issueState
     , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
     , note_start  = Just $ utctDay issueCreatedAt
     , note_end
-    , note_tags   = []  -- TODO: #168 Fetch github tags
+    , note_tags   = [] -- TODO: #168 Fetch github tags
     , note_track  = Just Track
         { track_provider   = Just "github"
         , track_source     = Just address
@@ -131,7 +131,7 @@ issueToNote address Issue{..} = Note
         , track_url        = Just trackUrl
         }
     , note_links = []
-    }
+    }, labels)
   where
     externalId = Text.pack . show @Int $ unIssueNumber issueNumber
     trackUrl = case issueHtmlUrl of
@@ -144,6 +144,7 @@ issueToNote address Issue{..} = Note
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
+    labels = map (untagName . labelName) $ toList issueLabels
 
 toStatus :: IssueState -> NoteStatus
 toStatus = \case
