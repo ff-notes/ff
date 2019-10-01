@@ -12,12 +12,12 @@ packages:
   original:
     hackage: crdt-10.4
 - completed:
-    hackage: github-0.23@sha256:07671c92da7142668ecdeaa5669ddda629ae85f25acd2ecadd49f9a119a5eac6,6965
+    hackage: github-0.22@sha256:13f09e904248a40dd173c08f2859d0dfda178a7c27f88df20b70a0d5a7614757,6909
     pantry-tree:
-      size: 7113
-      sha256: 90337bce40541903a3f151210499e3fbfa3e9fafbba4b1067641698cc6ee3921
+      size: 7050
+      sha256: f290767f547b77ae323da3fb92a662c8a9e5fed1c23f626937e79ae983b84af0
   original:
-    hackage: github-0.23
+    hackage: github-0.22
 - completed:
     subdir: ron
     cabal-file:

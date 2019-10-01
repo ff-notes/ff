@@ -378,17 +378,6 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
       | a <= b = 0
       | otherwise = a - b
 
-addTagRefs :: HashSet (ObjectRef Tag) -> Note -> Note
-addTagRefs refs Note{..} = Note
-  { note_end
-  , note_start
-  , note_status
-  , note_text
-  , note_tags = toList refs
-  , note_track
-  , note_links
-  }
-
 updateTrackedNote
   :: MonadStorage m
   => HashMap Track NoteId -- ^ selection of all aready tracked notes
@@ -399,7 +388,7 @@ updateTrackedNote oldNotes (note,tags) = case note of
     newRefs <- getOrCreateTags $ Set.fromList tags
     case HashMap.lookup track oldNotes of
       Nothing -> do
-        obj <- newObjectFrame $ addTagRefs newRefs note
+        obj <- newObjectFrame $ note{note_tags = toList newRefs}
         createDocument obj
       Just noteid -> void $ modify noteid $ do
         note_status_setIfDiffer note_status
