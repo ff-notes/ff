@@ -105,7 +105,7 @@ sampleMap address mlimit today issues =
             , tags = mempty
             }
         | issue <- sample
-        , let (note, tags) = issueToNote address issue
+        , let (note, _) = issueToNote address issue
         ]
   where
     issues' = toList issues
@@ -118,7 +118,7 @@ noteViewList address mlimit =
     map (issueToNote address) . maybe id (take . fromIntegral) mlimit . toList
 
 issueToNote :: Text -> Issue -> (Note, [Text])
-issueToNote address Issue{..} = (Note
+issueToNote address Issue{..} = (,) Note
     { note_status = Just $ toStatus issueState
     , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
     , note_start  = Just $ utctDay issueCreatedAt
@@ -131,7 +131,8 @@ issueToNote address Issue{..} = (Note
         , track_url        = Just trackUrl
         }
     , note_links = []
-    }, labels)
+    }
+    labels
   where
     externalId = Text.pack . show @Int $ unIssueNumber issueNumber
     trackUrl = case issueHtmlUrl of
