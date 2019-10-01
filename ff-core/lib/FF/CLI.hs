@@ -75,7 +75,7 @@ import FF.Options
     parseOptions,
   )
 import qualified FF.Options as Options
-import FF.Types (loadNote)
+import FF.Types (Status (Active), loadNote)
 import FF.UI
   ( prettyContact,
     prettyContactSample,
@@ -154,7 +154,7 @@ runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
     CmdAgenda Agenda {limit, tags} -> do
-      samples <- getTaskSamples False ui limit today tags
+      samples <- getTaskSamples Active ui limit today tags
       pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
@@ -181,7 +181,7 @@ runCmdAction ui cmd isBrief = do
         noteview <- toNoteView note
         pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text inArchived ui limit today tags
+      (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags
       pprint
         $ prettyTasksWikisContacts
             isBrief
@@ -211,7 +211,7 @@ runCmdAction ui cmd isBrief = do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
-      wikis <- getWikiSamples False ui mlimit today
+      wikis <- getWikiSamples ui mlimit today
       pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
@@ -251,7 +251,7 @@ cmdContact isBrief = \case
     contact <- cmdDeleteContact cid
     pprint $ withHeader "Deleted:" $ prettyContact isBrief contact
   Nothing -> do
-    contacts <- getContactSamples False
+    contacts <- getContactSamples Active
     pprint $ prettyContactSample isBrief contacts
 
 -- | Template taken from stack:
