@@ -1,0 +1,13 @@
+note_start: 2019-09-28
+note_track:
+  track_url: https://github.com/ff-notes/ff/issues/179
+  track_source: ff-notes/ff
+  track_externalId: '179'
+  track_provider: github
+note_links: []
+note_text: Add option to filter notes without a specific tag
+note_end: null
+note_status:
+  tag: TaskStatus
+  contents: Active
+note_tags: []

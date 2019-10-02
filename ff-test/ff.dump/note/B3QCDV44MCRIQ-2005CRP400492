@@ -17,5 +17,5 @@ note_text: "[WIP] Add tags\n\nResolves #20 \r\n\r\nToDo:\r\n- [x] Add tags when 
 note_end: null
 note_status:
   tag: TaskStatus
-  contents: Active
+  contents: Archived
 note_tags: []

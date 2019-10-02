@@ -1,0 +1,45 @@
+*set	#B/7euHpVmQEE+00P01fLmVG	!
+	@`]FF	>start 2019 10 1
+	@)m	>status >Active
+	@]GD	>text >B/7euHpVmQGY+00P01fLmVG
+	@]Rm	>track >B/7euHpVmQSP+00P01fLmVG
+*rga	#]GY	@0	!
+	@`)n	'B'
+	@)o	'u'
+	@)p	'm'
+	@)q	'p'
+	@)r	' '
+	@)s	'u'
+	@)t	'p'
+	@)u	' '
+	@)v	'g'
+	@)w	'i'
+	@)x	't'
+	@)y	'h'
+	@)z	'u'
+	@)~	'b'
+	@]H	' '
+	@)1	'd'
+	@)2	'e'
+	@)3	'p'
+	@)4	'e'
+	@)5	'n'
+	@)6	'd'
+	@)7	'e'
+	@)8	'n'
+	@)9	'c'
+	@)A	'y'
+	@)B	' '
+	@)C	't'
+	@)D	'o'
+	@)E	' '
+	@)F	'0'
+	@)G	'.'
+	@)H	'2'
+	@)I	'3'
+*set	#]SP	@0	!
+	@`)m	>externalId '182'
+	@]T8	>provider 'github'
+	@)R	>source 'ff-notes/ff'
+	@)i	>url 'https://github.com/ff-notes/ff/issues/182'
+.
