@@ -16,6 +16,7 @@ import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
 import           Data.Semigroup ((<>))
+import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
@@ -88,7 +89,7 @@ getOpenIssueSamples mAddress mlimit today = do
     (address, issues) <- getIssues mAddress mlimit stateOpen
     pure $ sampleMap address mlimit today issues
 
-getIssueViews :: Maybe Text -> Maybe Limit -> ExceptT Text IO [(Note, [Text])]
+getIssueViews :: Maybe Text -> Maybe Limit -> ExceptT Text IO [View Note]
 getIssueViews mAddress mlimit = do
     (address, issues) <- getIssues mAddress mlimit stateAll
     pure $ noteViewList address mlimit issues
@@ -99,9 +100,9 @@ sampleMap
 sampleMap address mlimit today issues =
     takeSamples mlimit
     $ splitModes today
-        [ Entity{entityId = DocId "", entityVal = NoteView{note, tags = mempty}}
+        [ Entity{entityId = DocId "", entityVal = noteview}
         | issue <- sample
-        , let (note, _) = issueToNote address issue
+        , let noteview = issueToNote address issue
         ]
   where
     issues' = toList issues
@@ -109,26 +110,28 @@ sampleMap address mlimit today issues =
         Nothing -> issues'
         Just n -> take (fromIntegral n) issues'
 
-noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [(Note, [Text])]
+noteViewList :: Foldable t => Text -> Maybe Limit -> t Issue -> [View Note]
 noteViewList address mlimit =
     map (issueToNote address) . maybe id (take . fromIntegral) mlimit . toList
 
-issueToNote :: Text -> Issue -> (Note, [Text])
-issueToNote address Issue{..} = (,) Note
-    { note_status = Just $ toStatus issueState
-    , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
-    , note_start  = Just $ utctDay issueCreatedAt
-    , note_end
-    , note_tags   = [] -- TODO: #168 Fetch github tags
-    , note_track  = Just Track
-        { track_provider   = Just "github"
-        , track_source     = Just address
-        , track_externalId = Just externalId
-        , track_url        = Just trackUrl
+issueToNote :: Text -> Issue -> View Note
+issueToNote address Issue{..} = NoteView
+    { note = Note
+        { note_status = Just $ toStatus issueState
+        , note_text   = Just $ RGA $ Text.unpack $ issueTitle <> body
+        , note_start  = Just $ utctDay issueCreatedAt
+        , note_end
+        , note_tags   = [] -- TODO: #168 Fetch github tags
+        , note_track  = Just Track
+            { track_provider   = Just "github"
+            , track_source     = Just address
+            , track_externalId = Just externalId
+            , track_url        = Just trackUrl
+            }
+        , note_links = []
         }
-    , note_links = []
+    , tags = labels
     }
-    labels
   where
     externalId = Text.pack . show @Int $ unIssueNumber issueNumber
     trackUrl = case issueHtmlUrl of
@@ -141,7 +144,7 @@ issueToNote address Issue{..} = (,) Note
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
-    labels = map (untagName . labelName) $ toList issueLabels
+    labels = Set.fromList $ map (untagName . labelName) $ toList issueLabels
 
 toStatus :: IssueState -> NoteStatus
 toStatus = \case

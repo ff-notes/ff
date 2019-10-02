@@ -381,11 +381,11 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
 updateTrackedNote
   :: MonadStorage m
   => HashMap Track NoteId -- ^ selection of all aready tracked notes
-  -> (Note,[Text]) -- ^ external note (with tags) to insert
+  -> View Note -- ^ external note (with tags) to insert
   -> m ()
-updateTrackedNote oldNotes (note,tags) = case note of
+updateTrackedNote oldNotes NoteView{note,tags} = case note of
   Note {note_track = Just track} -> do
-    newRefs <- getOrCreateTags $ Set.fromList tags
+    newRefs <- getOrCreateTags tags
     case HashMap.lookup track oldNotes of
       Nothing -> do
         obj <- newObjectFrame $ note{note_tags = toList newRefs}
@@ -400,7 +400,7 @@ updateTrackedNote oldNotes (note,tags) = case note of
   where
     Note {note_status, note_text = (fromRgaM -> text)} = note
 
-updateTrackedNotes :: MonadStorage m => [(Note, [Text])] -> m ()
+updateTrackedNotes :: MonadStorage m => [View Note] -> m ()
 updateTrackedNotes newNotes = do
   -- TODO(2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
   -- notes by track in the database and select specific note by its track
