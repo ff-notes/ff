@@ -31,7 +31,7 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Text (Text)
 import Data.Time (Day)
-import FF.Types (ContactId, Limit, Note, NoteId)
+import FF.Types (ContactId, Limit, Note, NoteId, Status (Active, Archived))
 import qualified FF.Types
 import Options.Applicative
   ( (<**>),
@@ -46,6 +46,7 @@ import Options.Applicative
     completer,
     customExecParser,
     defaultPrefs,
+    flag,
     flag',
     fullDesc,
     help,
@@ -156,7 +157,7 @@ data Search
         inTasks :: Bool,
         inWikis :: Bool,
         inContacts :: Bool,
-        inArchived :: Bool,
+        status :: Status,
         limit :: Maybe Limit,
         tags :: Set Text
       }
@@ -292,7 +293,8 @@ parser h =
     searchC =
       switch $ long "contacts" <> short 'c' <> help "Search among contacts"
     searchA =
-      switch $ long "archived" <> short 'a' <> help "Search among archived"
+      flag Active Archived
+        $ long "archived" <> short 'a' <> help "Search among archived"
     noteid =
       argument readDocId
         $ metavar "ID" <> help "note id" <> completer completeNoteIds

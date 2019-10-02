@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeOperators #-}
@@ -42,12 +41,10 @@ module FF
 where
 
 import Control.Applicative ((<|>))
-import Control.Arrow ((&&&))
 import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
-import Data.Bool (bool)
 import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
@@ -71,20 +68,21 @@ import FF.Types
     ContactId,
     ContactSample,
     Entity (..),
+    EntityDoc,
+    EntityView,
     Limit,
     ModeMap,
     Note (..),
     NoteId,
     NoteSample,
     NoteStatus (..),
-    NoteView (..),
     Sample (..),
     Status (..),
     Tag (..),
     Track (..),
+    View (..),
     contact_name_clear,
     contact_status_clear,
-    emptySample,
     loadNote,
     note_end_clear,
     note_end_read,
@@ -142,24 +140,21 @@ import System.IO.Temp (withSystemTempFile)
 import System.Process.Typed (proc, runProcess)
 import System.Random (StdGen, mkStdGen, randoms, split)
 
-load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
+load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
   Document {objectFrame} <- loadDocument docid
   entityVal <- evalObjectState objectFrame readObject
-  pure $ Entity docid entityVal
+  pure Entity {entityId = docid, entityVal}
 
-loadAll :: (Collection a, MonadStorage m) => m [Entity a]
+loadAll :: (Collection a, MonadStorage m) => m [EntityDoc a]
 loadAll = getDocuments >>= traverse load
 
-loadAllNotes :: MonadStorage m => m [Entity Note]
+loadAllNotes :: MonadStorage m => m [EntityDoc Note]
 loadAllNotes = getDocuments >>= traverse loadNote
 
-searchStatus :: Bool -> Status
-searchStatus = bool Active Archived
-
-loadContacts :: MonadStorage m => Bool -> m [Entity Contact]
-loadContacts isArchived =
-  filter ((== Just (searchStatus isArchived)) . contact_status . entityVal)
+loadContacts :: MonadStorage m => Status -> m [EntityDoc Contact]
+loadContacts status =
+  filter ((== Just status) . contact_status . entityVal)
     <$> loadAll
 
 -- | Load all tags as texts
@@ -206,27 +201,32 @@ getOrCreateTags tags
     createdTagRefs <- createTags newTags
     pure $ existentTagRefs <> createdTagRefs
 
-toNoteView :: MonadStorage m => Entity Note -> m NoteView
-toNoteView item = do
-  let refs = HashSet.fromList $ note_tags $ entityVal item
-  tags <- loadTagsByRefs refs
-  pure $ NoteView item $ Set.fromList tags
+toNoteView :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
+toNoteView Entity {entityId, entityVal} = do
+  tags <- loadTagsByRefs tagRefs
+  pure Entity
+    { entityId,
+      entityVal = NoteView {note = entityVal, tags = Set.fromList tags}
+    }
+  where
+    tagRefs = HashSet.fromList note_tags
+    Note {note_tags} = entityVal
 
-viewNoteSample :: MonadStorage m => Sample (Entity Note) -> m NoteSample
+viewNoteSample :: MonadStorage m => Sample (EntityDoc Note) -> m NoteSample
 viewNoteSample Sample {items, total} = do
   noteviews <- mapM toNoteView items
   pure $ Sample noteviews total
 
-getContactSamples :: MonadStorage m => Bool -> m ContactSample
+getContactSamples :: MonadStorage m => Status -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
 
 getContactSamplesWith
   :: MonadStorage m
   => (Text -> Bool) -- ^ predicate to filter contacts by text
-  -> Bool -- ^ search within archived contacts
+  -> Status -- ^ filter by status
   -> m ContactSample
-getContactSamplesWith predicate isArchived = do
-  contacts <- loadContacts isArchived
+getContactSamplesWith predicate status = do
+  contacts <- loadContacts status
   pure . (\ys -> Sample ys $ genericLength ys) $ filter predicate' contacts
   where
     predicate' = predicate . Text.pack . fromRgaM . contact_name . entityVal
@@ -237,21 +237,21 @@ fromRga (RGA xs) = xs
 fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
-loadTasks :: MonadStorage m => Bool -> m [NoteView]
-loadTasks inArchived = do
+loadTasks :: MonadStorage m => Status -> m [EntityView Note]
+loadTasks status = do
   notes <- loadAllNotes
   let filtered = filter isArchived notes
   traverse toNoteView filtered
   where
     isArchived =
-      (Just (TaskStatus $ searchStatus inArchived) ==) . note_status . entityVal
+      (Just (TaskStatus status) ==) . note_status . entityVal
 
-loadWikis :: MonadStorage m => m [Entity Note]
+loadWikis :: MonadStorage m => m [EntityDoc Note]
 loadWikis = filter ((Just Wiki ==) . note_status . entityVal) <$> loadAllNotes
 
 getTaskSamples
   :: MonadStorage m
-  => Bool -- ^ search within archived tasks
+  => Status -- ^ filter by status
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
@@ -262,7 +262,7 @@ getTaskSamples = getTaskSamplesWith $ const True
 getTaskSamplesWith
   :: MonadStorage m
   => (Text -> Bool) -- ^ predicate to filter notes by text
-  -> Bool -- ^ search within archived tasks
+  -> Status -- ^ filter status
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
@@ -270,32 +270,34 @@ getTaskSamplesWith
   -> m (ModeMap NoteSample)
 getTaskSamplesWith
   predicate
-  isArchived
+  status
   ConfigUI {shuffle}
   limit
   today
   tagsRequested = do
-    allTasks <- loadTasks isArchived
+    allTasks <- loadTasks status
     let tasks =
           filter
-            (\NoteView {tags} -> tagsRequested `isSubsetOf` tags)
+            ( \Entity {entityVal = NoteView {tags}} ->
+                tagsRequested `isSubsetOf` tags
+            )
             allTasks
     pure
       . takeSamples limit
       . shuffleOrSort
-      . splitModesBy (entityVal . note) today
+      . splitModes today
       $ filter
           ( predicate
               . Text.pack
               . fromRgaM
               . note_text
-              . entityVal
               . note
+              . entityVal
           )
           tasks
     where
       gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
-      shuffleOrSort :: ModeMap [NoteView] -> ModeMap [NoteView]
+      shuffleOrSort :: ModeMap [EntityView Note] -> ModeMap [EntityView Note]
       shuffleOrSort
         | shuffle = shuffleTraverseItems gen
         | otherwise =
@@ -303,14 +305,16 @@ getTaskSamplesWith
           -- it's just for determinism
           fmap
             $ sortOn
-                ( \NoteView {..} ->
-                    note_start . entityVal &&& entityId $ note
+                ( \Entity
+                     { entityId,
+                       entityVal = NoteView {note = Note {note_start}}
+                     } ->
+                      (note_start, entityId)
                 )
 
 getWikiSamples
   :: MonadStorage m
-  => Bool -- archived search
-  -> ConfigUI
+  => ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
   -> m NoteSample
@@ -319,21 +323,17 @@ getWikiSamples = getWikiSamplesWith $ const True
 getWikiSamplesWith
   :: MonadStorage m
   => (Text -> Bool) -- ^ predicate to filter tasks by text
-  -> Bool -- ^ if archived search, return Nothing
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
   -> m NoteSample
-getWikiSamplesWith predicate archive ConfigUI {shuffle} limit today =
-  if archive
-    then pure emptySample
-    else do
-      wikis0 <- loadWikis
-      let wikis1 = filter predicate' wikis0
-      let wikis2 = case limit of
-            Nothing -> wikis1
-            Just l -> take (fromIntegral l) wikis1
-      viewNoteSample $ toSample $ shuffleOrSort wikis2
+getWikiSamplesWith predicate ConfigUI {shuffle} limit today = do
+  wikis0 <- loadWikis
+  let wikis1 = filter predicate' wikis0
+  let wikis2 = case limit of
+        Nothing -> wikis1
+        Just l -> take (fromIntegral l) wikis1
+  viewNoteSample $ toSample $ shuffleOrSort wikis2
   where
     predicate' = predicate . Text.pack . fromRgaM . note_text . entityVal
     toSample ys = Sample ys $ genericLength ys
@@ -361,8 +361,8 @@ splitModesBy f today = Map.unionsWith (++) . map singleton
   where
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
-splitModes :: Day -> [NoteView] -> ModeMap [NoteView]
-splitModes = splitModesBy (entityVal . note)
+splitModes :: Day -> [EntityView Note] -> ModeMap [EntityView Note]
+splitModes = splitModesBy (note . entityVal)
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
@@ -413,7 +413,7 @@ updateTrackedNotes newNotes = do
   let oldNotes = HashMap.fromList $ catMaybes oldNotesM
   for_ newNotes $ updateTrackedNote oldNotes
 
-cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
+cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
 cmdNewNote New {text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
@@ -436,7 +436,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
 
-cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
+cmdNewContact :: MonadStorage m => Text -> m (EntityDoc Contact)
 cmdNewContact name = do
   let contact =
         Contact
@@ -447,7 +447,7 @@ cmdNewContact name = do
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) contact
 
-cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
+cmdDeleteContact :: MonadStorage m => ContactId -> m (EntityDoc Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
   contact_status_clear
   contact_name_clear
@@ -455,22 +455,22 @@ cmdDeleteContact cid = modifyAndView cid $ do
 cmdSearch
   :: MonadStorage m
   => Text -- ^ query
-  -> Bool -- ^ search within archived tasks or contacts
+  -> Status -- ^ search within archived tasks or contacts
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
   -> Set Text -- ^ requested tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr archive ui limit today tags = do
+cmdSearch substr status ui limit today tags = do
   -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step
-  tasks <- getTaskSamplesWith predicate archive ui limit today tags
-  wikis <- getWikiSamplesWith predicate archive ui limit today
-  contacts <- getContactSamplesWith predicate archive
+  tasks <- getTaskSamplesWith predicate status ui limit today tags
+  wikis <- getWikiSamplesWith predicate ui limit today
+  contacts <- getContactSamplesWith predicate status
   pure (tasks, wikis, contacts)
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
-cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
+cmdDeleteNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDeleteNote nid = modifyAndView nid $ do
   assertNoteIsNative
   note_status_clear
@@ -479,16 +479,16 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_end_clear
   note_tags_clear
 
-cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
+cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDone nid = modifyAndView nid $ do
   assertNoteIsNative
   note_status_set $ TaskStatus Archived
 
-cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
+cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
   modifyAndView nid $ note_status_set $ TaskStatus Active
 
-cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
+cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [EntityDoc Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
@@ -550,7 +550,7 @@ cmdEdit edit = case edit of
         unless (null deleteTags)
           $ mapM_ note_tags_remove refsToDelete
 
-cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
+cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
   today <- getUtcToday
   start <- note_start_read
@@ -565,7 +565,7 @@ modifyAndView
   :: (Collection a, MonadStorage m)
   => DocId a
   -> ObjectStateT a m ()
-  -> m (Entity a)
+  -> m (EntityDoc a)
 modifyAndView docid f = do
   entityVal <-
     modify docid $ do

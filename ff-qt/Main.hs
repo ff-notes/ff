@@ -6,8 +6,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Main
-  ( main
-    )
+  ( main,
+  )
 where
 
 import Control.Concurrent (forkIO)
@@ -23,16 +23,18 @@ import FF
   ( fromRgaM,
     getDataDir,
     loadTasks,
-    noDataDirectoryMessage
-    )
+    noDataDirectoryMessage,
+    toNoteView,
+  )
 import FF.Config (loadConfig)
 import FF.Types
   ( Entity (Entity),
+    EntityView,
     Note (Note),
     NoteId,
     NoteStatus (TaskStatus),
-    NoteView(note),
     Status (Active),
+    View (NoteView, note),
     entityId,
     entityVal,
     loadNote,
@@ -44,8 +46,8 @@ import FF.Types
     track_externalId,
     track_provider,
     track_source,
-    track_url
-    )
+    track_url,
+  )
 import Foreign (Ptr)
 import Foreign.C (CInt)
 import Foreign.StablePtr (newStablePtr)
@@ -56,8 +58,8 @@ import qualified RON.Storage.FS as Storage
 import RON.Storage.FS
   ( CollectionDocId (CollectionDocId),
     runStorage,
-    subscribeForever
-    )
+    subscribeForever,
+  )
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 
@@ -93,8 +95,8 @@ main = do
   -- load current data to the view, asynchronously
   _ <-
     forkIO $ do
-      activeTasks <- runStorage storage (loadTasks False)
-      for_ activeTasks $ upsertTask mainWindow . note
+      activeTasks <- runStorage storage (loadTasks Active)
+      for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
   _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
   -- run UI
@@ -111,24 +113,25 @@ getDataDirOrFail = do
 upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
 upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
   (cast -> Just (noteId :: NoteId)) -> do
-    note <- runStorage storage $ loadNote noteId
+    note <- runStorage storage $ loadNote noteId >>= toNoteView
     upsertTask mainWindow note
   _ -> pure ()
 
-upsertTask :: Ptr MainWindow -> Entity Note -> IO ()
-upsertTask mainWindow Entity {entityId = DocId nid, entityVal = note} = do
+upsertTask :: Ptr MainWindow -> EntityView Note -> IO ()
+upsertTask mainWindow Entity {entityId = DocId nid, entityVal = noteView} = do
   let nid' = encodeUtf8 $ Text.pack nid
-      isActive = note_status == Just (TaskStatus Active)
       Note {note_text, note_start, note_end, note_track, note_status} = note
+      NoteView {note} = noteView
+      isActive = note_status == Just (TaskStatus Active)
       noteText = fromRgaM note_text
       text = encodeUtf8 $ Text.pack noteText
       (startYear, startMonth, startDay) = toGregorianC $ fromJust note_start
       (endYear, endMonth, endDay) = maybe (0, 0, 0) toGregorianC note_end
       isTracking = isJust note_track
-      provider   = encodeUtf8 $ fromMaybe "" $ note_track >>= track_provider
-      source     = encodeUtf8 $ fromMaybe "" $ note_track >>= track_source
+      provider = encodeUtf8 $ fromMaybe "" $ note_track >>= track_provider
+      source = encodeUtf8 $ fromMaybe "" $ note_track >>= track_source
       externalId = encodeUtf8 $ fromMaybe "" $ note_track >>= track_externalId
-      url        = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
+      url = encodeUtf8 $ fromMaybe "" $ note_track >>= track_url
   [Cpp.block| void {
     $(MainWindow * mainWindow)->upsertTask({
       .id = $bs-cstr:nid',

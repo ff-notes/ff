@@ -30,11 +30,11 @@ import FF.Types
   ( Limit,
     Note (..),
     NoteStatus (TaskStatus),
-    NoteView (NoteView, note, tags),
     Sample (Sample, items, total),
     Status (Active),
     TaskMode (Overdue),
     Track (..),
+    View (NoteView, note, tags),
     entityVal,
     pattern Entity,
   )
@@ -74,7 +74,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
   Map.empty === agenda
   fs === fs'
   where
@@ -85,7 +85,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples False defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
   agenda === agenda'
   fs123 === fs'
   where
@@ -94,20 +94,20 @@ prop_smoke = property $ do
         (Overdue 365478)
         Sample
           { items =
-              [ NoteView
-                  { note = Entity
-                             (DocId "B00000000002D-200000000002D")
-                             Note
-                               { note_status = Just $ TaskStatus Active,
-                                 note_text = Just $ RGA "helloworld",
-                                 note_start = Just $ fromGregorian 22 11 24,
-                                 note_end = Just $ fromGregorian 17 06 19,
-                                 note_tags = [],
-                                 note_track = Nothing,
-                                 note_links = []
-                               },
-                    tags = mempty
-                  }
+              [ Entity
+                  (DocId "B00000000002D-200000000002D")
+                  NoteView
+                    { note = Note
+                        { note_status = Just $ TaskStatus Active,
+                          note_text = Just $ RGA "helloworld",
+                          note_start = Just $ fromGregorian 22 11 24,
+                          note_end = Just $ fromGregorian 17 06 19,
+                          note_tags = [],
+                          note_track = Nothing,
+                          note_links = []
+                        },
+                      tags = mempty
+                    }
               ],
             total = 1
           }
@@ -252,28 +252,26 @@ prop_repo =
         (Overdue 10)
         Sample
           { items =
-              [ NoteView
-                  { note = Entity
-                             (DocId "")
-                             Note
-                               { note_status = Just $ TaskStatus Active,
-                                 note_text =
-                                   Just $ RGA "import issues (GitHub -> ff)",
-                                 note_start = Just $ fromGregorian 2018 06 21,
-                                 note_end = Just $ fromGregorian 2018 06 15,
-                                 note_tags = [],
-                                 note_track = Just Track
-                                   { track_provider = Just "github",
-                                     track_source = Just "ff-notes/ff",
-                                     track_externalId = Just "60",
-                                     track_url =
-                                       Just
-                                         "https://github.com/ff-notes/ff/issues/60"
-                                   },
-                                 note_links = []
-                               },
-                    tags = mempty
-                  }
+              [ Entity
+                  (DocId "")
+                  NoteView
+                    { note = Note
+                        { note_status = Just $ TaskStatus Active,
+                          note_text = Just $ RGA "import issues (GitHub -> ff)",
+                          note_start = Just $ fromGregorian 2018 06 21,
+                          note_end = Just $ fromGregorian 2018 06 15,
+                          note_tags = [],
+                          note_track = Just Track
+                            { track_provider = Just "github",
+                              track_source = Just "ff-notes/ff",
+                              track_externalId = Just "60",
+                              track_url =
+                                Just "https://github.com/ff-notes/ff/issues/60"
+                            },
+                          note_links = []
+                        },
+                      tags = mempty
+                    }
               ],
             total = 1
           }
