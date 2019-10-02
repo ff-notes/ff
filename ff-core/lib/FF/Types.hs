@@ -207,12 +207,11 @@ deriving instance Eq val => Eq (Entity' doc val)
 
 deriving instance Show val => Show (Entity' doc val)
 
--- TODO rename to EntityDoc
-type Entity doc = Entity' doc doc
+type EntityDoc doc = Entity' doc doc
 
 type EntityView doc = Entity' doc (View doc)
 
-type ContactSample = Sample (Entity Contact)
+type ContactSample = Sample (EntityDoc Contact)
 
 type NoteSample = Sample (EntityView Note)
 
@@ -278,7 +277,7 @@ taskMode today Note {note_start, note_end} = case note_end of
 type Limit = Natural
 
 -- * Legacy, v2
-loadNote :: MonadStorage m => NoteId -> m (Entity Note)
+loadNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
 loadNote entityId = do
   Document {objectFrame} <- loadDocument entityId
   let tryCurrentEncoding = evalObjectState objectFrame readObject

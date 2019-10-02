@@ -67,8 +67,8 @@ import FF.Types
   ( Contact (..),
     ContactId,
     ContactSample,
-    Entity,
     Entity' (..),
+    EntityDoc,
     EntityView,
     Limit,
     ModeMap,
@@ -140,19 +140,19 @@ import System.IO.Temp (withSystemTempFile)
 import System.Process.Typed (proc, runProcess)
 import System.Random (StdGen, mkStdGen, randoms, split)
 
-load :: (Collection a, MonadStorage m) => DocId a -> m (Entity a)
+load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
   Document {objectFrame} <- loadDocument docid
   entityVal <- evalObjectState objectFrame readObject
   pure Entity {entityId = docid, entityVal}
 
-loadAll :: (Collection a, MonadStorage m) => m [Entity a]
+loadAll :: (Collection a, MonadStorage m) => m [EntityDoc a]
 loadAll = getDocuments >>= traverse load
 
-loadAllNotes :: MonadStorage m => m [Entity Note]
+loadAllNotes :: MonadStorage m => m [EntityDoc Note]
 loadAllNotes = getDocuments >>= traverse loadNote
 
-loadContacts :: MonadStorage m => Status -> m [Entity Contact]
+loadContacts :: MonadStorage m => Status -> m [EntityDoc Contact]
 loadContacts status =
   filter ((== Just status) . contact_status . entityVal)
     <$> loadAll
@@ -201,7 +201,7 @@ getOrCreateTags tags
     createdTagRefs <- createTags newTags
     pure $ existentTagRefs <> createdTagRefs
 
-toNoteView :: MonadStorage m => Entity Note -> m (EntityView Note)
+toNoteView :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
 toNoteView Entity {entityId, entityVal} = do
   tags <- loadTagsByRefs tagRefs
   pure Entity
@@ -212,7 +212,7 @@ toNoteView Entity {entityId, entityVal} = do
     tagRefs = HashSet.fromList note_tags
     Note {note_tags} = entityVal
 
-viewNoteSample :: MonadStorage m => Sample (Entity Note) -> m NoteSample
+viewNoteSample :: MonadStorage m => Sample (EntityDoc Note) -> m NoteSample
 viewNoteSample Sample {items, total} = do
   noteviews <- mapM toNoteView items
   pure $ Sample noteviews total
@@ -246,7 +246,7 @@ loadTasks status = do
     isArchived =
       (Just (TaskStatus status) ==) . note_status . entityVal
 
-loadWikis :: MonadStorage m => m [Entity Note]
+loadWikis :: MonadStorage m => m [EntityDoc Note]
 loadWikis = filter ((Just Wiki ==) . note_status . entityVal) <$> loadAllNotes
 
 getTaskSamples
@@ -408,7 +408,7 @@ updateTrackedNotes newNotes = do
   let oldNotes = HashMap.fromList $ catMaybes oldNotesM
   for_ newNotes $ updateTrackedNote oldNotes
 
-cmdNewNote :: MonadStorage m => New -> Day -> m (Entity Note)
+cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
 cmdNewNote New {text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
@@ -431,7 +431,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
 
-cmdNewContact :: MonadStorage m => Text -> m (Entity Contact)
+cmdNewContact :: MonadStorage m => Text -> m (EntityDoc Contact)
 cmdNewContact name = do
   let contact =
         Contact
@@ -442,7 +442,7 @@ cmdNewContact name = do
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) contact
 
-cmdDeleteContact :: MonadStorage m => ContactId -> m (Entity Contact)
+cmdDeleteContact :: MonadStorage m => ContactId -> m (EntityDoc Contact)
 cmdDeleteContact cid = modifyAndView cid $ do
   contact_status_clear
   contact_name_clear
@@ -465,7 +465,7 @@ cmdSearch substr status ui limit today tags = do
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
-cmdDeleteNote :: MonadStorage m => NoteId -> m (Entity Note)
+cmdDeleteNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDeleteNote nid = modifyAndView nid $ do
   assertNoteIsNative
   note_status_clear
@@ -474,16 +474,16 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_end_clear
   note_tags_clear
 
-cmdDone :: MonadStorage m => NoteId -> m (Entity Note)
+cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDone nid = modifyAndView nid $ do
   assertNoteIsNative
   note_status_set $ TaskStatus Archived
 
-cmdUnarchive :: MonadStorage m => NoteId -> m (Entity Note)
+cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
   modifyAndView nid $ note_status_set $ TaskStatus Active
 
-cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [Entity Note]
+cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [EntityDoc Note]
 cmdEdit edit = case edit of
   Edit {ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
@@ -545,7 +545,7 @@ cmdEdit edit = case edit of
         unless (null deleteTags)
           $ mapM_ note_tags_remove refsDelete
 
-cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (Entity Note)
+cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
   today <- getUtcToday
   start <- note_start_read
@@ -560,7 +560,7 @@ modifyAndView
   :: (Collection a, MonadStorage m)
   => DocId a
   -> ObjectStateT a m ()
-  -> m (Entity a)
+  -> m (EntityDoc a)
 modifyAndView docid f = do
   entityVal <-
     modify docid $ do

@@ -35,7 +35,7 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             color)
 import           Data.Time (Day)
 import           FF (fromRgaM)
-import           FF.Types (Contact (..), ContactSample, Entity, Entity' (..),
+import           FF.Types (Contact (..), ContactSample, Entity' (..), EntityDoc,
                            EntityView, ModeMap, Note (..), NoteSample,
                            NoteStatus (Wiki), Sample (..), TaskMode (..),
                            Track (..), View (..), omitted)
@@ -217,7 +217,7 @@ sampleLabel = \case
         1 -> "Starting tomorrow:"
         _ -> "Starting in " <> Text.pack (show n) <> " days:"
 
-prettyContact :: Bool -> Entity Contact -> Doc AnsiStyle
+prettyContact :: Bool -> EntityDoc Contact -> Doc AnsiStyle
 prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
   where
     name = fromRgaM contact_name
