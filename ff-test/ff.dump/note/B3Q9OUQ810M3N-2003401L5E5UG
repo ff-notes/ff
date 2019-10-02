@@ -1,13 +1,15 @@
-note_start: 2019-02-19
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/124
-  track_source: ff-notes/ff
-  track_externalId: '124'
-  track_provider: github
-note_links: []
-note_text: Enable osx testing on Travis
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+note:
+  note_start: 2019-02-19
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/124
+    track_source: ff-notes/ff
+    track_externalId: '124'
+    track_provider: github
+  note_links: []
+  note_text: Enable osx testing on Travis
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

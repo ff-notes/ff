@@ -1,15 +1,17 @@
-note_start: 2019-03-19
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/136
-  track_source: ff-notes/ff
-  track_externalId: '136'
-  track_provider: github
-note_links: []
-note_text: "sync `ff --help` with README\n\nв ридми есть пример ff --help, он должен
-  совпадать с тем, что выводится в реальности\r\nдописать тест, который это проверяет
-  постоянно"
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Archived
-note_tags: []
+note:
+  note_start: 2019-03-19
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/136
+    track_source: ff-notes/ff
+    track_externalId: '136'
+    track_provider: github
+  note_links: []
+  note_text: "sync `ff --help` with README\n\nв ридми есть пример ff --help, он должен
+    совпадать с тем, что выводится в реальности\r\nдописать тест, который это проверяет
+    постоянно"
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Archived
+  note_tags: []
+tags: []

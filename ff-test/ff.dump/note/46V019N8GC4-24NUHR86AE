@@ -1,15 +1,17 @@
-note_start: 2018-11-05
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/29
-  track_source: ff-notes/ff
-  track_externalId: '29'
-  track_provider: github
-note_links: []
-note_text: "Subcommand aliases and abbreviations\n\nWait for\r\n- subcommand aliases
-  in optparse-applicative\r\n- subcommand abbreviations in optparse-applicative --
-  https://github.com/pcapriotti/optparse-applicative/issues/193"
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+note:
+  note_start: 2018-11-05
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/29
+    track_source: ff-notes/ff
+    track_externalId: '29'
+    track_provider: github
+  note_links: []
+  note_text: "Subcommand aliases and abbreviations\n\nWait for\r\n- subcommand aliases
+    in optparse-applicative\r\n- subcommand abbreviations in optparse-applicative
+    -- https://github.com/pcapriotti/optparse-applicative/issues/193"
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

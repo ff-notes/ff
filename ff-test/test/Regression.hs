@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -14,6 +15,7 @@ where
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
 import Data.Traversable (for)
 import Data.Yaml (encodeFile)
+import FF (toNoteView)
 import FF.Types
   ( Entity (Entity, entityVal),
     Link,
@@ -23,6 +25,7 @@ import FF.Types
     Status,
     Tag,
     Track,
+    View (NoteView),
     loadNote,
   )
 import RON.Data.ORSet (ORSet)
@@ -56,6 +59,8 @@ deriveToJSON defaultOptions ''Track
 
 deriveToJSON defaultOptions ''UUID
 
+deriveToJSON defaultOptions 'NoteView
+
 mkRegressionTest :: IO (FilePath -> TestTree)
 mkRegressionTest = do
   h <- newHandle "../.ff"
@@ -77,9 +82,9 @@ testNote h tmp docid =
   where
     outFile = tmp </> show docid
     action = do
-      Entity {entityVal = val} <- runStorage h $ loadNote docid
+      Entity {entityVal} <- runStorage h $ loadNote docid >>= toNoteView
       createDirectoryIfMissing True $ takeDirectory outFile
-      encodeFile outFile val
+      encodeFile outFile entityVal
 
 diff :: String -> String -> [String]
 diff ref new = ["colordiff", "-u", ref, new]

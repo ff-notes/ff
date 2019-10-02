@@ -1,16 +1,18 @@
-note_start: 2018-06-16
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/59
-  track_source: ff-notes/ff
-  track_externalId: '59'
-  track_provider: github
-note_links: []
-note_text: |-
-  export issue status (ff -> GitHub)
+note:
+  note_start: 2018-06-16
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/59
+    track_source: ff-notes/ff
+    track_externalId: '59'
+    track_provider: github
+  note_links: []
+  note_text: |-
+    export issue status (ff -> GitHub)
 
-  close GitHub issue that is closed in ff
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Archived
-note_tags: []
+    close GitHub issue that is closed in ff
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Archived
+  note_tags: []
+tags: []

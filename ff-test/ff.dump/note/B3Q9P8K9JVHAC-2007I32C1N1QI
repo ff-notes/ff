@@ -1,16 +1,18 @@
-note_start: 2019-02-25
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/129
-  track_source: ff-notes/ff
-  track_externalId: '129'
-  track_provider: github
-note_links: []
-note_text: |-
-  Add index for faster database lookup
+note:
+  note_start: 2019-02-25
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/129
+    track_source: ff-notes/ff
+    track_externalId: '129'
+    track_provider: github
+  note_links: []
+  note_text: |-
+    Add index for faster database lookup
 
-  Local for each replica, non-synchronized
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+    Local for each replica, non-synchronized
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

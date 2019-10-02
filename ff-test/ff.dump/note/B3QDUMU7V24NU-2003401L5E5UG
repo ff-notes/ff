@@ -1,14 +1,17 @@
-note_start: 2019-08-13
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/163
-  track_source: ff-notes/ff
-  track_externalId: '163'
-  track_provider: github
-note_links: []
-note_text: "Drop LWW-rep support in Contact/Note/Track after 2020-08-14\n\n- [x] Upgrade
-  Note to ORSet rep\r\n- [x] Release\r\n- [ ] Drop LWW-rep support a year after"
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+note:
+  note_start: 2019-08-13
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/163
+    track_source: ff-notes/ff
+    track_externalId: '163'
+    track_provider: github
+  note_links: []
+  note_text: "Drop LWW-rep support in Contact/Note/Track after 2020-08-14\n\n- [x]
+    Upgrade Note to ORSet rep\r\n- [x] Release\r\n- [ ] Drop LWW-rep support a year
+    after"
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

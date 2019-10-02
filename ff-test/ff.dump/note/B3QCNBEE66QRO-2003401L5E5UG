@@ -1,16 +1,18 @@
-note_start: 2019-06-15
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/161
-  track_source: ff-notes/ff
-  track_externalId: '161'
-  track_provider: github
-note_links: []
-note_text: |-
-  Compare to other task managers
+note:
+  note_start: 2019-06-15
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/161
+    track_source: ff-notes/ff
+    track_externalId: '161'
+    track_provider: github
+  note_links: []
+  note_text: |-
+    Compare to other task managers
 
-  http://tasklite.ad-si.com/related
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+    http://tasklite.ad-si.com/related
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

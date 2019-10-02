@@ -1,16 +1,18 @@
-note_start: 2018-11-05
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/19
-  track_source: ff-notes/ff
-  track_externalId: '19'
-  track_provider: github
-note_links: []
-note_text: "Links between notes\n\nUse for:\r\n- dependencies\r\n- tags (#20)\r\n-
-  contexts (#21)\r\n- contact contexts (#22)\r\n\r\nImplementation variants:\r\n1.
-  A field in Note with a set of links (incoming, outgoing).\r\n2. A separate type
-  Link{from, to :: DocId Note}\r\n3. Something else?"
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+note:
+  note_start: 2018-11-05
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/19
+    track_source: ff-notes/ff
+    track_externalId: '19'
+    track_provider: github
+  note_links: []
+  note_text: "Links between notes\n\nUse for:\r\n- dependencies\r\n- tags (#20)\r\n-
+    contexts (#21)\r\n- contact contexts (#22)\r\n\r\nImplementation variants:\r\n1.
+    A field in Note with a set of links (incoming, outgoing).\r\n2. A separate type
+    Link{from, to :: DocId Note}\r\n3. Something else?"
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

@@ -1,16 +1,18 @@
-note_start: 2019-02-25
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/126
-  track_source: ff-notes/ff
-  track_externalId: '126'
-  track_provider: github
-note_links: []
-note_text: |-
-  repeating tasks
+note:
+  note_start: 2019-02-25
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/126
+    track_source: ff-notes/ff
+    track_externalId: '126'
+    track_provider: github
+  note_links: []
+  note_text: |-
+    repeating tasks
 
-  `done` moves to future in fixed period; may be useful for utility payments, or for other regular routines
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+    `done` moves to future in fixed period; may be useful for utility payments, or for other regular routines
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

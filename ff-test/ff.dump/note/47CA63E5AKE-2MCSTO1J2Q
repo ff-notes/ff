@@ -1,15 +1,17 @@
-note_start: 2018-09-01
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/92
-  track_source: ff-notes/ff
-  track_externalId: '92'
-  track_provider: github
-note_links: []
-note_text: "Proper error messages\n\nDistinguish these cases in error messages:\r\n-
-  a document doesn't exist\r\n- a document is invalid\r\n- a document is tracked\r\n-
-  a document is archived"
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+note:
+  note_start: 2018-09-01
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/92
+    track_source: ff-notes/ff
+    track_externalId: '92'
+    track_provider: github
+  note_links: []
+  note_text: "Proper error messages\n\nDistinguish these cases in error messages:\r\n-
+    a document doesn't exist\r\n- a document is invalid\r\n- a document is tracked\r\n-
+    a document is archived"
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []

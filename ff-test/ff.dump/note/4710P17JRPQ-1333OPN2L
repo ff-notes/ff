@@ -1,16 +1,18 @@
-note_start: 2018-07-30
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/83
-  track_source: ff-notes/ff
-  track_externalId: '83'
-  track_provider: github
-note_links: []
-note_text: |-
-  Support multiple external note sources
+note:
+  note_start: 2018-07-30
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/83
+    track_source: ff-notes/ff
+    track_externalId: '83'
+    track_provider: github
+  note_links: []
+  note_text: |-
+    Support multiple external note sources
 
-  Create a dedicated table for sources
-note_end: null
-note_status:
-  tag: TaskStatus
-  contents: Active
-note_tags: []
+    Create a dedicated table for sources
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []
