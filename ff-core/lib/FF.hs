@@ -26,6 +26,7 @@ module FF
     getTaskSamples,
     getUtcToday,
     getWikiSamples,
+    load,
     loadTasks,
     loadAll,
     loadAllTagTexts,
