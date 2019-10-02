@@ -7,8 +7,8 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Main
-  ( main
-    )
+  ( main,
+  )
 where
 
 import Control.Lens ((%~), makeClassy_)
@@ -23,12 +23,13 @@ import FF (fromRgaM, getDataDir, loadTasks, noDataDirectoryMessage)
 import FF.Config (loadConfig)
 import FF.Types
   ( Entity (Entity),
+    EntityView,
     Note (Note),
     NoteId,
     NoteStatus (TaskStatus),
-    NoteView (note),
-    Status (Active)
-    )
+    Status (Active),
+    View (NoteView, note),
+  )
 import qualified FF.Types
 import qualified GI.Gtk as Gtk
 import GI.Gtk.Declarative
@@ -37,26 +38,26 @@ import GI.Gtk.Declarative
     bin,
     container,
     on,
-    widget
-    )
+    widget,
+  )
 import GI.Gtk.Declarative.App.Simple
   ( App (App),
     AppView,
     Transition (Exit, Transition),
-    run
-    )
+    run,
+  )
 import qualified GI.Gtk.Declarative.App.Simple
 import Pipes (Producer, each)
 import RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 
-newtype State = State {tasks :: Map NoteId Note}
+newtype State = State {tasks :: Map NoteId (View Note)}
 
 makeClassy_ ''State
 
 data Event
   = Close
-  | UpsertTask (Entity Note)
+  | UpsertTask (EntityView Note)
 
 view :: State -> AppView Gtk.Window Event
 view State {tasks} =
@@ -65,7 +66,7 @@ view State {tasks} =
       #heightRequest := 300,
       #widthRequest := 400,
       on #deleteEvent $ const (True, Close)
-      ]
+    ]
     mainWidget
   where
     mainWidget = bin Gtk.ScrolledWindow [] taskList
@@ -76,17 +77,18 @@ view State {tasks} =
         ( Vector.fromList
             [ taskWidget $ Entity noteId note
               | (noteId, note) <- Map.assocs tasks
-              ]
-          )
-    taskWidget :: Entity Note -> BoxChild Event
-    taskWidget Entity {entityVal = Note {note_status, note_text}} =
+            ]
+        )
+    taskWidget :: EntityView Note -> BoxChild Event
+    taskWidget Entity {entityVal} =
       widget Gtk.Label
         [ #halign := Gtk.AlignStart,
           #label := (if isActive then id else strike) (Text.pack noteText),
           -- , #useMarkup := True
           #wrap := True
-          ]
+        ]
       where
+        NoteView {note = Note {note_status, note_text}} = entityVal
         noteText = fromRgaM note_text
         isActive = note_status == Just (TaskStatus Active)
         strike text = "<s>" <> text <> "</s>"
@@ -109,25 +111,25 @@ main = do
   path <- getDataDirOrFail
   storage <- StorageFS.newHandle path
   void
-    $ run
-        App
-          { view,
-            update,
-            initialState = State {tasks = []},
-            inputs = [ initiallyLoadActiveTasks storage
-                        -- TODO , listenToChanges
-                       ]
-            }
+    $ run App
+      { view,
+        update,
+        initialState = State {tasks = []},
+        inputs =
+          [ initiallyLoadActiveTasks storage
+            -- TODO , listenToChanges
+          ]
+      }
 
 initiallyLoadActiveTasks :: StorageFS.Handle -> Producer Event IO ()
 initiallyLoadActiveTasks storage = do
   activeTasks <- lift $ runStorage storage $ loadTasks Active
-  each $ map (UpsertTask . note) activeTasks
+  each $ map UpsertTask activeTasks
 
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do
   cfg <- loadConfig
   dataDir <- getDataDir cfg
   case dataDir of
-    Nothing   -> fail noDataDirectoryMessage
+    Nothing -> fail noDataDirectoryMessage
     Just path -> pure path

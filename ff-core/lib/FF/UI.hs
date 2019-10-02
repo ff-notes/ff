@@ -35,10 +35,10 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             color)
 import           Data.Time (Day)
 import           FF (fromRgaM)
-import           FF.Types (Contact (..), ContactSample, Entity (..), ModeMap,
-                           Note (..), NoteSample, NoteStatus (Wiki),
-                           NoteView (..), Sample (..), TaskMode (..),
-                           Track (..), omitted)
+import           FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
+                           EntityView, ModeMap, Note (..), NoteSample,
+                           NoteStatus (Wiki), Sample (..), TaskMode (..),
+                           Track (..), View (..), omitted)
 import           RON.Storage.Backend (DocId (DocId))
 
 -- | Header with fixed yellow color.
@@ -105,7 +105,7 @@ prettyWikiSample isBrief samples = stack isBrief $
                 . prettyNote isBrief
                 ) items
 
-prettyNoteList :: Bool -> [NoteView] -> Doc AnsiStyle
+prettyNoteList :: Bool -> [EntityView Note] -> Doc AnsiStyle
 prettyNoteList isBrief
     = stack isBrief
     . map ((bullet <>) . indent 1
@@ -114,9 +114,9 @@ prettyNoteList isBrief
 -- | For both tasks and wikis
 prettyNote
     :: Bool  -- ^ is brief
-    -> NoteView
+    -> EntityView Note
     -> Doc AnsiStyle
-prettyNote isBrief (NoteView Entity{..} tags) = case isBrief of
+prettyNote isBrief Entity{entityId, entityVal} = case isBrief of
     True -> fillSep [title text, meta] where
         meta = green "|" <+> cyan "id" <+> prettyDocId entityId
     False -> sparsedStack [wrapLines $ Text.pack text, sep meta] where
@@ -140,13 +140,14 @@ prettyNote isBrief (NoteView Entity{..} tags) = case isBrief of
                 | Just Track{..} <- [note_track]
                 ]
   where
+    NoteView{note, tags} = entityVal
     Note
-      { note_end
-      , note_start
-      , note_status
-      , note_text
-      , note_track
-      } = entityVal
+        { note_end
+        , note_start
+        , note_status
+        , note_text
+        , note_track
+        } = note
     start = fromJust note_start
     text  = fromRgaM note_text
 
@@ -216,7 +217,7 @@ sampleLabel = \case
         1 -> "Starting tomorrow:"
         _ -> "Starting in " <> Text.pack (show n) <> " days:"
 
-prettyContact :: Bool -> Entity Contact -> Doc AnsiStyle
+prettyContact :: Bool -> EntityDoc Contact -> Doc AnsiStyle
 prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
   where
     name = fromRgaM contact_name
