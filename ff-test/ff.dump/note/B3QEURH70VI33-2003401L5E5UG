@@ -11,5 +11,11 @@ note:
   note_status:
     tag: TaskStatus
     contents: Active
-  note_tags: []
-tags: []
+  note_tags:
+  - B/7euI15DXH1+00P01fLmVG
+  - B/7euI15DAJq+00P01fLmVG
+  - B/7euI15DAyL+00P01fLmVG
+tags:
+- component_Core
+- level_Beginner
+- type_Bug

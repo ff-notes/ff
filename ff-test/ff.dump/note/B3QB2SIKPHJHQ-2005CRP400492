@@ -11,5 +11,7 @@ note:
   note_status:
     tag: TaskStatus
     contents: Archived
-  note_tags: []
-tags: []
+  note_tags:
+  - B/7euI15F4CR+00P01fLmVG
+tags:
+- resolution_Duplicate
