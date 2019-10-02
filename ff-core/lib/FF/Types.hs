@@ -200,6 +200,10 @@ instance Collection Tag where
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
 
+{- |
+  A value identified with some document.
+  Should not be used directly, use 'EntityDoc' or 'EntityView' instead.
+-}
 data Entity doc val
   = Collection doc => Entity {entityId :: DocId doc, entityVal :: val}
 
