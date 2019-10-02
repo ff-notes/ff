@@ -17,6 +17,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.Map.Strict as Map
 import Data.Maybe (mapMaybe)
 import Data.Semigroup ((<>))
+import qualified Data.Vector as Vector
 import qualified Data.Set as Set
 import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
@@ -44,6 +45,7 @@ import GitHub
   ( Issue (..),
     IssueNumber (IssueNumber),
     IssueState (..),
+    IssueLabel(..),
     Milestone (..),
     URL (..),
   )
@@ -270,7 +272,7 @@ prop_repo =
                             },
                           note_links = []
                         },
-                      tags = mempty
+                      tags = Set.fromList ["level_Research", "type_Enhancement"]
                     }
               ],
             total = 1
@@ -291,7 +293,7 @@ issues =
       issueEventsUrl = api "issues/60/events",
       issueHtmlUrl = Just $ URL "https://github.com/ff-notes/ff/issues/60",
       issueClosedBy = Nothing,
-      issueLabels = mempty,
+      issueLabels = labels,
       issueNumber = IssueNumber 60,
       issueAssignees = mempty,
       issueUser = cblp,
@@ -328,6 +330,18 @@ issues =
           URL "https://avatars0.githubusercontent.com/u/63495?v=4",
         simpleUserUrl = URL "https://api.github.com/users/cblp"
       }
+    labels = Vector.fromList
+      [ IssueLabel
+          { labelColor = "7057ff"
+          , labelUrl = URL "https://api.github.com/repos/ff-notes/ron/labels/level_Research"
+          , labelName = "level_Research"
+          }
+      , IssueLabel
+          { labelColor = "b60205"
+          , labelUrl = URL "https://api.github.com/repos/ff-notes/ron/labels/type_Enhancement"
+          , labelName = "type_Enhancement"
+          }
+      ]
 
 prop_json2ron :: Property
 prop_json2ron = property $ do

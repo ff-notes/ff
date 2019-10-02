@@ -381,21 +381,26 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
 updateTrackedNote
   :: MonadStorage m
   => HashMap Track NoteId -- ^ selection of all aready tracked notes
-  -> Note -- ^ external note to insert
+  -> View Note -- ^ external note (with tags) to insert
   -> m ()
-updateTrackedNote oldNotes note = case note of
-  Note {note_track = Just track} -> case HashMap.lookup track oldNotes of
-    Nothing -> do
-      obj <- newObjectFrame note
-      createDocument obj
-    Just noteid -> void $ modify noteid $ do
-      note_status_setIfDiffer note_status
-      note_text_zoom $ RGA.edit text
+updateTrackedNote oldNotes NoteView{note,tags} = case note of
+  Note {note_track = Just track} -> do
+    newRefs <- getOrCreateTags tags
+    case HashMap.lookup track oldNotes of
+      Nothing -> do
+        obj <- newObjectFrame $ note{note_tags = toList newRefs}
+        createDocument obj
+      Just noteid -> void $ modify noteid $ do
+        note_status_setIfDiffer note_status
+        note_text_zoom $ RGA.edit text
+        -- Add new tags.
+        currentRefs <- HashSet.fromList <$> note_tags_read
+        mapM_ note_tags_add $ HashSet.difference newRefs currentRefs
   _ -> throwError "External note is expected to be supplied with tracking"
   where
     Note {note_status, note_text = (fromRgaM -> text)} = note
 
-updateTrackedNotes :: MonadStorage m => [Note] -> m ()
+updateTrackedNotes :: MonadStorage m => [View Note] -> m ()
 updateTrackedNotes newNotes = do
   -- TODO(2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
   -- notes by track in the database and select specific note by its track
@@ -507,8 +512,8 @@ cmdEdit edit = case edit of
                   liftIO $ runExternalEditor noteText
             RGA.editText noteText'
   Edit {ids, text, start, end, addTags, deleteTags} -> do
-    refsAdd <- getOrCreateTags addTags
-    refsDelete <- loadTagRefsByText deleteTags
+    refsToAdd <- getOrCreateTags addTags
+    refsToDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
@@ -539,11 +544,11 @@ cmdEdit edit = case edit of
         unless (null addTags) $ do
           currentRefs <- HashSet.fromList <$> note_tags_read
           -- skip tags if note_tags has them already
-          let newRefs = HashSet.difference refsAdd currentRefs
+          let newRefs = HashSet.difference refsToAdd currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
         unless (null deleteTags)
-          $ mapM_ note_tags_remove refsDelete
+          $ mapM_ note_tags_remove refsToDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
