@@ -28,7 +28,7 @@ import FF
   )
 import FF.Config (loadConfig)
 import FF.Types
-  ( Entity' (Entity),
+  ( Entity (Entity),
     EntityView,
     Note (Note),
     NoteId,

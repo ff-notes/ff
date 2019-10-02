@@ -35,7 +35,7 @@ import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             color)
 import           Data.Time (Day)
 import           FF (fromRgaM)
-import           FF.Types (Contact (..), ContactSample, Entity' (..), EntityDoc,
+import           FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
                            EntityView, ModeMap, Note (..), NoteSample,
                            NoteStatus (Wiki), Sample (..), TaskMode (..),
                            Track (..), View (..), omitted)

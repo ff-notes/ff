@@ -200,16 +200,16 @@ instance Collection Tag where
 data Sample a = Sample {items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
 
-data Entity' doc val
+data Entity doc val
   = Collection doc => Entity {entityId :: DocId doc, entityVal :: val}
 
-deriving instance Eq val => Eq (Entity' doc val)
+deriving instance Eq val => Eq (Entity doc val)
 
-deriving instance Show val => Show (Entity' doc val)
+deriving instance Show val => Show (Entity doc val)
 
-type EntityDoc doc = Entity' doc doc
+type EntityDoc doc = Entity doc doc
 
-type EntityView doc = Entity' doc (View doc)
+type EntityView doc = Entity doc (View doc)
 
 type ContactSample = Sample (EntityDoc Contact)
 

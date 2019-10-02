@@ -22,7 +22,7 @@ import qualified Data.Vector as Vector
 import FF (fromRgaM, getDataDir, loadTasks, noDataDirectoryMessage)
 import FF.Config (loadConfig)
 import FF.Types
-  ( Entity' (Entity),
+  ( Entity (Entity),
     EntityView,
     Note (Note),
     NoteId,

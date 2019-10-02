@@ -34,7 +34,7 @@ import           RON.Storage.Backend (DocId (DocId))
 import           System.Process.Typed (proc, readProcessStdout_)
 
 import           FF (splitModes, takeSamples)
-import           FF.Types (Entity' (..), Limit, ModeMap, Note (..), NoteSample,
+import           FF.Types (Entity (..), Limit, ModeMap, Note (..), NoteSample,
                            NoteStatus (..), Status (..), Track (..), View (..))
 
 getIssues

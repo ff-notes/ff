@@ -67,7 +67,7 @@ import FF.Types
   ( Contact (..),
     ContactId,
     ContactSample,
-    Entity' (..),
+    Entity (..),
     EntityDoc,
     EntityView,
     Limit,
