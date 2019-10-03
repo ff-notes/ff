@@ -275,12 +275,12 @@ getTaskSamplesWith
   ConfigUI {shuffle}
   limit
   today
-  tags = do
+  tagsRequested = do
     allTasks <- loadTasks status
-    let tasks = case tags of
-          Tags tagsRequested -> filter
+    let tasks = case tagsRequested of
+          Tags tagsRequested' -> filter
             ( \Entity {entityVal = NoteView {tags}} ->
-              tagsRequested `isSubsetOf` tags) allTasks
+              tagsRequested' `isSubsetOf` tags) allTasks
           NoTags -> filter
             ( \Entity {entityVal = NoteView {tags}} -> null tags) allTasks
     pure
