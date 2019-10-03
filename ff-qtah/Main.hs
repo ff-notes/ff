@@ -38,7 +38,7 @@ import Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow, QMainWindowPtr)
 import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import qualified Graphics.UI.Qtah.Widgets.QTabWidget as QTabWidget
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
-import Paths_ff_qt (version)
+import Paths_ff_qtah (version)
 import RON.Storage.Backend (CollectionName, DocId (DocId), RawDocId)
 import qualified RON.Storage.FS as Storage
 import RON.Storage.FS (runStorage)

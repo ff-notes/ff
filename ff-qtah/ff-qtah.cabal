@@ -1,7 +1,7 @@
 cabal-version: 2.2
 
 name: ff-qtah
-version: 0.12
+version: 0
 
 build-type: Simple
 
@@ -23,6 +23,7 @@ executable ff-qtah
     build-depends:
         -- global
         containers,
+        hoppy-runtime,
         qtah,
         stm,
         text,
@@ -38,4 +39,4 @@ executable ff-qtah
     other-modules:
         FF.Qt.TaskListModel
         FF.Qt.TaskListWidget
-        Paths_ff_qt
+        Paths_ff_qtah
