@@ -15,14 +15,7 @@ import FF (getDataDir, loadTasks, noDataDirectoryMessage, toNoteView)
 import FF.Config (loadConfig)
 import qualified FF.Qt.TaskListWidget as TaskListWidget
 import FF.Qt.TaskListWidget (TaskListWidget (TaskListWidget, view))
-import FF.Types
-  ( Entity,
-    EntityView,
-    Note,
-    Status (Active),
-    View (note),
-    loadNote,
-  )
+import FF.Types (EntityView, Note, Status (Active), loadNote)
 import Foreign.Hoppy.Runtime (withScopedPtr)
 import qualified Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
 import qualified Graphics.UI.Qtah.Core.QSettings as QSettings
@@ -61,9 +54,8 @@ main = do
     -- load current data to the view, asynchronously
     _ <-
       forkIO $ do
-        activeTasks <-
-          runStorage storage (loadTasks Active >>= traverse toNoteView)
-        for_ activeTasks $ upsertTask ui . note
+        activeTasks <- runStorage storage $ loadTasks Active
+        for_ activeTasks $ upsertTask ui
     -- update the view with future changes
     whenUIIsIdle $ receiveDocChanges storage ui changedDocs
     -- run UI
@@ -110,7 +102,7 @@ receiveDocChanges
 receiveDocChanges storage mainWindow changes =
   atomically (tryReadTChan changes) >>= \case
     Just ("note", noteId) -> do
-      note <- runStorage storage $ loadNote $ DocId noteId
+      note <- runStorage storage $ loadNote (DocId noteId) >>= toNoteView
       upsertTask mainWindow note
     Just (collection, _) ->
       hPutStrLn stderr $ "unknown collection " <> show collection
