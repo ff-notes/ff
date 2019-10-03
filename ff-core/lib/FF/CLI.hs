@@ -16,6 +16,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Foldable (asum, for_, toList)
 import Data.Functor (($>))
 import Data.Maybe (isNothing)
+import qualified Data.Set as Set
 import Data.Text (snoc)
 import Data.Text.IO (hPutStrLn)
 import Data.Text.Prettyprint.Doc
@@ -71,6 +72,7 @@ import FF.Options
     Options (..),
     Search (..),
     Shuffle (..),
+    Tags(Tags),
     Track (..),
     parseOptions,
   )
@@ -219,7 +221,7 @@ cmdTrack Track {dryRun, address, limit} today isBrief
   | dryRun =
     liftIO $ do
       samples <- run $ getOpenIssueSamples address limit today
-      pprint $ prettyTaskSections isBrief mempty samples
+      pprint $ prettyTaskSections isBrief (Tags Set.empty) samples
   | otherwise =
     do
       notes <- liftIO $ run $ getIssueViews address limit
