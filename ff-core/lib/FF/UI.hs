@@ -165,8 +165,8 @@ prettyTaskSections
     -> Tags -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
-prettyTaskSections isBrief mTags samples =
-    case mTags of
+prettyTaskSections isBrief tags samples =
+    case tags of
         Tags tagsRequested -> do
             let tagList = toList tagsRequested
             case tagList of
