@@ -63,7 +63,7 @@ import qualified Data.Text.IO as Text
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
-import FF.Options (Assign (Clear, Set), Edit (..), New (..), assignToMaybe)
+import FF.Options (Assign (Clear, Set), Edit (..), New (..), Tags(..), assignToMaybe)
 import FF.Types
   ( Contact (..),
     ContactId,
@@ -256,7 +256,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Set Text -- ^ tags requested
+  -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -267,7 +267,7 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Set Text -- ^ tags requested
+  -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample)
 getTaskSamplesWith
   predicate
@@ -277,12 +277,12 @@ getTaskSamplesWith
   today
   tagsRequested = do
     allTasks <- loadTasks status
-    let tasks =
-          filter
+    let tasks = case tagsRequested of
+          Tags tagsRequested' -> filter
             ( \Entity {entityVal = NoteView {tags}} ->
-                tagsRequested `isSubsetOf` tags
-            )
-            allTasks
+              tagsRequested' `isSubsetOf` tags) allTasks
+          NoTags -> filter
+            ( \Entity {entityVal = NoteView {tags}} -> null tags) allTasks
     pure
       . takeSamples limit
       . shuffleOrSort
@@ -460,7 +460,7 @@ cmdSearch
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Set Text -- ^ requested tags
+  -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr status ui limit today tags = do
   -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step

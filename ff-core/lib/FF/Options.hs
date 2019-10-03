@@ -17,6 +17,7 @@ module FF.Options
     Options (..),
     Search (..),
     Shuffle (..),
+    Tags(..),
     Track (..),
     assignToMaybe,
     parseOptions,
@@ -128,8 +129,10 @@ assignToMaybe = \case
 data Agenda
   = Agenda
       { limit :: Maybe Limit,
-        tags :: Set Text
+        tags :: Tags
       }
+
+data Tags = Tags (Set Text) | NoTags
 
 data Edit
   = Edit
@@ -159,7 +162,7 @@ data Search
         inContacts :: Bool,
         status :: Status,
         limit :: Maybe Limit,
-        tags :: Set Text
+        tags :: Tags
       }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -240,6 +243,7 @@ parser h =
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
     agenda = Agenda <$> optional limitOption <*> filterTags
+    filterTags = filterByNoTags <|> Tags <$> filterByTags
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
     dryRunOption =
       switch
@@ -299,9 +303,13 @@ parser h =
       argument readDocId
         $ metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
-    filterTags =
+    filterByTags =
       fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Filter by tag"
+    filterByNoTags = flag' NoTags $
+        long "no-tags"
+          <> short 'n'
+          <> help "Filter items without tags"
     addTagsOption =
       fmap Set.fromList $ many $ strOption
         $ long "tag" <> metavar "TAG" <> help "Add tags"

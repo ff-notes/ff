@@ -39,6 +39,7 @@ import           FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
                            EntityView, ModeMap, Note (..), NoteSample,
                            NoteStatus (Wiki), Sample (..), TaskMode (..),
                            Track (..), View (..), omitted)
+import           FF.Options (Tags(..))
 import           RON.Storage.Backend (DocId (DocId))
 
 -- | Header with fixed yellow color.
@@ -60,7 +61,7 @@ prettyTasksWikisContacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
     -> Bool                      -- ^ does search involve contacts
-    -> Set Text                  -- ^ tags to filter notes
+    -> Tags                      -- ^ requested tags
     -> Doc AnsiStyle
 prettyTasksWikisContacts
         isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
@@ -161,15 +162,21 @@ title
 
 prettyTaskSections
     :: Bool
-    -> Set Text -- ^ requested tags
+    -> Tags -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
-prettyTaskSections isBrief tagsRequested samples
-    | null tagsRequested = tasks
-    | otherwise = tagHeader tagsRequested tasks
+prettyTaskSections isBrief tags samples =
+    case tags of
+        Tags tagsRequested -> do
+            let tagList = toList tagsRequested
+            case tagList of
+                [] -> tasks
+                _ -> tagHeader tagList tasks
+        NoTags -> noTagHeader tasks
   where
+    noTagHeader = withHeader "Filtered items without tags: "
     tagHeader t =
-        withHeader ("Filtered by tags: " <> Text.intercalate ", " (toList t))
+        withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
     tasks = stack isBrief
         $   [ prettyTaskSample isBrief mode sample
             | (mode, sample) <- Map.assocs samples

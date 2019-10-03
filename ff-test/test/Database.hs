@@ -26,7 +26,7 @@ import Data.Time (Day, UTCTime (..), fromGregorian)
 import FF (cmdNewNote, getTaskSamples)
 import FF.Config (defaultConfigUI)
 import qualified FF.Github as Github
-import FF.Options (New (..))
+import FF.Options (New (..), Tags(Tags))
 import FF.Types
   ( Limit,
     Note (..),
@@ -76,7 +76,7 @@ prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
       $ runStorageSim fs
-      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today $ Tags mempty
   Map.empty === agenda
   fs === fs'
   where
@@ -87,7 +87,7 @@ prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
       $ runStorageSim fs123
-      $ getTaskSamples Active defaultConfigUI agendaLimit today mempty
+      $ getTaskSamples Active defaultConfigUI agendaLimit today $ Tags mempty
   agenda === agenda'
   fs123 === fs'
   where
