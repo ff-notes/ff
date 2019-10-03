@@ -256,7 +256,7 @@ getTaskSamples
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Tags -- ^ filter by tags
+  -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample)
 getTaskSamples = getTaskSamplesWith $ const True
 
@@ -267,7 +267,7 @@ getTaskSamplesWith
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
-  -> Tags -- ^ filter by tags
+  -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample)
 getTaskSamplesWith
   predicate

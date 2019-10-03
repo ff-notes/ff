@@ -61,7 +61,7 @@ prettyTasksWikisContacts
     -> Bool                      -- ^ does search involve tasks
     -> Bool                      -- ^ does search involve wikis
     -> Bool                      -- ^ does search involve contacts
-    -> Tags                      -- ^ tags to filter notes
+    -> Tags                      -- ^ requested tags
     -> Doc AnsiStyle
 prettyTasksWikisContacts
         isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
@@ -162,7 +162,7 @@ title
 
 prettyTaskSections
     :: Bool
-    -> Tags -- ^ filter by tag option
+    -> Tags -- ^ requested tags
     -> ModeMap NoteSample
     -> Doc AnsiStyle
 prettyTaskSections isBrief mTags samples =
