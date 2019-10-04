@@ -29,18 +29,43 @@ packages:
     pantry-tree:
       size: 1548
       sha256: 4beea9f41c035b9323cdb0647c4fd929d9f69e565495bbbb0b98d4e70f4a16ff
-    commit: f6a1a3adfe71bbb30a436f3561778b72f8852796
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
   original:
     subdir: ron
     git: https://github.com/ff-notes/ron.git
-    commit: f6a1a3adfe71bbb30a436f3561778b72f8852796
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
 - completed:
-    hackage: ron-rdt-0.9@sha256:6eb28ba6fff87b63c0eda36684af1b673d7c5b9461bcecb3624d6bb034bc004f,1289
+    subdir: ron-rdt
+    cabal-file:
+      size: 1305
+      sha256: 68e12dc3fd6fa094cd0796673aff34cf9b5b89fc83246a6a1a875bfe950d90cb
+    name: ron-rdt
+    version: 0.9.1
+    git: https://github.com/ff-notes/ron.git
     pantry-tree:
       size: 594
-      sha256: 73db61156fa23bfb5a693528f1ca4a2df78e1ce53fffb7be3d7b9106622c57b9
+      sha256: 147800d3a27adc169fb85b6150be7736d9f486b840b1e6c81ad5391b519601b0
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
   original:
-    hackage: ron-rdt-0.9
+    subdir: ron-rdt
+    git: https://github.com/ff-notes/ron.git
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+- completed:
+    subdir: ron-storage
+    cabal-file:
+      size: 1312
+      sha256: c7d782186c1d6f6bec1c5e66afa4c617436ffb2f571aed52fef5253fec75ac9c
+    name: ron-storage
+    version: 0.10.1
+    git: https://github.com/ff-notes/ron.git
+    pantry-tree:
+      size: 477
+      sha256: 4985a9c1b3114539c7da426cf2a3bfde1931c304fdee1221587511767634c3d7
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+  original:
+    subdir: ron-storage
+    git: https://github.com/ff-notes/ron.git
+    commit: 7be4385725be7992e134f65c529845dc927fa7f0
 - completed:
     hackage: ron-schema-0.9@sha256:86cf2e3f73b76a97034b8ddd21122a4410b91b7c45c7a3f4e3a401b8eef384ea,1292
     pantry-tree:
@@ -48,13 +73,6 @@ packages:
       sha256: 93829a222d5f094c1d282d7e6be59c7ea7726e2fcfec87a70a916b52ec92e757
   original:
     hackage: ron-schema-0.9
-- completed:
-    hackage: ron-storage-0.10@sha256:fe99017923fd22b773f03ca45e92f20c353421c10473d9cae5b9f1095d8ad55d,1271
-    pantry-tree:
-      size: 414
-      sha256: b1859165614095724db69e3e5fadf4d173a8da9ef66c8bc36eb5e2b493669b13
-  original:
-    hackage: ron-storage-0.10
 - completed:
     hackage: gi-gtk-declarative-0.5.0@sha256:e710da215736dac238513d78726f6cff583a6eb60b0281dc392eec5f15ea5e1b,3908
     pantry-tree:
