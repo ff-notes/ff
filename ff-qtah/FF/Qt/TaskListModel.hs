@@ -64,11 +64,11 @@ insert TaskListModel {model, itemIndex} Entity {entityId, entityVal} = do
     noteText = fromRgaM note_text
 
 update :: QStandardItem -> EntityView Note -> IO ()
-update =
+update _ _ =
   -- TODO implement
   pure ()
 
 remove :: QStandardItem -> IO ()
-remove =
+remove _ =
   -- TODO implement
   pure ()
