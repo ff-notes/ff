@@ -54,8 +54,8 @@ extra-deps:
   - gi-pango-1.0.21
   - haskell-gi-base-0.22.2
 
-# reduce some deps?
-# flags: {comonad: {contravariant: False}}
+flags:
+  qtah: {qt5: true}
 
 docker:
   enable: false
