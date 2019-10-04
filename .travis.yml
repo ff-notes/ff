@@ -21,8 +21,8 @@ before_install:
   - sudo apt install libgmp-dev                           # GHC
   - sudo apt install mesa-common-dev qt512base            # ff-qt
   - sudo apt install libgirepository1.0-dev libgtk-3-dev  # ff-gtk
+  - sudo apt pure libqt4-dev
   - dpkg -S /usr/share/qt4/
-  - false
 
   # Download and unpack the stack executable
   - mkdir -p ~/.local/bin
