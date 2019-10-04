@@ -1,0 +1,42 @@
+cabal-version: 2.2
+
+name: ff-qtah
+version: 0
+
+build-type: Simple
+
+flag qtah
+    description: Build ff-qtah package
+    default: True
+    manual: True
+
+common language
+    build-depends: base
+    default-language: Haskell2010
+    if flag(qtah)
+        buildable: True
+    else
+        buildable: False
+
+executable ff-qtah
+    import: language
+    build-depends:
+        -- global
+        containers,
+        hoppy-runtime,
+        qtah,
+        stm,
+        text,
+        time,
+        unordered-containers,
+        -- organization
+        ron-rdt,
+        ron-storage,
+        -- project
+        ff-core,
+    ghc-options: -dynamic -threaded
+    main-is: Main.hs
+    other-modules:
+        FF.Qt.TaskListModel
+        FF.Qt.TaskListWidget
+        Paths_ff_qtah

@@ -1,8 +1,10 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Main
@@ -11,13 +13,14 @@ module Main
 where
 
 import Control.Concurrent (forkIO)
+import Control.Concurrent.STM (atomically, tryReadTChan)
+import Control.Monad (forever)
 import Cpp (MainWindow, ffCtx, includeDependent)
 import Data.Foldable (for_)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import qualified Data.Text as Text
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (Day, toGregorian)
-import Data.Typeable (cast)
 import Data.Version (showVersion)
 import FF
   ( fromRgaM,
@@ -31,7 +34,6 @@ import FF.Types
   ( Entity (Entity),
     EntityView,
     Note (Note),
-    NoteId,
     NoteStatus (TaskStatus),
     Status (Active),
     View (NoteView, note),
@@ -53,13 +55,14 @@ import Foreign.C (CInt)
 import Foreign.StablePtr (newStablePtr)
 import qualified Language.C.Inline.Cpp as Cpp
 import Paths_ff_qt (version)
-import RON.Storage.Backend (DocId (DocId))
-import qualified RON.Storage.FS as Storage
-import RON.Storage.FS
-  ( CollectionDocId (CollectionDocId),
-    runStorage,
-    subscribeForever,
+import RON.Storage.Backend
+  ( CollectionName,
+    DocId (DocId),
+    RawDocId,
+    collectionName,
   )
+import qualified RON.Storage.FS as Storage
+import RON.Storage.FS (runStorage, subscribe)
 
 Cpp.context $ Cpp.cppCtx <> Cpp.bsCtx <> ffCtx
 
@@ -98,7 +101,14 @@ main = do
       activeTasks <- runStorage storage (loadTasks Active)
       for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
-  _ <- forkIO $ subscribeForever storage $ upsertDocument storage mainWindow
+  _ <-
+    forkIO $ do
+      changes <- subscribe storage
+      forever
+        $ atomically (tryReadTChan changes) >>= \case
+          Nothing -> pure ()
+          Just (collection, docid) ->
+            upsertDocument storage mainWindow collection docid
   -- run UI
   [Cpp.block| void { qApp->exec(); } |]
 
@@ -110,12 +120,13 @@ getDataDirOrFail = do
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path
 
-upsertDocument :: Storage.Handle -> Ptr MainWindow -> CollectionDocId -> IO ()
-upsertDocument storage mainWindow (CollectionDocId docid) = case docid of
-  (cast -> Just (noteId :: NoteId)) -> do
-    note <- runStorage storage $ loadNote noteId >>= toNoteView
+upsertDocument
+  :: Storage.Handle -> Ptr MainWindow -> CollectionName -> RawDocId -> IO ()
+upsertDocument storage mainWindow collection docid
+  | collection == collectionName @Note = do
+    note <- runStorage storage $ loadNote (DocId docid) >>= toNoteView
     upsertTask mainWindow note
-  _ -> pure ()
+  | otherwise = pure ()
 
 upsertTask :: Ptr MainWindow -> EntityView Note -> IO ()
 upsertTask mainWindow Entity {entityId = DocId nid, entityVal = noteView} = do
