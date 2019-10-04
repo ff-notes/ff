@@ -26,7 +26,7 @@ extra-deps:
   - gi-gtk-declarative-0.5.0
   - gi-gtk-declarative-app-simple-0.5.0
 
-  # ff-qt:
+  # ff-qtah:
   - git: https://gitlab.com/khumba/hoppy.git
     commit:
       45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
