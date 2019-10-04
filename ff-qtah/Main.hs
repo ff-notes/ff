@@ -11,7 +11,8 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.STM (TChan, atomically, tryReadTChan)
 import Data.Foldable (for_)
 import Data.Version (showVersion)
-import FF (getDataDir, loadTasks, noDataDirectoryMessage, toNoteView)
+import FF (getDataDir, filterTasksByStatus, loadAllNotes,
+          noDataDirectoryMessage, toNoteView)
 import FF.Config (loadConfig)
 import qualified FF.Qt.TaskListWidget as TaskListWidget
 import FF.Qt.TaskListWidget (TaskListWidget (TaskListWidget, view))
@@ -54,7 +55,9 @@ main = do
     -- load current data to the view, asynchronously
     _ <-
       forkIO $ do
-        activeTasks <- runStorage storage $ loadTasks Active
+        activeTasks <- runStorage storage $ do
+          notes <- loadAllNotes
+          filterTasksByStatus Active notes
         for_ activeTasks $ upsertTask ui
     -- update the view with future changes
     whenUIIsIdle $ receiveDocChanges storage ui changedDocs

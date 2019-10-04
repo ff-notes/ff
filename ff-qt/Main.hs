@@ -25,9 +25,10 @@ import Data.Version (showVersion)
 import FF
   ( fromRgaM,
     getDataDir,
-    loadTasks,
+    filterTasksByStatus,
     noDataDirectoryMessage,
     toNoteView,
+    loadAllNotes,
   )
 import FF.Config (loadConfig)
 import FF.Types
@@ -98,7 +99,9 @@ main = do
   -- load current data to the view, asynchronously
   _ <-
     forkIO $ do
-      activeTasks <- runStorage storage (loadTasks Active)
+      activeTasks <- runStorage storage $ do
+          notes <- loadAllNotes
+          filterTasksByStatus Active notes
       for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
   _ <-
