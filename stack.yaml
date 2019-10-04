@@ -5,7 +5,7 @@ packages:
   - ff-core
   - ff-gtk
   - ff-qt
-  - ff-qtah
+  # - ff-qtah
   - ff-test
 
 extra-deps:
