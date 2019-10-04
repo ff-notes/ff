@@ -50,7 +50,6 @@ executable ff-qt
         containers,
         inline-c,
         inline-c-cpp,
-        stm,
         template-haskell,
         text,
         time,
