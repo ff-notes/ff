@@ -101,7 +101,8 @@ main = do
     forkIO $ do
       activeTasks <- runStorage storage $ do
           notes <- loadAllNotes
-          filterTasksByStatus Active notes
+          let filtered = filterTasksByStatus Active notes
+          traverse toNoteView filtered
       for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
   _ <-
