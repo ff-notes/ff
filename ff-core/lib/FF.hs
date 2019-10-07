@@ -283,10 +283,10 @@ viewTaskSamplesWith
     let filtered = filterTasksByStatus status notes
     allTasks <- traverse toNoteView filtered
     let tasks = case (tagsRequested, withoutTags) of
-          (Tags tagsRequested', withoutTags)  -> filter
+          (Tags tagsRequested', withoutTags')  -> filter
             ( \Entity {entityVal = NoteView {tags}} ->
               tagsRequested' `isSubsetOf` tags &&
-              withoutTags `disjoint` tags
+              withoutTags' `disjoint` tags
             ) allTasks
           (NoTags, _) -> filter
             ( \Entity {entityVal = NoteView {tags}} -> null tags) allTasks
