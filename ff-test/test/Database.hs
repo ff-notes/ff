@@ -77,7 +77,7 @@ prop_not_exist = property $ do
     evalEither
       $ runStorageSim fs $ do
         notes <- loadAllNotes
-        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) notes
+        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) mempty notes
   Map.empty === agenda
   fs === fs'
   where
@@ -89,7 +89,7 @@ prop_smoke = property $ do
     evalEither
       $ runStorageSim fs123 $ do
         notes <- loadAllNotes
-        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) notes
+        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) mempty notes
   agenda === agenda'
   fs123 === fs'
   where

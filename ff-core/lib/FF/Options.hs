@@ -129,7 +129,8 @@ assignToMaybe = \case
 data Agenda
   = Agenda
       { limit :: Maybe Limit,
-        tags :: Tags
+        tags :: Tags,
+        withoutTags :: Set Text
       }
 
 data Tags = Tags (Set Text) | NoTags
@@ -162,7 +163,8 @@ data Search
         inContacts :: Bool,
         status :: Status,
         limit :: Maybe Limit,
-        tags :: Tags
+        tags :: Tags,
+        withoutTags :: Set Text
       }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -242,7 +244,7 @@ parser h =
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
-    agenda = Agenda <$> optional limitOption <*> filterTags
+    agenda = Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
     filterTags = filterByNoTags <|> Tags <$> filterByTags
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
     dryRunOption =
@@ -292,6 +294,7 @@ parser h =
         <*> searchA
         <*> optional limitOption
         <*> filterTags
+        <*> withoutTagsOption
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -305,17 +308,20 @@ parser h =
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     filterByTags =
       fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
+        $ long "tags" <> metavar "TAGS" <> help "Filter by tags"
     filterByNoTags = flag' NoTags $
         long "no-tags"
           <> short 'n'
-          <> help "Filter items without tags"
+          <> help "Filter items that has not tags"
     addTagsOption =
       fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Add tags"
+        $ long "tags" <> metavar "TAGS" <> help "Add tags"
     deleteTagsOption =
       fmap Set.fromList $ many $ strOption
-        $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
+        $ long "delete-tags" <> short 'd' <> metavar "TAGS" <> help "Delete tags"
+    withoutTagsOption =
+      fmap Set.fromList $ many $ strOption
+        $ long "without-tags" <> metavar "TAGS" <> help "Filter items without tags"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"

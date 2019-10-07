@@ -57,7 +57,7 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import qualified Data.Set as Set
-import Data.Set (Set, (\\), isSubsetOf)
+import Data.Set (Set, (\\), isSubsetOf, disjoint)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
@@ -255,6 +255,7 @@ viewTaskSamples
   -> Maybe Limit
   -> Day -- ^ today
   -> Tags -- ^ requested tags
+  -> Set Text -- ^ without tags
   -> [EntityDoc Note]
   -> m (ModeMap NoteSample)
 viewTaskSamples = viewTaskSamplesWith $ const True
@@ -267,6 +268,7 @@ viewTaskSamplesWith
   -> Maybe Limit
   -> Day -- ^ today
   -> Tags -- ^ requested tags
+  -> Set Text -- ^ without tags
   -> [EntityDoc Note]
   -> m (ModeMap NoteSample)
 viewTaskSamplesWith
@@ -276,14 +278,17 @@ viewTaskSamplesWith
   limit
   today
   tagsRequested
+  withoutTags
   notes = do
     let filtered = filterTasksByStatus status notes
     allTasks <- traverse toNoteView filtered
-    let tasks = case tagsRequested of
-          Tags tagsRequested' -> filter
+    let tasks = case (tagsRequested, withoutTags) of
+          (Tags tagsRequested', withoutTags)  -> filter
             ( \Entity {entityVal = NoteView {tags}} ->
-              tagsRequested' `isSubsetOf` tags) allTasks
-          NoTags -> filter
+              tagsRequested' `isSubsetOf` tags &&
+              withoutTags `disjoint` tags
+            ) allTasks
+          (NoTags, _) -> filter
             ( \Entity {entityVal = NoteView {tags}} -> null tags) allTasks
     pure
       . takeSamples limit
@@ -465,10 +470,11 @@ cmdSearch
   -> Maybe Limit
   -> Day -- ^ today
   -> Tags -- ^ requested tags
+  -> Set Text -- ^ without tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr status ui limit today tags = do
+cmdSearch substr status ui limit today tags withoutTags = do
   notes <- loadAllNotes
-  tasks <- viewTaskSamplesWith predicate status ui limit today tags notes
+  tasks <- viewTaskSamplesWith predicate status ui limit today tags withoutTags notes
   wikis <- toWikiSamplesWith predicate ui limit today notes
   contacts <- getContactSamplesWith predicate status
   pure (tasks, wikis, contacts)
