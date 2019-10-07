@@ -15,6 +15,7 @@ and this project adheres to
 - `ff edit --delete-tag=...` to remove tags from a task
 - `Link` type and collection
 - `Note.links` field
+- Load notes once for searching tasks and wikis
 
 ## [0.13] - 2019-09-10
 ### Added

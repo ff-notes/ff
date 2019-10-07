@@ -23,7 +23,7 @@ import Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import Data.Text.Lazy.Encoding (encodeUtf8)
 import Data.Time (Day, UTCTime (..), fromGregorian)
-import FF (cmdNewNote, getTaskSamples)
+import FF (cmdNewNote, viewTaskSamples, loadAllNotes)
 import FF.Config (defaultConfigUI)
 import qualified FF.Github as Github
 import FF.Options (New (..), Tags(Tags))
@@ -75,8 +75,9 @@ prop_not_exist :: Property
 prop_not_exist = property $ do
   (agenda, fs') <-
     evalEither
-      $ runStorageSim fs
-      $ getTaskSamples Active defaultConfigUI agendaLimit today $ Tags mempty
+      $ runStorageSim fs $ do
+        notes <- loadAllNotes
+        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) notes
   Map.empty === agenda
   fs === fs'
   where
@@ -86,8 +87,9 @@ prop_smoke :: Property
 prop_smoke = property $ do
   (agenda', fs') <-
     evalEither
-      $ runStorageSim fs123
-      $ getTaskSamples Active defaultConfigUI agendaLimit today $ Tags mempty
+      $ runStorageSim fs123 $ do
+        notes <- loadAllNotes
+        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) notes
   agenda === agenda'
   fs123 === fs'
   where

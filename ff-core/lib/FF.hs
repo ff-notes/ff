@@ -23,13 +23,14 @@ module FF
     fromRgaM,
     getContactSamples,
     getDataDir,
-    getTaskSamples,
+    viewTaskSamples,
     getUtcToday,
-    getWikiSamples,
+    viewWikiSamples,
     load,
-    loadTasks,
+    filterTasksByStatus,
     loadAll,
     loadAllTagTexts,
+    loadAllNotes,
     loadTagsByRefs,
     noDataDirectoryMessage,
     splitModes,
@@ -238,29 +239,27 @@ fromRga (RGA xs) = xs
 fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
-loadTasks :: MonadStorage m => Status -> m [EntityView Note]
-loadTasks status = do
-  notes <- loadAllNotes
-  let filtered = filter isArchived notes
-  traverse toNoteView filtered
+filterTasksByStatus :: Status -> [EntityDoc Note] -> [EntityDoc Note]
+filterTasksByStatus status = filter isArchived
   where
     isArchived =
       (Just (TaskStatus status) ==) . note_status . entityVal
 
-loadWikis :: MonadStorage m => m [EntityDoc Note]
-loadWikis = filter ((Just Wiki ==) . note_status . entityVal) <$> loadAllNotes
+filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
+filterWikis = filter ((Just Wiki ==) . note_status . entityVal)
 
-getTaskSamples
+viewTaskSamples
   :: MonadStorage m
   => Status -- ^ filter by status
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
   -> Tags -- ^ requested tags
+  -> [EntityDoc Note]
   -> m (ModeMap NoteSample)
-getTaskSamples = getTaskSamplesWith $ const True
+viewTaskSamples = viewTaskSamplesWith $ const True
 
-getTaskSamplesWith
+viewTaskSamplesWith
   :: MonadStorage m
   => (Text -> Bool) -- ^ predicate to filter notes by text
   -> Status -- ^ filter status
@@ -268,15 +267,18 @@ getTaskSamplesWith
   -> Maybe Limit
   -> Day -- ^ today
   -> Tags -- ^ requested tags
+  -> [EntityDoc Note]
   -> m (ModeMap NoteSample)
-getTaskSamplesWith
+viewTaskSamplesWith
   predicate
   status
   ConfigUI {shuffle}
   limit
   today
-  tagsRequested = do
-    allTasks <- loadTasks status
+  tagsRequested
+  notes = do
+    let filtered = filterTasksByStatus status notes
+    allTasks <- traverse toNoteView filtered
     let tasks = case tagsRequested of
           Tags tagsRequested' -> filter
             ( \Entity {entityVal = NoteView {tags}} ->
@@ -313,23 +315,25 @@ getTaskSamplesWith
                       (note_start, entityId)
                 )
 
-getWikiSamples
+viewWikiSamples
   :: MonadStorage m
   => ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [EntityDoc Note]
   -> m NoteSample
-getWikiSamples = getWikiSamplesWith $ const True
+viewWikiSamples = toWikiSamplesWith $ const True
 
-getWikiSamplesWith
+toWikiSamplesWith
   :: MonadStorage m
   => (Text -> Bool) -- ^ predicate to filter tasks by text
   -> ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
+  -> [EntityDoc Note]
   -> m NoteSample
-getWikiSamplesWith predicate ConfigUI {shuffle} limit today = do
-  wikis0 <- loadWikis
+toWikiSamplesWith predicate ConfigUI {shuffle} limit today notes = do
+  let wikis0 = filterWikis notes
   let wikis1 = filter predicate' wikis0
   let wikis2 = case limit of
         Nothing -> wikis1
@@ -463,9 +467,9 @@ cmdSearch
   -> Tags -- ^ requested tags
   -> m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr status ui limit today tags = do
-  -- TODO(cblp, #169, 2018-12-21) search tasks and wikis in one step
-  tasks <- getTaskSamplesWith predicate status ui limit today tags
-  wikis <- getWikiSamplesWith predicate ui limit today
+  notes <- loadAllNotes
+  tasks <- viewTaskSamplesWith predicate status ui limit today tags notes
+  wikis <- toWikiSamplesWith predicate ui limit today notes
   contacts <- getContactSamplesWith predicate status
   pure (tasks, wikis, contacts)
   where

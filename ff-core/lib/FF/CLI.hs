@@ -44,10 +44,11 @@ import FF
     cmdUnarchive,
     getContactSamples,
     getDataDir,
-    getTaskSamples,
+    viewTaskSamples,
     getUtcToday,
-    getWikiSamples,
+    viewWikiSamples,
     loadAllTagTexts,
+    loadAllNotes,
     noDataDirectoryMessage,
     sponsors,
     toNoteView,
@@ -155,7 +156,8 @@ runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
     CmdAgenda Agenda {limit, tags} -> do
-      samples <- getTaskSamples Active ui limit today tags
+      notes <- loadAllNotes
+      samples <- viewTaskSamples Active ui limit today tags notes
       pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
@@ -212,7 +214,8 @@ runCmdAction ui cmd isBrief = do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
-      wikis <- getWikiSamples ui mlimit today
+      notes <- loadAllNotes
+      wikis <- viewWikiSamples ui mlimit today notes
       pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
