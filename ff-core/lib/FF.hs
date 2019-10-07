@@ -25,7 +25,7 @@ module FF
     getDataDir,
     viewTaskSamples,
     getUtcToday,
-    toWikiSamples,
+    viewWikiSamples,
     load,
     filterTasksByStatus,
     loadAll,
@@ -315,14 +315,14 @@ viewTaskSamplesWith
                       (note_start, entityId)
                 )
 
-toWikiSamples
+viewWikiSamples
   :: MonadStorage m
   => ConfigUI
   -> Maybe Limit
   -> Day -- ^ today
   -> [EntityDoc Note]
   -> m NoteSample
-toWikiSamples = toWikiSamplesWith $ const True
+viewWikiSamples = toWikiSamplesWith $ const True
 
 toWikiSamplesWith
   :: MonadStorage m

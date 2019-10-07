@@ -46,7 +46,7 @@ import FF
     getDataDir,
     viewTaskSamples,
     getUtcToday,
-    toWikiSamples,
+    viewWikiSamples,
     loadAllTagTexts,
     loadAllNotes,
     noDataDirectoryMessage,
@@ -215,7 +215,7 @@ runCmdAction ui cmd isBrief = do
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
       notes <- loadAllNotes
-      wikis <- toWikiSamples ui mlimit today notes
+      wikis <- viewWikiSamples ui mlimit today notes
       pprint $ prettyWikiSample isBrief wikis
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
