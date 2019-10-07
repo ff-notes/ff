@@ -1,12 +1,13 @@
 *set	#B/7euHpVmQEE+00P01fLmVG	!
 	@`]FF	>start 2019 10 1
-	@)m	>status >Active
 	@]GD	>text >B/7euHpVmQGY+00P01fLmVG
 	@]Rm	>track >B/7euHpVmQSP+00P01fLmVG
 	@B/7euI15DC78+00P01fLmVG	>tags >B/7euI15DBES+00P01fLmVG
 	@]96	>tags >B/7euI15DAJq+00P01fLmVG
 	@]AJ	>tags >B/7euI15DAyL+00P01fLmVG
-*rga	#]GY	@0	!
+	@B/7evG5ue305+00P01fLmVG	>status >Archived
+	@]1C	:B/7euHpVmQFm+00P01fLmVG	>status >Active
+*rga	#]GY	@0	:0	!
 	@`)n	'B'
 	@)o	'u'
 	@)p	'm'
