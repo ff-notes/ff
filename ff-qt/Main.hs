@@ -23,33 +23,23 @@ import Data.Text.Encoding (encodeUtf8)
 import Data.Time (Day, toGregorian)
 import Data.Version (showVersion)
 import FF
-  ( fromRgaM,
+  ( filterTasksByStatus,
+    fromRgaM,
     getDataDir,
-    filterTasksByStatus,
+    loadAllNotes,
     noDataDirectoryMessage,
     toNoteView,
-    loadAllNotes,
   )
 import FF.Config (loadConfig)
 import FF.Types
-  ( Entity (Entity),
+  ( Entity (Entity, entityId, entityVal),
     EntityView,
-    Note (Note),
+    Note (Note, note_end, note_start, note_status, note_text, note_track),
     NoteStatus (TaskStatus),
     Status (Active),
+    Track (track_externalId, track_provider, track_source, track_url),
     View (NoteView, note),
-    entityId,
-    entityVal,
     loadNote,
-    note_end,
-    note_start,
-    note_status,
-    note_text,
-    note_track,
-    track_externalId,
-    track_provider,
-    track_source,
-    track_url,
   )
 import Foreign (Ptr)
 import Foreign.C (CInt)
@@ -99,7 +89,8 @@ main = do
   -- load current data to the view, asynchronously
   _ <-
     forkIO $ do
-      activeTasks <- runStorage storage $ do
+      activeTasks <-
+        runStorage storage $ do
           notes <- loadAllNotes
           let filtered = filterTasksByStatus Active notes
           traverse toNoteView filtered
