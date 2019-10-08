@@ -19,22 +19,6 @@ packages:
   original:
     hackage: github-0.23
 - completed:
-    subdir: ron
-    cabal-file:
-      size: 1895
-      sha256: 5e5c9233168001ec822e1f10e6084476b2bc54473d3d2bd161e516c3d70b4db4
-    name: ron
-    version: '0.9'
-    git: https://github.com/ff-notes/ron.git
-    pantry-tree:
-      size: 1548
-      sha256: 4beea9f41c035b9323cdb0647c4fd929d9f69e565495bbbb0b98d4e70f4a16ff
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
-  original:
-    subdir: ron
-    git: https://github.com/ff-notes/ron.git
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
-- completed:
     subdir: ron-rdt
     cabal-file:
       size: 1305
@@ -66,6 +50,13 @@ packages:
     subdir: ron-storage
     git: https://github.com/ff-notes/ron.git
     commit: 7be4385725be7992e134f65c529845dc927fa7f0
+- completed:
+    hackage: ron-0.10@sha256:af4f8a018a704f15e4304ad4a028618f0a5a017148b95322cb3bd34c1379c7b0,1912
+    pantry-tree:
+      size: 1483
+      sha256: 64178d53f446b3aaaef05ebed6bfff782c335a77550a229c9d71e3d55f4f45ab
+  original:
+    hackage: ron-0.10
 - completed:
     hackage: ron-schema-0.9@sha256:86cf2e3f73b76a97034b8ddd21122a4410b91b7c45c7a3f4e3a401b8eef384ea,1292
     pantry-tree:

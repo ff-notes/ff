@@ -14,9 +14,9 @@ extra-deps:
   - git: https://github.com/ff-notes/ron.git
     commit:
       7be4385725be7992e134f65c529845dc927fa7f0
-      # ron-0.9+, ron-rdt-0.9+, ron-storage-0.10+
-    subdirs: [ron, ron-rdt, ron-storage]
-  # - ron-0.10
+      # ron-rdt-0.9+, ron-storage-0.10+
+    subdirs: [ron-rdt, ron-storage]
+  - ron-0.10
   # - ron-rdt-0.10
   # - ron-storage-0.11
   - ron-schema-0.9
