@@ -36,8 +36,8 @@ module FF
     splitModes,
     sponsors,
     takeSamples,
-    toNoteView,
     updateTrackedNotes,
+    viewNote,
     viewNoteSample,
   )
 where
@@ -209,8 +209,8 @@ getOrCreateTags tags
     createdTagRefs <- createTags newTags
     pure $ existentTagRefs <> createdTagRefs
 
-toNoteView :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
-toNoteView Entity {entityId, entityVal} = do
+viewNote :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
+viewNote Entity {entityId, entityVal} = do
   tags <- loadTagsByRefs tagRefs
   pure Entity
     { entityId,
@@ -222,7 +222,7 @@ toNoteView Entity {entityId, entityVal} = do
 
 viewNoteSample :: MonadStorage m => Sample (EntityDoc Note) -> m NoteSample
 viewNoteSample Sample {items, total} = do
-  noteviews <- mapM toNoteView items
+  noteviews <- mapM viewNote items
   pure $ Sample noteviews total
 
 getContactSamples :: MonadStorage m => Status -> m ContactSample
@@ -287,7 +287,7 @@ viewTaskSamplesWith
     -- filter unrefined tasks
     let notes' = filter notePredicate $ filterTasksByStatus status notes
     -- refine tasks
-    tasks <- traverse toNoteView notes'
+    tasks <- traverse viewNote notes'
     -- filter refined tasks
     let tasks' = filter noteViewPredicate tasks
     -- prepare result
