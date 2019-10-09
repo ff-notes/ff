@@ -57,14 +57,20 @@ import Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import qualified Data.Set as Set
-import Data.Set (Set, (\\), isSubsetOf, disjoint)
+import Data.Set (Set, (\\), disjoint, isSubsetOf)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
-import FF.Options (Assign (Clear, Set), Edit (..), New (..), Tags(..), assignToMaybe)
+import FF.Options
+  ( Assign (Clear, Set),
+    Edit (..),
+    New (..),
+    Tags (..),
+    assignToMaybe,
+  )
 import FF.Types
   ( Contact (..),
     ContactId,
@@ -240,10 +246,8 @@ fromRgaM :: Maybe (RGA a) -> [a]
 fromRgaM = maybe [] fromRga
 
 filterTasksByStatus :: Status -> [EntityDoc Note] -> [EntityDoc Note]
-filterTasksByStatus status = filter isArchived
-  where
-    isArchived =
-      (Just (TaskStatus status) ==) . note_status . entityVal
+filterTasksByStatus status =
+  filter $ (Just (TaskStatus status) ==) . note_status . entityVal
 
 filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
 filterWikis = filter ((Just Wiki ==) . note_status . entityVal)
@@ -272,7 +276,7 @@ viewTaskSamplesWith
   -> [EntityDoc Note]
   -> m (ModeMap NoteSample)
 viewTaskSamplesWith
-  predicate
+  textPredicate
   status
   ConfigUI {shuffle}
   limit
@@ -280,32 +284,16 @@ viewTaskSamplesWith
   tagsRequested
   withoutTags
   notes = do
-    let filtered = filterTasksByStatus status notes
-    allTasks <- traverse toNoteView filtered
-    let tasks = case tagsRequested of
-          Tags tagsRequested'  -> filter
-            ( \Entity {entityVal = NoteView {tags}} ->
-              tagsRequested' `isSubsetOf` tags &&
-              withoutTags `disjoint` tags
-            ) allTasks
-          NoTags -> filter
-            ( \Entity {entityVal = NoteView {tags}} -> null tags) allTasks
-    pure
-      . takeSamples limit
-      . shuffleOrSort
-      . splitModes today
-      $ filter
-          ( predicate
-              . Text.pack
-              . fromRgaM
-              . note_text
-              . note
-              . entityVal
-          )
-          tasks
+    -- filter unrefined tasks
+    let notes' = filter notePredicate $ filterTasksByStatus status notes
+    -- refine tasks
+    tasks <- traverse toNoteView notes'
+    -- filter refined tasks
+    let tasks' = filter noteViewPredicate tasks
+    -- prepare result
+    pure . takeSamples limit . shuffleOrSort $ splitModes today tasks'
     where
       gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
-      shuffleOrSort :: ModeMap [EntityView Note] -> ModeMap [EntityView Note]
       shuffleOrSort
         | shuffle = shuffleTraverseItems gen
         | otherwise =
@@ -319,6 +307,13 @@ viewTaskSamplesWith
                      } ->
                       (note_start, entityId)
                 )
+      notePredicate Entity {entityVal = Note {note_text}} =
+        textPredicate (Text.pack $ fromRgaM note_text)
+      tagPredicate tags = case tagsRequested of
+        Tags tagsRequested' ->
+          tagsRequested' `isSubsetOf` tags && withoutTags `disjoint` tags
+        NoTags -> null tags
+      noteViewPredicate Entity {entityVal = NoteView {tags}} = tagPredicate tags
 
 viewWikiSamples
   :: MonadStorage m
@@ -393,17 +388,17 @@ updateTrackedNote
   => HashMap Track NoteId -- ^ selection of all aready tracked notes
   -> View Note -- ^ external note (with tags) to insert
   -> m ()
-updateTrackedNote oldNotes NoteView{note,tags} = case note of
+updateTrackedNote oldNotes NoteView {note, tags} = case note of
   Note {note_track = Just track} -> do
     newRefs <- getOrCreateTags tags
     case HashMap.lookup track oldNotes of
       Nothing -> do
-        obj <- newObjectFrame $ note{note_tags = toList newRefs}
+        obj <- newObjectFrame note {note_tags = toList newRefs}
         createDocument obj
       Just noteid -> void $ modify noteid $ do
         note_status_setIfDiffer note_status
         note_text_zoom $ RGA.edit text
-        -- Add new tags.
+        -- Add new tags
         currentRefs <- HashSet.fromList <$> note_tags_read
         mapM_ note_tags_add $ HashSet.difference newRefs currentRefs
   _ -> throwError "External note is expected to be supplied with tracking"
