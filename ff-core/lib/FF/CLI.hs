@@ -155,9 +155,9 @@ runCmdAction
 runCmdAction ui cmd isBrief = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda Agenda {limit, tags} -> do
+    CmdAgenda Agenda {limit, tags, withoutTags} -> do
       notes <- loadAllNotes
-      samples <- viewTaskSamples Active ui limit today tags notes
+      samples <- viewTaskSamples Active ui limit today tags withoutTags notes
       pprint $ prettyTaskSections isBrief tags samples
     CmdContact contact -> cmdContact isBrief contact
     CmdDelete notes ->
@@ -184,7 +184,7 @@ runCmdAction ui cmd isBrief = do
         noteview <- toNoteView note
         pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
-      (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags
+      (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags withoutTags
       pprint
         $ prettyTasksWikisContacts
             isBrief

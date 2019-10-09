@@ -16,6 +16,7 @@ and this project adheres to
 - `Link` type and collection
 - `Note.links` field
 - Load notes once for searching tasks and wikis
+- `(ff agenda | ff search) --without-tag=...` to filter notes without specific tag
 
 ## [0.13] - 2019-09-10
 ### Added
