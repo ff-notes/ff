@@ -308,20 +308,20 @@ parser h =
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     filterByTags =
       fmap Set.fromList $ many $ strOption
-        $ long "tags" <> metavar "TAGS" <> help "Filter by tags"
+        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
     filterByNoTags = flag' NoTags $
-        long "no-tags"
+        long "no-tag"
           <> short 'n'
-          <> help "Filter items that has not tags"
+          <> help "Filter items that has no tags"
     addTagsOption =
       fmap Set.fromList $ many $ strOption
-        $ long "tags" <> metavar "TAGS" <> help "Add tags"
+        $ long "tag" <> metavar "TAG" <> help "Add tag"
     deleteTagsOption =
       fmap Set.fromList $ many $ strOption
-        $ long "delete-tags" <> short 'd' <> metavar "TAGS" <> help "Delete tags"
+        $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
     withoutTagsOption =
       fmap Set.fromList $ many $ strOption
-        $ long "without-tags" <> metavar "TAGS" <> help "Filter items without tags"
+        $ long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"
