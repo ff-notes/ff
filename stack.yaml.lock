@@ -19,53 +19,19 @@ packages:
   original:
     hackage: github-0.23
 - completed:
-    subdir: ron
-    cabal-file:
-      size: 1895
-      sha256: 5e5c9233168001ec822e1f10e6084476b2bc54473d3d2bd161e516c3d70b4db4
-    name: ron
-    version: '0.9'
-    git: https://github.com/ff-notes/ron.git
+    hackage: ron-0.10@sha256:af4f8a018a704f15e4304ad4a028618f0a5a017148b95322cb3bd34c1379c7b0,1912
     pantry-tree:
-      size: 1548
-      sha256: 4beea9f41c035b9323cdb0647c4fd929d9f69e565495bbbb0b98d4e70f4a16ff
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+      size: 1483
+      sha256: 64178d53f446b3aaaef05ebed6bfff782c335a77550a229c9d71e3d55f4f45ab
   original:
-    subdir: ron
-    git: https://github.com/ff-notes/ron.git
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+    hackage: ron-0.10
 - completed:
-    subdir: ron-rdt
-    cabal-file:
-      size: 1305
-      sha256: 68e12dc3fd6fa094cd0796673aff34cf9b5b89fc83246a6a1a875bfe950d90cb
-    name: ron-rdt
-    version: 0.9.1
-    git: https://github.com/ff-notes/ron.git
+    hackage: ron-rdt-0.10@sha256:5c0c1f22827002c47c7f56b4c510150a68d407903d0aa1fb1967aedab4da8e3a,1304
     pantry-tree:
       size: 594
-      sha256: 147800d3a27adc169fb85b6150be7736d9f486b840b1e6c81ad5391b519601b0
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+      sha256: e8be7ec26511ab3cbff7263bad700d703dff71d7693ee771b06efbfa703f1efc
   original:
-    subdir: ron-rdt
-    git: https://github.com/ff-notes/ron.git
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
-- completed:
-    subdir: ron-storage
-    cabal-file:
-      size: 1312
-      sha256: c7d782186c1d6f6bec1c5e66afa4c617436ffb2f571aed52fef5253fec75ac9c
-    name: ron-storage
-    version: 0.10.1
-    git: https://github.com/ff-notes/ron.git
-    pantry-tree:
-      size: 477
-      sha256: 4985a9c1b3114539c7da426cf2a3bfde1931c304fdee1221587511767634c3d7
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
-  original:
-    subdir: ron-storage
-    git: https://github.com/ff-notes/ron.git
-    commit: 7be4385725be7992e134f65c529845dc927fa7f0
+    hackage: ron-rdt-0.10
 - completed:
     hackage: ron-schema-0.9@sha256:86cf2e3f73b76a97034b8ddd21122a4410b91b7c45c7a3f4e3a401b8eef384ea,1292
     pantry-tree:
@@ -73,6 +39,13 @@ packages:
       sha256: 93829a222d5f094c1d282d7e6be59c7ea7726e2fcfec87a70a916b52ec92e757
   original:
     hackage: ron-schema-0.9
+- completed:
+    hackage: ron-storage-0.11@sha256:463e29e339ef88096248ce58f3c99602ad996b2e706c64092abc147f76d30c2d,1310
+    pantry-tree:
+      size: 414
+      sha256: a7a2b890958a6d6579f16c4f155d410b5bed0a91ef040dcf57a1fae1cb24be87
+  original:
+    hackage: ron-storage-0.11
 - completed:
     hackage: gi-gtk-declarative-0.5.0@sha256:e710da215736dac238513d78726f6cff583a6eb60b0281dc392eec5f15ea5e1b,3908
     pantry-tree:
