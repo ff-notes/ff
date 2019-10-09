@@ -630,8 +630,9 @@ getDataDir Config {dataDir} = do
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
     findVcs [] = pure Nothing
     findVcs (dir : dirs) = do
-      isDirVcs <- doesDirectoryExist (dir </> ".git")
-      if isDirVcs
+      isDirVcsGit <- doesDirectoryExist (dir </> ".git")
+      isDirVcsFF <- doesDirectoryExist (dir </> ".ff")
+      if isDirVcsGit && isDirVcsFF
         then pure . Just $ dir </> ".ff"
         else findVcs dirs
 
