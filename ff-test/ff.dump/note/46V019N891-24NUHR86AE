@@ -9,7 +9,7 @@ note:
   note_text: |-
     export issue status (ff -> GitHub)
 
-    close GitHub issue that is closed in ff
+    close GitHub issue and sync it with ff when a user tries to complete the task in ff
   note_end: null
   note_status:
     tag: TaskStatus
