@@ -110,22 +110,21 @@ cli version = do
   DataDirectory{git, ff} <- getDataDir cfg
   handle' <- traverse StorageFS.newHandle ff
   Options {brief, customDir, cmd} <- parseOptions handle'
+  let getHandle mPath = case mPath of
+        Nothing -> pure handle'
+        Just path -> Just <$> StorageFS.newHandle path
   case cmd of
     CmdConfig param -> runCmdConfig cfg param
     CmdVersion -> runCmdVersion version
     CmdAction action -> case (action,customDir)  of
       (CmdNew Options.New{vcs = True}, Nothing) -> do
-        handle <- case git of
-          Nothing -> pure handle'
-          Just path -> Just <$> StorageFS.newHandle path
+        handle <- getHandle git
         case handle of
           Nothing -> fail noVcs
           Just h -> runStorage h $ runCmdAction ui action brief
       (CmdNew Options.New{vcs = True}, Just _) -> fail directoryConflict
       (_, customDir') -> do
-        handle <- case customDir' of
-          Nothing -> pure handle'
-          Just path -> Just <$> StorageFS.newHandle path
+        handle <- getHandle customDir'
         case handle of
           Nothing -> fail noDataDirectoryMessage
           Just h -> runStorage h $ runCmdAction ui action brief
