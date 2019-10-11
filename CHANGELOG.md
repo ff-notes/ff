@@ -17,7 +17,7 @@ and this project adheres to
 - `Note.links` field
 - Load notes once for searching tasks and wikis
 - `(ff agenda | ff search) --without-tag=...` to filter notes without specific tag
-- Do not use git repo as a database if there is no .ff yet
+- Do not use git repo as a database if there is no .ff yet. And use it when `ff new --vcs ...`
 
 ## [0.13] - 2019-09-10
 ### Added

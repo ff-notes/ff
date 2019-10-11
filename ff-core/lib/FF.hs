@@ -19,6 +19,7 @@ module FF
     cmdPostpone,
     cmdSearch,
     cmdUnarchive,
+    directoryConflict,
     fromRga,
     fromRgaM,
     getContactSamples,
@@ -33,12 +34,14 @@ module FF
     loadAllNotes,
     loadTagsByRefs,
     noDataDirectoryMessage,
+    noVcs,
     splitModes,
     sponsors,
     takeSamples,
     updateTrackedNotes,
     viewNote,
     viewNoteSample,
+    DataDirectory(..),
   )
 where
 
@@ -621,24 +624,35 @@ assertNoteIsNative = do
       $ "A tracked note must be edited in its source"
         <> maybe "" (" :" <>) track_url
 
-getDataDir :: Config -> IO (Maybe FilePath)
+getDataDir :: Config -> IO DataDirectory
 getDataDir Config {dataDir} = do
   cur <- getCurrentDirectory
-  mDataDirFromVcs <- findVcs $ parents cur
-  pure $ mDataDirFromVcs <|> dataDir
+  findVcs $ parents cur
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findVcs [] = pure Nothing
+    findVcs [] = pure $ DataDirectory Nothing dataDir
     findVcs (dir : dirs) = do
       isDirVcsGit <- doesDirectoryExist (dir </> ".git")
       isDirVcsFF <- doesDirectoryExist (dir </> ".ff")
-      if isDirVcsGit && isDirVcsFF
-        then pure . Just $ dir </> ".ff"
-        else findVcs dirs
+      case (isDirVcsGit, isDirVcsFF) of
+        (True,True) -> pure $ DataDirectory Nothing (Just $ dir </> ".ff")
+        (True,False) -> pure $ DataDirectory (Just $ dir </> ".ff") dataDir
+        _ -> findVcs dirs
+
+data DataDirectory = DataDirectory
+  { git :: Maybe FilePath
+  , ff :: Maybe FilePath
+  }
 
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
+
+noVcs :: String
+noVcs = "You set '--vcs', but there are no any directory containing .git repo"
+
+directoryConflict :: String
+directoryConflict = "You set custom directory and vcs directory. Choose one argument, please."
 
 whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of
