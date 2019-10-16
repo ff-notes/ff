@@ -102,8 +102,8 @@ main = do
   _ <-
     forkIO $ do
       changes <- subscribe storage
-      forever
-        $ atomically (tryReadTChan changes) >>= \case
+      forever $
+        atomically (tryReadTChan changes) >>= \case
           Nothing -> pure ()
           Just (collection, docid) ->
             upsertDocument storage mainWindow collection docid
@@ -118,8 +118,8 @@ getDataDirOrFail = do
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path
 
-upsertDocument
-  :: Storage.Handle -> Ptr MainWindow -> CollectionName -> RawDocId -> IO ()
+upsertDocument ::
+  Storage.Handle -> Ptr MainWindow -> CollectionName -> RawDocId -> IO ()
 upsertDocument storage mainWindow collection docid
   | collection == collectionName @Note = do
     note <- runStorage storage $ loadNote (DocId docid) >>= viewNote
