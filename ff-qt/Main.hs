@@ -90,23 +90,21 @@ main = do
       return window;
     } |]
   -- load current data to the view, asynchronously
-  _ <-
-    forkIO $ do
-      activeTasks <-
-        runStorage storage $ do
-          notes <- loadAllNotes
-          let filtered = filterTasksByStatus Active notes
-          traverse viewNote filtered
-      for_ activeTasks $ upsertTask mainWindow
+  _ <- forkIO $ do
+    activeTasks <- runStorage storage $ do
+      notes <- loadAllNotes
+      let filtered = filterTasksByStatus Active notes
+      traverse viewNote filtered
+    for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
-  _ <-
-    forkIO $ do
-      changes <- subscribe storage
-      forever $
-        atomically (tryReadTChan changes) >>= \case
-          Nothing -> pure ()
-          Just (collection, docid) ->
-            upsertDocument storage mainWindow collection docid
+  _ <- forkIO $ do
+    changes <- subscribe storage
+    forever $ do
+      mdoc <- atomically $ tryReadTChan changes
+      case mdoc of
+        Nothing -> pure ()
+        Just (collection, docid) ->
+          upsertDocument storage mainWindow collection docid
   -- run UI
   [Cpp.block| void { qApp->exec(); } |]
 
