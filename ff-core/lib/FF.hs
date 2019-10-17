@@ -633,15 +633,16 @@ getDataDir Config {dataDir} = do
     findVcs [] = pure $ DataDirectory Nothing dataDir
     findVcs (dir : dirs) = do
       isDirVcsGit <- doesDirectoryExist (dir </> ".git")
-      isDirVcsFF <- doesDirectoryExist (dir </> ".ff")
-      case (isDirVcsGit, isDirVcsFF) of
-        (True,True) -> pure $ DataDirectory Nothing (Just $ dir </> ".ff")
-        (True,False) -> pure $ DataDirectory (Just $ dir </> ".ff") dataDir
-        _ -> findVcs dirs
+      isDirFF <- doesDirectoryExist (dir </> ".ff")
+      if isDirVcsGit && isDirFF
+        then pure $ DataDirectory {dotGit = Nothing, dotFF = Just $ dir </> ".ff"}
+        else if isDirVcsGit && not isDirFF
+          then pure $ DataDirectory {dotGit = Just $ dir </> ".ff", dotFF = dataDir}
+          else findVcs dirs
 
 data DataDirectory = DataDirectory
-  { git :: Maybe FilePath
-  , ff :: Maybe FilePath
+  { dotGit :: Maybe FilePath -- ^ .git directory
+  , dotFF :: Maybe FilePath -- ^ .ff directory
   }
 
 noDataDirectoryMessage :: String
@@ -649,10 +650,11 @@ noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
 
 noVcs :: String
-noVcs = "You set '--vcs', but there are no any directory containing .git repo"
+noVcs = "You set '--vcs', but there is no directory containing .git repo"
 
 directoryConflict :: String
-directoryConflict = "You set custom directory and vcs directory. Choose one argument, please."
+directoryConflict =
+  "You set custom directory and vcs directory. Choose one argument, please."
 
 whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of
