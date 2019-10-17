@@ -107,8 +107,8 @@ import System.Pager (printOrPage)
 cli :: Version -> IO ()
 cli version = do
   cfg@Config {ui} <- loadConfig
-  DataDirectory{git, ff} <- getDataDir cfg
-  handle' <- traverse StorageFS.newHandle ff
+  DataDirectory{gitPath, ffPath} <- getDataDir cfg
+  handle' <- traverse StorageFS.newHandle ffPath
   Options {brief, customDir, cmd} <- parseOptions handle'
   let getHandle mPath = case mPath of
         Nothing -> pure handle'
@@ -118,7 +118,7 @@ cli version = do
     CmdVersion -> runCmdVersion version
     CmdAction action -> case (action,customDir)  of
       (CmdNew Options.New{vcs = True}, Nothing) -> do
-        handle <- getHandle git
+        handle <- getHandle gitPath
         case handle of
           Nothing -> fail noVcs
           Just h -> runStorage h $ runCmdAction ui action brief

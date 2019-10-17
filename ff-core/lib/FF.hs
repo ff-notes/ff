@@ -635,14 +635,14 @@ getDataDir Config {dataDir} = do
       isDirVcsGit <- doesDirectoryExist (dir </> ".git")
       isDirFF <- doesDirectoryExist (dir </> ".ff")
       if isDirVcsGit && isDirFF
-        then pure $ DataDirectory {dotGit = Nothing, dotFF = Just $ dir </> ".ff"}
+        then pure $ DataDirectory {gitPath = Nothing, ffPath = Just $ dir </> ".ff"}
         else if isDirVcsGit && not isDirFF
-          then pure $ DataDirectory {dotGit = Just $ dir </> ".ff", dotFF = dataDir}
+          then pure $ DataDirectory {gitPath = Just $ dir </> ".ff", ffPath = dataDir}
           else findVcs dirs
 
 data DataDirectory = DataDirectory
-  { dotGit :: Maybe FilePath -- ^ .git directory
-  , dotFF :: Maybe FilePath -- ^ .ff directory
+  { gitPath :: Maybe FilePath -- ^ .git directory
+  , ffPath :: Maybe FilePath -- ^ .ff directory
   }
 
 noDataDirectoryMessage :: String
