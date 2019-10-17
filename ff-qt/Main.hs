@@ -13,7 +13,7 @@ module Main
 where
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (atomically, tryReadTChan)
+import Control.Concurrent.STM (atomically, readTChan)
 import Control.Monad (forever)
 import Cpp (MainWindow, ffCtx, includeDependent)
 import Data.Foldable (for_)
@@ -100,11 +100,8 @@ main = do
   _ <- forkIO $ do
     changes <- subscribe storage
     forever $ do
-      mdoc <- atomically $ tryReadTChan changes
-      case mdoc of
-        Nothing -> pure ()
-        Just (collection, docid) ->
-          upsertDocument storage mainWindow collection docid
+      (collection, docid) <- atomically $ readTChan changes
+      upsertDocument storage mainWindow collection docid
   -- run UI
   [Cpp.block| void { qApp->exec(); } |]
 
