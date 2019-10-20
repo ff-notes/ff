@@ -628,22 +628,18 @@ getDataDir :: Config -> IO DataDirectory
 getDataDir Config {dataDir} = do
   cur <- getCurrentDirectory
   let directories = parents cur
-  vcsPath <- findVcs directories
-  ffPath <- findFF directories
-  getDataDirectory vcsPath ffPath
+  ffPathNew <- findPath directories ".git"
+  ffPath <- findPath directories ".ff"
+  getDataDirectory ffPathNew (ffPath <|> dataDir)
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findVcs [] = pure Nothing
-    findVcs (dir : dirs) = do
-      isDirVcsGit <- doesDirectoryExist (dir </> ".git")
-      if isDirVcsGit then pure $ Just (dir </> ".ff") else findVcs dirs
-    findFF [] = pure dataDir
-    findFF (dir : dirs) = do
-      isDirFF <- doesDirectoryExist (dir </> ".ff")
-      if isDirFF then pure $ Just (dir </> ".ff") else findFF dirs
-    getDataDirectory vcsPath ffPath
-      | (length <$> vcsPath) > (length <$> ffPath) = pure $
-          DataDirectory{vcsRequired = vcsPath, vcsNotRequired = ffPath}
+    findPath [] _ = pure Nothing
+    findPath (dir : dirs) path = do
+      isPath <- doesDirectoryExist (dir </> path)
+      if isPath then pure $ Just (dir </> ".ff") else findPath dirs path
+    getDataDirectory ffPathNew ffPath
+      | (length <$> ffPathNew) > (length <$> ffPath) = pure $
+          DataDirectory{vcsRequired = ffPathNew, vcsNotRequired = ffPath}
       | otherwise = pure $
           DataDirectory{vcsRequired = Nothing, vcsNotRequired = ffPath}
 
@@ -658,7 +654,7 @@ noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
 
 noVcs :: String
-noVcs = "You set '--vcs', but there is no directory containing .git repo"
+noVcs = "You set '--vcs', but there is no directory containing vcs"
 
 directoryConflict :: String
 directoryConflict =
