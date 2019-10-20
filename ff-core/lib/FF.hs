@@ -638,16 +638,16 @@ getDataDir Config {dataDir} = do
       where
         getDataDirectory isDirVcsGit isDirFF
           | isDirVcsGit && isDirFF =
-              pure $ DataDirectory {gitPath = Nothing, ffPath = Just $ dir </> ".ff"}
+              pure $ DataDirectory {vcsNeed = Nothing, vcsNotNeed = Just $ dir </> ".ff"}
           | not isDirVcsGit && isDirFF =
-              pure $ DataDirectory {gitPath = Nothing, ffPath = Just $ dir </> ".ff"}
+              pure $ DataDirectory {vcsNeed = Nothing, vcsNotNeed = Just $ dir </> ".ff"}
           | isDirVcsGit && not isDirFF =
-              pure $ DataDirectory {gitPath = Just $ dir </> ".ff", ffPath = dataDir}
+              pure $ DataDirectory {vcsNeed = Just $ dir </> ".ff", vcsNotNeed = dataDir}
           | otherwise = findVcs dirs
 
 data DataDirectory = DataDirectory
-  { gitPath :: Maybe FilePath -- ^ .git directory
-  , ffPath :: Maybe FilePath -- ^ .ff directory
+  { vcsNeed :: Maybe FilePath -- ^ new .ff path next to .git directory when vcs needed
+  , vcsNotNeed :: Maybe FilePath -- ^ existing .ff path when vcs not needed
   }
 
 noDataDirectoryMessage :: String

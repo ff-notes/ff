@@ -114,8 +114,8 @@ main = do
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do
   cfg <- loadConfig
-  DataDirectory {ffPath} <- getDataDir cfg
-  case ffPath of
+  DataDirectory {vcsNotNeed} <- getDataDir cfg
+  case vcsNotNeed of
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path
 
