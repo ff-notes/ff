@@ -630,7 +630,7 @@ getDataDir Config {dataDir} = do
   let directories = parents cur
   vcsPath <- findVcs directories
   ffPath <- findFF directories
-  pure $ DataDirectory{vcsRequired = vcsPath, vcsNotRequired = ffPath}
+  getDataDirectory vcsPath ffPath
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
     findVcs [] = pure Nothing
@@ -641,6 +641,11 @@ getDataDir Config {dataDir} = do
     findFF (dir : dirs) = do
       isDirFF <- doesDirectoryExist (dir </> ".ff")
       if isDirFF then pure $ Just (dir </> ".ff") else findFF dirs
+    getDataDirectory vcsPath ffPath
+      | (length <$> vcsPath) > (length <$> ffPath) = pure $
+          DataDirectory{vcsRequired = vcsPath, vcsNotRequired = ffPath}
+      | otherwise = pure $
+          DataDirectory{vcsRequired = Nothing, vcsNotRequired = ffPath}
 
 data DataDirectory = DataDirectory
   { vcsRequired :: Maybe FilePath -- ^ new .ff path next to vcs directory
