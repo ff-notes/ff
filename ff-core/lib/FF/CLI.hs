@@ -107,8 +107,8 @@ import System.Pager (printOrPage)
 cli :: Version -> IO ()
 cli version = do
   cfg@Config {ui} <- loadConfig
-  DataDirectory{vcsNeed, vcsNotNeed} <- getDataDir cfg
-  handle' <- traverse StorageFS.newHandle vcsNotNeed
+  DataDirectory{vcsRequired, vcsNotRequired} <- getDataDir cfg
+  handle' <- traverse StorageFS.newHandle vcsNotRequired
   Options {brief, customDir, cmd} <- parseOptions handle'
   let getHandle mPath = case mPath of
         Nothing -> pure handle'
@@ -118,7 +118,7 @@ cli version = do
     CmdVersion -> runCmdVersion version
     CmdAction action -> case (action,customDir)  of
       (CmdNew Options.New{vcs = True}, Nothing) -> do
-        handle <- getHandle vcsNeed
+        handle <- getHandle vcsRequired
         case handle of
           Nothing -> fail noVcs
           Just h -> runStorage h $ runCmdAction ui action brief

@@ -141,7 +141,7 @@ initiallyLoadActiveTasks storage = do
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do
   cfg <- loadConfig
-  DataDirectory {vcsNotNeed}  <- getDataDir cfg
-  case vcsNotNeed of
+  DataDirectory {vcsNotRequired}  <- getDataDir cfg
+  case vcsNotRequired of
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path

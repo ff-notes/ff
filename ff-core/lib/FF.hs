@@ -633,21 +633,23 @@ getDataDir Config {dataDir} = do
     findVcs [] = pure $ DataDirectory Nothing dataDir
     findVcs (dir : dirs) = do
       isDirVcsGit <- doesDirectoryExist (dir </> ".git")
-      isDirFF <- doesDirectoryExist (dir </> ".ff")
+      isDirFF <- doesDirectoryExist ffDir
       getDataDirectory isDirVcsGit isDirFF
       where
+        ffDir = dir </> ".ff"
         getDataDirectory isDirVcsGit isDirFF
-          | isDirVcsGit && isDirFF =
-              pure $ DataDirectory {vcsNeed = Nothing, vcsNotNeed = Just $ dir </> ".ff"}
-          | not isDirVcsGit && isDirFF =
-              pure $ DataDirectory {vcsNeed = Nothing, vcsNotNeed = Just $ dir </> ".ff"}
-          | isDirVcsGit && not isDirFF =
-              pure $ DataDirectory {vcsNeed = Just $ dir </> ".ff", vcsNotNeed = dataDir}
+          | isDirVcsGit && isDirFF = pure $
+              DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
+          | not isDirVcsGit && isDirFF = pure $
+              DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
+          | isDirVcsGit && not isDirFF = pure $
+              DataDirectory {vcsRequired = Just ffDir, vcsNotRequired = dataDir}
           | otherwise = findVcs dirs
 
 data DataDirectory = DataDirectory
-  { vcsNeed :: Maybe FilePath -- ^ new .ff path next to .git directory when vcs needed
-  , vcsNotNeed :: Maybe FilePath -- ^ existing .ff path when vcs not needed
+  { vcsRequired :: Maybe FilePath -- ^ new .ff path next to vcs directory
+                                  -- when vcs is required
+  , vcsNotRequired :: Maybe FilePath -- ^ existing .ff path when vcs is not required
   }
 
 noDataDirectoryMessage :: String
