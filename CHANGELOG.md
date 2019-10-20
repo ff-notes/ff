@@ -18,6 +18,9 @@ and this project adheres to
 - Load notes once for searching tasks and wikis
 - `(ff agenda | ff search) --without-tag=...` to filter notes without specific tag
 
+### Removed
+- Autocreation of `.ff` directory next to `.git`. Let user creates `.ff`
+
 ## [0.13] - 2019-09-10
 ### Added
 - Nix build

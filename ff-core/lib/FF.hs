@@ -624,16 +624,17 @@ assertNoteIsNative = do
 getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config {dataDir} = do
   cur <- getCurrentDirectory
-  mDataDirFromVcs <- findVcs $ parents cur
-  pure $ mDataDirFromVcs <|> dataDir
+  mFFpath <- findFF $ parents cur
+  pure $ mFFpath <|> dataDir
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findVcs [] = pure Nothing
-    findVcs (dir : dirs) = do
-      isDirVcs <- doesDirectoryExist (dir </> ".git")
-      if isDirVcs
-        then pure . Just $ dir </> ".ff"
-        else findVcs dirs
+    findFF [] = pure Nothing
+    findFF (dir : dirs) = do
+      let ffDir = dir </> ".ff"
+      isFFdir <- doesDirectoryExist ffDir
+      if isFFdir
+        then pure $ Just ffDir
+        else findFF dirs
 
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
