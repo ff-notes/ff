@@ -642,9 +642,15 @@ getDataDir Config {dataDir} = do
               DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
           | not isDirVcsGit && isDirFF = pure $
               DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
-          | isDirVcsGit && not isDirFF = pure $
-              DataDirectory {vcsRequired = Just ffDir, vcsNotRequired = dataDir}
+          | isDirVcsGit && not isDirFF = do
+              nextFF <- findFF dirs
+              pure $ DataDirectory {vcsRequired = Just ffDir, vcsNotRequired = nextFF}
           | otherwise = findVcs dirs
+        findFF [] = pure dataDir
+        findFF (dir' : dirs') = do
+          isDirFF' <- doesDirectoryExist (dir' </> ".ff")
+          if isDirFF' then pure $ Just (dir' </> ".ff") else findFF dirs'
+
 
 data DataDirectory = DataDirectory
   { vcsRequired :: Maybe FilePath -- ^ new .ff path next to vcs directory
