@@ -7,7 +7,7 @@ note:
     track_provider: github
   note_links: []
   note_text: |
-    Fix getDataDir (#171)
+    ff new --vcs (#171)
 
     Resolves #171
 
@@ -18,7 +18,7 @@ note:
   note_end: null
   note_status:
     tag: TaskStatus
-    contents: Active
+    contents: Archived
   note_tags:
   - B/7euI15DBES+00P01fLmVG
 tags:

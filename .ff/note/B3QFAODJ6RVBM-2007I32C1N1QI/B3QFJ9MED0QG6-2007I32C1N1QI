@@ -1,26 +1,37 @@
 *set	#B/7evhDbRVqr+00xXYO6tTI	!
 	@`]tz	>start 2019 10 9
-	@]ub	>status >Active
-	@)v	>tags >B/7euI15DBES+00P01fLmVG
+	@]uv	>tags >B/7euI15DBES+00P01fLmVG
 	@]vO	>text >B/7evhDbRVvr+00xXYO6tTI
 	@}WCW	>track >B/7evhDbRWD8+00xXYO6tTI
-*rga	#]vr	@0	!
-	@`]w	'F'
-	@)1	'i'
-	@)2	'x'
-	@)3	' '
-	@)4	'g'
-	@)5	'e'
-	@)6	't'
-	@)7	'D'
-	@)8	'a'
-	@)9	't'
-	@)A	'a'
-	@)B	'D'
-	@)C	'i'
-	@)D	'r'
-	@)E	' '
-	@)F	'('
+	@B/7exprSp5sz+00xXYO6tTI	>status >Archived
+	@}61W	:B/7evhDbRVub+00xXYO6tTI	>status >Active
+*rga	#]vr	@0	:0	!
+	@`]w	:B/7exprSp6RI+00xXYO6tTI	'F'
+	@)1	:]SE	'i'
+	@)2	:)Y	'x'
+	@B/7exprSp6TA+00xXYO6tTI	:0	'f'
+	@)U	'f'
+	@`]w3	' '
+	@)4	:B/7exprSp6U6+00xXYO6tTI	'g'
+	@B/7exprSp6UQ+00xXYO6tTI	:0	'n'
+	@`]w5	'e'
+	@)6	:B/7exprSp6Ut+00xXYO6tTI	't'
+	@)7	:]VC	'D'
+	@)8	:)W	'a'
+	@)9	:)p	't'
+	@)A	:)z	'a'
+	@)B	:]WI	'D'
+	@)C	:)b	'i'
+	@)D	:)l	'r'
+	@B/7exprSp6XE+00xXYO6tTI	:0	'w'
+	@`]wE	' '
+	@B/7exprSp6Xh+00xXYO6tTI	'-'
+	@]Y	'-'
+	@)K	'v'
+	@)U	'c'
+	@)n	's'
+	@]Z6	' '
+	@`]wF	'('
 	@)G	'#'
 	@)H	'1'
 	@)I	'7'
