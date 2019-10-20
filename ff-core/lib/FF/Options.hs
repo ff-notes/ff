@@ -152,8 +152,7 @@ data New
         start :: Maybe Day,
         end :: Maybe Day,
         isWiki :: Bool,
-        tags :: Set Text,
-        vcs :: Bool
+        tags :: Set Text
       }
 
 data Search
@@ -243,7 +242,6 @@ parser h =
     cmdUpgrade = pure CmdUpgrade
     cmdWiki = CmdWiki <$> optional limitOption
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
-    vcsOption = switch $ long "vcs" <> help "Create '.ff' for data next to .git directory"
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
     agenda = Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
@@ -279,7 +277,6 @@ parser h =
         <*> optional endDateOption
         <*> wiki
         <*> addTagsOption
-        <*> vcsOption
     edit =
       Edit
         <$> some1 noteid

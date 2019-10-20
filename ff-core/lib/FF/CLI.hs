@@ -42,20 +42,17 @@ import FF
     cmdPostpone,
     cmdSearch,
     cmdUnarchive,
-    directoryConflict,
     getContactSamples,
     getDataDir,
     getUtcToday,
     loadAllNotes,
     loadAllTagTexts,
     noDataDirectoryMessage,
-    noVcs,
     sponsors,
     updateTrackedNotes,
     viewNote,
     viewTaskSamples,
     viewWikiSamples,
-    DataDirectory(..),
   )
 import FF.Config
   ( Config (..),
@@ -107,27 +104,19 @@ import System.Pager (printOrPage)
 cli :: Version -> IO ()
 cli version = do
   cfg@Config {ui} <- loadConfig
-  DataDirectory{vcsRequired, vcsNotRequired} <- getDataDir cfg
-  handle' <- traverse StorageFS.newHandle vcsNotRequired
+  dataDir <- getDataDir cfg
+  handle' <- traverse StorageFS.newHandle dataDir
   Options {brief, customDir, cmd} <- parseOptions handle'
-  let getHandle mPath = case mPath of
-        Nothing -> pure handle'
-        Just path -> Just <$> StorageFS.newHandle path
+  handle <-
+    case customDir of
+      Nothing -> pure handle'
+      Just path -> Just <$> StorageFS.newHandle path
   case cmd of
     CmdConfig param -> runCmdConfig cfg param
     CmdVersion -> runCmdVersion version
-    CmdAction action -> case (action,customDir)  of
-      (CmdNew Options.New{vcs = True}, Nothing) -> do
-        handle <- getHandle vcsRequired
-        case handle of
-          Nothing -> fail noVcs
-          Just h -> runStorage h $ runCmdAction ui action brief
-      (CmdNew Options.New{vcs = True}, Just _) -> fail directoryConflict
-      (_, customDir') -> do
-        handle <- getHandle customDir'
-        case handle of
-          Nothing -> fail noDataDirectoryMessage
-          Just h -> runStorage h $ runCmdAction ui action brief
+    CmdAction action -> case handle of
+      Nothing -> fail noDataDirectoryMessage
+      Just h -> runStorage h $ runCmdAction ui action brief
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config {dataDir, ui} = \case

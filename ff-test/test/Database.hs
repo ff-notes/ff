@@ -210,7 +210,7 @@ prop_new =
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False, tags, vcs = False} today
+            $ cmdNewNote New {text, start, end, isWiki = False, tags} today
         let tags' =
               mapMaybe UUID.decodeBase32
                 ["B000000001NDU-2000000000012", "B000000004HKM-2000000000012"]

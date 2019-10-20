@@ -26,7 +26,6 @@ import FF
     loadAllNotes,
     noDataDirectoryMessage,
     viewNote,
-    DataDirectory(..),
   )
 import FF.Config (loadConfig)
 import FF.Types
@@ -141,7 +140,7 @@ initiallyLoadActiveTasks storage = do
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do
   cfg <- loadConfig
-  DataDirectory {vcsNotRequired}  <- getDataDir cfg
-  case vcsNotRequired of
+  dataDir  <- getDataDir cfg
+  case dataDir of
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path

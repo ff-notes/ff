@@ -19,7 +19,6 @@ module FF
     cmdPostpone,
     cmdSearch,
     cmdUnarchive,
-    directoryConflict,
     fromRga,
     fromRgaM,
     getContactSamples,
@@ -34,14 +33,12 @@ module FF
     loadAllNotes,
     loadTagsByRefs,
     noDataDirectoryMessage,
-    noVcs,
     splitModes,
     sponsors,
     takeSamples,
     updateTrackedNotes,
     viewNote,
     viewNoteSample,
-    DataDirectory(..),
   )
 where
 
@@ -624,41 +621,24 @@ assertNoteIsNative = do
       $ "A tracked note must be edited in its source"
         <> maybe "" (" :" <>) track_url
 
-getDataDir :: Config -> IO DataDirectory
+getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config {dataDir} = do
   cur <- getCurrentDirectory
-  let directories = parents cur
-  ffPathNew <- findPath directories ".git"
-  ffPath <- findPath directories ".ff"
-  getDataDirectory ffPathNew (ffPath <|> dataDir)
+  mFFpath <- findFF $ parents cur
+  pure $ mFFpath <|> dataDir
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findPath [] _ = pure Nothing
-    findPath (dir : dirs) path = do
-      isPath <- doesDirectoryExist (dir </> path)
-      if isPath then pure $ Just (dir </> ".ff") else findPath dirs path
-    getDataDirectory ffPathNew ffPath
-      | (length <$> ffPathNew) > (length <$> ffPath) = pure $
-          DataDirectory{vcsRequired = ffPathNew, vcsNotRequired = ffPath}
-      | otherwise = pure $
-          DataDirectory{vcsRequired = Nothing, vcsNotRequired = ffPath}
-
-data DataDirectory = DataDirectory
-  { vcsRequired :: Maybe FilePath -- ^ new .ff path next to vcs directory
-                                  -- when vcs is required
-  , vcsNotRequired :: Maybe FilePath -- ^ existing .ff path when vcs is not required
-  }
+    findFF [] = pure Nothing
+    findFF (dir : dirs) = do
+      let ffDir = dir </> ".ff"
+      isFFdir <- doesDirectoryExist ffDir
+      if isFFdir
+        then pure $ Just ffDir
+        else findFF dirs
 
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
-
-noVcs :: String
-noVcs = "You set '--vcs', but there is no directory containing vcs"
-
-directoryConflict :: String
-directoryConflict =
-  "You set custom directory and vcs directory. Choose one argument, please."
 
 whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
 whenJust m f = case m of
