@@ -627,30 +627,20 @@ assertNoteIsNative = do
 getDataDir :: Config -> IO DataDirectory
 getDataDir Config {dataDir} = do
   cur <- getCurrentDirectory
-  findVcs $ parents cur
+  let directories = parents cur
+  vcsPath <- findVcs directories
+  ffPath <- findFF directories
+  pure $ DataDirectory{vcsRequired = vcsPath, vcsNotRequired = ffPath}
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
-    findVcs [] = pure $ DataDirectory Nothing dataDir
+    findVcs [] = pure Nothing
     findVcs (dir : dirs) = do
       isDirVcsGit <- doesDirectoryExist (dir </> ".git")
-      isDirFF <- doesDirectoryExist ffDir
-      getDataDirectory isDirVcsGit isDirFF
-      where
-        ffDir = dir </> ".ff"
-        getDataDirectory isDirVcsGit isDirFF
-          | isDirVcsGit && isDirFF = pure $
-              DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
-          | not isDirVcsGit && isDirFF = pure $
-              DataDirectory {vcsRequired = Nothing, vcsNotRequired = Just ffDir}
-          | isDirVcsGit && not isDirFF = do
-              nextFF <- findFF dirs
-              pure $ DataDirectory {vcsRequired = Just ffDir, vcsNotRequired = nextFF}
-          | otherwise = findVcs dirs
-        findFF [] = pure dataDir
-        findFF (dir' : dirs') = do
-          isDirFF' <- doesDirectoryExist (dir' </> ".ff")
-          if isDirFF' then pure $ Just (dir' </> ".ff") else findFF dirs'
-
+      if isDirVcsGit then pure $ Just (dir </> ".ff") else findVcs dirs
+    findFF [] = pure dataDir
+    findFF (dir : dirs) = do
+      isDirFF <- doesDirectoryExist (dir </> ".ff")
+      if isDirFF then pure $ Just (dir </> ".ff") else findFF dirs
 
 data DataDirectory = DataDirectory
   { vcsRequired :: Maybe FilePath -- ^ new .ff path next to vcs directory
