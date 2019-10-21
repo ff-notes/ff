@@ -89,6 +89,7 @@ import FF.UI
     prettyTasksWikisContacts,
     prettyWikiSample,
     withHeader,
+    (<//>),
   )
 import FF.Upgrade (upgradeDatabase)
 import RON.Storage.Backend (MonadStorage)
@@ -161,35 +162,35 @@ runCmdAction ui cmd isBrief path = do
     CmdAgenda Agenda {limit, tags, withoutTags} -> do
       notes <- loadAllNotes
       samples <- viewTaskSamples Active ui limit today tags withoutTags notes
-      pprint $ prettyPath path $ prettyTaskSections isBrief tags samples
+      pprint $ prettyTaskSections isBrief tags samples <//> prettyPath path
     CmdContact contact -> cmdContact isBrief path contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
         noteview <- viewNote note
-        pprint $ prettyPath path $ withHeader "Deleted:" $ prettyNote isBrief noteview
+        pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview <//> prettyPath path
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
         noteview <- viewNote note
-        pprint $ prettyPath path $ withHeader "Archived:" $ prettyNote isBrief noteview
+        pprint $ withHeader "Archived:" $ prettyNote isBrief noteview <//> prettyPath path
     CmdEdit edit -> do
       notes <- cmdEdit edit
       notes' <- traverse viewNote notes
-      pprint $ prettyPath path $ withHeader "Edited:" $ prettyNoteList isBrief notes'
+      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes' <//> prettyPath path
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
-      pprint $ prettyPath path $ withHeader "Added:" $ prettyNote isBrief noteview
+      pprint $ withHeader "Added:" $ prettyNote isBrief noteview <//> prettyPath path
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
         noteview <- viewNote note
-        pprint $ prettyPath path $ withHeader "Postponed:" $ prettyNote isBrief noteview
+        pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview <//> prettyPath path
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags withoutTags
       pprint
-        $ prettyPath path $ prettyTasksWikisContacts
+        $ prettyTasksWikisContacts
             isBrief
             tasks
             wikis
@@ -198,13 +199,14 @@ runCmdAction ui cmd isBrief path = do
             inWikis
             inContacts
             tags
+        <//> prettyPath path
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
-      pprint $ prettyPath path $ prettyNoteList isBrief $ toList notes'
+      pprint $ prettyNoteList isBrief (toList notes') <//> prettyPath path
     CmdTags -> do
       allTags <- loadAllTagTexts
-      pprint $ prettyPath path $ prettyTagsList allTags
+      pprint $ prettyTagsList allTags <//> prettyPath path
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief
@@ -212,14 +214,14 @@ runCmdAction ui cmd isBrief path = do
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
         noteview <- viewNote task
-        pprint . prettyPath path . withHeader "Unarchived:" $ prettyNote isBrief noteview
+        pprint . withHeader "Unarchived:" $ prettyNote isBrief noteview <//> prettyPath path
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
       notes <- loadAllNotes
       wikis <- viewWikiSamples ui mlimit today notes
-      pprint $ prettyPath path $ prettyWikiSample isBrief wikis
+      pprint $ prettyWikiSample isBrief wikis <//> prettyPath path
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
@@ -253,13 +255,13 @@ cmdContact :: (MonadIO m, MonadStorage m) => Bool -> Maybe FilePath -> Maybe Con
 cmdContact isBrief path= \case
   Just (Add name) -> do
     contact <- cmdNewContact name
-    pprint $ prettyPath path $ withHeader "Added:" $ prettyContact isBrief contact
+    pprint $ withHeader "Added:" $ prettyContact isBrief contact <//> prettyPath path
   Just (Delete cid) -> do
     contact <- cmdDeleteContact cid
-    pprint $ prettyPath path $ withHeader "Deleted:" $ prettyContact isBrief contact
+    pprint $ withHeader "Deleted:" $ prettyContact isBrief contact <//> prettyPath path
   Nothing -> do
     contacts <- getContactSamples Active
-    pprint $ prettyPath path $ prettyContactSample isBrief contacts
+    pprint $ prettyContactSample isBrief contacts <//> prettyPath path
 
 -- | Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"

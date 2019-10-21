@@ -16,7 +16,8 @@ module FF.UI (
     prettyTasksWikisContacts,
     prettyWikiSample,
     sampleLabel,
-    withHeader
+    withHeader,
+    (<//>)
 ) where
 
 import           Data.Char (isSpace)
@@ -28,7 +29,7 @@ import           Data.Semigroup ((<>))
 import           Data.Set (Set)
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
+import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang, line,
                                             indent, pretty, sep, space, viaShow,
                                             vsep, (<+>))
 import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
@@ -51,11 +52,15 @@ withHeader header value =
 indentation :: Int
 indentation = 2
 
+(<//>) :: Doc ann -> Doc ann -> Doc ann
+a <//> b = a <> line <> line <> b
+infixr 6 <//>
+
 prettyDocId :: DocId a -> Doc ann
 prettyDocId (DocId name) = pretty name
 
-prettyPath :: Maybe FilePath -> Doc AnsiStyle -> Doc AnsiStyle
-prettyPath path doc = sparsedStack [doc, yellow "Database:" <+> pretty path]
+prettyPath :: Maybe FilePath -> Doc AnsiStyle
+prettyPath path = yellow "Database:" <+> pretty path
 
 prettyTasksWikisContacts
     :: Bool                      -- ^ is output brief
