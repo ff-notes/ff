@@ -29,8 +29,8 @@ import           Data.Set (Set)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
-                                            hardline, indent, pretty, sep,
-                                            space, viaShow, vsep, (<+>))
+                                            indent, pretty, sep, space, viaShow,
+                                            vsep, (<+>))
 import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
