@@ -10,6 +10,7 @@ module FF.UI (
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyPath,
     prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
@@ -28,18 +29,18 @@ import           Data.Set (Set)
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang,
-                                            indent, pretty, sep, space, viaShow,
-                                            vsep, (<+>))
+                                            hardline, indent, pretty, sep,
+                                            space, viaShow, vsep, (<+>))
 import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
                                                             Color (..), bold,
                                                             color)
 import           Data.Time (Day)
 import           FF (fromRgaM)
+import           FF.Options (Tags (..))
 import           FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
                            EntityView, ModeMap, Note (..), NoteSample,
                            NoteStatus (Wiki), Sample (..), TaskMode (..),
                            Track (..), View (..), omitted)
-import           FF.Options (Tags(..))
 import           RON.Storage.Backend (DocId (DocId))
 
 -- | Header with fixed yellow color.
@@ -52,6 +53,9 @@ indentation = 2
 
 prettyDocId :: DocId a -> Doc ann
 prettyDocId (DocId name) = pretty name
+
+prettyPath :: Maybe FilePath -> Doc AnsiStyle -> Doc AnsiStyle
+prettyPath path doc = sparsedStack [doc, yellow "Database:" <+> pretty path]
 
 prettyTasksWikisContacts
     :: Bool                      -- ^ is output brief

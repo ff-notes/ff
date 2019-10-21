@@ -83,6 +83,7 @@ import FF.UI
     prettyContactSample,
     prettyNote,
     prettyNoteList,
+    prettyPath,
     prettyTagsList,
     prettyTaskSections,
     prettyTasksWikisContacts,
@@ -107,16 +108,18 @@ cli version = do
   dataDir <- getDataDir cfg
   handle' <- traverse StorageFS.newHandle dataDir
   Options {brief, customDir, cmd} <- parseOptions handle'
-  handle <-
+  (handle, dataPath) <-
     case customDir of
-      Nothing -> pure handle'
-      Just path -> Just <$> StorageFS.newHandle path
+      Nothing -> pure (handle', dataDir)
+      Just path -> do
+        h <- StorageFS.newHandle path
+        pure (Just h, customDir)
   case cmd of
     CmdConfig param -> runCmdConfig cfg param
     CmdVersion -> runCmdVersion version
     CmdAction action -> case handle of
       Nothing -> fail noDataDirectoryMessage
-      Just h -> runStorage h $ runCmdAction ui action brief
+      Just h -> runStorage h $ runCmdAction ui action brief dataPath
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config {dataDir, ui} = \case
@@ -151,42 +154,42 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
         ui' = ConfigUI {shuffle = shuffle'}
 
 runCmdAction
-  :: (MonadIO m, MonadStorage m) => ConfigUI -> CmdAction -> Bool -> m ()
-runCmdAction ui cmd isBrief = do
+  :: (MonadIO m, MonadStorage m) => ConfigUI -> CmdAction -> Bool -> Maybe FilePath -> m ()
+runCmdAction ui cmd isBrief path = do
   today <- getUtcToday
   case cmd of
     CmdAgenda Agenda {limit, tags, withoutTags} -> do
       notes <- loadAllNotes
       samples <- viewTaskSamples Active ui limit today tags withoutTags notes
-      pprint $ prettyTaskSections isBrief tags samples
-    CmdContact contact -> cmdContact isBrief contact
+      pprint $ prettyPath path $ prettyTaskSections isBrief tags samples
+    CmdContact contact -> cmdContact isBrief path contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
         noteview <- viewNote note
-        pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview
+        pprint $ prettyPath path $ withHeader "Deleted:" $ prettyNote isBrief noteview
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
         noteview <- viewNote note
-        pprint $ withHeader "Archived:" $ prettyNote isBrief noteview
+        pprint $ prettyPath path $ withHeader "Archived:" $ prettyNote isBrief noteview
     CmdEdit edit -> do
       notes <- cmdEdit edit
       notes' <- traverse viewNote notes
-      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes'
+      pprint $ prettyPath path $ withHeader "Edited:" $ prettyNoteList isBrief notes'
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
-      pprint $ withHeader "Added:" $ prettyNote isBrief noteview
+      pprint $ prettyPath path $ withHeader "Added:" $ prettyNote isBrief noteview
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
         noteview <- viewNote note
-        pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview
+        pprint $ prettyPath path $ withHeader "Postponed:" $ prettyNote isBrief noteview
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags withoutTags
       pprint
-        $ prettyTasksWikisContacts
+        $ prettyPath path $ prettyTasksWikisContacts
             isBrief
             tasks
             wikis
@@ -198,10 +201,10 @@ runCmdAction ui cmd isBrief = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
-      pprint $ prettyNoteList isBrief $ toList notes'
+      pprint $ prettyPath path $ prettyNoteList isBrief $ toList notes'
     CmdTags -> do
       allTags <- loadAllTagTexts
-      pprint $ prettyTagsList allTags
+      pprint $ prettyPath path $ prettyTagsList allTags
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today isBrief
@@ -209,14 +212,14 @@ runCmdAction ui cmd isBrief = do
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
         noteview <- viewNote task
-        pprint . withHeader "Unarchived:" $ prettyNote isBrief noteview
+        pprint . prettyPath path . withHeader "Unarchived:" $ prettyNote isBrief noteview
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
     CmdWiki mlimit -> do
       notes <- loadAllNotes
       wikis <- viewWikiSamples ui mlimit today notes
-      pprint $ prettyWikiSample isBrief wikis
+      pprint $ prettyPath path $ prettyWikiSample isBrief wikis
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today isBrief
@@ -246,17 +249,17 @@ cmdTrack Track {dryRun, address, limit} today isBrief
           exitFailure
         Right issues -> pure issues
 
-cmdContact :: (MonadIO m, MonadStorage m) => Bool -> Maybe Contact -> m ()
-cmdContact isBrief = \case
+cmdContact :: (MonadIO m, MonadStorage m) => Bool -> Maybe FilePath -> Maybe Contact -> m ()
+cmdContact isBrief path= \case
   Just (Add name) -> do
     contact <- cmdNewContact name
-    pprint $ withHeader "Added:" $ prettyContact isBrief contact
+    pprint $ prettyPath path $ withHeader "Added:" $ prettyContact isBrief contact
   Just (Delete cid) -> do
     contact <- cmdDeleteContact cid
-    pprint $ withHeader "Deleted:" $ prettyContact isBrief contact
+    pprint $ prettyPath path $ withHeader "Deleted:" $ prettyContact isBrief contact
   Nothing -> do
     contacts <- getContactSamples Active
-    pprint $ prettyContactSample isBrief contacts
+    pprint $ prettyPath path $ prettyContactSample isBrief contacts
 
 -- | Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
