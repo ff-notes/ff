@@ -1,0 +1,44 @@
+*set	#B/7ex~ZTLHAW+00P01fLmVG	!
+	@`]EK	>start 2019 10 21
+	@)q	>status >Active
+	@]FK	>text >B/7ex~ZTLHFj+00P01fLmVG
+	@]Ij	>track >B/7ex~ZTLHJA+00P01fLmVG
+*rga	#]Fj	@0	!
+	@`)~	'A'
+	@]G	'd'
+	@)1	'd'
+	@)2	' '
+	@)3	'o'
+	@)4	'p'
+	@)5	't'
+	@)6	'i'
+	@)7	'o'
+	@)8	'n'
+	@)9	' '
+	@)A	'f'
+	@)B	'o'
+	@)C	'r'
+	@)D	' '
+	@)E	'c'
+	@)F	'r'
+	@)G	'e'
+	@)H	'a'
+	@)I	't'
+	@)J	'i'
+	@)K	'n'
+	@)L	'g'
+	@)M	' '
+	@)N	'c'
+	@)O	'o'
+	@)P	'n'
+	@)Q	't'
+	@)R	'a'
+	@)S	'c'
+	@)T	't'
+	@)U	's'
+*set	#]JA	@0	!
+	@`)U	>externalId '201'
+	@)o	>provider 'github'
+	@]K6	>source 'ff-notes/ff'
+	@)M	>url 'https://github.com/ff-notes/ff/issues/201'
+.
