@@ -17,6 +17,7 @@ and this project adheres to
 - `Note.links` field
 - Load notes once for searching tasks and wikis
 - `(ff agenda | ff search) --without-tag=...` to filter notes without specific tag
+- Show data dir in any output
 
 ### Removed
 - Autocreation of `.ff` directory next to `.git`. Let user creates `.ff`
