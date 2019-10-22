@@ -1,9 +1,10 @@
 *set	#B/7ex~ZTLHAW+00P01fLmVG	!
 	@`]EK	>start 2019 10 21
-	@)q	>status >Active
 	@]FK	>text >B/7ex~ZTLHFj+00P01fLmVG
 	@]Ij	>track >B/7ex~ZTLHJA+00P01fLmVG
-*rga	#]Fj	@0	!
+	@B/7eyA0fIcRt+00gDu8014Y	>status >Archived
+	@]TS	:B/7ex~ZTLHEq+00P01fLmVG	>status >Active
+*rga	#]Fj	@0	:0	!
 	@`)~	'A'
 	@]G	'd'
 	@)1	'd'
