@@ -168,25 +168,25 @@ runCmdAction ui cmd isBrief path = do
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
         noteview <- viewNote note
-        pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview <//> prettyPath path
+        pprint $ withHeader "Deleted:" (prettyNote isBrief noteview) <//> prettyPath path
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
         noteview <- viewNote note
-        pprint $ withHeader "Archived:" $ prettyNote isBrief noteview <//> prettyPath path
+        pprint $ withHeader "Archived:" (prettyNote isBrief noteview) <//> prettyPath path
     CmdEdit edit -> do
       notes <- cmdEdit edit
       notes' <- traverse viewNote notes
-      pprint $ withHeader "Edited:" $ prettyNoteList isBrief notes' <//> prettyPath path
+      pprint $ withHeader "Edited:" (prettyNoteList isBrief notes') <//> prettyPath path
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
-      pprint $ withHeader "Added:" $ prettyNote isBrief noteview <//> prettyPath path
+      pprint $ withHeader "Added:" (prettyNote isBrief noteview) <//> prettyPath path
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
         noteview <- viewNote note
-        pprint $ withHeader "Postponed:" $ prettyNote isBrief noteview <//> prettyPath path
+        pprint $ withHeader "Postponed:" (prettyNote isBrief noteview) <//> prettyPath path
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags withoutTags
       pprint
@@ -214,7 +214,7 @@ runCmdAction ui cmd isBrief path = do
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
         noteview <- viewNote task
-        pprint . withHeader "Unarchived:" $ prettyNote isBrief noteview <//> prettyPath path
+        pprint $ withHeader "Unarchived:" (prettyNote isBrief noteview) <//> prettyPath path
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
@@ -255,10 +255,10 @@ cmdContact :: (MonadIO m, MonadStorage m) => Bool -> Maybe FilePath -> Maybe Con
 cmdContact isBrief path= \case
   Just (Add name) -> do
     contact <- cmdNewContact name
-    pprint $ withHeader "Added:" $ prettyContact isBrief contact <//> prettyPath path
+    pprint $ withHeader "Added:" (prettyContact isBrief contact) <//> prettyPath path
   Just (Delete cid) -> do
     contact <- cmdDeleteContact cid
-    pprint $ withHeader "Deleted:" $ prettyContact isBrief contact <//> prettyPath path
+    pprint $ withHeader "Deleted:" (prettyContact isBrief contact) <//> prettyPath path
   Nothing -> do
     contacts <- getContactSamples Active
     pprint $ prettyContactSample isBrief contacts <//> prettyPath path
