@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.14] - 2019-10-31
 ### Added
 - `Tag` type and collection
 - `Note.tags` field
