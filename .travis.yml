@@ -43,6 +43,13 @@ matrix:
       script:
         # Build the package, its tests, and its docs and run the tests
         - test/script
+    - name: build ff deb
+      install:
+        # Build ff
+        - $STACK build ff
+      script:
+        # Create .deb from binary
+        - make deb
     - name: hlint
       install:
         - $STACK build hlint
