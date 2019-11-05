@@ -143,7 +143,7 @@ import System.Directory
 import System.Environment (getEnv)
 import System.Exit (ExitCode (..))
 import System.FilePath ((</>), normalise, splitDirectories)
-import System.IO (hClose)
+import System.IO (hClose, hPutStrLn, stderr)
 import System.IO.Temp (withSystemTempFile)
 import System.Process.Typed (proc, runProcess)
 import System.Random (StdGen, mkStdGen, randoms, split)
@@ -612,6 +612,7 @@ runExternalEditor textOld = do
   withSystemTempFile "ff.edit" $ \file fileH -> do
     Text.hPutStr fileH textOld
     hClose fileH
+    hPutStrLn stderr "waiting for external editor to close"
     runProcess (proc editor [file]) >>= \case
       ExitSuccess -> Text.strip <$> Text.readFile file
       ExitFailure {} -> pure textOld
