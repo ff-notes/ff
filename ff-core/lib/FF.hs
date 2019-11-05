@@ -173,12 +173,12 @@ loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 loadTagRefsByText :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 loadTagRefsByText queryTags = do
   allTags <- loadAll
-  pure
-    $ HashSet.fromList
-        [ docIdToRef entityId
-          | Entity {entityId, entityVal = Tag {tag_text = Just tag}} <- allTags,
-            tag `elem` queryTags
-        ]
+  pure $
+    HashSet.fromList
+      [ docIdToRef entityId
+        | Entity {entityId, entityVal = Tag {tag_text = Just tag}} <- allTags,
+          tag `elem` queryTags
+      ]
 
 loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
 loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
@@ -228,11 +228,13 @@ viewNoteSample Sample {items, total} = do
 getContactSamples :: MonadStorage m => Status -> m ContactSample
 getContactSamples = getContactSamplesWith $ const True
 
-getContactSamplesWith
-  :: MonadStorage m
-  => (Text -> Bool) -- ^ predicate to filter contacts by text
-  -> Status -- ^ filter by status
-  -> m ContactSample
+getContactSamplesWith ::
+  MonadStorage m =>
+  -- | predicate to filter contacts by text
+  (Text -> Bool) ->
+  -- | filter by status
+  Status ->
+  m ContactSample
 getContactSamplesWith predicate status = do
   contacts <- loadContacts status
   pure . (\ys -> Sample ys $ genericLength ys) $ filter predicate' contacts
@@ -252,29 +254,38 @@ filterTasksByStatus status =
 filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
 filterWikis = filter ((Just Wiki ==) . note_status . entityVal)
 
-viewTaskSamples
-  :: MonadStorage m
-  => Status -- ^ filter by status
-  -> ConfigUI
-  -> Maybe Limit
-  -> Day -- ^ today
-  -> Tags -- ^ requested tags
-  -> Set Text -- ^ without tags
-  -> [EntityDoc Note]
-  -> m (ModeMap NoteSample)
+viewTaskSamples ::
+  MonadStorage m =>
+  -- | filter by status
+  Status ->
+  ConfigUI ->
+  Maybe Limit ->
+  -- | today
+  Day ->
+  -- | requested tags
+  Tags ->
+  -- | without tags
+  Set Text ->
+  [EntityDoc Note] ->
+  m (ModeMap NoteSample)
 viewTaskSamples = viewTaskSamplesWith $ const True
 
-viewTaskSamplesWith
-  :: MonadStorage m
-  => (Text -> Bool) -- ^ predicate to filter notes by text
-  -> Status -- ^ filter status
-  -> ConfigUI
-  -> Maybe Limit
-  -> Day -- ^ today
-  -> Tags -- ^ requested tags
-  -> Set Text -- ^ without tags
-  -> [EntityDoc Note]
-  -> m (ModeMap NoteSample)
+viewTaskSamplesWith ::
+  MonadStorage m =>
+  -- | predicate to filter notes by text
+  (Text -> Bool) ->
+  -- | filter status
+  Status ->
+  ConfigUI ->
+  Maybe Limit ->
+  -- | today
+  Day ->
+  -- | requested tags
+  Tags ->
+  -- | without tags
+  Set Text ->
+  [EntityDoc Note] ->
+  m (ModeMap NoteSample)
 viewTaskSamplesWith
   textPredicate
   status
@@ -299,14 +310,14 @@ viewTaskSamplesWith
         | otherwise =
           -- in sorting by entityId no business-logic is involved,
           -- it's just for determinism
-          fmap
-            $ sortOn
-                ( \Entity
-                     { entityId,
-                       entityVal = NoteView {note = Note {note_start}}
-                     } ->
-                      (note_start, entityId)
-                )
+          fmap $
+            sortOn
+              ( \Entity
+                   { entityId,
+                     entityVal = NoteView {note = Note {note_start}}
+                   } ->
+                    (note_start, entityId)
+              )
       notePredicate Entity {entityVal = Note {note_text}} =
         textPredicate (Text.pack $ fromRgaM note_text)
       tagPredicate tags = case tagsRequested of
@@ -315,23 +326,26 @@ viewTaskSamplesWith
         NoTags -> null tags
       noteViewPredicate Entity {entityVal = NoteView {tags}} = tagPredicate tags
 
-viewWikiSamples
-  :: MonadStorage m
-  => ConfigUI
-  -> Maybe Limit
-  -> Day -- ^ today
-  -> [EntityDoc Note]
-  -> m NoteSample
+viewWikiSamples ::
+  MonadStorage m =>
+  ConfigUI ->
+  Maybe Limit ->
+  -- | today
+  Day ->
+  [EntityDoc Note] ->
+  m NoteSample
 viewWikiSamples = toWikiSamplesWith $ const True
 
-toWikiSamplesWith
-  :: MonadStorage m
-  => (Text -> Bool) -- ^ predicate to filter tasks by text
-  -> ConfigUI
-  -> Maybe Limit
-  -> Day -- ^ today
-  -> [EntityDoc Note]
-  -> m NoteSample
+toWikiSamplesWith ::
+  MonadStorage m =>
+  -- | predicate to filter tasks by text
+  (Text -> Bool) ->
+  ConfigUI ->
+  Maybe Limit ->
+  -- | today
+  Day ->
+  [EntityDoc Note] ->
+  m NoteSample
 toWikiSamplesWith predicate ConfigUI {shuffle} limit today notes = do
   let wikis0 = filterWikis notes
   let wikis1 = filter predicate' wikis0
@@ -383,11 +397,13 @@ takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
       | a <= b = 0
       | otherwise = a - b
 
-updateTrackedNote
-  :: MonadStorage m
-  => HashMap Track NoteId -- ^ selection of all aready tracked notes
-  -> View Note -- ^ external note (with tags) to insert
-  -> m ()
+updateTrackedNote ::
+  MonadStorage m =>
+  -- | selection of all aready tracked notes
+  HashMap Track NoteId ->
+  -- | external note (with tags) to insert
+  View Note ->
+  m ()
 updateTrackedNote oldNotes NoteView {note, tags} = case note of
   Note {note_track = Just track} -> do
     newRefs <- getOrCreateTags tags
@@ -457,16 +473,21 @@ cmdDeleteContact cid = modifyAndView cid $ do
   contact_status_clear
   contact_name_clear
 
-cmdSearch
-  :: MonadStorage m
-  => Text -- ^ query
-  -> Status -- ^ search within archived tasks or contacts
-  -> ConfigUI
-  -> Maybe Limit
-  -> Day -- ^ today
-  -> Tags -- ^ requested tags
-  -> Set Text -- ^ without tags
-  -> m (ModeMap NoteSample, NoteSample, ContactSample)
+cmdSearch ::
+  MonadStorage m =>
+  -- | query
+  Text ->
+  -- | search within archived tasks or contacts
+  Status ->
+  ConfigUI ->
+  Maybe Limit ->
+  -- | today
+  Day ->
+  -- | requested tags
+  Tags ->
+  -- | without tags
+  Set Text ->
+  m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr status ui limit today tags withoutTags = do
   notes <- loadAllNotes
   tasks <- viewTaskSamplesWith predicate status ui limit today tags withoutTags notes
@@ -527,8 +548,8 @@ cmdEdit edit = case edit of
         -- check start and end editability
         when (isJust start || isJust end) $ do
           status <- note_status_read
-          when (status == Just Wiki)
-            $ throwError "Wiki dates are immutable"
+          when (status == Just Wiki) $
+            throwError "Wiki dates are immutable"
         -- check start and end relation
         do
           curStart <- note_start_read
@@ -538,8 +559,8 @@ cmdEdit edit = case edit of
                   <$> (start <|> curStart)
                   <*> (end' <|> curEnd)
               end' = end >>= assignToMaybe
-          whenJust newStartEnd
-            $ uncurry assertStartBeforeEnd
+          whenJust newStartEnd $
+            uncurry assertStartBeforeEnd
         -- update
         whenJust end $ \case
           Clear -> note_end_clear
@@ -553,8 +574,8 @@ cmdEdit edit = case edit of
           let newRefs = HashSet.difference refsToAdd currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
-        unless (null deleteTags)
-          $ mapM_ note_tags_remove refsToDelete
+        unless (null deleteTags) $
+          mapM_ note_tags_remove refsToDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
@@ -567,11 +588,11 @@ cmdPostpone nid = modifyAndView nid $ do
     Just end | end < start' -> note_end_set start'
     _ -> pure ()
 
-modifyAndView
-  :: (Collection a, MonadStorage m)
-  => DocId a
-  -> ObjectStateT a m ()
-  -> m (EntityDoc a)
+modifyAndView ::
+  (Collection a, MonadStorage m) =>
+  DocId a ->
+  ObjectStateT a m () ->
+  m (EntityDoc a)
 modifyAndView docid f = do
   entityVal <-
     modify docid $ do
@@ -585,8 +606,8 @@ getUtcToday = liftIO $ utctDay <$> getCurrentTime
 runExternalEditor :: Text -> IO Text
 runExternalEditor textOld = do
   editor <-
-    asum
-      $ assertExecutableFromEnv "EDITOR"
+    asum $
+      assertExecutableFromEnv "EDITOR"
         : map assertExecutable ["editor", "micro", "nano"]
   withSystemTempFile "ff.edit" $ \file fileH -> do
     Text.hPutStr fileH textOld
@@ -604,21 +625,21 @@ assertStartBeforeEnd :: MonadE m => Day -> Day -> m ()
 assertStartBeforeEnd start end =
   unless (start <= end) $ throwError "task cannot end before it is started"
 
-note_status_setIfDiffer
-  :: (ReplicaClock m, MonadE m, MonadObjectState Note m)
-  => Maybe NoteStatus
-  -> m ()
+note_status_setIfDiffer ::
+  (ReplicaClock m, MonadE m, MonadObjectState Note m) =>
+  Maybe NoteStatus ->
+  m ()
 note_status_setIfDiffer newStatus = do
   curStatus <- note_status_read
-  when (curStatus /= newStatus)
-    $ maybe note_status_clear note_status_set newStatus
+  when (curStatus /= newStatus) $
+    maybe note_status_clear note_status_set newStatus
 
 assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
   tracking <- note_track_read
   whenJust tracking $ \Track {track_url} ->
-    throwErrorText
-      $ "A tracked note must be edited in its source"
+    throwErrorText $
+      "A tracked note must be edited in its source"
         <> maybe "" (" :" <>) track_url
 
 getDataDir :: Config -> IO (Maybe FilePath)
