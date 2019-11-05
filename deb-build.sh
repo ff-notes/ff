@@ -17,8 +17,8 @@ stack clean
 #
 # Build bin and copy to build directory
 #
-mkdir -p $BUILD_DIRECTORY/usr/bin/
-stack --local-bin-path=$BUILD_DIRECTORY/usr/bin/ install $PACKAGE_NAME
+mkdir -p $BUILD_DIRECTORY/opt/$PACKAGE_NAME/
+stack --local-bin-path=$BUILD_DIRECTORY/opt/$PACKAGE_NAME/ install $PACKAGE_NAME
 #
 # Copy debian info files
 #
@@ -37,7 +37,7 @@ rm -rf $BUILD_DIRECTORY
 #
 # Lint deb
 #
-
 lintian *.deb
 
+# Useful function
 # rm *.deb *.buildinfo *.changes
