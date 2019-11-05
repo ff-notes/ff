@@ -674,7 +674,7 @@ whenJust m f = case m of
   Just x -> f x
 
 sponsors :: [Text]
-sponsors = ["Nadezda"]
+sponsors = ["Alexander Granin", "Nadezda"]
 
 refToDocId :: ObjectRef a -> DocId a
 refToDocId (ObjectRef uid) = docIdFromUuid uid
