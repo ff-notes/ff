@@ -609,7 +609,7 @@ runExternalEditor textOld = do
     asum $
       assertExecutableFromEnv "EDITOR"
         : map assertExecutable ["editor", "micro", "nano"]
-  withSystemTempFile "ff.edit" $ \file fileH -> do
+  withSystemTempFile "ff.txt" $ \file fileH -> do
     Text.hPutStr fileH textOld
     hClose fileH
     runProcess (proc editor [file]) >>= \case
