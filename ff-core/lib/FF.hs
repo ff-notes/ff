@@ -612,6 +612,7 @@ runExternalEditor textOld = do
   withSystemTempFile "ff.txt" $ \file fileH -> do
     Text.hPutStr fileH textOld
     hClose fileH
+    hPutStrLn stderr "waiting for external editor to close"
     runProcess (proc editor [file]) >>= \case
       ExitSuccess -> Text.strip <$> Text.readFile file
       ExitFailure {} -> pure textOld
