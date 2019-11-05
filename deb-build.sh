@@ -36,7 +36,7 @@ rm -rf $BUILD_DIRECTORY
 #
 # Lint deb
 #
-lintian *.deb
+lintian --suppress-tags dir-or-file-in-opt,embedded-library *.deb
 
 # Useful function
 # rm *.deb *.buildinfo *.changes
