@@ -49,7 +49,7 @@ matrix:
         - $STACK build ff
       script:
         # Create .deb from binary
-        - make deb
+        - ./deb-build.sh
     - name: hlint
       install:
         - $STACK build hlint

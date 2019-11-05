@@ -13,7 +13,6 @@ export BUILD_DIRECTORY=ff-deb
 # Remove recent package stuff
 rm -rf $BUILD_DIRECTORY
 mkdir -p $BUILD_DIRECTORY
-stack clean
 #
 # Build bin and copy to build directory
 #
