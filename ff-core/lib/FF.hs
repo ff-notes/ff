@@ -47,6 +47,7 @@ import Control.Monad (unless, void, when)
 import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
+import qualified Data.ByteString as BS
 import Data.Foldable (asum, for_, toList)
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
@@ -60,7 +61,8 @@ import qualified Data.Set as Set
 import Data.Set (Set, (\\), disjoint, isSubsetOf)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.Encoding.Error as TextError
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
@@ -610,11 +612,12 @@ runExternalEditor textOld = do
       assertExecutableFromEnv "EDITOR"
         : map assertExecutable ["editor", "micro", "nano"]
   withSystemTempFile "ff.txt" $ \file fileH -> do
-    Text.hPutStr fileH textOld
+    BS.hPutStr fileH $ Text.encodeUtf8 textOld
     hClose fileH
     hPutStrLn stderr "waiting for external editor to close"
     runProcess (proc editor [file]) >>= \case
-      ExitSuccess -> Text.strip <$> Text.readFile file
+      ExitSuccess ->
+        Text.strip . Text.decodeUtf8With TextError.ignore <$> BS.readFile file
       ExitFailure {} -> pure textOld
   where
     assertExecutable prog = do
