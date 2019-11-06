@@ -17,7 +17,7 @@ module FF.Options
     Options (..),
     Search (..),
     Shuffle (..),
-    Tags(..),
+    Tags (..),
     Track (..),
     assignToMaybe,
     parseOptions,
@@ -248,13 +248,13 @@ parser h =
     filterTags = filterByNoTags <|> Tags <$> filterByTags
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
     dryRunOption =
-      switch
-        $ long "dry-run"
+      switch $
+        long "dry-run"
           <> short 'd'
           <> help "List only issues, don't set up tracking"
     repo =
-      strOption
-        $ long "repo"
+      strOption $
+        long "repo"
           <> short 'r'
           <> metavar "USER/REPO"
           <> help "User or organization/repository"
@@ -266,10 +266,12 @@ parser h =
           Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
         pDelete =
           Delete
-            <$> argument readDocId
-                  ( metavar "CONTACT_ID" <> help "contact id"
-                      <> completer completeContactIds
-                  )
+            <$> argument
+              readDocId
+              ( metavar "CONTACT_ID"
+                  <> help "contact id"
+                  <> completer completeContactIds
+              )
     new =
       New
         <$> noteTextArgument
@@ -300,28 +302,29 @@ parser h =
     searchC =
       switch $ long "contacts" <> short 'c' <> help "Search among contacts"
     searchA =
-      flag Active Archived
-        $ long "archived" <> short 'a' <> help "Search among archived"
+      flag Active Archived $
+        long "archived" <> short 'a' <> help "Search among archived"
     noteid =
-      argument readDocId
-        $ metavar "ID" <> help "note id" <> completer completeNoteIds
+      argument readDocId $
+        metavar "ID" <> help "note id" <> completer completeNoteIds
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
     filterByTags =
-      fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
-    filterByNoTags = flag' NoTags $
+      fmap Set.fromList $ many $ strOption $
+        long "tag" <> metavar "TAG" <> help "Filter by tag"
+    filterByNoTags =
+      flag' NoTags $
         long "no-tag"
           <> short 'n'
           <> help "Filter items that has no tags"
     addTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Add tag"
+      fmap Set.fromList $ many $ strOption $
+        long "tag" <> metavar "TAG" <> help "Add tag"
     deleteTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
+      fmap Set.fromList $ many $ strOption $
+        long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
     withoutTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
+      fmap Set.fromList $ many $ strOption $
+        long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"
@@ -334,14 +337,14 @@ parser h =
         <|> flag' Clear (long "end-clear" <> help "clear end date")
     dateOption m = option auto $ metavar "DATE" <> m
     customDirOption =
-      optional $ strOption
-        $ long "data-dir"
+      optional $ strOption $
+        long "data-dir"
           <> short 'C'
           <> metavar "DIRECTORY"
           <> help "Path to the data dir"
     cmdConfig =
-      fmap CmdConfig . optional . subparser
-        $ command "dataDir" iDataDir <> command "ui" iUi
+      fmap CmdConfig . optional . subparser $
+        command "dataDir" iDataDir <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
@@ -354,10 +357,10 @@ parser h =
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
         iUi = i ui "UI tweaks"
         ui =
-          fmap ConfigUI . optional
-            $ flag'
-                Shuffle
-                (long "shuffle" <> help "shuffle notes in section")
+          fmap ConfigUI . optional $
+            flag'
+              Shuffle
+              (long "shuffle" <> help "shuffle notes in section")
               <|> flag' Sort (long "sort" <> help "sort notes in section")
     version =
       flag'
@@ -366,8 +369,8 @@ parser h =
     completeNoteIds = docIdCompleter @Note
     completeContactIds = docIdCompleter @FF.Types.Contact
     docIdCompleter :: forall a. Collection a => Completer
-    docIdCompleter = listIOCompleter
-      $ map unDocId <$> case h of
+    docIdCompleter = listIOCompleter $
+      map unDocId <$> case h of
         Nothing -> pure []
         Just h' -> runStorage h' (getDocuments @_ @a)
     unDocId (DocId name) = name
@@ -381,7 +384,7 @@ parserInfo h = i (parser h) "A note taker and task tracker"
 
 showHelp :: String
 showHelp =
-  fst
-    $ renderFailure
-        (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
-        ""
+  fst $
+    renderFailure
+      (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
+      ""
