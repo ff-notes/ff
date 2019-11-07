@@ -47,10 +47,14 @@ getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
         Nothing      -> do
-            url <- liftIO $
-                fmap (Text.strip . TextL.toStrict . TextL.decodeUtf8) $
+            url' <-
+                liftIO $
+                fmap TextL.decodeUtf8' $
                 readProcessStdout_ $
                 proc "git" ["remote", "get-url", "--push", "origin"]
+            url <-
+                Text.strip . TextL.toStrict
+                <$> either (throwError . Text.pack . show) pure url'
             case url of
                 (stripPrefixSuffix "https://github.com/" ".git" -> Just repo) ->
                     pure repo
