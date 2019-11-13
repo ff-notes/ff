@@ -6,7 +6,9 @@ note:
     track_externalId: '140'
     track_provider: github
   note_links: []
-  note_text: History/log of changes
+  note_text: "Show history/log of document changes\n\nSketch:\r\n```\r\n$ ff history
+    1234-ABCD\r\n* 2019-11-11\r\n  Text:\r\n     alfa\r\n    -bravo\r\n    +charlie\r\n*
+    2019-11-12\r\n  Added tag delta\r\n* 2019-11-13\r\n  Removed tags: echo, foxtrot\r\n```"
   note_end: null
   note_status:
     tag: TaskStatus

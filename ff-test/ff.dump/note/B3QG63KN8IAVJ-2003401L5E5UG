@@ -1,0 +1,22 @@
+note:
+  note_start: 2019-10-24
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/204
+    track_source: ff-notes/ff
+    track_externalId: '204'
+    track_provider: github
+  note_links: []
+  note_text: |+
+    , listenToChanges
+
+
+    https://github.com/ff-notes/ff/blob/24b903d29659634ce4e2d2f40cdef6bdd751394d/ff-gtk/Main.hs#L127-L128
+
+    * Found on master
+
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []
