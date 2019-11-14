@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '29'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Subcommand aliases and abbreviations\n\nWait for\r\n- subcommand aliases
     in optparse-applicative\r\n- subcommand abbreviations in optparse-applicative

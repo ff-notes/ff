@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '7'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Setting dataDir should prompt to create it\n\nOtherwise, until a first
     note recorded:\r\n```\r\n$ ff\r\nff: /home/user/.local/share/ff/note: getDirectoryContents:openDirStream:

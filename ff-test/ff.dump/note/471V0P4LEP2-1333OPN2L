@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '58'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: 'Github sync: extract repository address from git remote "origin"'
   note_end: null

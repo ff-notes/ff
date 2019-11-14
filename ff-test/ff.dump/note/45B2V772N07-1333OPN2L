@@ -1,6 +1,7 @@
 note:
   note_start: 2018-03-31
   note_track: null
+  note_repeat: null
   note_links: []
   note_text: try to use Swarm/RON as the backend
   note_end: null

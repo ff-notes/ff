@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '188'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Table to check test coverage\n\nTable view:\r\nfeature1 | test1\r\nfeature2
     | test1\r\nfeature3 | test2\r\n...\r\n\r\nThis table will serve for show what

@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '190'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     One time load notes (#169)

@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '49'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     Fix version to --version, -v

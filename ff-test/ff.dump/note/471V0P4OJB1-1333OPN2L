@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '17'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Short commands\n\na = agenda\r\nn = new\r\nd = done\r\n..."
   note_end: null

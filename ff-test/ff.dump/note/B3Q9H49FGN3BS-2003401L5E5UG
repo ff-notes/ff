@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '122'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Decrease dependencies\n\n- https://gitlab.com/dpwiz/hedn/issues/28\r\n-
     https://github.com/fpco/inline-c/pull/85"

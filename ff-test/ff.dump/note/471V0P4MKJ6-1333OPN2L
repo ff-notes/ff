@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '45'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: Start date can't be less than current
   note_end: null

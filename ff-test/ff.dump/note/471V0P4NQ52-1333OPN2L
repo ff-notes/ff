@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '32'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Re-write agenda sections\n\n```haskell\r\n-- | haskellish pseudocode
     for agenda sections logic\r\nagendaSection start end\r\n    | end == Nothing    =

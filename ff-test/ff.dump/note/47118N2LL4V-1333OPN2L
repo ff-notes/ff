@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '84'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Allow group modification\n\nAllow this\r\n```\r\nff delete ID1 ID2 ID3\r\nff
     done ID1 ID2 ID3\r\nff edit --start START ID1 ID2 ID3\r\nff postpone ID1 ID2 ID3\r\nff

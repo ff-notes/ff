@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '27'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Add optional time to dates\n\n# Probable solution:\r\n\r\n```haskell\r\n--
     | Day and Maybe Time\r\ntype DMT = Either Day UTCTime\r\n```\r\nDay is treated

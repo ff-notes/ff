@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '72'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     ff serve command: return plain list of actual notes

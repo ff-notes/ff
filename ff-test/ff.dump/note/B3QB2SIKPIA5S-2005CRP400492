@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '143'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "`ff --help` without dataDir is broken\n\nReproduce:\r\n```\r\nHOME=/a
     ff --help\r\n```\r\nExpected: help\r\n\r\nGot:\r\n```\r\nff: user error (Data

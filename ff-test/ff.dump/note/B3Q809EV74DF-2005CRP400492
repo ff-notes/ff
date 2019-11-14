@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '111'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: 'Desktop app: try gi-gtk-declarative'
   note_end: null

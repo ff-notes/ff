@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '129'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |-
     Add index for faster database lookup

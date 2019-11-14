@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '185'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     Bump up githab dependency to 0.23

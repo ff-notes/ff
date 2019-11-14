@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '54'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Choose repo by user and list as command\n\nПока не работает. Загвоздка
     в файле `Main.hs`  в строке 116:\r\n`CmdGithub list -> liftIO $ runCmdGithub list`\r\nгде\r\n`CmdGithub`

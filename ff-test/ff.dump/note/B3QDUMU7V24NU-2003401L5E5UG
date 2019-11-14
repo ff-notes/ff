@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '163'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Drop LWW-rep support in Contact/Note/Track after 2020-08-14\n\n- [x]
     Upgrade Note to ORSet rep\r\n- [x] Release\r\n- [ ] Drop LWW-rep support a year

@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '136'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "sync `ff --help` with README\n\nв ридми есть пример ff --help, он должен
     совпадать с тем, что выводится в реальности\r\nдописать тест, который это проверяет

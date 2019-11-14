@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '55'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Github issues to noteview render\n\nLimit игнорируется почему-то, воводится
     всё сразу.\r\nИ по TaskMode вопрос в коде.\n\n<!-- Reviewable:start -->\n---\nThis

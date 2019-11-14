@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '19'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Links between notes\n\nUse for:\r\n- dependencies\r\n- tags (#20)\r\n-
     contexts (#21)\r\n- contact contexts (#22)\r\n\r\nImplementation variants:\r\n1.

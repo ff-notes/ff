@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '109'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Option to specify work directory\n\n`ff --data-dir=bla` использует каталог
     `bla` для данных только на один раз, при этом значение по умолчанию остаётся нетронутым\r\n\r\nкак

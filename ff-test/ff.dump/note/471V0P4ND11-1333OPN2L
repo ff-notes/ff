@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '36'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     samplesInSections: Add "N task(s) omitted" message

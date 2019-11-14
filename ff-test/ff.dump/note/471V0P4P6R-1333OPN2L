@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '10'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "List issues from Github\n\n- [x] fetch issues from GitHub with `ff github
     --list`\r\n- [x] allow a user to specify repository to operate\r\n- [x] change

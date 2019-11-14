@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '124'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: Enable osx testing on Travis
   note_end: null

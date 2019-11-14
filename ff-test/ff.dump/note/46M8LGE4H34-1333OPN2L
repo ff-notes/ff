@@ -1,6 +1,7 @@
 note:
   note_start: 2018-06-22
   note_track: null
+  note_repeat: null
   note_links: []
   note_text: |-
     experiment: rewrite ff with Service (Handle) pattern

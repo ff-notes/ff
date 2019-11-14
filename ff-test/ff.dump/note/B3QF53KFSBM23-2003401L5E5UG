@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '180'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     [WIP] Add ff-qtah program: pure Haskell GUI based on Qtah library

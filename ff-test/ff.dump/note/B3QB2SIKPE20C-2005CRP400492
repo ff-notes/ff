@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '151'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Track: ParseError \"Error in $: expected Vector a, encountered Object\"\n\n```\r\nff
     track -r ffnotes/ff -d\r\nfetching...\r\nParseError \"Error in $: expected Vector

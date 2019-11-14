@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '16'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: Hide pid from note-id when pid is unique
   note_end: null

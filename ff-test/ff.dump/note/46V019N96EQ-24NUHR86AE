@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '22'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: "Contacts\n\nA contact is a document in the _ff_ database.\r\n\r\nIt
     must contain one text field (RgaText) — for a human name.\r\n\r\nA note must have

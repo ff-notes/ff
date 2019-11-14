@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '179'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: Add option to filter notes without a specific tag
   note_end: null

@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '145'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: ff-gt not builded under 18.04 Ubuntu and qt-5.9.5
   note_end: null

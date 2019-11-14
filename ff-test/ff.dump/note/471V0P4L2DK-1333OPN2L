@@ -5,6 +5,7 @@ note:
     track_source: ff-notes/ff
     track_externalId: '52'
     track_provider: github
+  note_repeat: null
   note_links: []
   note_text: |
     git dirtiness

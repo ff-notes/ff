@@ -108,7 +108,8 @@ prop_smoke = property $ do
                           note_end = Just $ fromGregorian 17 06 19,
                           note_tags = [],
                           note_track = Nothing,
-                          note_links = []
+                          note_links = [],
+                          note_repeat = Nothing
                         },
                       tags = mempty
                     }
@@ -272,7 +273,8 @@ prop_repo =
                               track_url =
                                 Just "https://github.com/ff-notes/ff/issues/60"
                             },
-                          note_links = []
+                          note_links = [],
+                          note_repeat = Nothing
                         },
                       tags = Set.fromList ["level_Research", "type_Enhancement"]
                     }
