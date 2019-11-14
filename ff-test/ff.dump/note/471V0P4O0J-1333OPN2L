@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2018-01-11
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/28
     track_source: ff-notes/ff
     track_externalId: '28'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Use a git repository as a storage\n\nShould be useful for software projects\r\n\r\nNecessary:\r\n-
     Find data dir based on git: look for `.git`/`.hg`/`.svn`, else take dataDir from

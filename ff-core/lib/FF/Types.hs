@@ -145,7 +145,7 @@ instance ReplicatedAsPayload NoteStatus where
     tags      (ObjectRef Tag)   #ron{merge set}
     track     Track
     links     (ObjectRef Link)  #ron{merge set}
-    repeat    Integer           #ron{merge LWW})
+    delta     Integer           #ron{merge LWW})
 
   (struct_set Link
     #haskell {field_prefix "link_"}
@@ -306,7 +306,7 @@ readNoteFromV2 = do
       note_tags = [],
       note_track = trackFromV2 <$> noteV2_track,
       note_links = [],
-      note_repeat = Nothing
+      note_delta = Nothing
     }
 
 trackFromV2 :: TrackV2 -> Track

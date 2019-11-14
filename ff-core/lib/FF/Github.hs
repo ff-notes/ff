@@ -129,7 +129,7 @@ issueToNote address Issue{..} = NoteView
             , track_url        = Just trackUrl
             }
         , note_links = []
-        , note_repeat = Nothing
+        , note_delta = Nothing
         }
     , tags = labels
     }

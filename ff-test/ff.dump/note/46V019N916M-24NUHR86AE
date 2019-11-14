@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-02-26
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/18
     track_source: ff-notes/ff
     track_externalId: '18'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: Android app
   note_end: null

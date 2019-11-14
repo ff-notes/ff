@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2018-07-31
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/21
     track_source: ff-notes/ff
     track_externalId: '21'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Contexts\n\nImplement type (or types?) for different contexts (as in
     GTD)\r\n- location:\r\n  - predefined: Moscow, London\r\n  - user-defined: work,

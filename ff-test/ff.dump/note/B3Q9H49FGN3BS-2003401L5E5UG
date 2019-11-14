@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-02-14
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/122
     track_source: ff-notes/ff
     track_externalId: '122'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Decrease dependencies\n\n- https://gitlab.com/dpwiz/hedn/issues/28\r\n-
     https://github.com/fpco/inline-c/pull/85"

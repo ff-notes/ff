@@ -109,7 +109,7 @@ prop_smoke = property $ do
                           note_tags = [],
                           note_track = Nothing,
                           note_links = [],
-                          note_repeat = Nothing
+                          note_delta = Nothing
                         },
                       tags = mempty
                     }
@@ -210,8 +210,8 @@ prop_new =
           ]
    in property $ do
         (note, fs') <-
-          evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False, tags} today
+          evalEither $ runStorageSim mempty $ cmdNewNote
+            New {text, start, end, isWiki = False, tags, delta = Nothing} today
         let tags' =
               mapMaybe UUID.decodeBase32
                 ["B000000001NDU-2000000000012", "B000000004HKM-2000000000012"]
@@ -274,7 +274,7 @@ prop_repo =
                                 Just "https://github.com/ff-notes/ff/issues/60"
                             },
                           note_links = [],
-                          note_repeat = Nothing
+                          note_delta = Nothing
                         },
                       tags = Set.fromList ["level_Research", "type_Enhancement"]
                     }

@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-02-05
   note_track:
     track_url: https://github.com/ff-notes/ff/pull/116
     track_source: ff-notes/ff
     track_externalId: '116'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: |
     Update ron

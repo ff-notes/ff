@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-02-07
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/118
     track_source: ff-notes/ff
     track_externalId: '118'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "org-mode-like UI\n\nPossible ways:\r\n1. Clone Emacs and org-mode with
     vty/brick/reflex-vty.\r\n2. Write an Emacs mode with https://github.com/knupfer/haskell-emacs\r\n\r\nSee

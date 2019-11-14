@@ -142,7 +142,7 @@ data Edit
         end :: Maybe (Assign Day),
         addTags :: Set Text,
         deleteTags :: Set Text,
-        repeat :: Maybe Integer
+        delta :: Maybe Integer
       }
   deriving (Show)
 
@@ -153,7 +153,7 @@ data New
         end :: Maybe Day,
         isWiki :: Bool,
         tags :: Set Text,
-        repeat :: Maybe Integer
+        delta :: Maybe Integer
       }
 
 data Search
@@ -277,7 +277,7 @@ parser h =
         <*> optional endDateOption
         <*> wiki
         <*> addTagsOption
-        <*> optional repeatOption
+        <*> optional deltaOption
     edit =
       Edit
         <$> some1 noteid
@@ -286,7 +286,7 @@ parser h =
         <*> optional assignEnd
         <*> addTagsOption
         <*> deleteTagsOption
-        <*> optional repeatOption
+        <*> optional deltaOption
     search =
       Search
         <$> strArgument (metavar "TEXT")
@@ -321,8 +321,8 @@ parser h =
       fmap Set.fromList $ many $ strOption
         $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete a tag"
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
-    repeatOption = option auto $
-      long "repeat" <> short 'r' <> help "Repeat in specified amount of days"
+    deltaOption = option auto $
+      long "repeat" <> short 'r' <> help "Number of days"
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"
     startDateOption =

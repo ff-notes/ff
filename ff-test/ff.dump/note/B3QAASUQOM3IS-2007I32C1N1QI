@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-03-19
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/139
     track_source: ff-notes/ff
     track_externalId: '139'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Comprehensible tracked task error message\n\nThis error message is not
     comprehensible:\r\n\r\n```\r\n$ ff done 4710P17JRPQ-1333OPN2L\r\nff: Error \"A

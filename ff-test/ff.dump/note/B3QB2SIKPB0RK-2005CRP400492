@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-04-09
   note_track:
     track_url: https://github.com/ff-notes/ff/issues/153
     track_source: ff-notes/ff
     track_externalId: '153'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Add Config tests\n\nProblem: When `ff config directory` set to proper
     directory, `ff` fails with noDataDirectoryMessage\r\n\r\nExpected: when can't

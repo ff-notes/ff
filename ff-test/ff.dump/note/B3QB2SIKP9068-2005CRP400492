@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2019-04-19
   note_track:
     track_url: https://github.com/ff-notes/ff/pull/156
     track_source: ff-notes/ff
     track_externalId: '156'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: |
     Make error comprehensible

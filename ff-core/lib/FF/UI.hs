@@ -133,6 +133,9 @@ prettyNote isBrief Entity{entityId, entityVal} = case isBrief of
                     | note_status /= Just Wiki
                     , Just end <- [note_end]
                     ]
+                ,   [ green "|" <+> cyan "repeat in" <+> pretty delta <+> cyan "days"
+                    | Just delta <- [note_delta]
+                    ]
                 ]
             ++  [ green "|" <+> cyan "tags" <+> pretty (toList tags)
                 | not $ null tags
@@ -148,6 +151,7 @@ prettyNote isBrief Entity{entityId, entityVal} = case isBrief of
         , note_status
         , note_text
         , note_track
+        , note_delta
         } = note
     start = fromJust note_start
     text  = fromRgaM note_text

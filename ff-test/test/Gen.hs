@@ -47,7 +47,7 @@ note = do
     note_text  <- maybe $ RGA <$> string (Range.linear 1 100) unicode
     note_track <- maybe track
     let note_links = []
-    let note_repeat = Nothing
+    let note_delta = Nothing
     pure Note{..}
 
 noteStatus :: Gen NoteStatus

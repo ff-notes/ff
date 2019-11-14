@@ -1,11 +1,11 @@
 note:
+  note_delta: null
   note_start: 2018-07-05
   note_track:
     track_url: https://github.com/ff-notes/ff/pull/66
     track_source: ff-notes/ff
     track_externalId: '66'
     track_provider: github
-  note_repeat: null
   note_links: []
   note_text: "Add dotting while fetching \n\nТакая конструкция отдельно делает все
     как надо, но в проекте во время загрузки данных с гитхаба, ничего не отображается,

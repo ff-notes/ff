@@ -61,7 +61,7 @@ import Data.Set (Set, (\\), isSubsetOf)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
+import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay, diffDays)
 import Data.Traversable (for)
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
 import FF.Options (Assign (Clear, Set), Edit (..), New (..), Tags(..), assignToMaybe)
@@ -89,8 +89,8 @@ import FF.Types
     note_end_clear,
     note_end_read,
     note_end_set,
-    note_repeat_read,
-    note_repeat_set,
+    note_delta_read,
+    note_delta_set,
     note_start_clear,
     note_start_read,
     note_start_set,
@@ -421,7 +421,7 @@ updateTrackedNotes newNotes = do
   for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
-cmdNewNote New {text, start, end, isWiki, tags, repeat} today = do
+cmdNewNote New {text, start, end, isWiki, tags, delta} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
@@ -438,7 +438,7 @@ cmdNewNote New {text, start, end, isWiki, tags, repeat} today = do
           note_tags = toList refs,
           note_track = Nothing,
           note_links = [],
-          note_repeat = fromIntegral <$> repeat
+          note_delta = fromIntegral <$> delta
         }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
@@ -487,10 +487,25 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_end_clear
   note_tags_clear
 
-cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
-cmdDone nid = modifyAndView nid $ do
+cmdDone :: MonadStorage m => NoteId -> Day -> m (EntityDoc Note)
+cmdDone nid today = modifyAndView nid $ do
   assertNoteIsNative
-  note_status_set $ TaskStatus Archived
+  mDelta <- note_delta_read
+  case mDelta of
+    Nothing -> note_status_set $ TaskStatus Archived
+    Just delta' -> do
+      mStart <- note_start_read
+      mEnd <- note_end_read
+      whenJust mStart $ \start -> do
+        let delta = fromIntegral delta'
+            deltasFromStart = div (diffDays today start) delta
+            newStart = if deltasFromStart == 0 || deltasFromStart == 1
+              then addDays delta start
+              else addDays (delta * deltasFromStart) start
+        note_start_set newStart
+        whenJust mEnd $ \end -> do
+          let endStartDelta = diffDays end start
+          note_end_set $ addDays endStartDelta newStart
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
@@ -519,7 +534,7 @@ cmdEdit edit = case edit of
                   noteText <- RGA.getText
                   liftIO $ runExternalEditor noteText
             RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, deleteTags, repeat} -> do
+  Edit {ids, text, start, end, addTags, deleteTags, delta} -> do
     refsToAdd <- getOrCreateTags addTags
     refsToDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
@@ -557,7 +572,7 @@ cmdEdit edit = case edit of
         -- delete tags
         unless (null deleteTags)
           $ mapM_ note_tags_remove refsToDelete
-        whenJust repeat $ note_repeat_set . fromIntegral
+        whenJust delta $ note_delta_set . fromIntegral
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
