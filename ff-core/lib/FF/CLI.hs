@@ -167,7 +167,7 @@ runCmdAction ui cmd isBrief = do
         pprint $ withHeader "Deleted:" $ prettyNote isBrief noteview
     CmdDone notes ->
       for_ notes $ \noteId -> do
-        note <- cmdDone noteId
+        note <- cmdDone noteId today
         noteview <- toNoteView note
         pprint $ withHeader "Archived:" $ prettyNote isBrief noteview
     CmdEdit edit -> do

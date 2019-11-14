@@ -89,6 +89,7 @@ import FF.Types
     note_end_clear,
     note_end_read,
     note_end_set,
+    note_repeat_read,
     note_start_clear,
     note_start_read,
     note_start_set,
@@ -435,7 +436,8 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
           note_text = Just $ RGA $ Text.unpack text,
           note_tags = toList refs,
           note_track = Nothing,
-          note_links = []
+          note_links = [],
+          note_repeat = Nothing
         }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
@@ -484,10 +486,15 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_end_clear
   note_tags_clear
 
-cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
-cmdDone nid = modifyAndView nid $ do
+cmdDone :: MonadStorage m => NoteId -> Day -> m (EntityDoc Note)
+cmdDone nid day = modifyAndView nid $ do
   assertNoteIsNative
-  note_status_set $ TaskStatus Archived
+  repeat <- note_repeat_read
+  case repeat of
+    Nothing -> note_status_set $ TaskStatus Archived
+    Just newDays -> do
+      note_start_set $ addDays (fromIntegral newDays) day
+      note_end_clear
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
