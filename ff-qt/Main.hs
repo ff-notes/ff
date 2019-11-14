@@ -13,7 +13,7 @@ module Main
 where
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.STM (atomically, tryReadTChan)
+import Control.Concurrent.STM (atomically, readTChan)
 import Control.Monad (forever)
 import Cpp (MainWindow, ffCtx, includeDependent)
 import Data.Foldable (for_)
@@ -28,7 +28,7 @@ import FF
     getDataDir,
     loadAllNotes,
     noDataDirectoryMessage,
-    toNoteView,
+    viewNote,
   )
 import FF.Config (loadConfig)
 import FF.Types
@@ -72,11 +72,14 @@ main = do
   -- set up UI
   mainWindow <-
     [Cpp.block| MainWindow * {
-      int argc = 0;
-      char argv0[] = "ff-qt";
-      char * argv[] = {argv0, NULL};
+      // This leaks memory, but it's OK because memory is lost only when
+      // the application is closing
+      auto argc = new int(0);
+      auto argv0 = new char[6];
+      strcpy(argv0, "ff-qt");
+      auto argv = new char* [2] {argv0, NULL};
+      auto app = new QApplication(*argc, argv);
 
-      auto app = new QApplication(argc, argv);
       app->setOrganizationDomain("ff.cblp.su");
       app->setOrganizationName("ff");
       app->setApplicationName("ff");
@@ -87,23 +90,18 @@ main = do
       return window;
     } |]
   -- load current data to the view, asynchronously
-  _ <-
-    forkIO $ do
-      activeTasks <-
-        runStorage storage $ do
-          notes <- loadAllNotes
-          let filtered = filterTasksByStatus Active notes
-          traverse toNoteView filtered
-      for_ activeTasks $ upsertTask mainWindow
+  _ <- forkIO $ do
+    activeTasks <- runStorage storage $ do
+      notes <- loadAllNotes
+      let filtered = filterTasksByStatus Active notes
+      traverse viewNote filtered
+    for_ activeTasks $ upsertTask mainWindow
   -- update the view with future changes
-  _ <-
-    forkIO $ do
-      changes <- subscribe storage
-      forever
-        $ atomically (tryReadTChan changes) >>= \case
-          Nothing -> pure ()
-          Just (collection, docid) ->
-            upsertDocument storage mainWindow collection docid
+  _ <- forkIO $ do
+    changes <- subscribe storage
+    forever $ do
+      (collection, docid) <- atomically $ readTChan changes
+      upsertDocument storage mainWindow collection docid
   -- run UI
   [Cpp.block| void { qApp->exec(); } |]
 
@@ -115,11 +113,11 @@ getDataDirOrFail = do
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path
 
-upsertDocument
-  :: Storage.Handle -> Ptr MainWindow -> CollectionName -> RawDocId -> IO ()
+upsertDocument ::
+  Storage.Handle -> Ptr MainWindow -> CollectionName -> RawDocId -> IO ()
 upsertDocument storage mainWindow collection docid
   | collection == collectionName @Note = do
-    note <- runStorage storage $ loadNote (DocId docid) >>= toNoteView
+    note <- runStorage storage $ loadNote (DocId docid) >>= viewNote
     upsertTask mainWindow note
   | otherwise = pure ()
 

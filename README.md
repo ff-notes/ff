@@ -81,7 +81,8 @@ Ubuntu:
 
     $ ff --help
     Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
-            [-l|--limit ARG] ([-n|--no-tags] | [--tag TAG]...))
+            [-l|--limit ARG] ([-n|--no-tag] | [--tag TAG]...)
+            [--without-tag TAG]...)
       A note taker and task tracker
 
     Available options:
@@ -89,8 +90,9 @@ Ubuntu:
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
-      -n,--no-tags             Filter items without tags
+      -n,--no-tag              Filter items that has no tags
       --tag TAG...             Filter by tag
+      --without-tag TAG...     Filter items without tag
       -h,--help                Show this help text
 
     Available commands:
@@ -100,7 +102,8 @@ Ubuntu:
       contact                  show contacts
       delete                   delete a task
       done                     mark a task done (archive)
-      edit                     edit a task or a note
+      edit                     edit a task or a note, using command from environment
+                               variable EDITOR or program `editor`
       new                      synonym for `add`
       postpone                 make a task start later
       search                   search for notes with the given text

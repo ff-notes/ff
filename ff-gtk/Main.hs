@@ -19,8 +19,14 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
-import FF (fromRgaM, getDataDir, filterTasksByStatus, loadAllNotes,
-          noDataDirectoryMessage, toNoteView)
+import FF
+  ( filterTasksByStatus,
+    fromRgaM,
+    getDataDir,
+    loadAllNotes,
+    noDataDirectoryMessage,
+    viewNote,
+  )
 import FF.Config (loadConfig)
 import FF.Types
   ( Entity (Entity),
@@ -124,16 +130,17 @@ main = do
 
 initiallyLoadActiveTasks :: StorageFS.Handle -> Producer Event IO ()
 initiallyLoadActiveTasks storage = do
-  activeTasks <- lift $ runStorage storage $ do
-    notes <- loadAllNotes
-    let filtered = filterTasksByStatus Active notes
-    traverse toNoteView filtered
+  activeTasks <-
+    lift $ runStorage storage $ do
+      notes <- loadAllNotes
+      let filtered = filterTasksByStatus Active notes
+      traverse viewNote filtered
   each $ map UpsertTask activeTasks
 
 getDataDirOrFail :: IO FilePath
 getDataDirOrFail = do
   cfg <- loadConfig
-  dataDir <- getDataDir cfg
+  dataDir  <- getDataDir cfg
   case dataDir of
     Nothing -> fail noDataDirectoryMessage
     Just path -> pure path

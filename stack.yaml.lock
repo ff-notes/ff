@@ -47,6 +47,13 @@ packages:
   original:
     hackage: ron-storage-0.11
 - completed:
+    hackage: shellwords-0.1.2.2@sha256:fbcdec62b665eab3e30eadde91becbeacec735bb3780988eaae52f9b8c91b09b,1412
+    pantry-tree:
+      size: 427
+      sha256: a16bcdbe3cb1cf8b715242c5ab6843950bafc892fe503299ff3bbf46842e9d6e
+  original:
+    hackage: shellwords-0.1.2.2
+- completed:
     hackage: gi-gtk-declarative-0.5.0@sha256:e710da215736dac238513d78726f6cff583a6eb60b0281dc392eec5f15ea5e1b,3908
     pantry-tree:
       size: 1911
@@ -146,7 +153,7 @@ packages:
     hackage: haskell-gi-base-0.22.2
 snapshots:
 - completed:
-    size: 523443
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/0.yaml
-    sha256: 283773e7120f5446d961eab35ea95c9af9c24187cc178537bd29273200a05171
-  original: lts-14.0
+    size: 524130
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/10.yaml
+    sha256: 04841e0397d7ce6364f19359fce89aa45ca8684609d665845db80d398002baa9
+  original: lts-14.10

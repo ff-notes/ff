@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.14] - 2019-10-31
 ### Added
 - `Tag` type and collection
 - `Note.tags` field
@@ -16,6 +18,11 @@ and this project adheres to
 - `Link` type and collection
 - `Note.links` field
 - Load notes once for searching tasks and wikis
+- `(ff agenda | ff search) --without-tag=...` to filter notes without specific tag
+- Show data dir in any output
+
+### Removed
+- Autocreation of `.ff` directory next to `.git`. Let user creates `.ff`
 
 ## [0.13] - 2019-09-10
 ### Added

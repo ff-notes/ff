@@ -70,6 +70,8 @@ executable ff-qt
         TaskWidget.cxx
         util.cxx
     cxx-options: -pedantic -std=c++11 -Wall -Wextra -Werror
+        -- TODO remove when Qt 5.12.5 or 5.13 comes to Ubuntu
+            -Wno-deprecated-copy
     ghc-options: -threaded
     main-is: Main.hs
     other-modules:
