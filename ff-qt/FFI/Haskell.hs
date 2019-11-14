@@ -5,7 +5,7 @@ module FFI.Haskell where
 import           Control.Monad (void)
 import           Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Set as Set
-import           Data.Time (fromGregorian)
+import           Data.Time (fromGregorian, utctDay, getCurrentTime)
 import           Foreign.C (CInt (CInt), CString, peekCAString)
 import           Foreign.StablePtr (StablePtr, deRefStablePtr)
 import           RON.Storage.Backend (DocId (DocId))
@@ -14,7 +14,7 @@ import qualified RON.Storage.FS as StorageFS
 
 import           FF (cmdDone, cmdEdit, cmdPostpone)
 import           FF.Options (Assign (Clear, Set),
-                             Edit (Edit, end, ids, start, text, addTags, deleteTags))
+                             Edit (Edit, end, ids, start, text, addTags, deleteTags, delta))
 
 {-# ANN module "HLint: ignore Use camelCase" #-}
 
@@ -37,6 +37,7 @@ c_assignStart storagePtr noteIdStr year month day = do
             , end = Nothing
             , addTags = Set.empty
             , deleteTags = Set.empty
+            , delta = Nothing
             }
 
 foreign export ccall c_assignEnd
@@ -60,14 +61,16 @@ c_assignEnd storagePtr noteIdStr year month day = do
             , start = Nothing
             , addTags = Set.empty
             , deleteTags = Set.empty
+            , delta = Nothing
             }
 
 foreign export ccall c_done :: StablePtr StorageFS.Handle -> CString -> IO ()
 c_done :: StablePtr StorageFS.Handle -> CString -> IO ()
 c_done storagePtr noteIdStr = do
+    today <- utctDay <$> getCurrentTime
     storageHandle <- deRefStablePtr storagePtr
     noteId <- peekCAString noteIdStr
-    void $ runStorage storageHandle $ cmdDone $ DocId noteId
+    void $ runStorage storageHandle $ cmdDone (DocId noteId) today
 
 foreign export ccall c_postpone
     :: StablePtr StorageFS.Handle -> CString -> IO ()
