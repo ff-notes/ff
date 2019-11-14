@@ -90,6 +90,7 @@ import FF.Types
     note_end_read,
     note_end_set,
     note_repeat_read,
+    note_repeat_set,
     note_start_clear,
     note_start_read,
     note_start_set,
@@ -420,7 +421,7 @@ updateTrackedNotes newNotes = do
   for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
-cmdNewNote New {text, start, end, isWiki, tags} today = do
+cmdNewNote New {text, start, end, isWiki, tags, repeat} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
@@ -437,7 +438,7 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
           note_tags = toList refs,
           note_track = Nothing,
           note_links = [],
-          note_repeat = Nothing
+          note_repeat = fromIntegral <$> repeat
         }
   obj@ObjectFrame {uuid} <- newObjectFrame note
   createDocument obj
@@ -486,15 +487,10 @@ cmdDeleteNote nid = modifyAndView nid $ do
   note_end_clear
   note_tags_clear
 
-cmdDone :: MonadStorage m => NoteId -> Day -> m (EntityDoc Note)
-cmdDone nid day = modifyAndView nid $ do
+cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
+cmdDone nid = modifyAndView nid $ do
   assertNoteIsNative
-  repeat <- note_repeat_read
-  case repeat of
-    Nothing -> note_status_set $ TaskStatus Archived
-    Just newDays -> do
-      note_start_set $ addDays (fromIntegral newDays) day
-      note_end_clear
+  note_status_set $ TaskStatus Archived
 
 cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
@@ -523,7 +519,7 @@ cmdEdit edit = case edit of
                   noteText <- RGA.getText
                   liftIO $ runExternalEditor noteText
             RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, deleteTags} -> do
+  Edit {ids, text, start, end, addTags, deleteTags, repeat} -> do
     refsToAdd <- getOrCreateTags addTags
     refsToDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
@@ -561,6 +557,7 @@ cmdEdit edit = case edit of
         -- delete tags
         unless (null deleteTags)
           $ mapM_ note_tags_remove refsToDelete
+        whenJust repeat $ note_repeat_set . fromIntegral
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdPostpone nid = modifyAndView nid $ do
