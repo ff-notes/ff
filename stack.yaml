@@ -5,6 +5,7 @@ packages:
   - ff-core
   - ff-gtk
   - ff-qtah
+  - ff-qml
   - ff-test
 
 extra-deps:
@@ -21,6 +22,9 @@ extra-deps:
   # ff-gtk:
     - gi-gtk-declarative-0.6.3
     - gi-gtk-declarative-app-simple-0.6.3
+
+  # ff-qml:
+  - hsqml-0.3.5.1
 
   # github:
     - binary-instances-1
