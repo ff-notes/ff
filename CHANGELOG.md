@@ -6,6 +6,13 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- Add ability to use shell command as editor
+
+### Changed
+- Add error messages for various problems with EDITOR environment variable.
+- Avoid using `Text.IO` for files, keeping for stdout and stderr.
+- Avoid using partial `Text.decodeUtf8`.
 
 ## [0.14] - 2019-10-31
 ### Added
