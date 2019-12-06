@@ -74,6 +74,175 @@ packages:
       sha256: b58b9e7a482f158b33d87d807cd91bf99e6cd998593f4d9b11d96e978559a690
   original:
     hackage: binary-instances-1
+<<<<<<< HEAD
+=======
+- completed:
+    hackage: gi-atk-2.0.20@sha256:1638d851cc7c63a9acaacca825cee676c67cad54939afa4db69f0e4ab91fc55d,6721
+    pantry-tree:
+      size: 355
+      sha256: 6e11214e8b02bdde1d1fd718d1fe68c7b5736b11f97ec8e0cd4b67a9560c05d9
+  original:
+    hackage: gi-atk-2.0.20
+- completed:
+    hackage: gi-cairo-1.0.22@sha256:aaec6b1f029a326fed6b6503c86d08f40e270bf232079ef33120d1007cdb1444,3653
+    pantry-tree:
+      size: 358
+      sha256: 0c16d821b5ec0ca3ba4378999a10373b8c63f86a82228361a1571289766ca670
+  original:
+    hackage: gi-cairo-1.0.22
+- completed:
+    hackage: gi-gdk-3.0.21@sha256:e830b15bf6eaeb623175d848df017653aa78e0ffad20d8f5a84336d2737bb026,8933
+    pantry-tree:
+      size: 355
+      sha256: 6b0d6bc94131082e37ed04d7aee9074027b40882db15ddf475419406c1de72d4
+  original:
+    hackage: gi-gdk-3.0.21
+- completed:
+    hackage: gi-gdkpixbuf-2.0.22@sha256:0b66b5490e7bc1054e8dc19c50c581ed54c1883338ce7cec2a6d435d629553b1,3760
+    pantry-tree:
+      size: 368
+      sha256: cf798239321d722db26a8abe87c900b4bdeea6cade5301ea5bccc8064a0143b8
+  original:
+    hackage: gi-gdkpixbuf-2.0.22
+- completed:
+    hackage: gi-gio-2.0.24@sha256:f8840f15bcce9c280165f4a43b792e152fa5e806f4e8e86dcc5068363125dcae,21799
+    pantry-tree:
+      size: 359
+      sha256: 08a2d203f3bbe18b53c349a84d26dfb7d2fd617a6907785aa2e770287de705dd
+  original:
+    hackage: gi-gio-2.0.24
+- completed:
+    hackage: gi-glib-2.0.22@sha256:c05d4a446d5f642df1728697a8b5acf7ea2eccbdaff2484971a9ec1281b1c490,9486
+    pantry-tree:
+      size: 358
+      sha256: d422706d6a52a2a5062561da295c627d6070279fc258ec039a36efb2b8652dd9
+  original:
+    hackage: gi-glib-2.0.22
+- completed:
+    hackage: gi-gobject-2.0.21@sha256:cbbc8e06e8e1446568054280d734dda6d8a888e166c60670fabddc4746835c36,9029
+    pantry-tree:
+      size: 364
+      sha256: 6ca4fd8faaca179c5aa4d86631d9531da0065fa63a492445fec92de5962c2e21
+  original:
+    hackage: gi-gobject-2.0.21
+- completed:
+    hackage: gi-gtk-3.0.31@sha256:f65a442b0d08893847d04048d0d327eb13d2a7494dc6c58344b10569f76816c4,38616
+    pantry-tree:
+      size: 359
+      sha256: 5707c1e3cf4a749bc858446125ee2b0b71e47b3c995b04eb0f4c04c9f58bbc69
+  original:
+    hackage: gi-gtk-3.0.31
+- completed:
+    hackage: gi-pango-1.0.21@sha256:7b293da6308c5cbe7d5898ab975cf8364f8556bfb86c40e4784ba1abd422249d,8073
+    pantry-tree:
+      size: 360
+      sha256: cc90f53fd7fa2f11fd897874e36d903f0af425e2e2550ed1d7c0865fe3b1d6ab
+  original:
+    hackage: gi-pango-1.0.21
+- completed:
+    hackage: haskell-gi-base-0.22.2@sha256:e8d5cf0b4fada4914443f171b38c8b82924bbefca3196793b1622f5fa50adfb4,2308
+    pantry-tree:
+      size: 1663
+      sha256: 6f85514d25d696f7389baa35cb34318e8cc896cad3244cb80d798bc71c5949f1
+  original:
+    hackage: haskell-gi-base-0.22.2
+- completed:
+    subdir: generator
+    cabal-file:
+      size: 1572
+      sha256: a3133452c3948385920ccccd4c42c8c9336558029d78249dbdabd7f50d0b847d
+    name: hoppy-generator
+    version: 0.5.2
+    git: https://gitlab.com/khumba/hoppy.git
+    pantry-tree:
+      size: 1403
+      sha256: 3e4f5fc5549249439b6383ea5bfb7025b250f3c6ecd853ac8da0c297a1313707
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+  original:
+    subdir: generator
+    git: https://gitlab.com/khumba/hoppy.git
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+- completed:
+    subdir: runtime
+    cabal-file:
+      size: 1112
+      sha256: 3bfb035401a61f824d217d91f5db0a9f88cd2da8b3bed58fc4e4d0407688f484
+    name: hoppy-runtime
+    version: 0.5.1
+    git: https://gitlab.com/khumba/hoppy.git
+    pantry-tree:
+      size: 349
+      sha256: f6688904217301d271cb2f070f1cd46d19cb864eea6ec1fcf9a88ca7cfd87147
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+  original:
+    subdir: runtime
+    git: https://gitlab.com/khumba/hoppy.git
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+- completed:
+    subdir: std
+    cabal-file:
+      size: 1500
+      sha256: a6395cc46b53b0f1f594ca7fcf22288f47875cc23eac284d2650e242c61e8834
+    name: hoppy-std
+    version: 0.5.0
+    git: https://gitlab.com/khumba/hoppy.git
+    pantry-tree:
+      size: 1535
+      sha256: 6ffaa4c5cecbb1af8f06770ef7e8c1571073b2171744dbf4fa97fa1409b68bb5
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+  original:
+    subdir: std
+    git: https://gitlab.com/khumba/hoppy.git
+    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+- completed:
+    subdir: qtah
+    cabal-file:
+      size: 18743
+      sha256: d53eb8b71aa3a55a4aff880c28384d6d177a19e26a43834fc08ec594470c6637
+    name: qtah
+    version: 0.6.0
+    git: https://gitlab.com/khumba/qtah.git
+    pantry-tree:
+      size: 1064
+      sha256: 64227613b7c0134c91d4e0eb4b42201796c32b1220bb9e0f8b39e85b1bf4ce79
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+  original:
+    subdir: qtah
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+- completed:
+    subdir: qtah-cpp
+    cabal-file:
+      size: 1498
+      sha256: 534097a808086f56c54624a1bcaa55ba4d172b15c7ed839245635241596c3754
+    name: qtah-cpp
+    version: 0.6.0
+    git: https://gitlab.com/khumba/qtah.git
+    pantry-tree:
+      size: 1853
+      sha256: 56418688abb8891a671bf3f5bc557fef51e8ea8b6be2b50cc0a229f7b5fa5ffa
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+  original:
+    subdir: qtah-cpp
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+- completed:
+    subdir: qtah-generator
+    cabal-file:
+      size: 12382
+      sha256: ae8cafcbe680a96bbbdde5dd10bdb965e13e3d9973037354ba4a9918f6d93387
+    name: qtah-generator
+    version: 0.6.0
+    git: https://gitlab.com/khumba/qtah.git
+    pantry-tree:
+      size: 20256
+      sha256: c61b0cad14c9fd3a9869c965e8052c65351d63920258dc8c9bb871e97814e126
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+  original:
+    subdir: qtah-generator
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 4c4a2ac2f3ec1ae4a5f3abc4a910970449e935a0
+>>>>>>> e4164e6... Add ff-qtah
 snapshots:
 - completed:
     size: 524130
