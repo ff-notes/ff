@@ -19,29 +19,11 @@ extra-deps:
   - shellwords-0.1.2.2
 
   # ff-gtk:
-  - gi-gtk-declarative-0.5.0
-  - gi-gtk-declarative-app-simple-0.5.0
-
-  # gi-gtk-declarative:
-  - haskell-gi-0.22.6
+  - gi-gtk-declarative-0.6.0
+  - gi-gtk-declarative-app-simple-0.6.0
 
   # github:
   - binary-instances-1
-
-  # haskell-gi:
-  - gi-atk-2.0.20
-  - gi-cairo-1.0.22
-  - gi-gdk-3.0.21
-  - gi-gdkpixbuf-2.0.22
-  - gi-gio-2.0.24
-  - gi-glib-2.0.22
-  - gi-gobject-2.0.21
-  - gi-gtk-3.0.31
-  - gi-pango-1.0.21
-  - haskell-gi-base-0.22.2
-
-# reduce some deps?
-# flags: {comonad: {contravariant: False}}
 
 docker:
   enable: false
