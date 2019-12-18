@@ -7,7 +7,11 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
-- Add ability to use shell command as editor
+- Ability to use shell command as editor
+- GUI client based on Qtah
+
+### Removed
+- GUI client based on inline-c access to Qt
 
 ### Changed
 - Add error messages for various problems with EDITOR environment variable.
