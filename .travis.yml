@@ -35,7 +35,7 @@ before_install:
     fi
   - export STACK="stack --no-terminal --install-ghc"
 
-matrix:
+jobs:
   include:
     - name: build and test
       install:
@@ -52,10 +52,8 @@ matrix:
     - name: haddock
       script:
         - $STACK haddock --no-haddock-deps
-    - name: weeder
-      install:
-        - $STACK build weeder
-      script:
-        - $STACK exec -- weeder
-  allow_failures:
-    - name: weeder
+    # - name: weeder
+    #   install:
+    #     - $STACK build weeder
+    #   script:
+    #     - $STACK exec -- weeder
