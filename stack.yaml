@@ -1,11 +1,11 @@
 resolver: lts-14.10
 
 packages:
-  - ff
+  # - ff
   - ff-core
-  - ff-gtk
-  - ff-qtah
-  - ff-test
+  # - ff-gtk
+  # - ff-qtah
+  # - ff-test
 
 extra-deps:
   # ff-core:
