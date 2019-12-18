@@ -1,7 +1,7 @@
 resolver: lts-14.10
 
 packages:
-  # - ff
+  - ff
   - ff-core
   # - ff-gtk
   # - ff-qtah
