@@ -10,4 +10,4 @@ ghc_warnings=(
 )
 ghc_options=(${ghc_warnings[*]} -Werror)
 
-${STACK:-stack} test --ghc-options="${ghc_options[*]}"
+${STACK:-stack} test --ghc-options="${ghc_options[*]}" "$@"

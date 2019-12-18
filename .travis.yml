@@ -37,23 +37,24 @@ before_install:
 
 jobs:
   include:
-    - name: build and test
-      install:
-        # Build dependencies
-        - $STACK build --test --only-dependencies
-      script:
-        # Build the package, its tests, and its docs and run the tests
-        - test/script
-    - name: hlint
-      install:
-        - $STACK build hlint
-      script:
-        - $STACK exec -- hlint .
+    - stage: build_core
+      install: $STACK build --test --only-dependencies ff-core
+      script: test/script ff-core
+    - stage: build
+      name: ff
+      install: $STACK build --test --only-dependencies ff
+      script: test/script ff
+    - stage: build
+      name: ff-gtk
+      install: $STACK build --test --only-dependencies ff-gtk
+      script: test/script ff-gtk
+    - stage: build
+      name: ff-qtah
+      install: $STACK build --test --only-dependencies ff-qtah
+      script: test/script ff-qtah
+    - script: test/script
     - name: haddock
-      script:
-        - $STACK haddock --no-haddock-deps
-    # - name: weeder
-    #   install:
-    #     - $STACK build weeder
-    #   script:
-    #     - $STACK exec -- weeder
+      script: $STACK haddock --no-haddock-deps
+    - name: hlint
+      install: $STACK build hlint
+      script: $STACK exec -- hlint .
