@@ -4,7 +4,7 @@ packages:
   - ff
   - ff-core
   - ff-gtk
-  - ff-qt
+  - ff-qtah
   - ff-test
 
 extra-deps:
@@ -25,9 +25,26 @@ extra-deps:
   # github:
   - binary-instances-1
 
+  # ff-qtah:
+  # - hoppy-generator-0.5.2
+  # - hoppy-runtime-0.5.1
+  # - hoppy-std-0.5.0
+  - git: https://gitlab.com/khumba/hoppy.git
+    commit:
+      45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+      # 0.5.1 + Compatibility with GHC 8.6, Cabal 2.4
+    subdirs: [generator, runtime, std]
+  - git: https://gitlab.com/cblp/qtah.git
+    commit:
+      ac50b21041027fba912611dd5d4430035e589caa
+      # 0.6.0 + master + version constraints fixes
+    subdirs: [qtah, qtah-cpp, qtah-generator]
+
 docker:
   enable: false
   image: ff-ubuntu-16.04
+
+flags: {qtah-cpp: {qt5: true}}
 
 nix:
   packages: [zlib qt5.qtbase gtk3 gobject-introspection]
