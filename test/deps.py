@@ -44,11 +44,9 @@ really_used_packages = [
     "Diff",             # RGA.edit
     "ff",
     "ff-core",
-    "ff-qt",
+    "ff-qtah",
     "github",           # to track github issues
     "gitrev",           # get app version from git
-    "inline-c",         # Qt FFI
-    "inline-c-cpp",     # Qt FFI
     "ron",
     "ron-rdt",
     "ron-schema",
