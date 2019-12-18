@@ -1,0 +1,22 @@
+note:
+  note_start: 2019-12-18
+  note_track:
+    track_url: https://github.com/ff-notes/ff/issues/219
+    track_source: ff-notes/ff
+    track_externalId: '219'
+    track_provider: github
+  note_links: []
+  note_text: |+
+    connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
+
+
+    https://github.com/ff-notes/ff/blob/cfabac6c56e26dad5a0a3d0b83545a444ecc8e1a/ff-qtah/FF/Qt/MainWindow.hs#L68-L71
+
+    * Opened on master
+
+  note_end: null
+  note_status:
+    tag: TaskStatus
+    contents: Active
+  note_tags: []
+tags: []
