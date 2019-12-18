@@ -9,9 +9,12 @@ module FF.Qt.MainWindow (
 -- global
 import           Control.Monad (void)
 import           Data.ByteString (ByteString)
+import           Data.Foldable (fold)
+import           Data.Traversable (for)
 import           Foreign (castPtr)
 import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toPtr, touchCppPtr,
                                         withCppPtr, withScopedPtr)
+import           GHC.Stack (callStack, prettyCallStack)
 import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
                                                 toQObject, toQObjectConst)
 import qualified Graphics.UI.Qtah.Core.QSettings as QSettings
@@ -29,9 +32,13 @@ import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
 import qualified Graphics.UI.Qtah.Widgets.QSplitter as QSplitter
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
+import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetConstPtr, QWidgetPtr,
                                                    toQWidget, toQWidgetConst)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
+import           System.IO (hPutStrLn, stderr)
+
+-- organization
 import           RON.Storage.Backend (DocId (DocId))
 import qualified RON.Storage.FS as Storage
 
@@ -39,7 +46,8 @@ import qualified RON.Storage.FS as Storage
 import           FF.Types (EntityView, Note)
 
 -- package
-import           FF.Qt.TaskListWidget (TaskListWidget)
+import           FF.Qt.TaskListWidget (ItemType (ModeGroup, Task),
+                                       TaskListWidget)
 import qualified FF.Qt.TaskListWidget as TaskListWidget
 import           FF.Qt.TaskWidget (TaskWidget)
 import qualified FF.Qt.TaskWidget as TaskWidget
@@ -146,16 +154,26 @@ loadSetting name =
 resetTaskView :: MainWindow -> IO ()
 resetTaskView MainWindow{agendaTasks, taskWidget} = do
   items <- QTreeWidget.selectedItems agendaTasks
-  case items of
+  taskItems <- fmap fold . for items $ \item -> do
+    itemType <- toEnum <$> QTreeWidgetItem.getType item
+    pure $ case itemType of
+      Task      -> [item]
+      ModeGroup -> []
+  case taskItems of
     []     -> QWidget.hide taskWidget
     [item] -> setTaskView taskWidget item
     _:_:_  -> print "TODO open/replace group actions view"
 
 setTaskView :: TaskWidget -> QTreeWidgetItem -> IO ()
 setTaskView taskWidget item = do
-  noteId <- DocId @Note <$> TaskListWidget.getNoteId item
-  TaskWidget.update taskWidget noteId
-  QWidget.show taskWidget
+  itemType <- toEnum <$> QTreeWidgetItem.getType item
+  case itemType of
+    ModeGroup ->
+      hPutStrLn stderr $ "internal error" ++ prettyCallStack callStack
+    Task -> do
+      noteId <- DocId @Note <$> TaskListWidget.getId item
+      TaskWidget.update taskWidget noteId
+      QWidget.show taskWidget
 
 showAboutProgram :: QWidgetPtr mainWindow => mainWindow -> String -> IO ()
 showAboutProgram mainWindow progName =
