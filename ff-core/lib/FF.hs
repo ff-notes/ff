@@ -48,12 +48,13 @@ import Control.Monad.Except (throwError)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
 import qualified Data.ByteString as BS
-import Data.Foldable (asum, for_, toList)
+import Data.Foldable (asum, for_, toList, traverse_)
 import Data.Functor (($>))
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import Data.HashSet (HashSet)
 import qualified Data.HashSet as HashSet
+import Data.Hashable (Hashable)
 import Data.List (genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
 import qualified Data.Map.Strict as Map
@@ -420,7 +421,8 @@ updateTrackedNote oldNotes NoteView {note, tags} = case note of
         note_text_zoom $ RGA.edit text
         -- Add new tags
         currentRefs <- HashSet.fromList <$> note_tags_read
-        mapM_ note_tags_add $ HashSet.difference newRefs currentRefs
+        traverse_ note_tags_add $ newRefs \- currentRefs
+        traverse_ note_tags_remove $ currentRefs \- newRefs
   _ -> throwError "External note is expected to be supplied with tracking"
   where
     Note {note_status, note_text = (fromRgaM -> text)} = note
@@ -575,7 +577,7 @@ cmdEdit edit = case edit of
         unless (null addTags) $ do
           currentRefs <- HashSet.fromList <$> note_tags_read
           -- skip tags if note_tags has them already
-          let newRefs = HashSet.difference refsToAdd currentRefs
+          let newRefs = refsToAdd \- currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
         unless (null deleteTags) $
@@ -692,3 +694,6 @@ docIdToRef :: DocId a -> ObjectRef a
 docIdToRef docId = case decodeDocId docId of
   Nothing -> error "Decode UUID from DocId failed. DocId is "
   Just (_, uid) -> ObjectRef uid
+
+(\-) :: (Eq a, Hashable a) => HashSet a -> HashSet a -> HashSet a
+(\-) = HashSet.difference
