@@ -10,9 +10,9 @@ note:
     connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
 
 
-    https://github.com/ff-notes/ff/blob/cfabac6c56e26dad5a0a3d0b83545a444ecc8e1a/ff-qtah/FF/Qt/MainWindow.hs#L68-L71
+    https://github.com/ff-notes/ff/blob/3516cc9fecd034259d9a5573a1cb8ed8ffbb5116/ff-qtah/FF/Qt/MainWindow.hs#L112-L115
 
-    * Opened on master
+    * Found on master
 
   note_end: null
   note_status:

@@ -10,7 +10,7 @@ note:
     (2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
 
     notes by track in the database and select specific note by its track
-    https://github.com/ff-notes/ff/blob/cfabac6c56e26dad5a0a3d0b83545a444ecc8e1a/ff-core/lib/FF.hs#L430-L432
+    https://github.com/ff-notes/ff/blob/3516cc9fecd034259d9a5573a1cb8ed8ffbb5116/ff-core/lib/FF.hs#L430-L432
 
     * Found on master
 
