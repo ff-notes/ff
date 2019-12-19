@@ -1,7 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module FF.Qt.TaskListWidget (
-  TaskListWidget, getNoteId, getTitle, new, upsertTask
+  TaskListWidget, getNoteId, getTitle, new, setDebugInfoVisible, upsertTask
 ) where
 
 -- global
@@ -32,9 +32,13 @@ new = do
   this <- QTreeWidget.new
   QAbstractItemView.setAlternatingRowColors this True
   QTreeView.setHeaderHidden                 this True
-  QTreeView.hideColumn                      this $ fromEnum NoteIdColumn
   QTreeWidget.setColumnCount                this $ fromEnum ColumnCount
+  setDebugInfoVisible                       this False
   pure this
+
+setDebugInfoVisible :: TaskListWidget -> Bool -> IO ()
+setDebugInfoVisible this =
+  QTreeView.setColumnHidden this (fromEnum NoteIdColumn) . not
 
 -- Only insertion is implemeted. TODO implement update.
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()

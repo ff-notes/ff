@@ -19,9 +19,12 @@ import qualified Graphics.UI.Qtah.Core.QVariant as QVariant
 import           Graphics.UI.Qtah.Event (onEvent)
 import           Graphics.UI.Qtah.Gui.QCloseEvent (QCloseEvent)
 import           Graphics.UI.Qtah.Signal (connect_)
+import qualified Graphics.UI.Qtah.Widgets.QAction as QAction
 import           Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow,
                                                        QMainWindowPtr)
 import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
+import qualified Graphics.UI.Qtah.Widgets.QMenu as QMenu
+import qualified Graphics.UI.Qtah.Widgets.QMenuBar as QMenuBar
 import qualified Graphics.UI.Qtah.Widgets.QSplitter as QSplitter
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
@@ -68,6 +71,8 @@ instance QWidgetPtr MainWindow where
 new :: String -> Storage.Handle -> IO MainWindow
 new progName storage = do
   super <- QMainWindow.new
+  QWidget.setWindowTitle super progName
+
   restoreGeometry super -- must be before widgets creation
 
   -- UI setup and widgets creation
@@ -75,13 +80,21 @@ new progName storage = do
   QSplitter.setChildrenCollapsible agendaSplitter False
   QMainWindow.setCentralWidget super agendaSplitter
 
-  QWidget.setWindowTitle super progName
   agendaTasks <- TaskListWidget.new
   QSplitter.addWidget agendaSplitter agendaTasks
 
   taskWidget <- TaskWidget.new storage
   QWidget.hide taskWidget
   QSplitter.addWidget agendaSplitter taskWidget
+
+  do
+    menuBar <- QMainWindow.menuBar super
+    debugMenu <- QMenuBar.addNewMenu menuBar "&Debug"
+    showUuidsAction <-
+      QMenu.addNewAction debugMenu "&Show UUIDs and internal keys"
+    QAction.setCheckable showUuidsAction True
+    connect_ showUuidsAction QAction.toggledSignal $
+      TaskListWidget.setDebugInfoVisible agendaTasks
 
   restoreState super -- must be after widgets creation
 
