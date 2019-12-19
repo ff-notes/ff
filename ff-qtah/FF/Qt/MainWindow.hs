@@ -3,13 +3,17 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Qt.MainWindow (
-  MainWindow, new, FF.Qt.MainWindow.show, upsertNote
+  MainWindow, new, upsertNote
 ) where
 
 -- global
 import           Control.Monad (void)
 import           Data.ByteString (ByteString)
-import           Foreign.Hoppy.Runtime (withScopedPtr)
+import           Foreign (castPtr)
+import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toPtr, touchCppPtr,
+                                        withCppPtr, withScopedPtr)
+import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
+                                                toQObject, toQObjectConst)
 import qualified Graphics.UI.Qtah.Core.QSettings as QSettings
 import qualified Graphics.UI.Qtah.Core.QVariant as QVariant
 import           Graphics.UI.Qtah.Event (onEvent)
@@ -21,7 +25,8 @@ import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import qualified Graphics.UI.Qtah.Widgets.QSplitter as QSplitter
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
-import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr)
+import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetConstPtr, QWidgetPtr,
+                                                   toQWidget, toQWidgetConst)
 import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           RON.Storage.Backend (DocId (DocId))
 import qualified RON.Storage.FS as Storage
@@ -36,22 +41,41 @@ import           FF.Qt.TaskWidget (TaskWidget)
 import qualified FF.Qt.TaskWidget as TaskWidget
 
 data MainWindow = MainWindow
-  { window      :: QMainWindow
+  { super       :: QMainWindow
   , agendaTasks :: TaskListWidget
   , taskWidget  :: TaskWidget
   }
 
+instance CppPtr MainWindow where
+  nullptr =
+    MainWindow{super = nullptr, agendaTasks = nullptr, taskWidget = nullptr}
+  withCppPtr MainWindow{super} proc = withCppPtr super $ proc . castPtr
+  toPtr = castPtr . toPtr . super
+  touchCppPtr = touchCppPtr . super
+
+instance QObjectConstPtr MainWindow where
+  toQObjectConst = toQObjectConst . super
+
+instance QObjectPtr MainWindow where
+  toQObject = toQObject . super
+
+instance QWidgetConstPtr MainWindow where
+  toQWidgetConst = toQWidgetConst . super
+
+instance QWidgetPtr MainWindow where
+  toQWidget = toQWidget . super
+
 new :: String -> Storage.Handle -> IO MainWindow
 new progName storage = do
-  window <- QMainWindow.new
-  restoreGeometry window -- must be before widgets creation
+  super <- QMainWindow.new
+  restoreGeometry super -- must be before widgets creation
 
   -- UI setup and widgets creation
   agendaSplitter <- QSplitter.new
   QSplitter.setChildrenCollapsible agendaSplitter False
-  QMainWindow.setCentralWidget window agendaSplitter
+  QMainWindow.setCentralWidget super agendaSplitter
 
-  QWidget.setWindowTitle window progName
+  QWidget.setWindowTitle super progName
   agendaTasks <- TaskListWidget.new
   QSplitter.addWidget agendaSplitter agendaTasks
 
@@ -59,21 +83,18 @@ new progName storage = do
   QWidget.hide taskWidget
   QSplitter.addWidget agendaSplitter taskWidget
 
-  restoreState window -- must be after widgets creation
+  restoreState super -- must be after widgets creation
 
-  let mainWindow = MainWindow{window, agendaTasks, taskWidget}
+  let mainWindow = MainWindow{super, agendaTasks, taskWidget}
 
   -- handling events
-  void $ onEvent window $ \(_ :: QCloseEvent) -> saveGeometryAndState window
+  void $ onEvent super $ \(_ :: QCloseEvent) -> saveGeometryAndState super
   -- TODO
   -- connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
   connect_ agendaTasks QTreeWidget.itemSelectionChangedSignal $
     resetTaskView mainWindow
 
   pure mainWindow
-
-show :: MainWindow -> IO ()
-show MainWindow{window} = QWidget.show window
 
 -- | Only task notes are supported. TODO support wiki notes too
 upsertNote :: MainWindow -> EntityView Note -> IO ()

@@ -15,6 +15,7 @@ import           Foreign.Hoppy.Runtime (withScopedPtr)
 import qualified Graphics.UI.Qtah.Core.QCoreApplication as QCoreApplication
 import           Graphics.UI.Qtah.Widgets.QApplication (QApplication)
 import qualified Graphics.UI.Qtah.Widgets.QApplication as QApplication
+import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 import           System.Environment (getArgs, getProgName)
 import           System.IO (hPutStrLn, stderr)
 
@@ -45,7 +46,7 @@ main = do
   withApp $ \_ -> do
     setupApp
     window <- MainWindow.new progName storage
-    MainWindow.show window
+    QWidget.show window
     initializeAsync storage window
     whenUIIdle $ checkDBChange storage window changedDocs
     QCoreApplication.exec
