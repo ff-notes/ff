@@ -25,6 +25,7 @@ import           Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow,
 import qualified Graphics.UI.Qtah.Widgets.QMainWindow as QMainWindow
 import qualified Graphics.UI.Qtah.Widgets.QMenu as QMenu
 import qualified Graphics.UI.Qtah.Widgets.QMenuBar as QMenuBar
+import qualified Graphics.UI.Qtah.Widgets.QMessageBox as QMessageBox
 import qualified Graphics.UI.Qtah.Widgets.QSplitter as QSplitter
 import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
 import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
@@ -89,12 +90,18 @@ new progName storage = do
 
   do
     menuBar <- QMainWindow.menuBar super
-    debugMenu <- QMenuBar.addNewMenu menuBar "&Debug"
-    showUuidsAction <-
-      QMenu.addNewAction debugMenu "&Show UUIDs and internal keys"
-    QAction.setCheckable showUuidsAction True
-    connect_ showUuidsAction QAction.toggledSignal $
-      TaskListWidget.setDebugInfoVisible agendaTasks
+    do
+      debugMenu <- QMenuBar.addNewMenu menuBar "&Debug"
+      showUuidsAction <-
+        QMenu.addNewAction debugMenu "&Show UUIDs and internal keys"
+      QAction.setCheckable showUuidsAction True
+      connect_ showUuidsAction QAction.toggledSignal $
+        TaskListWidget.setDebugInfoVisible agendaTasks
+    do
+      helpMenu <- QMenuBar.addNewMenu menuBar "&Help"
+      aboutProgramAction <- QMenu.addNewAction helpMenu "&About ff"
+      connect_ aboutProgramAction QAction.triggeredSignal $ const $
+        showAboutProgram super progName
 
   restoreState super -- must be after widgets creation
 
@@ -149,3 +156,7 @@ setTaskView taskWidget item = do
   noteId <- DocId @Note <$> TaskListWidget.getNoteId item
   TaskWidget.update taskWidget noteId
   QWidget.show taskWidget
+
+showAboutProgram :: QWidgetPtr mainWindow => mainWindow -> String -> IO ()
+showAboutProgram mainWindow progName =
+  QMessageBox.about mainWindow progName "A note taker and task tracker"
