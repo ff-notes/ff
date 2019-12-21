@@ -96,6 +96,9 @@ new progName storage = do
   QWidget.hide taskWidget
   QSplitter.addWidget agendaSplitter taskWidget
 
+  -- sizes need widgets to be added
+  QSplitter.setSizes agendaSplitter [1, 1 :: Int]
+
   do
     menuBar <- QMainWindow.menuBar super
     do
