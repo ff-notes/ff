@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import           Data.Time (getCurrentTime, utctDay)
 import           Foreign (castPtr)
-import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toPtr, touchCppPtr,
-                                        withCppPtr, withScopedPtr)
+import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toGc, toPtr,
+                                        touchCppPtr, withCppPtr)
 import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
                                                 toQObject, toQObjectConst)
 import           Graphics.UI.Qtah.Gui.QFont (QFont)
@@ -123,9 +123,11 @@ instance Enum ItemType where
     0 -> ModeGroup
     1 -> Task
     _ -> error $ "toEnum @ItemType " <> show i
-  fromEnum = (+ fromEnum QTreeWidgetItem.UserType) . \case
-    ModeGroup -> 0
-    Task      -> 1
+  fromEnum t =
+    fromEnum QTreeWidgetItem.UserType
+    + case t of
+        ModeGroup -> 0
+        Task      -> 1
 
 getId, getTitle :: QTreeWidgetItem -> IO String
 getId    item = QTreeWidgetItem.text item $ fromEnum IdField
@@ -168,8 +170,7 @@ upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
             TitleField -> Text.unpack $ sampleLabel mode)
           (fromEnum ModeGroup)
       QTreeWidgetItem.setExpanded item True
-      withScopedPtr newBoldFont $ \boldFont ->
-        QTreeWidgetItem.setFont item (fromEnum TitleField) boldFont
+      QTreeWidgetItem.setFont item (fromEnum TitleField) =<< makeBoldFont
       modifyIORef modeItems $ Map.insert mode item
       pure item
   void $
@@ -184,8 +185,8 @@ upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
     text = fromRgaM note_text
     title = concat $ take 1 $ lines text
 
-newBoldFont :: IO QFont
-newBoldFont = do
-  font <- QFont.new
+makeBoldFont :: IO QFont
+makeBoldFont = do
+  font <- toGc =<< QFont.new
   QFont.setBold font True
   pure font
