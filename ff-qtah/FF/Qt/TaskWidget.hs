@@ -6,11 +6,10 @@ module FF.Qt.TaskWidget (
 
 -- global
 import           Foreign (castPtr)
-import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toPtr, touchCppPtr,
-                                        withCppPtr)
+import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toGc, toPtr,
+                                        touchCppPtr, withCppPtr)
 import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
                                                 toQObject, toQObjectConst)
-import qualified Graphics.UI.Qtah.Core.QObject as QObject
 import           Graphics.UI.Qtah.Core.Types (QtAlignmentFlag (AlignTop))
 import qualified Graphics.UI.Qtah.Widgets.QBoxLayout as QBoxLayout
 import           Graphics.UI.Qtah.Widgets.QFrame (QFrame)
@@ -19,6 +18,9 @@ import           Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import qualified Graphics.UI.Qtah.Widgets.QLabel as QLabel
 import           Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import qualified Graphics.UI.Qtah.Widgets.QScrollArea as QScrollArea
+import           Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicy,
+                                                       QSizePolicyPolicy)
+import qualified Graphics.UI.Qtah.Widgets.QSizePolicy as QSizePolicy
 import qualified Graphics.UI.Qtah.Widgets.QVBoxLayout as QVBoxLayout
 import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetConstPtr, QWidgetPtr,
                                                    toQWidget, toQWidgetConst)
@@ -68,6 +70,8 @@ new storage = do
   QScrollArea.setWidget super frame
 
   label <- QLabel.new
+  QWidget.setSizePolicy label
+    =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
   QLabel.setAlignment label AlignTop
   QLabel.setWordWrap  label True
 
@@ -88,3 +92,7 @@ update TaskWidget{frame, label, storage} noteId = do
   let Note{note_text} = note
   QLabel.setText label $ fromRgaM note_text
   QWidget.adjustSize frame
+
+makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
+makeSimpleSizePolicy policy =
+  toGc =<< QSizePolicy.newWithOptions policy policy QSizePolicy.DefaultType
