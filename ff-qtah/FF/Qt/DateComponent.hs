@@ -8,6 +8,7 @@ import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toPtr, touchCppPtr,
                                         withCppPtr)
 import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
                                                 toQObject, toQObjectConst)
+import qualified Graphics.UI.Qtah.Widgets.QAbstractSpinBox as QAbstractSpinBox
 import qualified Graphics.UI.Qtah.Widgets.QBoxLayout as QBoxLayout
 import           Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
 import qualified Graphics.UI.Qtah.Widgets.QDateEdit as QDateEdit
@@ -22,7 +23,6 @@ import           Graphics.UI.Qtah.Widgets.QLayoutItem (QLayoutItemConstPtr,
                                                        QLayoutItemPtr,
                                                        toQLayoutItem,
                                                        toQLayoutItemConst)
-import qualified Graphics.UI.Qtah.Widgets.QWidget as QWidget
 
 data DateComponent =
   DateComponent{super :: QHBoxLayout, label :: QLabel, dateEdit :: QDateEdit}
@@ -62,11 +62,12 @@ new title = do
   QDateTimeEdit.setCalendarPopup dateEdit True
   QBoxLayout.addWidget super dateEdit
 
+  QBoxLayout.addStretch super
+
   let this = DateComponent{super, label, dateEdit}
   setEditable this False
   pure this
 
 setEditable :: DateComponent -> Bool -> IO ()
-setEditable DateComponent{label, dateEdit} dateIsEditable = do
-  QWidget.setVisible label    dateIsEditable
-  QWidget.setVisible dateEdit dateIsEditable
+setEditable DateComponent{dateEdit} editable =
+  QAbstractSpinBox.setReadOnly dateEdit $ not editable
