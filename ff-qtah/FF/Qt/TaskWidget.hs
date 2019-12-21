@@ -68,7 +68,6 @@ new storage = do
   QScrollArea.setWidget super frame
 
   label <- QLabel.new
-  QObject.setObjectName label "TaskWidget.label : QLabel"
   QLabel.setAlignment label AlignTop
   QLabel.setWordWrap  label True
 
