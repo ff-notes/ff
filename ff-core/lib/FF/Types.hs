@@ -138,23 +138,18 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Note
     #haskell {field_prefix "note_"}
-    status  NoteStatus        #ron{merge LWW}
+    status  NoteStatus                  #ron{merge LWW}
     text    RgaString
-    start   Day               #ron{merge LWW}
-    end     Day               #ron{merge LWW}
-    tags    (ObjectRef Tag)   #ron{merge set}
+    start   Day                         #ron{merge LWW}
+    end     Day                         #ron{merge LWW}
+    tags    (ObjectRef Tag)             #ron{merge set}
     track   Track
-    links   (ObjectRef Link)  #ron{merge set})
+    links   [LinkType (ObjectRef Link)] #ron{merge set})
 
   (enum LinkType
     SubNote ; a note (target) is a part of another note (source),
             ; e. g. a subtask
     )
-
-  (struct_set Link
-    #haskell {field_prefix "link_"}
-    target  (ObjectRef Note)  #ron{merge LWW}
-    type    LinkType          #ron{merge LWW})
 |]
 
 deriving instance Eq Contact
