@@ -9,6 +9,7 @@ and this project adheres to
 ### Added
 - Ability to use shell command as editor
 - GUI client based on Qtah
+- `LinkType` -- type of links between notes
 
 ### Removed
 - GUI client based on inline-c access to Qt
