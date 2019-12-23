@@ -146,9 +146,15 @@ instance ReplicatedAsPayload NoteStatus where
     track   Track
     links   (ObjectRef Link)  #ron{merge set})
 
+  (enum LinkType
+    SubNote ; a note (target) is a part of another note (source),
+            ; e. g. a subtask
+    )
+
   (struct_set Link
     #haskell {field_prefix "link_"}
-    target  (ObjectRef Note)  #ron{merge LWW})
+    target  (ObjectRef Note)  #ron{merge LWW}
+    type    LinkType          #ron{merge LWW})
 |]
 
 deriving instance Eq Contact

@@ -21,6 +21,7 @@ import FF (load, viewNote)
 import FF.Types
   ( Entity (Entity, entityVal),
     Link,
+    LinkType,
     Note,
     NoteId,
     NoteStatus,
@@ -43,6 +44,8 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Golden (goldenVsFileDiff)
 
 deriveToJSON defaultOptions ''Link
+
+deriveToJSON defaultOptions ''LinkType
 
 deriveToJSON defaultOptions ''Note
 
