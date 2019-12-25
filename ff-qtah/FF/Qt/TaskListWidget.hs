@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import           Data.Time (getCurrentTime, utctDay)
 import           Foreign (castPtr)
-import           Foreign.Hoppy.Runtime (CppPtr, nullptr, toGc, toPtr,
-                                        touchCppPtr, withCppPtr)
+import           Foreign.Hoppy.Runtime (CppPtr, fromCppEnum, nullptr, toGc,
+                                        toPtr, touchCppPtr, withCppPtr)
 import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
                                                 toQObject, toQObjectConst)
 import           Graphics.UI.Qtah.Gui.QFont (QFont)
@@ -119,15 +119,19 @@ fieldsToStrings f = map f [minBound .. maxBound]
 data ItemType = ModeGroup | Task
 
 instance Enum ItemType where
-  toEnum i = case i - fromEnum QTreeWidgetItem.UserType of
+  toEnum i = case i - userType of
     0 -> ModeGroup
     1 -> Task
     _ -> error $ "toEnum @ItemType " <> show i
   fromEnum t =
-    fromEnum QTreeWidgetItem.UserType
+    userType
     + case t of
         ModeGroup -> 0
         Task      -> 1
+
+-- | Int value of QTreeWidgetItem.UserType
+userType :: Int
+userType = fromIntegral $ fromCppEnum QTreeWidgetItem.UserType
 
 getId, getTitle :: QTreeWidgetItem -> IO String
 getId    item = QTreeWidgetItem.text item $ fromEnum IdField
