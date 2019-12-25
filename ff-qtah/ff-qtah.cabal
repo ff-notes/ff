@@ -15,7 +15,7 @@ executable ff-qtah
     bytestring,
     containers,
     hoppy-runtime,
-    qtah-qt5,
+    qtah,
     stm,
     text,
     time,
