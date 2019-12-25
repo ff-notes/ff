@@ -75,101 +75,47 @@ packages:
   original:
     hackage: binary-instances-1
 - completed:
-    subdir: generator
-    cabal-file:
-      size: 1572
-      sha256: a3133452c3948385920ccccd4c42c8c9336558029d78249dbdabd7f50d0b847d
-    name: hoppy-generator
-    version: 0.5.2
-    git: https://gitlab.com/khumba/hoppy.git
+    hackage: hoppy-generator-0.7.0@sha256:238b211170d45e84869f79f0b87571fc8ba331a5a843e22ecc96daa562d2d960,2136
     pantry-tree:
-      size: 1403
-      sha256: 3e4f5fc5549249439b6383ea5bfb7025b250f3c6ecd853ac8da0c297a1313707
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+      size: 2691
+      sha256: add8c38dc5a0ad6f3fd4fb94f4b0f3f633fd8d5059f802957803084f79ff46c0
   original:
-    subdir: generator
-    git: https://gitlab.com/khumba/hoppy.git
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+    hackage: hoppy-generator-0.7.0
 - completed:
-    subdir: runtime
-    cabal-file:
-      size: 1112
-      sha256: 3bfb035401a61f824d217d91f5db0a9f88cd2da8b3bed58fc4e4d0407688f484
-    name: hoppy-runtime
-    version: 0.5.1
-    git: https://gitlab.com/khumba/hoppy.git
+    hackage: hoppy-runtime-0.7.0@sha256:7e8ede0a5c9e18af38181dec8dafe50b2e8ab8309a7391710d2db3327bf4dbc1,1112
     pantry-tree:
-      size: 349
-      sha256: f6688904217301d271cb2f070f1cd46d19cb864eea6ec1fcf9a88ca7cfd87147
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+      size: 297
+      sha256: 07db6d391e445cfcb73c227e513b728d39852337b3d507d5c38c3b72dd6847df
   original:
-    subdir: runtime
-    git: https://gitlab.com/khumba/hoppy.git
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+    hackage: hoppy-runtime-0.7.0
 - completed:
-    subdir: std
-    cabal-file:
-      size: 1500
-      sha256: a6395cc46b53b0f1f594ca7fcf22288f47875cc23eac284d2650e242c61e8834
-    name: hoppy-std
-    version: 0.5.0
-    git: https://gitlab.com/khumba/hoppy.git
+    hackage: hoppy-std-0.7.0@sha256:ed484c2a3ce3ab3af26a09b60b8e23379b997cd892e71804ec9690896eecb7d1,1542
     pantry-tree:
-      size: 1535
-      sha256: 6ffaa4c5cecbb1af8f06770ef7e8c1571073b2171744dbf4fa97fa1409b68bb5
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+      size: 1567
+      sha256: c6f4e09992c8d0c75f1f30d5f0fea46538099c4d25bac0d7b430bde8efae2f96
   original:
-    subdir: std
-    git: https://gitlab.com/khumba/hoppy.git
-    commit: 45dded1e21c29409a09eb88ec92bd33b4f6ed0f3
+    hackage: hoppy-std-0.7.0
 - completed:
-    subdir: qtah
-    cabal-file:
-      size: 24815
-      sha256: d9d8beb13d4b4a37c15ff0e3a1af9c75e5fb6488e0edede9ec72ad8bdadb631e
-    name: qtah
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    hackage: qtah-cpp-qt5-0.6.0@sha256:c0bdd7ad10fb3692fe0d6e94f19b6a7972f819e92433520db1b853c594611ab6,1538
     pantry-tree:
-      size: 1064
-      sha256: 21320d1bd3adef1217b00628f83cf753653a42094d254999ae70421fb22a4598
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+      size: 1805
+      sha256: 9562f39ee97b81ff23cabf3bf41e8ae02789cddd0a57650b18d6d32cfe690ebf
   original:
-    subdir: qtah
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+    hackage: qtah-cpp-qt5-0.6.0
 - completed:
-    subdir: qtah-cpp
-    cabal-file:
-      size: 1658
-      sha256: e9d1343cb8bfec9538715f7c641be25eebfea1ced9ad8716b8102620bca95c39
-    name: qtah-cpp
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    hackage: qtah-generator-0.6.0@sha256:c8a6a2e0a1d66451f010182c65eedd64b52a624aceb33844b84a9d41f93c277b,15994
     pantry-tree:
-      size: 1853
-      sha256: 0bfa8708145403a29c1fb33723f297f3b040815676f326bae05487b1c0059bba
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+      size: 26748
+      sha256: 4971e8144b636aef281a64e9f7b5b9b6f016bbbd421418dca97c539055c9841d
   original:
-    subdir: qtah-cpp
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+    hackage: qtah-generator-0.6.0
 - completed:
-    subdir: qtah-generator
-    cabal-file:
-      size: 15835
-      sha256: 9b9d83c409e18284e8d89bf4e0cf6e1823ae4530501f44451f5f31c432c17d8d
-    name: qtah-generator
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    hackage: qtah-qt5-0.6.0@sha256:ca393a9174c702a78fbad2f89d69153360e892219f020fded416a323ede2874f,24811
     pantry-tree:
-      size: 26540
-      sha256: c291cf1946a1dcb761d80681b6cba06a375e203e495aaf1fdf92a25577143afd
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+      size: 42137
+      sha256: 63597263d5c1811b64a97a1997cf5e1d74b21c51b7ab48e82beecbf7b5f71436
   original:
-    subdir: qtah-generator
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 63db0e40c8d1509ac80f82b4bf8860225058a7b6
+    hackage: qtah-qt5-0.6.0
 snapshots:
 - completed:
     size: 524130
