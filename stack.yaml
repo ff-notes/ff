@@ -36,7 +36,7 @@ extra-deps:
   # - qtah-generator-0.6.0
   # - qtah-qt5-0.6.0
   - git: https://gitlab.com/cblp/qtah.git
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5  # 0.6.0 + fixes
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5  # 0.6.0 + fixes
     subdirs: [qtah, qtah-cpp, qtah-generator]
 
 docker:

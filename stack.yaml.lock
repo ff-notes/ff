@@ -106,11 +106,11 @@ packages:
     pantry-tree:
       size: 1134
       sha256: 009e211758aa5c143805bba1a683ccfc0939e821d71570b087963c6ede261975
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
   original:
     subdir: qtah
     git: https://gitlab.com/cblp/qtah.git
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
 - completed:
     subdir: qtah-cpp
     cabal-file:
@@ -122,11 +122,11 @@ packages:
     pantry-tree:
       size: 1853
       sha256: 9212415fb03c0b7f44200dd4e9e56d7d5ac64abc34c9a5baa97783fbe977c4ef
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
   original:
     subdir: qtah-cpp
     git: https://gitlab.com/cblp/qtah.git
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
 - completed:
     subdir: qtah-generator
     cabal-file:
@@ -137,12 +137,12 @@ packages:
     git: https://gitlab.com/cblp/qtah.git
     pantry-tree:
       size: 26701
-      sha256: 7a4f73374970298d502e4f7eff5b8e137ba12685e24aab8039cdb74edc1fc1dd
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+      sha256: 44787d3fa5f1917f9dc6b1096a13f236bf6dd22a8fbe32748e1b6500735cfe00
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
   original:
     subdir: qtah-generator
     git: https://gitlab.com/cblp/qtah.git
-    commit: 381d1d34c44c6a02608896aac1c355bd083c4af5
+    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
 snapshots:
 - completed:
     size: 524130
