@@ -103,48 +103,48 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Contact
     #haskell {field_prefix "contact_"}
-    status  Status  #ron{merge LWW}
-    name    RgaString)
+    (status lww     Status)
+    (name   monoid  RgaString))
 
   ; TODO(2019-08-08, #163, cblp) remove a year after release of Track(3)
   ; ff 0.12 is released on 2019-08-14
   (struct_lww TrackV2
     #haskell {field_prefix "trackV2_"}
-    provider    String
-    source      String
-    externalId  String
-    url         String)
+    (provider   String)
+    (source     String)
+    (externalId String)
+    (url        String))
 
   (struct_set Track
     #haskell {field_prefix "track_"}
-    provider    String  #ron{merge LWW}
-    source      String  #ron{merge LWW}
-    externalId  String  #ron{merge LWW}
-    url         String  #ron{merge LWW})
+    (provider   lww String)
+    (source     lww String)
+    (externalId lww String)
+    (url        lww String))
 
   (struct_set Tag
     #haskell {field_prefix "tag_"}
-    text String #ron{merge LWW})
+    (text lww String))
 
   ; TODO(2019-08-08, #163, cblp) remove a year after release of Note(3)
   ; ff 0.12 is released on 2019-08-14
   (struct_lww NoteV2
     #haskell {field_prefix "noteV2_"}
-    status  NoteStatus
-    text    RgaString
-    start   Day
-    end     Day
-    track   TrackV2)
+    (status NoteStatus)
+    (text   RgaString)
+    (start  Day)
+    (end    Day)
+    (track  TrackV2))
 
   (struct_set Note
     #haskell {field_prefix "note_"}
-    status  NoteStatus        #ron{merge LWW}
-    text    RgaString
-    start   Day               #ron{merge LWW}
-    end     Day               #ron{merge LWW}
-    tags    (ObjectRef Tag)   #ron{merge set}
-    track   Track
-    links   (ObjectRef Link)  #ron{merge set})
+    (status lww     NoteStatus)
+    (text   monoid  RgaString)
+    (start  lww     Day)
+    (end    lww     Day)
+    (tags   set     (ObjectRef Tag))
+    (track  monoid  Track)
+    (links  set     (ObjectRef Link)))
 
   (enum LinkType
     SubNote ; a note (target) is a part of another note (source),
@@ -153,8 +153,8 @@ instance ReplicatedAsPayload NoteStatus where
 
   (struct_set Link
     #haskell {field_prefix "link_"}
-    target  (ObjectRef Note)  #ron{merge LWW}
-    type    LinkType          #ron{merge LWW})
+    (target lww (ObjectRef Note))
+    (type   lww LinkType))
 |]
 
 deriving instance Eq Contact
