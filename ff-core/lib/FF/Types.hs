@@ -144,7 +144,7 @@ instance ReplicatedAsPayload NoteStatus where
     (end    lww     Day)
     (tags   set     (ObjectRef Tag))
     (track  monoid  Track)
-    (links  set     (ObjectRef Link)))
+    (links  set     Link))
 
   (enum LinkType
     SubNote ; a note (target) is a part of another note (source),
@@ -158,31 +158,28 @@ instance ReplicatedAsPayload NoteStatus where
 |]
 
 deriving instance Eq Contact
-
 deriving instance Show Contact
 
-deriving instance Eq Note
+deriving instance Eq Link
+deriving instance Show Link
 
+deriving instance Eq LinkType
+deriving instance Show LinkType
+
+deriving instance Eq Note
 deriving instance Show Note
 
 deriving instance Bounded Status
-
 deriving instance Enum Status
-
 deriving instance Eq Status
-
 deriving instance Show Status
 
 deriving instance Eq Track
-
 deriving instance Generic Track
-
 deriving instance Hashable Track
-
 deriving instance Show Track
 
 deriving instance Eq Tag
-
 deriving instance Show Tag
 
 type NoteId = DocId Note
