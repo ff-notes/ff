@@ -1,4 +1,4 @@
-resolver: lts-14.10
+resolver: lts-14.20
 
 packages:
   - ff
@@ -9,35 +9,32 @@ packages:
 
 extra-deps:
   # ff-core:
-  - crdt-10.4
-  - github-0.23
-  - ron-0.10
-  - ron-rdt-0.10
-  - ron-schema-0.9
-  - ron-storage-0.11
-  # - {git: https://github.com/ff-notes/ron.git, commit:, subdirs: []}
-  - shellwords-0.1.2.2
+    - crdt-10.5
+    - github-0.24
+    - ron-0.10
+    - ron-rdt-0.10
+    - ron-schema-0.9.1
+    - ron-storage-0.11
+    # - {git: https://github.com/ff-notes/ron.git, commit:, subdirs: []}
+    - shellwords-0.1.2.2
 
   # ff-gtk:
-  - gi-gtk-declarative-0.6.0
-  - gi-gtk-declarative-app-simple-0.6.0
+    - gi-gtk-declarative-0.6.3
+    - gi-gtk-declarative-app-simple-0.6.3
 
   # github:
-  - binary-instances-1
+    - binary-instances-1
 
   # ff-qtah:
-  - hoppy-generator-0.7.0
-  - hoppy-runtime-0.7.0
-  - hoppy-std-0.7.0
-  # - git: https://gitlab.com/khumba/hoppy.git
-  #   commit: _
-  #   subdirs: [generator, runtime, std]
-  # - qtah-cpp-qt5-0.6.0
-  # - qtah-generator-0.6.0
-  # - qtah-qt5-0.6.0
-  - git: https://gitlab.com/cblp/qtah.git
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5  # 0.6.0 + fixes
-    subdirs: [qtah, qtah-cpp, qtah-generator]
+    - hoppy-generator-0.7.0
+    - hoppy-runtime-0.7.0
+    - hoppy-std-0.7.0
+    # - qtah-cpp-qt5-0.6.1
+    # - qtah-generator-0.6.1
+    # - qtah-qt5-0.6.1
+    - git: https://gitlab.com/khumba/qtah.git
+      commit: 0b952b894d20e4cf602ad4423f66f8b63f684970  # 0.6.1-unreleased
+      subdirs: [qtah, qtah-cpp, qtah-generator]
 
 docker:
   enable: false

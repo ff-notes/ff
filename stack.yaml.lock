@@ -5,19 +5,19 @@
 
 packages:
 - completed:
-    hackage: crdt-10.4@sha256:d2d76c051bd12333acac5090063681c0e0c4a3fc88e3adabd156546bb70d0882,2148
+    hackage: crdt-10.5@sha256:e0f018a7dd046f3d66e5affbafb84f7b4d16d9b63e193f3f7ffb3572a7468988,2134
     pantry-tree:
       size: 1500
-      sha256: 15ef7a8abc908479e20561f4ddc2c4c2ae4a252d01832d17f149008288aef3ae
+      sha256: 182f4cf67ae70feb9bb5cd44834e57dc8bb519d3d0cb5c06862733f482ce61a2
   original:
-    hackage: crdt-10.4
+    hackage: crdt-10.5
 - completed:
-    hackage: github-0.23@sha256:07671c92da7142668ecdeaa5669ddda629ae85f25acd2ecadd49f9a119a5eac6,6965
+    hackage: github-0.24@sha256:4bf5a06289d36f78bf347b6a4f9906f659be7335cde78386a6c95568714a730b,6955
     pantry-tree:
-      size: 7113
-      sha256: 90337bce40541903a3f151210499e3fbfa3e9fafbba4b1067641698cc6ee3921
+      size: 7105
+      sha256: e0f84d7a3cdd76c6bd5395c8c72d24a1dda9616f857291820b08947c8290f042
   original:
-    hackage: github-0.23
+    hackage: github-0.24
 - completed:
     hackage: ron-0.10@sha256:af4f8a018a704f15e4304ad4a028618f0a5a017148b95322cb3bd34c1379c7b0,1912
     pantry-tree:
@@ -33,12 +33,12 @@ packages:
   original:
     hackage: ron-rdt-0.10
 - completed:
-    hackage: ron-schema-0.9@sha256:86cf2e3f73b76a97034b8ddd21122a4410b91b7c45c7a3f4e3a401b8eef384ea,1292
+    hackage: ron-schema-0.9.1@sha256:43845da1fc66ac69079685565e40f32e979d933fbcc16f2c762b9dcc4f5d449a,1315
     pantry-tree:
       size: 542
-      sha256: 93829a222d5f094c1d282d7e6be59c7ea7726e2fcfec87a70a916b52ec92e757
+      sha256: fd485c063ac75e1e19c4714ad93fec75c95419c05605a2701da0092d682c8a15
   original:
-    hackage: ron-schema-0.9
+    hackage: ron-schema-0.9.1
 - completed:
     hackage: ron-storage-0.11@sha256:463e29e339ef88096248ce58f3c99602ad996b2e706c64092abc147f76d30c2d,1310
     pantry-tree:
@@ -54,19 +54,19 @@ packages:
   original:
     hackage: shellwords-0.1.2.2
 - completed:
-    hackage: gi-gtk-declarative-0.6.0@sha256:e237751dccb85367891b4238d0a0f9463a1851c658e7da2282e3b11571445a04,3965
+    hackage: gi-gtk-declarative-0.6.3@sha256:8db2e8a9fa20673406e4500e5040d4384eb76e362d45ffe69116575ae03ff1e3,4411
     pantry-tree:
-      size: 1995
-      sha256: 6c3d37f4140fe896239859c436b4b505af6726ae3c0879fb88cdf37154a58978
+      size: 2393
+      sha256: 5871aca72517a320f9ab3b7b122daa156dc18467a1b9d65fd2b2c45ec675ed09
   original:
-    hackage: gi-gtk-declarative-0.6.0
+    hackage: gi-gtk-declarative-0.6.3
 - completed:
-    hackage: gi-gtk-declarative-app-simple-0.6.0@sha256:96bbc8a584fcfc183b099c3393e7f81b78c35d7b9e79b2eae340fa2202f59bf7,1818
+    hackage: gi-gtk-declarative-app-simple-0.6.3@sha256:2b201371acd292ef8d980be02809787293f7c30e505c84910b57e307af999cc9,1818
     pantry-tree:
       size: 257
-      sha256: ec34806d2401cae3476301b02d549328edc101cf38ddd4c0171e287e08e50608
+      sha256: a0d8f5953711f24c26237be319ddd4107e00291c117e038bd693faeffbb032f7
   original:
-    hackage: gi-gtk-declarative-app-simple-0.6.0
+    hackage: gi-gtk-declarative-app-simple-0.6.3
 - completed:
     hackage: binary-instances-1@sha256:b17565598b8df3241f9b46fa8e3a3368ecc8e3f2eb175d7c28f319042a6f5c79,2613
     pantry-tree:
@@ -99,53 +99,53 @@ packages:
     subdir: qtah
     cabal-file:
       size: 24923
-      sha256: b193c325296974e6a44af6bc103594570953e6610d26c98a041a7155b70879c1
+      sha256: 8a9a536479c13c027f7814f795c7bf474dfb45266421546fa1d920991fd87156
     name: qtah
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    version: 0.6.1
+    git: https://gitlab.com/khumba/qtah.git
     pantry-tree:
       size: 1134
-      sha256: 009e211758aa5c143805bba1a683ccfc0939e821d71570b087963c6ede261975
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+      sha256: 2ea574efa62c7120b59ff485bf1211e8bdd0f16babb338a6f607892e5dbef51a
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
   original:
     subdir: qtah
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
 - completed:
     subdir: qtah-cpp
     cabal-file:
       size: 1658
-      sha256: e9d1343cb8bfec9538715f7c641be25eebfea1ced9ad8716b8102620bca95c39
+      sha256: e383a3b81924c78f9a097b7fe2a009c4936d960c5524d4bc4706a105cbf1ecce
     name: qtah-cpp
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    version: 0.6.1
+    git: https://gitlab.com/khumba/qtah.git
     pantry-tree:
       size: 1853
-      sha256: 9212415fb03c0b7f44200dd4e9e56d7d5ac64abc34c9a5baa97783fbe977c4ef
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+      sha256: 513e0e34484b40de8f0a1e63b9aad2116d8d209c6ac5738a1b47fdedb6df077a
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
   original:
     subdir: qtah-cpp
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
 - completed:
     subdir: qtah-generator
     cabal-file:
       size: 15994
-      sha256: c8a6a2e0a1d66451f010182c65eedd64b52a624aceb33844b84a9d41f93c277b
+      sha256: 1f1f3eb1f197ea21059e19c12bb5221893214be3057fac218a0810dd9929cadb
     name: qtah-generator
-    version: 0.6.0
-    git: https://gitlab.com/cblp/qtah.git
+    version: 0.6.1
+    git: https://gitlab.com/khumba/qtah.git
     pantry-tree:
       size: 26701
-      sha256: 44787d3fa5f1917f9dc6b1096a13f236bf6dd22a8fbe32748e1b6500735cfe00
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+      sha256: 13db61629efdc5bf6ba77ca70ccad9598388a0e4a1618fb34d945dc6145ec8a3
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
   original:
     subdir: qtah-generator
-    git: https://gitlab.com/cblp/qtah.git
-    commit: 4ad4c8194c034c1d949ad16207a8cdabed7848e5
+    git: https://gitlab.com/khumba/qtah.git
+    commit: 0b952b894d20e4cf602ad4423f66f8b63f684970
 snapshots:
 - completed:
-    size: 524130
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/10.yaml
-    sha256: 04841e0397d7ce6364f19359fce89aa45ca8684609d665845db80d398002baa9
-  original: lts-14.10
+    size: 524154
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/14/20.yaml
+    sha256: 2f5099f69ddb6abfe64400fe1e6a604e8e628f55e6837211cd70a81eb0a8fa4d
+  original: lts-14.20
