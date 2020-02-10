@@ -115,18 +115,18 @@ update st = \case
 
 main :: IO ()
 main = do
-  path <- getDataDirOrFail
-  storage <- StorageFS.newHandle path
-  void
-    $ run App
-      { view,
-        update,
-        initialState = State {tasks = []},
-        inputs =
-          [ initiallyLoadActiveTasks storage
-            -- TODO , listenToChanges
-          ]
-      }
+    path <- getDataDirOrFail
+    storage <- StorageFS.newHandle path
+    void $
+        run App{
+                view,
+                update,
+                initialState = State {tasks = []},
+                inputs = [
+                    initiallyLoadActiveTasks storage
+                    -- TODO , listenToChanges
+                    ]
+                }
 
 initiallyLoadActiveTasks :: StorageFS.Handle -> Producer Event IO ()
 initiallyLoadActiveTasks storage = do
