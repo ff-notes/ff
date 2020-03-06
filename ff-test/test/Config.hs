@@ -13,7 +13,7 @@ import           Test.Tasty (TestTree)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (testGroupGenerator)
 
-import           FF.Config (Config (Config, dataDir, ui),
+import           FF.Config (Config (Config, dataDir, externalEditor, ui),
                             ConfigUI (ConfigUI, shuffle), emptyConfig,
                             loadConfig, saveConfig)
 
@@ -37,10 +37,11 @@ prop_loadConfig = property $ do
 genConfig :: Gen Config
 genConfig = do
     dataDir <- Gen.maybe $ Gen.string (Range.linear 1 100) Gen.lower
+    externalEditor <- Gen.maybe $ Gen.string (Range.linear 1 100) Gen.lower
     ui <- do
         shuffle <- Gen.bool
         pure ConfigUI{shuffle}
-    pure Config{dataDir, ui}
+    pure Config{dataDir, externalEditor, ui}
 
 withTempHome :: IO a -> IO a
 withTempHome action =

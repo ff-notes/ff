@@ -17,6 +17,7 @@ import           System.FilePath (FilePath, takeDirectory, (</>))
 
 data Config = Config
     { dataDir :: Maybe FilePath
+    , externalEditor :: Maybe FilePath
     , ui :: ConfigUI
     }
     deriving (Eq, Show)
@@ -27,7 +28,7 @@ newtype ConfigUI = ConfigUI
     deriving (Eq, Show)
 
 emptyConfig :: Config
-emptyConfig = Config {dataDir = Nothing, ui = defaultConfigUI}
+emptyConfig = Config {dataDir = Nothing, externalEditor = Nothing, ui = defaultConfigUI}
 
 defaultConfigUI :: ConfigUI
 defaultConfigUI = ConfigUI {shuffle = False}
@@ -35,6 +36,7 @@ defaultConfigUI = ConfigUI {shuffle = False}
 instance FromJSON Config where
     parseJSON = withObject "Config" $ \obj -> do
         dataDir <- obj .:? "dataDir"
+        externalEditor <- obj .:? "externalEditor"
         ui      <- obj .:? "ui" .!= defaultConfigUI
         pure Config{..}
 

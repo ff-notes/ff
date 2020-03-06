@@ -67,7 +67,7 @@ import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Encoding.Error as TextError
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
-import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
+import FF.Config (Config (Config), ConfigUI (ConfigUI), loadConfig, dataDir, externalEditor, shuffle)
 import FF.Options
   ( Assign (Clear, Set),
     Edit (..),
@@ -613,7 +613,8 @@ runExternalEditor :: Text -> IO Text
 runExternalEditor textOld = do
   editor :| editorArgs <-
     asum $
-      assertExecutableFromEnv "VISUAL"
+      assertExecutableFromConfig
+        : assertExecutableFromEnv "VISUAL"
         : assertExecutableFromEnv "EDITOR"
         : map assertExecutable ["editor", "micro", "nano", "vi", "vim"]
   withSystemTempFile "ff.txt" $ \file fileH -> do
@@ -628,6 +629,11 @@ runExternalEditor textOld = do
     assertExecutable prog = do
       Just _ <- findExecutable prog
       pure $ prog :| []
+    assertExecutableFromConfig = do
+      cfg <- loadConfig
+      case externalEditor cfg of
+        Nothing -> empty
+        Just editor -> assertExecutable editor
     assertExecutableFromEnv var = do
       editorCmd <- getEnv var
       let eEditor = do

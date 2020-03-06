@@ -114,7 +114,7 @@ data Track
 
 data Contact = Add Text | Delete ContactId
 
-data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
+data Config = ConfigDataDir (Maybe DataDir) | ConfigExternalEditor (Maybe FilePath) | ConfigUI (Maybe Shuffle)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
@@ -352,7 +352,7 @@ parser h =
           <> help "Path to the data dir"
     cmdConfig =
       fmap CmdConfig . optional . subparser $
-        command "dataDir" iDataDir <> command "ui" iUi
+        command "dataDir" iDataDir <> command "externalEditor" iExternalEditor <> command "ui" iUi
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
@@ -363,6 +363,8 @@ parser h =
               flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
+        iExternalEditor = i pExternalEditor "the external editor to use"
+        pExternalEditor = ConfigExternalEditor <$> optional (strArgument $ metavar "PATH" <> help "path")
         iUi = i ui "UI tweaks"
         ui =
           fmap ConfigUI . optional $
