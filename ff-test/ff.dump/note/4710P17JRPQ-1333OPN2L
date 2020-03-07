@@ -15,7 +15,6 @@ note:
     tag: TaskStatus
     contents: Active
   note_tags:
-  - B/7euI15EDaS+00P01fLmVG
   - B/7euI15DBES+00P01fLmVG
   - B/7euI15DnJz+00P01fLmVG
   - B/7euI15DGwV+00P01fLmVG
@@ -24,7 +23,6 @@ note:
 tags:
 - component_CLI
 - component_Core
-- component_ff-qt
 - component_ff-qtah
 - level_Intermediate
 - type_Enhancement

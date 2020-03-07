@@ -12,13 +12,11 @@ note:
     tag: TaskStatus
     contents: Archived
   note_tags:
-  - B/7euI15EDaS+00P01fLmVG
   - B/7euI15DBES+00P01fLmVG
   - B/7euI15DnJz+00P01fLmVG
   - B/7f8c6IMneF+00P01fLmVG
   - B/7euI15EbNZ+00P01fLmVG
 tags:
-- component_ff-qt
 - component_ff-qtah
 - level_Intermediate
 - resolution_Wontfix

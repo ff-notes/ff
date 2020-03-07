@@ -10,7 +10,7 @@ note:
     connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
 
 
-    https://github.com/ff-notes/ff/blob/5c3247857d0a5dde29c9c8ee2a7d3a71ffa8ee8c/ff-qtah/FF/Qt/MainWindow.hs#L112-L115
+    https://github.com/ff-notes/ff/blob/90c02766fd7bfaa4e87ab6bcbbb4b849221c35a0/ff-qtah/FF/Qt/MainWindow.hs#L123-L126
 
     * Found on master
 
