@@ -28,16 +28,17 @@ newtype ConfigUI = ConfigUI
     deriving (Eq, Show)
 
 emptyConfig :: Config
-emptyConfig = Config {dataDir = Nothing, externalEditor = Nothing, ui = defaultConfigUI}
+emptyConfig =
+    Config{dataDir = Nothing, externalEditor = Nothing, ui = defaultConfigUI}
 
 defaultConfigUI :: ConfigUI
 defaultConfigUI = ConfigUI {shuffle = False}
 
 instance FromJSON Config where
     parseJSON = withObject "Config" $ \obj -> do
-        dataDir <- obj .:? "dataDir"
+        dataDir        <- obj .:? "dataDir"
         externalEditor <- obj .:? "externalEditor"
-        ui      <- obj .:? "ui" .!= defaultConfigUI
+        ui             <- obj .:? "ui" .!= defaultConfigUI
         pure Config{..}
 
 deriveJSON   defaultOptions ''ConfigUI
