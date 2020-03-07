@@ -40,7 +40,5 @@ docker:
   enable: false
   image: ff-ubuntu-16.04
 
-# flags: {qtah-cpp: {qt5: true}}
-
 nix:
   packages: [zlib qt5.qtbase gtk3 gobject-introspection]
