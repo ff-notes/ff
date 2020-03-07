@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.15] - 2020-03-07
 ### Added
 - Ability to use shell command as editor
 - GUI client based on Qtah
