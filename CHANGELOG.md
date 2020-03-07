@@ -10,6 +10,8 @@ and this project adheres to
 - Ability to use shell command as editor
 - GUI client based on Qtah
 - `LinkType` -- type of links between notes
+- Config parameter to set external editor
+- `ff config externalEditor` command to set config parameter
 
 ### Removed
 - GUI client based on inline-c access to Qt
