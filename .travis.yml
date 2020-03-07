@@ -1,3 +1,4 @@
+os: linux
 dist: bionic
 
 branches:
@@ -35,7 +36,7 @@ before_install:
     fi
   - export STACK="stack --no-terminal --install-ghc"
 
-matrix:
+jobs:
   include:
     - name: build and test
       install:
