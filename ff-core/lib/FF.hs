@@ -631,9 +631,7 @@ runExternalEditor textOld = do
       pure $ prog :| []
     assertExecutableFromConfig = do
       cfg <- loadConfig
-      case externalEditor cfg of
-        Nothing -> empty
-        Just editor -> assertExecutable editor
+      maybe empty assertExecutable $ externalEditor cfg
     assertExecutableFromEnv var = do
       editorCmd <- getEnv var
       let eEditor = do
