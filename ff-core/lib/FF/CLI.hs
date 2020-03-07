@@ -123,7 +123,7 @@ cli version = do
       Just h -> runStorage h $ runCmdAction ui action brief dataPath
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
-runCmdConfig cfg@Config {dataDir, ui} = \case
+runCmdConfig cfg@Config {dataDir, externalEditor, ui} = \case
   Nothing -> printConfig cfg
   Just (Options.ConfigDataDir mDir) -> do
     dir <-
@@ -138,6 +138,12 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
               fail "Cant't detect Yandex.Disk directory"
             ]
     printConfig dir
+  Just (Options.ConfigExternalEditor mPath) -> do
+    path <-
+      case mPath of
+        Nothing -> pure externalEditor
+        Just path -> saveExternalEditor path
+    printConfig path
   Just (Options.ConfigUI mShuffle) -> do
     ui' <-
       case mShuffle of
@@ -150,6 +156,7 @@ runCmdConfig cfg@Config {dataDir, ui} = \case
       guard =<< doesDirectoryExist baseDir
       saveDataDir $ baseDir </> "Apps" </> appName
     saveDataDir dir = saveConfig cfg {dataDir = Just dir} $> Just dir
+    saveExternalEditor path = saveConfig cfg {externalEditor = Just path} $> Just path
     saveShuffle shuffle' = saveConfig cfg {ui = ui'} $> ui'
       where
         ui' = ConfigUI {shuffle = shuffle'}

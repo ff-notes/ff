@@ -18,6 +18,7 @@ import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
 config :: Gen Config
 config = do
     dataDir <- maybe $ string (Range.linear 1 100) unicode
+    externalEditor <- maybe $ string (Range.linear 1 100) unicode
     ui <- configUI
     pure Config{..}
 
