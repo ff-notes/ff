@@ -4,18 +4,16 @@
 
 module Config (configTests) where
 
-import           Hedgehog (Gen, Property, evalIO, forAll, property, (===))
-import qualified Hedgehog.Gen as Gen
-import qualified Hedgehog.Range as Range
+import           Hedgehog (Property, evalIO, forAll, property, (===))
 import           System.Environment (setEnv)
 import           System.IO.Temp (withSystemTempDirectory)
 import           Test.Tasty (TestTree)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (testGroupGenerator)
 
-import           FF.Config (Config (Config, dataDir, externalEditor, ui),
-                            ConfigUI (ConfigUI, shuffle), emptyConfig,
-                            loadConfig, saveConfig)
+import           FF.Config (emptyConfig, loadConfig, saveConfig)
+
+import qualified Gen
 
 configTests :: TestTree
 configTests = $(testGroupGenerator)
@@ -27,21 +25,12 @@ prop_loadNoConfig = property $ do
 
 prop_loadConfig :: Property
 prop_loadConfig = property $ do
-    config <- forAll genConfig
+    config <- forAll Gen.config
     loadedconf <-
         evalIO $ withTempHome $ do
             saveConfig config
             loadConfig
     config === loadedconf
-
-genConfig :: Gen Config
-genConfig = do
-    dataDir <- Gen.maybe $ Gen.string (Range.linear 1 100) Gen.lower
-    externalEditor <- Gen.maybe $ Gen.string (Range.linear 1 100) Gen.lower
-    ui <- do
-        shuffle <- Gen.bool
-        pure ConfigUI{shuffle}
-    pure Config{dataDir, externalEditor, ui}
 
 withTempHome :: IO a -> IO a
 withTempHome action =
