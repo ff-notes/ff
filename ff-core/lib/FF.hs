@@ -42,116 +42,70 @@ module FF
   )
 where
 
-import Control.Applicative ((<|>), empty)
-import Control.Monad (unless, void, when)
-import Control.Monad.Except (throwError)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State.Strict (MonadState, evalState, state)
+import           Control.Applicative (empty, (<|>))
+import           Control.Monad (unless, void, when)
+import           Control.Monad.Except (throwError)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Control.Monad.State.Strict (MonadState, evalState, state)
 import qualified Data.ByteString as BS
-import Data.Foldable (asum, for_, toList, traverse_)
-import Data.Functor (($>))
-import Data.HashMap.Strict (HashMap)
+import           Data.Foldable (asum, for_, toList, traverse_)
+import           Data.Functor (($>))
+import           Data.Hashable (Hashable)
+import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
-import Data.HashSet (HashSet)
+import           Data.HashSet (HashSet)
 import qualified Data.HashSet as HashSet
-import Data.Hashable (Hashable)
-import Data.List (genericLength, sortOn)
-import Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
+import           Data.List (genericLength, sortOn)
+import           Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import           Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import           Data.Set (Set, disjoint, isSubsetOf, (\\))
 import qualified Data.Set as Set
-import Data.Set (Set, (\\), disjoint, isSubsetOf)
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import qualified Data.Text.Encoding.Error as TextError
-import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
-import Data.Traversable (for)
-import FF.Config (Config (Config), ConfigUI (ConfigUI), loadConfig, dataDir, externalEditor, shuffle)
-import FF.Options
-  ( Assign (Clear, Set),
-    Edit (..),
-    New (..),
-    Tags (..),
-    assignToMaybe,
-  )
-import FF.Types
-  ( Contact (..),
-    ContactId,
-    ContactSample,
-    Entity (..),
-    EntityDoc,
-    EntityView,
-    Limit,
-    ModeMap,
-    Note (..),
-    NoteId,
-    NoteSample,
-    NoteStatus (..),
-    Sample (..),
-    Status (..),
-    Tag (..),
-    Track (..),
-    View (..),
-    contact_name_clear,
-    contact_status_clear,
-    loadNote,
-    note_end_clear,
-    note_end_read,
-    note_end_set,
-    note_start_clear,
-    note_start_read,
-    note_start_set,
-    note_status_clear,
-    note_status_read,
-    note_status_set,
-    note_tags_add,
-    note_tags_clear,
-    note_tags_read,
-    note_tags_remove,
-    note_text_clear,
-    note_text_zoom,
-    note_track_read,
-    taskMode,
-  )
-import RON.Data
-  ( MonadObjectState,
-    ObjectStateT,
-    evalObjectState,
-    newObjectFrame,
-    readObject,
-  )
-import RON.Data.RGA (RGA (RGA))
+import           Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay,
+                            utctDay)
+import           Data.Traversable (for)
+import           RON.Data (MonadObjectState, ObjectStateT, evalObjectState,
+                           newObjectFrame, readObject)
+import           RON.Data.RGA (RGA (RGA))
 import qualified RON.Data.RGA as RGA
-import RON.Error (MonadE, throwErrorText)
-import RON.Event (ReplicaClock)
-import RON.Storage
-  ( Collection,
-    DocId,
-    createDocument,
-    decodeDocId,
-    docIdFromUuid,
-    loadDocument,
-    modify,
-  )
-import RON.Storage.Backend
-  ( Document (Document, objectFrame),
-    MonadStorage (getDocuments),
-  )
-import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
+import           RON.Error (MonadE, throwErrorText)
+import           RON.Event (ReplicaClock)
+import           RON.Storage (Collection, DocId, createDocument, decodeDocId,
+                              docIdFromUuid, loadDocument, modify)
+import           RON.Storage.Backend (Document (Document, objectFrame),
+                                      MonadStorage (getDocuments))
+import           RON.Types (ObjectFrame (ObjectFrame, uuid),
+                            ObjectRef (ObjectRef))
 import qualified ShellWords
-import System.Directory
-  ( doesDirectoryExist,
-    findExecutable,
-    getCurrentDirectory,
-  )
-import System.Environment (getEnv)
-import System.Exit (ExitCode (..))
-import System.FilePath ((</>), normalise, splitDirectories)
-import System.IO (hClose, hPutStrLn, stderr)
-import System.IO.Temp (withSystemTempFile)
-import System.Process.Typed (proc, runProcess)
-import System.Random (StdGen, mkStdGen, randoms, split)
+import           System.Directory (doesDirectoryExist, findExecutable,
+                                   getCurrentDirectory)
+import           System.Environment (getEnv)
+import           System.Exit (ExitCode (..))
+import           System.FilePath (normalise, splitDirectories, (</>))
+import           System.IO (hClose, hPutStrLn, stderr)
+import           System.IO.Temp (withSystemTempFile)
+import           System.Process.Typed (proc, runProcess)
+import           System.Random (StdGen, mkStdGen, randoms, split)
+
+import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
+                            externalEditor, loadConfig, shuffle)
+import           FF.Options (Assign (Clear, Set), Edit (..), New (..),
+                             Tags (..), assignToMaybe)
+import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
+                           EntityDoc, EntityView, Limit, ModeMap, Note (..),
+                           NoteId, NoteSample, NoteStatus (..), Sample (..),
+                           Status (..), Tag (..), Track (..), View (..),
+                           contact_name_clear, contact_status_clear, loadNote,
+                           note_end_clear, note_end_read, note_end_set,
+                           note_start_clear, note_start_read, note_start_set,
+                           note_status_clear, note_status_read, note_status_set,
+                           note_tags_add, note_tags_clear, note_tags_read,
+                           note_tags_remove, note_text_clear, note_text_zoom,
+                           note_track_read, taskMode)
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
