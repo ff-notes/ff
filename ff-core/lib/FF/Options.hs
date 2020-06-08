@@ -1,6 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -98,12 +100,12 @@ data CmdAction
   | CmdUpgrade
   | CmdWiki (Maybe Limit)
 
-data Options
-  = Options
-      { brief :: Bool,
-        customDir :: Maybe FilePath,
-        cmd :: Cmd
-      }
+data Options = Options
+  { brief     :: Bool
+  , customDir :: Maybe FilePath
+  , cmd       :: Cmd
+  , json      :: Bool
+  }
 
 data Track
   = Track
@@ -186,10 +188,12 @@ prefs =
 
 parser :: Maybe StorageFS.Handle -> Parser Options
 parser h =
-  Options
-    <$> briefOption
-    <*> customDirOption
-    <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
+  do
+    brief     <- briefOption
+    json      <- jsonOption
+    customDir <- customDirOption
+    cmd       <- version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
+    pure Options{..}
   where
     commands =
       mconcat
@@ -354,6 +358,7 @@ parser h =
           <> short 'C'
           <> metavar "DIRECTORY"
           <> help "Path to the data dir"
+    jsonOption = switch $ long "json" <> help "Use JSON for input/output"
     cmdConfig =
       fmap CmdConfig . optional . subparser $
             command "dataDir"        iDataDir
