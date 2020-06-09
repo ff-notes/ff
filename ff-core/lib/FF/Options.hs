@@ -27,56 +27,32 @@ module FF.Options
   )
 where
 
-import Control.Applicative ((<|>), many, optional)
-import Data.List.NonEmpty (NonEmpty, some1)
-import Data.Semigroup ((<>))
-import Data.Set (Set)
+import           Control.Applicative (many, optional, (<|>))
+import           Data.List.NonEmpty (NonEmpty, some1)
+import           Data.Semigroup ((<>))
+import           Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Text (Text)
-import Data.Time (Day)
-import FF.Types (ContactId, Limit, Note, NoteId, Status (Active, Archived))
-import qualified FF.Types
-import Options.Applicative
-  ( (<**>),
-    Completer,
-    InfoMod,
-    ParseError (ShowHelpText),
-    Parser,
-    ParserInfo,
-    ParserPrefs,
-    argument,
-    auto,
-    command,
-    completer,
-    customExecParser,
-    defaultPrefs,
-    flag,
-    flag',
-    footer,
-    fullDesc,
-    help,
-    helper,
-    info,
-    listIOCompleter,
-    long,
-    metavar,
-    option,
-    parserFailure,
-    prefDisambiguate,
-    prefMultiSuffix,
-    prefShowHelpOnError,
-    progDesc,
-    renderFailure,
-    short,
-    str,
-    strArgument,
-    strOption,
-    subparser,
-    switch,
-  )
-import RON.Storage.Backend (DocId (DocId), getDocuments)
-import RON.Storage.FS (Collection, runStorage)
+import           Data.Text (Text)
+import           Data.Time (Day)
+import           Options.Applicative (Completer, InfoMod,
+                                      ParseError (ShowHelpText), Parser,
+                                      ParserInfo, ParserPrefs, argument, auto,
+                                      command, completer, customExecParser,
+                                      defaultPrefs, flag, flag', footer,
+                                      fullDesc, help, helper, info,
+                                      listIOCompleter, long, metavar, option,
+                                      parserFailure, prefDisambiguate,
+                                      prefMultiSuffix, prefShowHelpOnError,
+                                      progDesc, renderFailure, short, str,
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
+import           RON.Storage.Backend (DocId (DocId), getDocuments)
+import           RON.Storage.FS (Collection, runStorage)
 import qualified RON.Storage.FS as StorageFS
+
+import           FF.Types (ContactId, Limit, Note, NoteId,
+                           Status (Active, Archived))
+import qualified FF.Types
 
 data Cmd
   = CmdConfig (Maybe Config)
