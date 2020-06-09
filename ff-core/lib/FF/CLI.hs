@@ -8,100 +8,56 @@
 
 module FF.CLI where
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (race)
-import Control.Monad (forever, guard, when)
-import Control.Monad.Except (runExceptT)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Foldable (asum, for_, toList)
-import Data.Functor (($>))
-import Data.Maybe (isNothing)
-import Data.Text (snoc)
-import Data.Text.IO (hPutStrLn)
-import Data.Text.Prettyprint.Doc
-  ( Doc,
-    PageWidth (AvailablePerLine),
-    defaultLayoutOptions,
-    layoutPageWidth,
-    layoutSmart,
-    pretty,
-    vsep,
-  )
-import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
-import Data.Time (Day)
-import Data.Traversable (for)
-import Data.Version (Version, showVersion)
-import Development.GitRev (gitDirty, gitHash)
-import FF
-  ( cmdDeleteContact,
-    cmdDeleteNote,
-    cmdDone,
-    cmdEdit,
-    cmdNewContact,
-    cmdNewNote,
-    cmdPostpone,
-    cmdSearch,
-    cmdUnarchive,
-    getContactSamples,
-    getDataDir,
-    getUtcToday,
-    loadAllNotes,
-    loadAllTagTexts,
-    noDataDirectoryMessage,
-    sponsors,
-    updateTrackedNotes,
-    viewNote,
-    viewTaskSamples,
-    viewWikiSamples,
-  )
-import FF.Config
-  ( Config (..),
-    ConfigUI (..),
-    appName,
-    loadConfig,
-    printConfig,
-    saveConfig,
-  )
-import FF.Github (getIssueViews, getOpenIssueSamples)
-import FF.Options
-  ( Agenda (..),
-    Cmd (..),
-    CmdAction (..),
-    Contact (..),
-    DataDir (..),
-    Options (..),
-    Search (..),
-    Shuffle (..),
-    Tags (Tags),
-    Track (..),
-    parseOptions,
-  )
+import           Control.Concurrent (threadDelay)
+import           Control.Concurrent.Async (race)
+import           Control.Monad (forever, guard, when)
+import           Control.Monad.Except (runExceptT)
+import           Control.Monad.IO.Class (MonadIO, liftIO)
+import           Data.Foldable (asum, for_, toList)
+import           Data.Functor (($>))
+import           Data.Maybe (isNothing)
+import           Data.Text (snoc)
+import           Data.Text.IO (hPutStrLn)
+import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
+                                            defaultLayoutOptions,
+                                            layoutPageWidth, layoutSmart,
+                                            pretty, vsep)
+import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
+                                                            renderStrict)
+import           Data.Time (Day)
+import           Data.Traversable (for)
+import           Data.Version (Version, showVersion)
+import           Development.GitRev (gitDirty, gitHash)
+import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
+                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
+                     cmdUnarchive, getContactSamples, getDataDir, getUtcToday,
+                     loadAllNotes, loadAllTagTexts, noDataDirectoryMessage,
+                     sponsors, updateTrackedNotes, viewNote, viewTaskSamples,
+                     viewWikiSamples)
+import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
+                            printConfig, saveConfig)
+import           FF.Github (getIssueViews, getOpenIssueSamples)
+import           FF.Options (Agenda (..), Cmd (..), CmdAction (..),
+                             Contact (..), DataDir (..), Options (..),
+                             Search (..), Shuffle (..), Tags (Tags), Track (..),
+                             parseOptions)
 import qualified FF.Options as Options
-import FF.Types (Status (Active), loadNote)
-import FF.UI
-  ( prettyContact,
-    prettyContactSample,
-    prettyNote,
-    prettyNoteList,
-    prettyPath,
-    prettyTagsList,
-    prettyTaskSections,
-    prettyTasksWikisContacts,
-    prettyWikiSample,
-    withHeader,
-    (<//>),
-  )
-import FF.Upgrade (upgradeDatabase)
-import RON.Storage.Backend (MonadStorage)
-import RON.Storage.FS (runStorage)
+import           FF.Types (Status (Active), loadNote)
+import           FF.UI (prettyContact, prettyContactSample, prettyNote,
+                        prettyNoteList, prettyPath, prettyTagsList,
+                        prettyTaskSections, prettyTasksWikisContacts,
+                        prettyWikiSample, withHeader, (<//>))
+import           FF.Upgrade (upgradeDatabase)
+import           RON.Storage.Backend (MonadStorage)
+import           RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 import qualified System.Console.Terminal.Size as Terminal
-import System.Directory (doesDirectoryExist, getHomeDirectory)
-import System.Environment (lookupEnv, setEnv)
-import System.Exit (exitFailure)
-import System.FilePath ((</>))
-import System.IO (hPutChar, hPutStr, stderr)
-import System.Pager (printOrPage)
+import           System.Directory (doesDirectoryExist, getHomeDirectory)
+import           System.Environment (lookupEnv, setEnv)
+import           System.Exit (exitFailure)
+import           System.FilePath ((</>))
+import           System.IO (hPutChar, hPutStr, stderr)
+import           System.Pager (printOrPage)
 
 cli :: Version -> IO ()
 cli version = do
