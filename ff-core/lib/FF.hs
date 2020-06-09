@@ -109,9 +109,9 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
-  Document {objectFrame} <- loadDocument docid
+  Document{objectFrame} <- loadDocument docid
   entityVal <- evalObjectState objectFrame readObject
-  pure Entity {entityId = docid, entityVal}
+  pure Entity{entityId = docid, entityVal}
 
 loadAll :: (Collection a, MonadStorage m) => m [EntityDoc a]
 loadAll = getDocuments >>= traverse load
@@ -121,8 +121,7 @@ loadAllNotes = getDocuments >>= traverse loadNote
 
 loadContacts :: MonadStorage m => Status -> m [EntityDoc Contact]
 loadContacts status =
-  filter ((== Just status) . contact_status . entityVal)
-    <$> loadAll
+  filter ((== Just status) . contact_status . entityVal) <$> loadAll
 
 -- | Load all tags as texts
 loadAllTagTexts :: MonadStorage m => m (Set Text)
@@ -135,23 +134,24 @@ loadTagRefsByText queryTags = do
   pure $
     HashSet.fromList
       [ docIdToRef entityId
-        | Entity {entityId, entityVal = Tag {tag_text = Just tag}} <- allTags,
-          tag `elem` queryTags
+      | Entity{entityId, entityVal = Tag{tag_text = Just tag}} <- allTags
+      , tag `elem` queryTags
       ]
 
 loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
-loadTagsByRefs refs = fmap catMaybes $ for (toList refs) $ \ref ->
-  tag_text . entityVal <$> load (refToDocId ref)
+loadTagsByRefs refs =
+  fmap catMaybes $
+  for (toList refs) $ \ref ->
+    tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
 createTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 createTags tags =
-  fmap HashSet.fromList
-    $ for (toList tags)
-    $ \tag -> do
-      tagFrame@ObjectFrame {uuid} <- newObjectFrame Tag {tag_text = Just tag}
-      createDocument tagFrame
-      pure $ ObjectRef uuid
+  fmap HashSet.fromList $
+  for (toList tags) $ \tag -> do
+    tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
+    createDocument tagFrame
+    pure $ ObjectRef uuid
 
 -- | Add new tags to Collection of tags.
 --
@@ -162,25 +162,27 @@ getOrCreateTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
 getOrCreateTags tags
   | null tags = pure HashSet.empty
   | otherwise = do
-    allTags <- loadAllTagTexts
-    existentTagRefs <- loadTagRefsByText tags
-    let newTags = tags \\ allTags
-    createdTagRefs <- createTags newTags
-    pure $ existentTagRefs <> createdTagRefs
+      allTags <- loadAllTagTexts
+      existentTagRefs <- loadTagRefsByText tags
+      let newTags = tags \\ allTags
+      createdTagRefs <- createTags newTags
+      pure $ existentTagRefs <> createdTagRefs
 
 viewNote :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
-viewNote Entity {entityId, entityVal} = do
-  tags <- loadTagsByRefs tagRefs
-  pure Entity
-    { entityId,
-      entityVal = NoteView {note = entityVal, tags = Set.fromList tags}
-    }
+viewNote Entity{entityId, entityVal} =
+  do
+    tags <- loadTagsByRefs tagRefs
+    pure
+      Entity
+        { entityId
+        , entityVal = NoteView{note = entityVal, tags = Set.fromList tags}
+        }
   where
     tagRefs = HashSet.fromList note_tags
-    Note {note_tags} = entityVal
+    Note{note_tags} = entityVal
 
 viewNoteSample :: MonadStorage m => Sample (EntityDoc Note) -> m NoteSample
-viewNoteSample Sample {items, total} = do
+viewNoteSample Sample{items, total} = do
   noteviews <- mapM viewNote items
   pure $ Sample noteviews total
 
@@ -194,9 +196,10 @@ getContactSamplesWith ::
   -- | filter by status
   Status ->
   m ContactSample
-getContactSamplesWith predicate status = do
-  contacts <- loadContacts status
-  pure . (\ys -> Sample ys $ genericLength ys) $ filter predicate' contacts
+getContactSamplesWith predicate status =
+  do
+    contacts <- loadContacts status
+    pure . (\ys -> Sample ys $ genericLength ys) $ filter predicate' contacts
   where
     predicate' = predicate . Text.pack . fromRgaM . contact_name . entityVal
 
@@ -246,44 +249,50 @@ viewTaskSamplesWith ::
   [EntityDoc Note] ->
   m (ModeMap NoteSample)
 viewTaskSamplesWith
-  textPredicate
-  status
-  ConfigUI {shuffle}
-  limit
-  today
-  tagsRequested
-  withoutTags
-  notes = do
-    -- filter unrefined tasks
-    let notes' = filter notePredicate $ filterTasksByStatus status notes
-    -- refine tasks
-    tasks <- traverse viewNote notes'
-    -- filter refined tasks
-    let tasks' = filter noteViewPredicate tasks
-    -- prepare result
-    pure . takeSamples limit . shuffleOrSort $ splitModes today tasks'
+    textPredicate
+    status
+    ConfigUI{shuffle}
+    limit
+    today
+    tagsRequested
+    withoutTags
+    notes
+  =
+    do
+      -- filter unrefined tasks
+      let notes' = filter notePredicate $ filterTasksByStatus status notes
+      -- refine tasks
+      tasks <- traverse viewNote notes'
+      -- filter refined tasks
+      let tasks' = filter noteViewPredicate tasks
+      -- prepare result
+      pure . takeSamples limit . shuffleOrSort $ splitModes today tasks'
     where
+
       gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+
       shuffleOrSort
         | shuffle = shuffleTraverseItems gen
         | otherwise =
-          -- in sorting by entityId no business-logic is involved,
-          -- it's just for determinism
-          fmap $
-            sortOn
-              ( \Entity
-                   { entityId,
-                     entityVal = NoteView {note = Note {note_start}}
-                   } ->
+            -- in sorting by entityId no business-logic is involved,
+            -- it's just for determinism
+            fmap $
+              sortOn
+                ( \ Entity
+                      {entityId, entityVal = NoteView{note = Note{note_start}}}
+                  ->
                     (note_start, entityId)
-              )
-      notePredicate Entity {entityVal = Note {note_text}} =
-        textPredicate (Text.pack $ fromRgaM note_text)
+                )
+
+      notePredicate Entity{entityVal = Note{note_text}} =
+        textPredicate $ Text.pack $ fromRgaM note_text
+
       tagPredicate tags = case tagsRequested of
         Tags tagsRequested' ->
           tagsRequested' `isSubsetOf` tags && withoutTags `disjoint` tags
         NoTags -> null tags
-      noteViewPredicate Entity {entityVal = NoteView {tags}} = tagPredicate tags
+
+      noteViewPredicate Entity{entityVal = NoteView{tags}} = tagPredicate tags
 
 viewWikiSamples ::
   MonadStorage m =>
@@ -305,23 +314,27 @@ toWikiSamplesWith ::
   Day ->
   [EntityDoc Note] ->
   m NoteSample
-toWikiSamplesWith predicate ConfigUI {shuffle} limit today notes = do
-  let wikis0 = filterWikis notes
-  let wikis1 = filter predicate' wikis0
-  let wikis2 = case limit of
-        Nothing -> wikis1
-        Just l -> take (fromIntegral l) wikis1
+toWikiSamplesWith predicate ConfigUI{shuffle} limit today notes =
   viewNoteSample $ toSample $ shuffleOrSort wikis2
   where
+    wikis0 = filterWikis notes
+    wikis1 = filter predicate' wikis0
+    wikis2 = case limit of
+      Nothing -> wikis1
+      Just l -> take (fromIntegral l) wikis1
+
     predicate' = predicate . Text.pack . fromRgaM . note_text . entityVal
+
     toSample ys = Sample ys $ genericLength ys
+
     gen = mkStdGen . fromIntegral $ toModifiedJulianDay today
+
     shuffleOrSort
       | shuffle = shuffleItems gen
       | otherwise =
-        -- in sorting by entityId no business-logic is involved,
-        -- it's just for determinism
-        sortOn entityId
+          -- in sorting by entityId no business-logic is involved,
+          -- it's just for determinism
+          sortOn entityId
 
 shuffleItems :: StdGen -> [b] -> [b]
 shuffleItems gen = (`evalState` gen) . shuf
@@ -335,18 +348,19 @@ shuffleTraverseItems :: Traversable t => StdGen -> t [b] -> t [b]
 shuffleTraverseItems gen = (`evalState` gen) . traverse shuf
 
 splitModesBy :: (note -> Note) -> Day -> [note] -> ModeMap [note]
-splitModesBy f today = Map.unionsWith (++) . map singleton
-  where
-    singleton task = Map.singleton (taskMode today $ f task) [task]
+splitModesBy f today = Map.unionsWith (++) . map singleton where
+  singleton task = Map.singleton (taskMode today $ f task) [task]
 
 splitModes :: Day -> [EntityView Note] -> ModeMap [EntityView Note]
 splitModes = splitModesBy (note . entityVal)
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
-takeSamples Nothing = fmap mkSample
+takeSamples Nothing =
+  fmap mkSample
   where
     mkSample ys = Sample ys $ genericLength ys
-takeSamples (Just limit) = (`evalState` limit) . traverse takeSample
+takeSamples (Just limit) =
+  (`evalState` limit) . traverse takeSample
   where
     takeSample xs =
       state $ \n -> (Sample (take (fromIntegral n) xs) len, n `natSub` len)
@@ -363,23 +377,26 @@ updateTrackedNote ::
   -- | external note (with tags) to insert
   View Note ->
   m ()
-updateTrackedNote oldNotes NoteView {note, tags} = case note of
-  Note {note_track = Just track} -> do
-    newRefs <- getOrCreateTags tags
-    case HashMap.lookup track oldNotes of
-      Nothing -> do
-        obj <- newObjectFrame note {note_tags = toList newRefs}
-        createDocument obj
-      Just noteid -> void $ modify noteid $ do
-        note_status_setIfDiffer note_status
-        note_text_zoom $ RGA.edit text
-        -- Add new tags
-        currentRefs <- HashSet.fromList <$> note_tags_read
-        traverse_ note_tags_add $ newRefs \- currentRefs
-        traverse_ note_tags_remove $ currentRefs \- newRefs
-  _ -> throwError "External note is expected to be supplied with tracking"
+updateTrackedNote oldNotes NoteView{note, tags} =
+  case note_track of
+    Just track -> do
+      newRefs <- getOrCreateTags tags
+      case HashMap.lookup track oldNotes of
+        Nothing -> do
+          obj <- newObjectFrame note{note_tags = toList newRefs}
+          createDocument obj
+        Just noteid ->
+          void $ modify noteid $ do
+            note_status_setIfDiffer note_status
+            note_text_zoom $ RGA.edit text
+            -- Add new tags
+            currentRefs <- HashSet.fromList <$> note_tags_read
+            traverse_ note_tags_add $ newRefs \- currentRefs
+            traverse_ note_tags_remove $ currentRefs \- newRefs
+    Nothing ->
+      throwError "External note is expected to be supplied with tracking"
   where
-    Note {note_status, note_text = (fromRgaM -> text)} = note
+    Note{note_status, note_text = (fromRgaM -> text), note_track} = note
 
 updateTrackedNotes :: MonadStorage m => [View Note] -> m ()
 updateTrackedNotes newNotes = do
@@ -388,14 +405,14 @@ updateTrackedNotes newNotes = do
   notes <- getDocuments
   oldNotesM <-
     for notes $ \noteId -> do
-      Document {objectFrame} <- loadDocument noteId
+      Document{objectFrame} <- loadDocument noteId
       mTrack <- evalObjectState objectFrame note_track_read
       pure $ (,noteId) <$> mTrack
   let oldNotes = HashMap.fromList $ catMaybes oldNotesM
   for_ newNotes $ updateTrackedNote oldNotes
 
 cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
-cmdNewNote New {text, start, end, isWiki, tags} today = do
+cmdNewNote New{text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
   whenJust end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
@@ -405,15 +422,15 @@ cmdNewNote New {text, start, end, isWiki, tags} today = do
       Just _ -> throwError "A wiki must have no end date."
   refs <- getOrCreateTags tags
   let note = Note
-        { note_end,
-          note_start = Just noteStart,
-          note_status = Just status,
-          note_text = Just $ RGA $ Text.unpack text,
-          note_tags = toList refs,
-          note_track = Nothing,
-          note_links = []
+        { note_end
+        , note_start  = Just noteStart
+        , note_status = Just status
+        , note_text   = Just $ RGA $ Text.unpack text
+        , note_tags   = toList refs
+        , note_track  = Nothing
+        , note_links  = []
         }
-  obj@ObjectFrame {uuid} <- newObjectFrame note
+  obj@ObjectFrame{uuid} <- newObjectFrame note
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) note
 
@@ -424,14 +441,15 @@ cmdNewContact name = do
           { contact_name = Just $ RGA $ Text.unpack name,
             contact_status = Just Active
           }
-  obj@ObjectFrame {uuid} <- newObjectFrame contact
+  obj@ObjectFrame{uuid} <- newObjectFrame contact
   createDocument obj
   pure $ Entity (docIdFromUuid uuid) contact
 
 cmdDeleteContact :: MonadStorage m => ContactId -> m (EntityDoc Contact)
-cmdDeleteContact cid = modifyAndView cid $ do
-  contact_status_clear
-  contact_name_clear
+cmdDeleteContact cid =
+  modifyAndView cid $ do
+    contact_status_clear
+    contact_name_clear
 
 cmdSearch ::
   MonadStorage m =>
@@ -448,23 +466,26 @@ cmdSearch ::
   -- | without tags
   Set Text ->
   m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr status ui limit today tags withoutTags = do
-  notes <- loadAllNotes
-  tasks <- viewTaskSamplesWith predicate status ui limit today tags withoutTags notes
-  wikis <- toWikiSamplesWith predicate ui limit today notes
-  contacts <- getContactSamplesWith predicate status
-  pure (tasks, wikis, contacts)
+cmdSearch substr status ui limit today tags withoutTags =
+  do
+    notes <- loadAllNotes
+    tasks <-
+      viewTaskSamplesWith predicate status ui limit today tags withoutTags notes
+    wikis    <- toWikiSamplesWith predicate ui limit today notes
+    contacts <- getContactSamplesWith predicate status
+    pure (tasks, wikis, contacts)
   where
     predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
-cmdDeleteNote nid = modifyAndView nid $ do
-  assertNoteIsNative
-  note_status_clear
-  note_text_clear
-  note_start_clear
-  note_end_clear
-  note_tags_clear
+cmdDeleteNote nid =
+  modifyAndView nid $ do
+    assertNoteIsNative
+    note_status_clear
+    note_text_clear
+    note_start_clear
+    note_end_clear
+    note_tags_clear
 
 cmdDone :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDone nid = modifyAndView nid $ do
@@ -477,17 +498,16 @@ cmdUnarchive nid =
 
 cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [EntityDoc Note]
 cmdEdit edit = case edit of
-  Edit {ids = _ :| _ : _, text = Just _} ->
+  Edit{ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
-  Edit
-    { ids = nid :| [],
-      text,
-      start = Nothing,
-      end = Nothing,
-      addTags,
-      deleteTags
-    }
-      | null addTags && null deleteTags ->
+  Edit{ ids = nid :| []
+      , text
+      , start = Nothing
+      , end = Nothing
+      , addTags
+      , deleteTags
+      }
+    | null addTags, null deleteTags ->
         fmap (: []) $ modifyAndView nid $ do
           assertNoteIsNative
           note_text_zoom $ do
@@ -498,7 +518,7 @@ cmdEdit edit = case edit of
                   noteText <- RGA.getText
                   liftIO $ runExternalEditor noteText
             RGA.editText noteText'
-  Edit {ids, text, start, end, addTags, deleteTags} -> do
+  Edit{ids, text, start, end, addTags, deleteTags} -> do
     refsToAdd <- getOrCreateTags addTags
     refsToDelete <- loadTagRefsByText deleteTags
     fmap toList . for ids $ \nid ->
@@ -538,15 +558,16 @@ cmdEdit edit = case edit of
           mapM_ note_tags_remove refsToDelete
 
 cmdPostpone :: (MonadIO m, MonadStorage m) => NoteId -> m (EntityDoc Note)
-cmdPostpone nid = modifyAndView nid $ do
-  today <- getUtcToday
-  start <- note_start_read
-  let start' = addDays 1 $ maybe today (max today) start
-  note_start_set start'
-  mEnd <- note_end_read
-  case mEnd of
-    Just end | end < start' -> note_end_set start'
-    _ -> pure ()
+cmdPostpone nid =
+  modifyAndView nid $ do
+    today <- getUtcToday
+    start <- note_start_read
+    let start' = addDays 1 $ maybe today (max today) start
+    note_start_set start'
+    mEnd <- note_end_read
+    case mEnd of
+      Just end | end < start' -> note_end_set start'
+      _                       -> pure ()
 
 modifyAndView ::
   (Collection a, MonadStorage m) =>
@@ -564,33 +585,37 @@ getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
 
 runExternalEditor :: Text -> IO Text
-runExternalEditor textOld = do
-  editor :| editorArgs <-
-    asum $
-      assertExecutableFromConfig
+runExternalEditor textOld =
+  do
+    editor :| editorArgs <-
+      asum $
+          assertExecutableFromConfig
         : assertExecutableFromEnv "VISUAL"
         : assertExecutableFromEnv "EDITOR"
         : map assertExecutable ["editor", "micro", "nano", "vi", "vim"]
-  withSystemTempFile "ff.txt" $ \file fileH -> do
-    BS.hPutStr fileH $ Text.encodeUtf8 textOld
-    hClose fileH
-    hPutStrLn stderr "waiting for external editor to close"
-    runProcess (proc editor $ editorArgs ++ [file]) >>= \case
-      ExitSuccess ->
-        Text.strip . Text.decodeUtf8With TextError.ignore <$> BS.readFile file
-      ExitFailure {} -> pure textOld
+    withSystemTempFile "ff.txt" $ \file fileH -> do
+      BS.hPutStr fileH $ Text.encodeUtf8 textOld
+      hClose fileH
+      hPutStrLn stderr "waiting for external editor to close"
+      runProcess (proc editor $ editorArgs ++ [file]) >>= \case
+        ExitSuccess ->
+          Text.strip . Text.decodeUtf8With TextError.ignore <$> BS.readFile file
+        ExitFailure{} -> pure textOld
   where
     assertExecutable prog = do
       Just _ <- findExecutable prog
       pure $ prog :| []
+
     assertExecutableFromConfig = do
       cfg <- loadConfig
       maybe empty assertExecutable $ externalEditor cfg
+
     assertExecutableFromEnv var = do
       editorCmd <- getEnv var
-      let eEditor = do
-            editor <- ShellWords.parse editorCmd
-            maybe (Left "empty") Right $ nonEmpty editor
+      let
+        eEditor = do
+          editor <- ShellWords.parse editorCmd
+          maybe (Left "empty") Right $ nonEmpty editor
       case eEditor of
         Left err -> do
           hPutStrLn stderr $ "error in $EDITOR environment variable: " <> err
@@ -613,18 +638,20 @@ note_status_setIfDiffer newStatus = do
 assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
   tracking <- note_track_read
-  whenJust tracking $ \Track {track_url} ->
+  whenJust tracking $ \Track{track_url} ->
     throwErrorText $
-      "A tracked note must be edited in its source"
-        <> maybe "" (" :" <>) track_url
+          "A tracked note must be edited in its source"
+      <>  maybe "" (" :" <>) track_url
 
 getDataDir :: Config -> IO (Maybe FilePath)
-getDataDir Config {dataDir} = do
-  cur <- getCurrentDirectory
-  mFFpath <- findFF $ parents cur
-  pure $ mFFpath <|> dataDir
+getDataDir Config{dataDir} =
+  do
+    cur <- getCurrentDirectory
+    mFFpath <- findFF $ parents cur
+    pure $ mFFpath <|> dataDir
   where
     parents = reverse . scanl1 (</>) . splitDirectories . normalise
+
     findFF [] = pure Nothing
     findFF (dir : dirs) = do
       let ffDir = dir </> ".ff"
@@ -649,9 +676,10 @@ refToDocId :: ObjectRef a -> DocId a
 refToDocId (ObjectRef uid) = docIdFromUuid uid
 
 docIdToRef :: DocId a -> ObjectRef a
-docIdToRef docId = case decodeDocId docId of
-  Nothing -> error "Decode UUID from DocId failed. DocId is "
-  Just (_, uid) -> ObjectRef uid
+docIdToRef docId =
+  case decodeDocId docId of
+    Nothing       -> error "Decode UUID from DocId failed. DocId is "
+    Just (_, uid) -> ObjectRef uid
 
 (\-) :: (Eq a, Hashable a) => HashSet a -> HashSet a -> HashSet a
 (\-) = HashSet.difference
