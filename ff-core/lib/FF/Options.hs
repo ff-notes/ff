@@ -109,12 +109,11 @@ assignToMaybe = \case
   Clear -> Nothing
   Set x -> Just x
 
-data Agenda
-  = Agenda
-      { limit :: Maybe Limit,
-        tags :: Tags,
-        withoutTags :: Set Text
-      }
+data Agenda = Agenda
+  { limit       :: Maybe Limit
+  , tags        :: Tags
+  , withoutTags :: Set Text
+  }
 
 data Tags = Tags (Set Text) | NoTags
 
