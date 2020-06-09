@@ -18,6 +18,6 @@ note:
   - B/7euI15DnJz+00P01fLmVG
   - B/7euI15DAJq+00P01fLmVG
 tags:
-- component_Core
-- level_Intermediate
-- type_Task
+  B/7euI15Dna7+00P01fLmVG: type_Task
+  B/7euI15DAJq+00P01fLmVG: component_Core
+  B/7euI15DnJz+00P01fLmVG: level_Intermediate

@@ -29,13 +29,15 @@ import qualified Data.Aeson as JSON
 import           Data.Aeson.TH (defaultOptions, deriveFromJSON)
 import           Data.Aeson.Types (parseEither)
 import           Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as BSL
 import           Data.Hashable (Hashable)
+import           Data.HashMap.Strict (HashMap)
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
-import           Data.Set (Set)
 import           Data.Text (Text)
+import qualified Data.Text.Encoding as Text
 import           Data.Time (diffDays)
 import           FF.CrdtAesonInstances ()
 import           GHC.Generics (Generic)
@@ -55,6 +57,7 @@ import           RON.Storage (Collection, DocId, collectionName, fallbackParse,
                               loadDocument)
 import           RON.Storage.Backend (Document (Document, objectFrame),
                                       MonadStorage)
+import           RON.Text.Serialize (serializeUuid)
 import           RON.Types (Atom (AUuid),
                             ObjectFrame (ObjectFrame, frame, uuid),
                             ObjectRef (ObjectRef), Op (Op), UUID,
@@ -221,7 +224,7 @@ data family View doc
 
 data instance View Note = NoteView
   { note :: Note
-  , tags :: Set Text
+  , tags :: HashMap Text Text -- ^ the key is UUID or URI of the tag
   }
   deriving (Eq, Show)
 
@@ -393,3 +396,6 @@ instance FromJSON NoteStatus where
   parseJSON v = case v of
     "Wiki" -> pure Wiki
     _ -> TaskStatus <$> parseJSON v
+
+uuidToText :: UUID -> Text
+uuidToText = Text.decodeUtf8 . BSL.toStrict . serializeUuid

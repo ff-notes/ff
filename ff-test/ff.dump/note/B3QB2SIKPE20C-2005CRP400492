@@ -19,7 +19,7 @@ note:
   - B/7euI15DAyL+00P01fLmVG
   - B/7euI15EbNZ+00P01fLmVG
 tags:
-- component_CLI
-- level_Beginner
-- resolution_Wontfix
-- type_Bug
+  B/7euI15EbNZ+00P01fLmVG: resolution_Wontfix
+  B/7euI15DAyL+00P01fLmVG: level_Beginner
+  B/7euI15DXH1+00P01fLmVG: type_Bug
+  B/7euI15DGwV+00P01fLmVG: component_CLI

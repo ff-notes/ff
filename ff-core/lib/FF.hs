@@ -105,7 +105,7 @@ import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
                            note_status_clear, note_status_read, note_status_set,
                            note_tags_add, note_tags_clear, note_tags_read,
                            note_tags_remove, note_text_clear, note_text_zoom,
-                           note_track_read, taskMode)
+                           note_track_read, taskMode, uuidToText)
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
@@ -128,7 +128,8 @@ loadAllTagTexts :: MonadStorage m => m (Set Text)
 loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
 
 -- | Load 'Tag' references only for text strings existing in the collection.
-loadTagRefsByText :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
+loadTagRefsByText ::
+  (Foldable f, MonadStorage m) => f Text -> m (HashSet (ObjectRef Tag))
 loadTagRefsByText queryTags = do
   allTags <- loadAll
   pure $
@@ -138,11 +139,12 @@ loadTagRefsByText queryTags = do
       , tag `elem` queryTags
       ]
 
-loadTagsByRefs :: MonadStorage m => HashSet (ObjectRef Tag) -> m [Text]
+loadTagsByRefs ::
+  MonadStorage m => HashSet (ObjectRef Tag) -> m (HashMap (ObjectRef Tag) Text)
 loadTagsByRefs refs =
-  fmap catMaybes $
+  fmap (HashMap.fromList . catMaybes) $
   for (toList refs) $ \ref ->
-    tag_text . entityVal <$> load (refToDocId ref)
+    fmap (ref,) . tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
 createTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
@@ -158,13 +160,14 @@ createTags tags =
 -- It doesn't create tags that are in the collection already.
 -- It returns references that should be added to note_tags.
 -- References may content ones that note_tags has already.
-getOrCreateTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
+getOrCreateTags ::
+  (Foldable f, MonadStorage m) => f Text -> m (HashSet (ObjectRef Tag))
 getOrCreateTags tags
   | null tags = pure HashSet.empty
   | otherwise = do
       allTags <- loadAllTagTexts
       existentTagRefs <- loadTagRefsByText tags
-      let newTags = tags \\ allTags
+      let newTags = Set.fromList (toList tags) \\ allTags
       createdTagRefs <- createTags newTags
       pure $ existentTagRefs <> createdTagRefs
 
@@ -175,7 +178,15 @@ viewNote Entity{entityId, entityVal} =
     pure
       Entity
         { entityId
-        , entityVal = NoteView{note = entityVal, tags = Set.fromList tags}
+        , entityVal =
+            NoteView
+              { note = entityVal
+              , tags =
+                  HashMap.fromList
+                    [ (uuidToText uuid, tag)
+                    | (ObjectRef uuid, tag) <- HashMap.toList tags
+                    ]
+              }
         }
   where
     tagRefs = HashSet.fromList note_tags
@@ -292,7 +303,8 @@ viewTaskSamplesWith
           tagsRequested' `isSubsetOf` tags && withoutTags `disjoint` tags
         NoTags -> null tags
 
-      noteViewPredicate Entity{entityVal = NoteView{tags}} = tagPredicate tags
+      noteViewPredicate Entity{entityVal = NoteView{tags}} =
+        tagPredicate $ Set.fromList $ toList tags
 
 viewWikiSamples ::
   MonadStorage m =>

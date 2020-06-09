@@ -20,7 +20,7 @@ note:
   - B/7euI15E2jb+00P01fLmVG
   - B/7f8c6IMneF+00P01fLmVG
 tags:
-- component_ff-qtah
-- level_Research
-- priority_High
-- type_Enhancement
+  B/7euI15E2jb+00P01fLmVG: level_Research
+  B/7euI15EqMH+00P01fLmVG: priority_High
+  B/7euI15DBES+00P01fLmVG: type_Enhancement
+  B/7f8c6IMneF+00P01fLmVG: component_ff-qtah
