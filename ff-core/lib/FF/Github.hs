@@ -148,7 +148,6 @@ issueToNote address Issue{..} = NoteView
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
-    -- labels = Set.fromList $ map (untagName . labelName) $ toList issueLabels
     labels =
         HashMap.fromList
             [ (url, untagName labelName)
