@@ -4,6 +4,7 @@ steps:
       pad_module_names: false
   - language_pragmas:
       align: false
+      style: compact
   - trailing_whitespace: {}
 language_extensions:
   - DataKinds

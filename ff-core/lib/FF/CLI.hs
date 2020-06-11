@@ -1,10 +1,6 @@
-{-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TupleSections #-}
+{-# LANGUAGE DuplicateRecordFields, LambdaCase, NamedFieldPuns,
+             OverloadedStrings, RecordWildCards, TemplateHaskell,
+             TupleSections #-}
 
 module FF.CLI where
 
