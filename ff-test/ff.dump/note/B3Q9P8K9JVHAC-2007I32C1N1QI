@@ -19,6 +19,6 @@ note:
   - B/7euI15DAJq+00P01fLmVG
   - B/7euI15E2jb+00P01fLmVG
 tags:
-- component_Core
-- level_Research
-- type_Enhancement
+  B/7euI15E2jb+00P01fLmVG: level_Research
+  B/7euI15DAJq+00P01fLmVG: component_Core
+  B/7euI15DBES+00P01fLmVG: type_Enhancement

@@ -20,7 +20,7 @@ note:
   - B/7euI15DAJq+00P01fLmVG
   - B/7euI15E2jb+00P01fLmVG
 tags:
-- component_Core
-- level_Research
-- priority_High
-- type_Bug
+  B/7euI15E2jb+00P01fLmVG: level_Research
+  B/7euI15EqMH+00P01fLmVG: priority_High
+  B/7euI15DAJq+00P01fLmVG: component_Core
+  B/7euI15DXH1+00P01fLmVG: type_Bug

@@ -22,5 +22,5 @@ note:
   - B/7euI15Dna7+00P01fLmVG
   - B/7f8c6IMneF+00P01fLmVG
 tags:
-- component_ff-qtah
-- type_Task
+  B/7euI15Dna7+00P01fLmVG: type_Task
+  B/7f8c6IMneF+00P01fLmVG: component_ff-qtah

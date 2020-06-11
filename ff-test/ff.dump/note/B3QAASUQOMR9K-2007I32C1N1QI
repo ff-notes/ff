@@ -19,7 +19,7 @@ note:
   - B/7euI15DGwV+00P01fLmVG
   - B/7euI15DAyL+00P01fLmVG
 tags:
-- component_CLI
-- level_Beginner
-- priority_High
-- type_Enhancement
+  B/7euI15EqMH+00P01fLmVG: priority_High
+  B/7euI15DAyL+00P01fLmVG: level_Beginner
+  B/7euI15DBES+00P01fLmVG: type_Enhancement
+  B/7euI15DGwV+00P01fLmVG: component_CLI

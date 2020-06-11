@@ -11,62 +11,47 @@ module Database
   )
 where
 
-import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
-import Data.Aeson.Types (parseEither)
+import           Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import           Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
+import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map.Strict as Map
-import Data.Maybe (mapMaybe)
-import Data.Semigroup ((<>))
-import qualified Data.Vector as Vector
+import           Data.Maybe (mapMaybe)
+import           Data.Semigroup ((<>))
 import qualified Data.Set as Set
-import Data.String.Interpolate.IsString (i)
+import           Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
-import Data.Text.Lazy.Encoding (encodeUtf8)
-import Data.Time (Day, UTCTime (..), fromGregorian)
-import FF (cmdNewNote, viewTaskSamples, loadAllNotes)
-import FF.Config (defaultConfigUI)
+import           Data.Text.Lazy.Encoding (encodeUtf8)
+import           Data.Time (Day, UTCTime (..), fromGregorian)
+import qualified Data.Vector as Vector
+import           FF (cmdNewNote, loadAllNotes, viewTaskSamples)
+import           FF.Config (defaultConfigUI)
 import qualified FF.Github as Github
-import FF.Options (New (..), Tags(Tags))
-import FF.Types
-  ( Limit,
-    Note (..),
-    NoteStatus (TaskStatus),
-    Sample (Sample, items, total),
-    Status (Active),
-    TaskMode (Overdue),
-    Track (..),
-    View (NoteView, note, tags),
-    entityVal,
-    pattern Entity,
-  )
-import FF.Upgrade (upgradeDatabase)
+import           FF.Options (New (..), Tags (Tags))
+import           FF.Types (pattern Entity, Limit, Note (..),
+                           NoteStatus (TaskStatus),
+                           Sample (Sample, items, total), Status (Active),
+                           TaskMode (Overdue), Track (..),
+                           View (NoteView, note, tags), entityVal)
+import           FF.Upgrade (upgradeDatabase)
 import qualified Gen
-import GitHub
-  ( Issue (..),
-    IssueNumber (IssueNumber),
-    IssueState (..),
-    IssueLabel(..),
-    Milestone (..),
-    URL (..),
-  )
-import GitHub.Data.Definitions (SimpleUser (..))
-import GitHub.Data.Id (Id (..))
-import GitHub.Data.Name (Name (..))
-import Hedgehog ((===), Gen, Property, evalEither, forAll, property)
-import RON.Data
-  ( ReplicatedAsObject (readObject),
-    evalObjectState,
-    newObjectFrame,
-  )
-import RON.Data.RGA (RGA (RGA))
-import RON.Storage.Backend (DocId (DocId))
-import RON.Storage.Test (TestDB, runStorageSim)
-import RON.Text (parseObject, serializeObject)
-import RON.Types (ObjectRef (ObjectRef))
+import           GitHub (Issue (..), IssueLabel (..), IssueNumber (IssueNumber),
+                         IssueState (..), Milestone (..), URL (..))
+import           GitHub.Data.Definitions (SimpleUser (..))
+import           GitHub.Data.Id (Id (..))
+import           GitHub.Data.Name (Name (..))
+import           Hedgehog (Gen, Property, evalEither, forAll, property, (===))
+import           RON.Data (ReplicatedAsObject (readObject), evalObjectState,
+                           newObjectFrame)
+import           RON.Data.RGA (RGA (RGA))
+import           RON.Storage.Backend (DocId (DocId))
+import           RON.Storage.Test (TestDB, runStorageSim)
+import           RON.Text (parseObject, serializeObject)
+import           RON.Types (ObjectRef (ObjectRef))
 import qualified RON.UUID as UUID
-import Test.Tasty (TestTree, testGroup)
-import Test.Tasty.Hedgehog (testProperty)
-import Test.Tasty.TH (testGroupGenerator)
+import           Test.Tasty (TestTree, testGroup)
+import           Test.Tasty.Hedgehog (testProperty)
+import           Test.Tasty.TH (testGroupGenerator)
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -246,8 +231,8 @@ test_RON_Tests =
     testProperty "Note" $ ronRoundtrip Gen.note
   ]
 
-prop_repo :: Property
-prop_repo =
+prop_issues_imported_from_GitHub_can_be_viewed_as_notes :: Property
+prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
   property
     (ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues)
   where
@@ -263,18 +248,28 @@ prop_repo =
                         { note_status = Just $ TaskStatus Active,
                           note_text = Just $ RGA "import issues (GitHub -> ff)",
                           note_start = Just $ fromGregorian 2018 06 21,
-                          note_end = Just $ fromGregorian 2018 06 15,
-                          note_tags = [],
+                          note_end   = Just $ fromGregorian 2018 06 15,
+                          note_tags  = [],
                           note_track = Just Track
-                            { track_provider = Just "github",
-                              track_source = Just "ff-notes/ff",
+                            { track_provider   = Just "github",
+                              track_source     = Just "ff-notes/ff",
                               track_externalId = Just "60",
-                              track_url =
+                              track_url        =
                                 Just "https://github.com/ff-notes/ff/issues/60"
                             },
                           note_links = []
                         },
-                      tags = Set.fromList ["level_Research", "type_Enhancement"]
+                      tags =
+                        HashMap.fromList
+                          [ ( "https://api.github.com/repos/ff-notes/ron/labels\
+                              \/level_Research"
+                            , "level_Research"
+                            )
+                          , ( "https://api.github.com/repos/ff-notes/ron/labels\
+                              \/type_Enhancement"
+                            , "type_Enhancement"
+                            )
+                          ]
                     }
               ],
             total = 1
