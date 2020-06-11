@@ -231,8 +231,8 @@ test_RON_Tests =
     testProperty "Note" $ ronRoundtrip Gen.note
   ]
 
-prop_repo :: Property
-prop_repo =
+prop_issues_imported_from_GitHub_can_be_viewed_as_notes :: Property
+prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
   property
     (ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues)
   where
