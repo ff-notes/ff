@@ -40,29 +40,26 @@ module FF
   )
 where
 
-import           Control.Applicative (empty, (<|>))
+import           Control.Applicative ((<|>))
 import           Control.Monad (unless, void, when)
 import           Control.Monad.Except (throwError)
 import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Control.Monad.State.Strict (MonadState, evalState, state)
-import qualified Data.ByteString as BS
-import           Data.Foldable (asum, for_, toList, traverse_)
-import           Data.Functor (($>))
+import           Control.Monad.Trans (lift)
+import           Data.Foldable (for_, toList, traverse_)
 import           Data.Hashable (Hashable)
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
 import           Data.HashSet (HashSet)
 import qualified Data.HashSet as HashSet
 import           Data.List (genericLength, sortOn)
-import           Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
+import           Data.List.NonEmpty (NonEmpty ((:|)))
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import           Data.Set (Set, disjoint, isSubsetOf, (\\))
 import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Encoding.Error as TextError
 import           Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay,
                             utctDay)
 import           Data.Traversable (for)
@@ -78,19 +75,12 @@ import           RON.Storage.Backend (Document (Document, objectFrame),
                                       MonadStorage (getDocuments))
 import           RON.Types (ObjectFrame (ObjectFrame, uuid),
                             ObjectRef (ObjectRef))
-import qualified ShellWords
-import           System.Directory (doesDirectoryExist, findExecutable,
-                                   getCurrentDirectory)
-import           System.Environment (getEnv)
-import           System.Exit (ExitCode (..))
+import           System.Directory (doesDirectoryExist, getCurrentDirectory)
 import           System.FilePath (normalise, splitDirectories, (</>))
-import           System.IO (hClose, hPutStrLn, stderr)
-import           System.IO.Temp (withSystemTempFile)
-import           System.Process.Typed (proc, runProcess)
 import           System.Random (StdGen, mkStdGen, randoms, split)
 
 import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
-                            externalEditor, loadConfig, shuffle)
+                            shuffle)
 import           FF.Options (Assign (Clear, Set), Edit (..), New (..),
                              Tags (..), assignToMaybe)
 import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
@@ -498,8 +488,8 @@ cmdUnarchive :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdUnarchive nid =
   modifyAndView nid $ note_status_set $ TaskStatus Active
 
-cmdEdit :: (MonadIO m, MonadStorage m) => Edit -> m [EntityDoc Note]
-cmdEdit edit = case edit of
+cmdEdit :: MonadStorage m => Edit -> (Text -> m Text) -> m [EntityDoc Note]
+cmdEdit edit input = case edit of
   Edit{ids = _ :| _ : _, text = Just _} ->
     throwError "Can't edit content of multiple notes"
   Edit{ ids = nid :| []
@@ -518,7 +508,7 @@ cmdEdit edit = case edit of
                 Just noteText' -> pure noteText'
                 Nothing -> do
                   noteText <- RGA.getText
-                  liftIO $ runExternalEditor noteText
+                  lift . lift $ input noteText
             RGA.editText noteText'
   Edit{ids, text, start, end, addTags, deleteTags} -> do
     refsToAdd <- getOrCreateTags addTags
@@ -585,44 +575,6 @@ modifyAndView docid f = do
 
 getUtcToday :: MonadIO io => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
-
-runExternalEditor :: Text -> IO Text
-runExternalEditor textOld =
-  do
-    editor :| editorArgs <-
-      asum $
-          assertExecutableFromConfig
-        : assertExecutableFromEnv "VISUAL"
-        : assertExecutableFromEnv "EDITOR"
-        : map assertExecutable ["editor", "micro", "nano", "vi", "vim"]
-    withSystemTempFile "ff.txt" $ \file fileH -> do
-      BS.hPutStr fileH $ Text.encodeUtf8 textOld
-      hClose fileH
-      hPutStrLn stderr "waiting for external editor to close"
-      runProcess (proc editor $ editorArgs ++ [file]) >>= \case
-        ExitSuccess ->
-          Text.strip . Text.decodeUtf8With TextError.ignore <$> BS.readFile file
-        ExitFailure{} -> pure textOld
-  where
-    assertExecutable prog = do
-      Just _ <- findExecutable prog
-      pure $ prog :| []
-
-    assertExecutableFromConfig = do
-      cfg <- loadConfig
-      maybe empty assertExecutable $ externalEditor cfg
-
-    assertExecutableFromEnv var = do
-      editorCmd <- getEnv var
-      let
-        eEditor = do
-          editor <- ShellWords.parse editorCmd
-          maybe (Left "empty") Right $ nonEmpty editor
-      case eEditor of
-        Left err -> do
-          hPutStrLn stderr $ "error in $EDITOR environment variable: " <> err
-          empty
-        Right editor@(prog :| _) -> assertExecutable prog $> editor
 
 assertStartBeforeEnd :: MonadE m => Day -> Day -> m ()
 assertStartBeforeEnd start end =

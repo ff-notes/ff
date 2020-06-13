@@ -8,6 +8,7 @@
 
 module FF.CLI where
 
+import           Control.Applicative (empty)
 import           Control.Concurrent (threadDelay)
 import           Control.Concurrent.Async (race)
 import           Control.Monad (forever, guard, when)
@@ -16,12 +17,17 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Aeson (ToJSON, (.=))
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Encode.Pretty as JSON
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Foldable (asum, for_, toList)
 import           Data.Functor (($>))
+import           Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
 import           Data.Maybe (isNothing)
 import           Data.Text (Text, snoc)
-import           Data.Text.IO (hPutStrLn)
+import qualified Data.Text as Text
+import qualified Data.Text.Encoding as Text
+import qualified Data.Text.Encoding.Error as TextError
+import qualified Data.Text.IO as Text
 import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
                                             defaultLayoutOptions,
                                             layoutPageWidth, layoutSmart,
@@ -57,13 +63,17 @@ import           FF.Upgrade (upgradeDatabase)
 import           RON.Storage.Backend (MonadStorage)
 import           RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
+import qualified ShellWords
 import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, getHomeDirectory)
-import           System.Environment (lookupEnv, setEnv)
-import           System.Exit (exitFailure)
+import           System.Directory (doesDirectoryExist, findExecutable,
+                                   getHomeDirectory)
+import           System.Environment (getEnv, lookupEnv, setEnv)
+import           System.Exit (ExitCode (..), exitFailure)
 import           System.FilePath ((</>))
-import           System.IO (hPutChar, hPutStr, stderr)
+import           System.IO (hClose, hPutChar, hPutStr, hPutStrLn, stderr)
+import           System.IO.Temp (withSystemTempFile)
 import           System.Pager (printOrPage)
+import           System.Process.Typed (proc, runProcess)
 
 cli :: Version -> IO ()
 cli version = do
@@ -173,11 +183,24 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
                   withHeader "Archived:" (prettyNote brief noteview)
             <//>  prettyPath path
     CmdEdit edit -> do
-      notes <- cmdEdit edit
+      notes <-
+        cmdEdit edit $
+          if json then
+            const $ liftIO Text.getContents
+          else
+            liftIO . runExternalEditor
       notes' <- traverse viewNote notes
-      pprint $
-              withHeader "Edited:" (prettyNoteList brief notes')
-        <//>  prettyPath path
+      if json then
+        jprint $
+          JSON.object
+            [ "result"   .= ("edited" :: Text)
+            , "notes"    .= entitiesToJson notes'
+            , "database" .= path
+            ]
+      else
+        pprint $
+                withHeader "Edited:" (prettyNoteList brief notes')
+          <//>  prettyPath path
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
@@ -232,28 +255,27 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today brief
   | dryRun =
-    liftIO $ do
-      samples <- run $ getOpenIssueSamples address limit today
-      pprint $ prettyTaskSections brief (Tags mempty) samples
-  | otherwise =
-    do
+      liftIO $ do
+        samples <- run $ getOpenIssueSamples address limit today
+        pprint $ prettyTaskSections brief (Tags mempty) samples
+  | otherwise = do
       notes <- liftIO $ run $ getIssueViews address limit
       updateTrackedNotes notes
-      liftIO $ putStrLn
-        $ show (length notes)
-          ++ " issues synchronized with the local database"
+      liftIO $
+        putStrLn $
+        show (length notes) ++ " issues synchronized with the local database"
   where
     run getter = do
       hPutStr stderr "fetching"
       eIssues <-
         fromEither
-          <$> race
-                (runExceptT getter)
-                (forever $ hPutChar stderr '.' >> threadDelay 500000)
+        <$> race
+              (runExceptT getter)
+              (forever $ hPutChar stderr '.' >> threadDelay 500000)
       hPutStrLn stderr ""
       case eIssues of
         Left err -> do
-          hPutStrLn stderr err
+          Text.hPutStrLn stderr err
           exitFailure
         Right issues -> pure issues
 
@@ -300,3 +322,41 @@ fromEither = either id id
 
 jprint :: (ToJSON a, MonadIO io) => a -> io ()
 jprint = liftIO . BSL.putStrLn . JSON.encodePretty
+
+runExternalEditor :: Text -> IO Text
+runExternalEditor textOld =
+  do
+    editor :| editorArgs <-
+      asum $
+          assertExecutableFromConfig
+        : assertExecutableFromEnv "VISUAL"
+        : assertExecutableFromEnv "EDITOR"
+        : map assertExecutable ["editor", "micro", "nano", "vi", "vim"]
+    withSystemTempFile "ff.txt" $ \file fileH -> do
+      BS.hPutStr fileH $ Text.encodeUtf8 textOld
+      hClose fileH
+      hPutStrLn stderr "waiting for external editor to close"
+      runProcess (proc editor $ editorArgs ++ [file]) >>= \case
+        ExitSuccess ->
+          Text.strip . Text.decodeUtf8With TextError.ignore <$> BS.readFile file
+        ExitFailure{} -> pure textOld
+  where
+    assertExecutable prog = do
+      Just _ <- findExecutable prog
+      pure $ prog :| []
+
+    assertExecutableFromConfig = do
+      cfg <- loadConfig
+      maybe empty assertExecutable $ externalEditor cfg
+
+    assertExecutableFromEnv var = do
+      editorCmd <- getEnv var
+      let
+        eEditor = do
+          editor <- ShellWords.parse editorCmd
+          maybe (Left "empty") Right $ nonEmpty editor
+      case eEditor of
+        Left err -> do
+          hPutStrLn stderr $ "error in $EDITOR environment variable: " <> err
+          empty
+        Right editor@(prog :| _) -> assertExecutable prog $> editor
