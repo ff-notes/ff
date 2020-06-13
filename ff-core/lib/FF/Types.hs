@@ -79,11 +79,6 @@ instance ToJSON UUID where
 data NoteStatus = TaskStatus Status | Wiki
   deriving (Eq, Show)
 
--- instance FromJSON NoteStatus where
---   parseJSON v = case v of
---     "Wiki" -> pure Wiki
---     _      -> TaskStatus <$> parseJSON v
-
 wiki :: UUID
 wiki = fromJust $ UUID.mkName "Wiki"
 
