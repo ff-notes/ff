@@ -217,9 +217,17 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
         noteview <- viewNote note
-        pprint $
-                withHeader "Postponed:" (prettyNote brief noteview)
-          <//>  prettyPath path
+        if json then
+          jprint $
+            JSON.object
+              [ "result"   .= ("postponed" :: Text)
+              , "note"     .= noteview
+              , "database" .= path
+              ]
+        else
+          pprint $
+                  withHeader "Postponed:" (prettyNote brief noteview)
+            <//>  prettyPath path
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <-
         cmdSearch text status ui limit today tags withoutTags
@@ -250,16 +258,17 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         jprint $ JSON.object ["notes" .= notes', "database" .= path]
       else
         pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
-    CmdTags ->
-      if json then do
-        tags <- loadAllTags
-        jprint $ JSON.object ["tags" .= tags, "database" .= path]
-      else do
-        tags <- loadAllTagTexts
-        pprint $ prettyTagsList tags <//> prettyPath path
-    CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
-    CmdTrack track ->
-      cmdTrack track today brief
+    CmdTags
+      | json -> do
+          tags <- loadAllTags
+          jprint $ JSON.object ["tags" .= tags, "database" .= path]
+      | otherwise -> do
+          tags <- loadAllTagTexts
+          pprint $ prettyTagsList tags <//> prettyPath path
+    CmdSponsors
+      | json -> jprint $ JSON.object ["sponsors" .= sponsors]
+      | otherwise -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
+    CmdTrack track -> cmdTrack track today brief
     CmdUnarchive tasks ->
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
