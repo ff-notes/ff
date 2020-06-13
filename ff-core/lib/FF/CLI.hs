@@ -247,7 +247,12 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
-      pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
+      if json then
+        jprint $
+          JSON.object
+            ["notes" .= entitiesToJson (toList notes'), "database" .= path]
+      else
+        pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
     CmdTags -> do
       allTags <- loadAllTagTexts
       pprint $ prettyTagsList allTags <//> prettyPath path

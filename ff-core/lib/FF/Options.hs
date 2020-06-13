@@ -199,13 +199,14 @@ parser h =
         ]
       where
         action s = command s . fmap CmdAction
-    iCmdAdd = i cmdNew "add new task or note"
-    iCmdAgenda = i cmdAgenda "show what you can do right now [default action]"
-    iCmdConfig = i cmdConfig "show/edit configuration"
+
+    iCmdAdd     = i cmdNew     "add new task or note"
+    iCmdAgenda  = i cmdAgenda  "show what you can do right now [default action]"
+    iCmdConfig  = i cmdConfig  "show/edit configuration"
     iCmdContact = i cmdContact "show contacts"
-    iCmdDelete = i cmdDelete "delete a task"
-    iCmdDone = i cmdDone "mark a task done (archive)"
-    iCmdEdit =
+    iCmdDelete  = i cmdDelete  "delete a task"
+    iCmdDone    = i cmdDone    "mark a task done (archive)"
+    iCmdEdit    =
       i_
         cmdEdit
         "edit a task or a note, using command from environment variable\
@@ -215,50 +216,59 @@ parser h =
             \\n\n\
             \In JSON mode, instead of running an editor program, the text is\
             \ expected in stdin.")
-    iCmdNew = i cmdNew "synonym for `add`"
-    iCmdPostpone = i cmdPostpone "make a task start later"
-    iCmdSearch = i cmdSearch "search for notes with the given text"
-    iCmdShow = i cmdShow "show note by id"
-    iCmdTags = i cmdTags "show tags of all notes"
-    iCmdSponsors = i cmdSponsors "show project sponsors"
-    iCmdTrack = i cmdTrack "track issues from external sources"
+    iCmdNew       = i cmdNew       "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone  "make a task start later"
+    iCmdSearch    = i cmdSearch    "search for notes with the given text"
+    iCmdShow      = i cmdShow      "show note by id"
+    iCmdSponsors  = i cmdSponsors  "show project sponsors"
+    iCmdTags      = i cmdTags      "show tags of all notes"
+    iCmdTrack     = i cmdTrack     "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive "restore the note from archive"
     iCmdUpgrade =
       i cmdUpgrade "check and upgrade the database to the most recent format"
     iCmdWiki = i cmdWiki "show all wiki notes"
-    cmdAgenda = CmdAgenda <$> agenda
-    cmdContact = CmdContact <$> optional contact
-    cmdDelete = CmdDelete <$> some1 noteid
-    cmdDone = CmdDone <$> some1 noteid
-    cmdEdit = CmdEdit <$> edit
-    cmdNew = CmdNew <$> new
-    cmdPostpone = CmdPostpone <$> some1 noteid
-    cmdSearch = CmdSearch <$> search
-    cmdShow = CmdShow <$> some1 noteid
-    cmdSponsors = pure CmdSponsors
-    cmdTags = pure CmdTags
-    cmdTrack = CmdTrack <$> track
+
+    cmdAgenda    = CmdAgenda   <$> agenda
+    cmdContact   = CmdContact  <$> optional contact
+    cmdDelete    = CmdDelete   <$> some1 noteid
+    cmdDone      = CmdDone     <$> some1 noteid
+    cmdEdit      = CmdEdit     <$> edit
+    cmdNew       = CmdNew      <$> new
+    cmdPostpone  = CmdPostpone <$> some1 noteid
+    cmdSearch    = CmdSearch   <$> search
+    cmdShow      = CmdShow     <$> some1 noteid
+    cmdSponsors  = pure CmdSponsors
+    cmdTags      = pure CmdTags
+    cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some1 noteid
-    cmdUpgrade = pure CmdUpgrade
-    cmdWiki = CmdWiki <$> optional limitOption
+    cmdUpgrade   = pure CmdUpgrade
+    cmdWiki      = CmdWiki <$> optional limitOption
+
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
+
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
+
     agenda =
       Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
+
     filterTags = filterByNoTags <|> Tags <$> filterByTags
+
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
+
     dryRunOption =
       switch $
             long "dry-run"
         <>  short 'd'
         <>  help "List only issues, don't set up tracking"
+
     repo =
       strOption $
             long "repo"
         <>  short 'r'
         <>  metavar "USER/REPO"
         <>  help "User or organization/repository"
+
     contact = subparser $ command "add" iAdd <> command "delete" iDelete
       where
         iAdd = i pAdd "Add contact"
@@ -273,6 +283,7 @@ parser h =
                 <>  help "contact id"
                 <>  completer completeContactIds
                 )
+
     new =
       New
       <$> noteTextArgument
@@ -280,6 +291,7 @@ parser h =
       <*> optional endDateOption
       <*> wiki
       <*> addTagsOption
+
     edit =
       Edit
       <$> some1 noteid
@@ -288,6 +300,7 @@ parser h =
       <*> optional assignEnd
       <*> addTagsOption
       <*> deleteTagsOption
+
     search =
       Search
       <$> strArgument (metavar "TEXT")
@@ -298,45 +311,63 @@ parser h =
       <*> optional limitOption
       <*> filterTags
       <*> withoutTagsOption
+
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
+
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
+
     searchC =
       switch $ long "contacts" <> short 'c' <> help "Search among contacts"
+
     searchA =
       flag Active Archived $
         long "archived" <> short 'a' <> help "Search among archived"
+
     noteid =
       argument readDocId $
         metavar "ID" <> help "note id" <> completer completeNoteIds
+
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
+
     filterByTags =
       fmap Set.fromList $ many $ strOption $
         long "tag" <> metavar "TAG" <> help "Filter by tag"
+
     filterByNoTags =
       flag' NoTags $
             long "no-tag"
         <>  short 'n'
         <>  help "Filter items that has no tags"
+
     addTagsOption =
       fmap Set.fromList $ many $ strOption $
         long "tag" <> metavar "TAG" <> help "Add tag"
+
     deleteTagsOption =
       fmap Set.fromList $ many $ strOption $
         long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
+
     withoutTagsOption =
       fmap Set.fromList $ many $ strOption $
         long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
+
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
+
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"
+
     startDateOption =
       dateOption $ long "start" <> short 's' <> help "start date"
+
     noteTextOption =
       strOption $ long "text" <> short 't' <> help "note text" <> metavar "TEXT"
+
     assignEnd =
           Set <$> endDateOption
       <|> flag' Clear (long "end-clear" <> help "clear end date")
+
     dateOption m = option auto $ metavar "DATE" <> m
+
     customDirOption =
       optional $
       strOption $
@@ -344,7 +375,9 @@ parser h =
         <>  short 'C'
         <>  metavar "DIRECTORY"
         <>  help "Path to the data dir"
+
     jsonOption = switch $ long "json" <> help "Use JSON for input/output"
+
     cmdConfig =
       fmap CmdConfig . optional . subparser $
             command "dataDir"        iDataDir
@@ -371,18 +404,24 @@ parser h =
                   Shuffle
                   (long "shuffle" <> help "shuffle notes in section")
             <|> flag' Sort (long "sort" <> help "sort notes in section")
+
     version =
       flag'
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
+
     completeNoteIds = docIdCompleter @Note
+
     completeContactIds = docIdCompleter @FF.Types.Contact
+
     docIdCompleter :: forall a. Collection a => Completer
     docIdCompleter = listIOCompleter $
       map unDocId <$> case h of
         Nothing -> pure []
         Just h' -> runStorage h' (getDocuments @_ @a)
+
     unDocId (DocId name) = name
+
     readDocId = DocId <$> str
 
 i :: Parser a -> String -> ParserInfo a
