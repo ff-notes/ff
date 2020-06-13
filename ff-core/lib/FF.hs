@@ -26,8 +26,8 @@ module FF
     viewWikiSamples,
     load,
     filterTasksByStatus,
-    loadAll,
     loadAllTagTexts,
+    loadAllTags,
     loadAllNotes,
     loadTagsByRefs,
     noDataDirectoryMessage,
@@ -111,9 +111,12 @@ loadContacts :: MonadStorage m => Status -> m [EntityDoc Contact]
 loadContacts status =
   filter ((== Just status) . contact_status . entityVal) <$> loadAll
 
+loadAllTags :: MonadStorage m => m [EntityDoc Tag]
+loadAllTags = loadAll
+
 -- | Load all tags as texts
 loadAllTagTexts :: MonadStorage m => m (Set Text)
-loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAll
+loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAllTags
 
 -- | Load 'Tag' references only for text strings existing in the collection.
 loadTagRefsByText ::

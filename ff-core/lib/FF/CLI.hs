@@ -41,9 +41,9 @@ import           Development.GitRev (gitDirty, gitHash)
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
                      cmdUnarchive, getContactSamples, getDataDir, getUtcToday,
-                     loadAllNotes, loadAllTagTexts, noDataDirectoryMessage,
-                     sponsors, updateTrackedNotes, viewNote, viewTaskSamples,
-                     viewWikiSamples)
+                     loadAllNotes, loadAllTagTexts, loadAllTags,
+                     noDataDirectoryMessage, sponsors, updateTrackedNotes,
+                     viewNote, viewTaskSamples, viewWikiSamples)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
                             printConfig, saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
@@ -250,9 +250,13 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         jprint $ JSON.object ["notes" .= notes', "database" .= path]
       else
         pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
-    CmdTags -> do
-      allTags <- loadAllTagTexts
-      pprint $ prettyTagsList allTags <//> prettyPath path
+    CmdTags ->
+      if json then do
+        tags <- loadAllTags
+        jprint $ JSON.object ["tags" .= tags, "database" .= path]
+      else do
+        tags <- loadAllTagTexts
+        pprint $ prettyTagsList tags <//> prettyPath path
     CmdSponsors -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track ->
       cmdTrack track today brief
