@@ -227,8 +227,8 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         jprint $
           JSON.object
             [ "tasks"    .= foldMap Sample.items tasks
-            , "wiki"     .= Sample.items wikis
-            , "contacts" .= Sample.items contacts
+            , "wiki"     .= wikis
+            , "contacts" .= contacts
             , "database" .= path
             ]
       else

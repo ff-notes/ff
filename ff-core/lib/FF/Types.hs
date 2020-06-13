@@ -205,6 +205,9 @@ instance Collection Tag where
 data Sample a = Sample{items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
 
+instance ToJSON a => ToJSON (Sample a) where
+  toJSON Sample{items} = toJSON items
+
 {- |
   A value identified with some document.
   Should not be used directly, use 'EntityDoc' or 'EntityView' instead.
