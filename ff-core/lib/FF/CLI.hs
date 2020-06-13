@@ -52,8 +52,7 @@ import           FF.Options (ActionOptions (..), Agenda (..), Cmd (..),
                              Options (..), Search (..), Shuffle (..),
                              Tags (Tags), Track (..), parseOptions)
 import qualified FF.Options as Options
-import           FF.Types (Status (Active), entitiesToJson, entityToJson,
-                           loadNote)
+import           FF.Types (Status (Active), loadNote)
 import qualified FF.Types as Sample (Sample (items))
 import           FF.UI (prettyContact, prettyContactSample, prettyNote,
                         prettyNoteList, prettyPath, prettyTagsList,
@@ -146,7 +145,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       if json then
         jprint $
           JSON.object
-            [ "notes"    .= entitiesToJson (foldMap Sample.items samples)
+            [ "notes"    .= foldMap Sample.items samples
             , "database" .= path
             ]
       else
@@ -160,7 +159,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
           jprint $
             JSON.object
               [ "result"   .= ("deleted" :: Text)
-              , "note"     .= entityToJson noteview
+              , "note"     .= noteview
               , "database" .= path
               ]
         else
@@ -175,7 +174,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
           jprint $
             JSON.object
               [ "result"   .= ("archived" :: Text)
-              , "note"     .= entityToJson noteview
+              , "note"     .= noteview
               , "database" .= path
               ]
         else
@@ -194,7 +193,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         jprint $
           JSON.object
             [ "result"   .= ("edited" :: Text)
-            , "notes"    .= entitiesToJson notes'
+            , "notes"    .= notes'
             , "database" .= path
             ]
       else
@@ -208,7 +207,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         jprint $
           JSON.object
             [ "result"   .= ("added" :: Text)
-            , "note"     .= entityToJson noteview
+            , "note"     .= noteview
             , "database" .= path
             ]
       else
@@ -227,9 +226,9 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       if json then
         jprint $
           JSON.object
-            [ "tasks"    .= entitiesToJson (foldMap Sample.items tasks)
-            , "wiki"     .= entitiesToJson (Sample.items wikis)
-            , "contacts" .= entitiesToJson (Sample.items contacts)
+            [ "tasks"    .= foldMap Sample.items tasks
+            , "wiki"     .= Sample.items wikis
+            , "contacts" .= Sample.items contacts
             , "database" .= path
             ]
       else
@@ -248,9 +247,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
       if json then
-        jprint $
-          JSON.object
-            ["notes" .= entitiesToJson (toList notes'), "database" .= path]
+        jprint $ JSON.object ["notes" .= notes', "database" .= path]
       else
         pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
     CmdTags -> do

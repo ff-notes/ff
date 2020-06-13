@@ -44,7 +44,6 @@ import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
 import           Data.Text (Text)
-import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Data.Time (diffDays)
 import           FF.CrdtAesonInstances ()
@@ -217,17 +216,18 @@ deriving instance Eq val => Eq (Entity doc val)
 
 deriving instance Show val => Show (Entity doc val)
 
+instance ToJSON val => ToJSON (Entity doc val) where
+  toJSON e = JSON.object [entityToJson e]
+  toJSONList = JSON.object . map entityToJson
+
 entityToJson :: ToJSON val => Entity doc val -> JSON.Pair
 entityToJson Entity{entityId = DocId entityId, entityVal} = key .= entityVal
   where
     key =
       maybe
-        (Text.pack $ "raw:" <> entityId)
+        (error "entityId is not a valid RON-UUID")
         (Text.decodeUtf8 . BSL.toStrict . serializeUuid)
         (UUID.decodeBase32 entityId)
-
-entitiesToJson :: ToJSON val => [Entity doc val] -> JSON.Value
-entitiesToJson = JSON.object . map entityToJson
 
 type EntityDoc doc = Entity doc doc
 
