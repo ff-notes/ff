@@ -104,7 +104,7 @@ Ubuntu:
       delete                   delete a task
       done                     mark a task done (archive)
       edit                     edit a task or a note, using command from environment
-                               variable EDITOR or program `editor`
+                               variable `EDITOR` or program `editor`
       new                      synonym for `add`
       postpone                 make a task start later
       search                   search for notes with the given text

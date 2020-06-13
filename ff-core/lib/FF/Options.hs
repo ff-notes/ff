@@ -2,6 +2,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
@@ -39,7 +40,7 @@ import           Options.Applicative (Completer, InfoMod,
                                       ParseError (ShowHelpText), Parser,
                                       ParserInfo, ParserPrefs, argument, auto,
                                       command, completer, customExecParser,
-                                      defaultPrefs, flag, flag', footer,
+                                      defaultPrefs, flag, flag', footerDoc,
                                       fullDesc, help, helper, info,
                                       listIOCompleter, long, metavar, option,
                                       parserFailure, prefDisambiguate,
@@ -207,10 +208,13 @@ parser h =
     iCmdEdit =
       i_
         cmdEdit
-        "edit a task or a note, using command from environment variable EDITOR\
-        \ or program `editor`"
-        $ footer
-          "Examples for EDITOR: 'code --wait', 'emacs', 'micro', 'nano', 'vim'"
+        "edit a task or a note, using command from environment variable\
+          \ `EDITOR` or program `editor`"
+        (footerDoc . Just $
+          "Examples for EDITOR: 'code --wait', 'emacs', 'micro', 'nano', 'vim'.\
+            \\n\n\
+            \In JSON mode, instead of running an editor program, the text is\
+            \ expected in stdin.")
     iCmdNew = i cmdNew "synonym for `add`"
     iCmdPostpone = i cmdPostpone "make a task start later"
     iCmdSearch = i cmdSearch "search for notes with the given text"
@@ -246,15 +250,15 @@ parser h =
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
     dryRunOption =
       switch $
-        long "dry-run"
-          <> short 'd'
-          <> help "List only issues, don't set up tracking"
+            long "dry-run"
+        <>  short 'd'
+        <>  help "List only issues, don't set up tracking"
     repo =
       strOption $
-        long "repo"
-          <> short 'r'
-          <> metavar "USER/REPO"
-          <> help "User or organization/repository"
+            long "repo"
+        <>  short 'r'
+        <>  metavar "USER/REPO"
+        <>  help "User or organization/repository"
     contact = subparser $ command "add" iAdd <> command "delete" iDelete
       where
         iAdd = i pAdd "Add contact"
@@ -263,37 +267,37 @@ parser h =
           Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
         pDelete =
           Delete
-            <$> argument
-              readDocId
-              ( metavar "CONTACT_ID"
-                  <> help "contact id"
-                  <> completer completeContactIds
-              )
+          <$> argument
+                readDocId
+                (   metavar "CONTACT_ID"
+                <>  help "contact id"
+                <>  completer completeContactIds
+                )
     new =
       New
-        <$> noteTextArgument
-        <*> optional startDateOption
-        <*> optional endDateOption
-        <*> wiki
-        <*> addTagsOption
+      <$> noteTextArgument
+      <*> optional startDateOption
+      <*> optional endDateOption
+      <*> wiki
+      <*> addTagsOption
     edit =
       Edit
-        <$> some1 noteid
-        <*> optional noteTextOption
-        <*> optional startDateOption
-        <*> optional assignEnd
-        <*> addTagsOption
-        <*> deleteTagsOption
+      <$> some1 noteid
+      <*> optional noteTextOption
+      <*> optional startDateOption
+      <*> optional assignEnd
+      <*> addTagsOption
+      <*> deleteTagsOption
     search =
       Search
-        <$> strArgument (metavar "TEXT")
-        <*> searchT
-        <*> searchW
-        <*> searchC
-        <*> searchA
-        <*> optional limitOption
-        <*> filterTags
-        <*> withoutTagsOption
+      <$> strArgument (metavar "TEXT")
+      <*> searchT
+      <*> searchW
+      <*> searchC
+      <*> searchA
+      <*> optional limitOption
+      <*> filterTags
+      <*> withoutTagsOption
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
     searchC =
@@ -310,9 +314,9 @@ parser h =
         long "tag" <> metavar "TAG" <> help "Filter by tag"
     filterByNoTags =
       flag' NoTags $
-        long "no-tag"
-          <> short 'n'
-          <> help "Filter items that has no tags"
+            long "no-tag"
+        <>  short 'n'
+        <>  help "Filter items that has no tags"
     addTagsOption =
       fmap Set.fromList $ many $ strOption $
         long "tag" <> metavar "TAG" <> help "Add tag"
@@ -330,15 +334,16 @@ parser h =
     noteTextOption =
       strOption $ long "text" <> short 't' <> help "note text" <> metavar "TEXT"
     assignEnd =
-      Set <$> endDateOption
-        <|> flag' Clear (long "end-clear" <> help "clear end date")
+          Set <$> endDateOption
+      <|> flag' Clear (long "end-clear" <> help "clear end date")
     dateOption m = option auto $ metavar "DATE" <> m
     customDirOption =
-      optional $ strOption $
-        long "data-dir"
-          <> short 'C'
-          <> metavar "DIRECTORY"
-          <> help "Path to the data dir"
+      optional $
+      strOption $
+            long "data-dir"
+        <>  short 'C'
+        <>  metavar "DIRECTORY"
+        <>  help "Path to the data dir"
     jsonOption = switch $ long "json" <> help "Use JSON for input/output"
     cmdConfig =
       fmap CmdConfig . optional . subparser $
@@ -362,10 +367,10 @@ parser h =
         iUi = i ui "UI tweaks"
         ui =
           fmap ConfigUI . optional $
-            flag'
-              Shuffle
-              (long "shuffle" <> help "shuffle notes in section")
-              <|> flag' Sort (long "sort" <> help "sort notes in section")
+                flag'
+                  Shuffle
+                  (long "shuffle" <> help "shuffle notes in section")
+            <|> flag' Sort (long "sort" <> help "sort notes in section")
     version =
       flag'
         CmdVersion
