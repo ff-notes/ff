@@ -1,11 +1,15 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -23,20 +27,24 @@ import           Control.Monad.Reader (ask, runReaderT)
 import qualified CRDT.Cv.RGA as CRDT
 import qualified CRDT.LamportClock as CRDT
 import qualified CRDT.LWW as CRDT
-import           Data.Aeson (FromJSON, eitherDecode, parseJSON, withObject,
-                             (.:), (.:?))
 import qualified Data.Aeson as JSON
-import           Data.Aeson.TH (defaultOptions, deriveFromJSON)
+import           Data.Aeson.Extra (ToJSON, eitherDecode, singletonObjectSum,
+                                   toJSON, untaggedSum, withObject, (.:), (.:?),
+                                   (.=))
+import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveToJSON)
 import           Data.Aeson.Types (parseEither)
+import qualified Data.Aeson.Types as JSON
 import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as BSL
 import           Data.Hashable (Hashable)
 import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust, maybeToList)
 import           Data.Text (Text)
+import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import           Data.Time (diffDays)
 import           FF.CrdtAesonInstances ()
@@ -47,7 +55,7 @@ import           RON.Data (MonadObjectState, Replicated (encoding),
                            evalObjectState, payloadEncoding, readObject,
                            stateFromChunk, stateToWireChunk)
 import           RON.Data.LWW (lwwType)
-import           RON.Data.RGA (RgaRep)
+import           RON.Data.RGA (RGA, RgaRep)
 import           RON.Data.Time (Day)
 import           RON.Epoch (localEpochTimeFromUnix)
 import           RON.Error (Error (Error), MonadE, liftEitherString)
@@ -55,7 +63,8 @@ import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
 import           RON.Schema.TH (mkReplicated)
 import           RON.Storage (Collection, DocId, collectionName, fallbackParse,
                               loadDocument)
-import           RON.Storage.Backend (Document (Document, objectFrame),
+import           RON.Storage.Backend (DocId (DocId),
+                                      Document (Document, objectFrame),
                                       MonadStorage)
 import           RON.Text.Serialize (serializeUuid)
 import           RON.Types (Atom (AUuid),
@@ -63,6 +72,9 @@ import           RON.Types (Atom (AUuid),
                             ObjectRef (ObjectRef), Op (Op), UUID,
                             WireStateChunk (WireStateChunk, stateBody, stateType))
 import qualified RON.UUID as UUID
+
+instance ToJSON UUID where
+  toJSON = JSON.String . uuidToText
 
 data NoteStatus = TaskStatus Status | Wiki
   deriving (Eq, Show)
@@ -205,6 +217,18 @@ deriving instance Eq val => Eq (Entity doc val)
 
 deriving instance Show val => Show (Entity doc val)
 
+entityToJson :: ToJSON val => Entity doc val -> JSON.Pair
+entityToJson Entity{entityId = DocId entityId, entityVal} = key .= entityVal
+  where
+    key =
+      maybe
+        (Text.pack $ "raw:" <> entityId)
+        (Text.decodeUtf8 . BSL.toStrict . serializeUuid)
+        (UUID.decodeBase32 entityId)
+
+entitiesToJson :: ToJSON val => [Entity doc val] -> JSON.Value
+entitiesToJson = JSON.object . map entityToJson
+
 type EntityDoc doc = Entity doc doc
 
 type EntityView doc = Entity doc (View doc)
@@ -227,6 +251,18 @@ data instance View Note = NoteView
   , tags :: HashMap Text Text -- ^ the key is UUID or URI of the tag
   }
   deriving (Eq, Show)
+
+instance ToJSON (View Note) where
+  toJSON NoteView{note, tags} =
+    JSON.Object $ HashMap.insert "note_tags" tags' noteObj
+    where
+      noteObj = case toJSON note of
+        JSON.Object obj -> obj
+        _               -> error "Note must be serialized to Object"
+      tags' = JSON.Object $ JSON.String <$> tags
+
+uuidToText :: UUID -> Text
+uuidToText = Text.decodeUtf8 . BSL.toStrict . serializeUuid
 
 type ModeMap = Map TaskMode
 
@@ -382,20 +418,26 @@ rgaFromV1 :: CRDT.RgaString -> RgaRep
 rgaFromV1 (CRDT.RGA oldRga) =
   stateFromChunk
     [ Op event ref $ toPayload a
-      | (vid, a) <- oldRga,
-        let event = timeFromV1 vid
-            ref = case a of
-              '\0' -> UUID.succValue event
-              _ -> UUID.zero
+    | (vid, a) <- oldRga
+    , let
+        event = timeFromV1 vid
+        ref =
+          case a of
+            '\0' -> UUID.succValue event
+            _ -> UUID.zero
     ]
 
+deriveToJSON defaultOptions     ''Link
+deriveToJSON defaultOptions     ''LinkType
+deriveToJSON defaultOptions     ''Note
+deriveToJSON singletonObjectSum ''NoteStatus
+deriveToJSON defaultOptions     ''ObjectRef
+deriveToJSON defaultOptions     ''RGA
+deriveToJSON defaultOptions     ''Status
+deriveToJSON defaultOptions     ''Tag
+deriveToJSON defaultOptions     ''TaskMode
+deriveToJSON defaultOptions     ''Track
+
 -- used in parseNoteV1
+deriveFromJSON untaggedSum    ''NoteStatus
 deriveFromJSON defaultOptions ''Status
-
-instance FromJSON NoteStatus where
-  parseJSON v = case v of
-    "Wiki" -> pure Wiki
-    _ -> TaskStatus <$> parseJSON v
-
-uuidToText :: UUID -> Text
-uuidToText = Text.decodeUtf8 . BSL.toStrict . serializeUuid
