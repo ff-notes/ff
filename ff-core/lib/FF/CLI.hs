@@ -1,6 +1,10 @@
-{-# LANGUAGE DuplicateRecordFields, LambdaCase, NamedFieldPuns,
-             OverloadedStrings, RecordWildCards, TemplateHaskell,
-             TupleSections #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 module FF.CLI where
 
@@ -42,7 +46,8 @@ import           FF.Options (ActionOptions (..), Agenda (..), Cmd (..),
                              Options (..), Search (..), Shuffle (..),
                              Tags (Tags), Track (..), parseOptions)
 import qualified FF.Options as Options
-import           FF.Types (Status (Active), entitiesToJson, loadNote)
+import           FF.Types (Status (Active), entitiesToJson, entityToJson,
+                           loadNote)
 import qualified FF.Types as Sample (Sample (items))
 import           FF.UI (prettyContact, prettyContactSample, prettyNote,
                         prettyNoteList, prettyPath, prettyTagsList,
@@ -141,9 +146,16 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
         noteview <- viewNote note
-        pprint $
-                withHeader "Deleted:" (prettyNote brief noteview)
-          <//>  prettyPath path
+        if json then
+          jprint $
+            JSON.object
+              [ "deleted"  .= entityToJson noteview
+              , "database" .= path
+              ]
+        else
+          pprint $
+                  withHeader "Deleted:" (prettyNote brief noteview)
+            <//>  prettyPath path
     CmdDone notes ->
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
