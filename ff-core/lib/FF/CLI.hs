@@ -20,7 +20,7 @@ import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Foldable (asum, for_, toList)
 import           Data.Functor (($>))
 import           Data.Maybe (isNothing)
-import           Data.Text (snoc)
+import           Data.Text (Text, snoc)
 import           Data.Text.IO (hPutStrLn)
 import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
                                             defaultLayoutOptions,
@@ -149,7 +149,8 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
         if json then
           jprint $
             JSON.object
-              [ "deleted"  .= entityToJson noteview
+              [ "result"   .= ("deleted" :: Text)
+              , "note"     .= entityToJson noteview
               , "database" .= path
               ]
         else
@@ -160,9 +161,17 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       for_ notes $ \noteId -> do
         note <- cmdDone noteId
         noteview <- viewNote note
-        pprint $
-                withHeader "Archived:" (prettyNote brief noteview)
-          <//>  prettyPath path
+        if json then
+          jprint $
+            JSON.object
+              [ "result"   .= ("archived" :: Text)
+              , "note"     .= entityToJson noteview
+              , "database" .= path
+              ]
+        else
+          pprint $
+                  withHeader "Archived:" (prettyNote brief noteview)
+            <//>  prettyPath path
     CmdEdit edit -> do
       notes <- cmdEdit edit
       notes' <- traverse viewNote notes
