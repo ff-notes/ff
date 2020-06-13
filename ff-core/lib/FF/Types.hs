@@ -424,9 +424,10 @@ rgaFromV1 (CRDT.RGA oldRga) =
         ref =
           case a of
             '\0' -> UUID.succValue event
-            _ -> UUID.zero
+            _    -> UUID.zero
     ]
 
+deriveToJSON defaultOptions     ''Contact
 deriveToJSON defaultOptions     ''Link
 deriveToJSON defaultOptions     ''LinkType
 deriveToJSON defaultOptions     ''Note

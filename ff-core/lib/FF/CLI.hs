@@ -204,8 +204,16 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
-      pprint $
-        withHeader "Added:" (prettyNote brief noteview) <//> prettyPath path
+      if json then
+        jprint $
+          JSON.object
+            [ "result"   .= ("added" :: Text)
+            , "note"     .= entityToJson noteview
+            , "database" .= path
+            ]
+      else
+        pprint $
+          withHeader "Added:" (prettyNote brief noteview) <//> prettyPath path
     CmdPostpone notes ->
       for_ notes $ \noteId -> do
         note <- cmdPostpone noteId
@@ -216,17 +224,26 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <-
         cmdSearch text status ui limit today tags withoutTags
-      pprint $
-              prettyTasksWikisContacts
-                brief
-                tasks
-                wikis
-                contacts
-                inTasks
-                inWikis
-                inContacts
-                tags
-        <//>  prettyPath path
+      if json then
+        jprint $
+          JSON.object
+            [ "tasks"    .= entitiesToJson (foldMap Sample.items tasks)
+            , "wiki"     .= entitiesToJson (Sample.items wikis)
+            , "contacts" .= entitiesToJson (Sample.items contacts)
+            , "database" .= path
+            ]
+      else
+        pprint $
+                prettyTasksWikisContacts
+                  brief
+                  tasks
+                  wikis
+                  contacts
+                  inTasks
+                  inWikis
+                  inContacts
+                  tags
+          <//>  prettyPath path
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
