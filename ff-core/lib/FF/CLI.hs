@@ -136,7 +136,7 @@ runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
 runCmdAction ::
   (MonadIO m, MonadStorage m) =>
   ConfigUI -> CmdAction -> ActionOptions -> Maybe FilePath -> m ()
-runCmdAction ui cmd ActionOptions{brief, json} path = do
+runCmdAction ui cmd options@ActionOptions{brief, json} path = do
   today <- getUtcToday
   case cmd of
     CmdAgenda Agenda{limit, tags, withoutTags} -> do
@@ -150,7 +150,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
             ]
       else
         pprint $ prettyTaskSections brief tags samples <//> prettyPath path
-    CmdContact contact -> cmdContact brief path contact
+    CmdContact contact -> cmdContact options path contact
     CmdDelete notes ->
       for_ notes $ \noteId -> do
         note <- cmdDeleteNote noteId
@@ -323,32 +323,53 @@ cmdTrack Track {dryRun, address, limit} today brief
         Right issues -> pure issues
 
 cmdContact ::
-  (MonadIO m, MonadStorage m) => Bool -> Maybe FilePath -> Maybe Contact -> m ()
-cmdContact brief path= \case
+  (MonadIO m, MonadStorage m) =>
+  ActionOptions -> Maybe FilePath -> Maybe Contact -> m ()
+cmdContact ActionOptions{json, brief} path = \case
   Just (Add name) -> do
     contact <- cmdNewContact name
-    pprint $
-      withHeader "Added:" (prettyContact brief contact) <//> prettyPath path
+    if json then
+      jprint $
+        JSON.object
+          [ "result"   .= ("added" :: Text)
+          , "contact"  .= contact
+          , "database" .= path
+          ]
+    else
+      pprint $
+        withHeader "Added:" (prettyContact brief contact) <//> prettyPath path
   Just (Delete cid) -> do
     contact <- cmdDeleteContact cid
-    pprint $
-      withHeader "Deleted:" (prettyContact brief contact) <//> prettyPath path
+    if json then
+      jprint $
+        JSON.object
+          [ "result"   .= ("deleted" :: Text)
+          , "contact"  .= contact
+          , "database" .= path
+          ]
+    else
+      pprint $
+        withHeader "Deleted:" (prettyContact brief contact) <//> prettyPath path
   Nothing -> do
     contacts <- getContactSamples Active
-    pprint $ prettyContactSample brief contacts <//> prettyPath path
+    if json then
+      jprint $
+        JSON.object
+          [ "contacts" .= contacts
+          , "database" .= path
+          ]
+    else
+      pprint $ prettyContactSample brief contacts <//> prettyPath path
 
 -- | Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
 runCmdVersion :: Version -> IO ()
 runCmdVersion version =
-  putStrLn
-    $ concat
-        [ "Version ",
-          showVersion version,
-          ", Git revision ",
-          $(gitHash),
-          if $(gitDirty) then ", dirty" else ""
-        ]
+  putStrLn $
+    concat
+      [ "Version ", showVersion version
+      , ", Git revision ", $(gitHash), if $(gitDirty) then ", dirty" else ""
+      ]
 
 pprint :: MonadIO io => Doc AnsiStyle -> io ()
 pprint doc = liftIO $ do
@@ -356,8 +377,9 @@ pprint doc = liftIO $ do
   lessConf <- lookupEnv "LESS"
   when (isNothing lessConf) $ setEnv "LESS" "-R"
   width <- maybe 80 Terminal.width <$> Terminal.size
-  let layoutOptions =
-        defaultLayoutOptions {layoutPageWidth = AvailablePerLine width 1}
+  let
+    layoutOptions =
+      defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
   printOrPage . (`snoc` '\n') . renderStrict $ layoutSmart layoutOptions doc
 
 fromEither :: Either a a -> a
