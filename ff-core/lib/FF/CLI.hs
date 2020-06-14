@@ -45,7 +45,7 @@ import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      noDataDirectoryMessage, sponsors, updateTrackedNotes,
                      viewNote, viewTaskSamples, viewWikiSamples)
 import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
-                            printConfig, saveConfig)
+                            saveConfig)
 import           FF.Github (getIssueViews, getOpenIssueSamples)
 import           FF.Options (ActionOptions (..), Agenda (..), Cmd (..),
                              CmdAction (..), Contact (..), DataDir (..),
@@ -96,7 +96,7 @@ cli version = do
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
-  Nothing -> printConfig cfg
+  Nothing -> jprint cfg
   Just (Options.ConfigDataDir mDir) -> do
     dir <-
       case mDir of
@@ -109,20 +109,20 @@ runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
             , trySaveDataDir $ home </> "Yandex.Disk.localized"
             , fail "Cant't detect Yandex.Disk directory"
             ]
-    printConfig dir
+    jprint dir
   Just (Options.ConfigExternalEditor mPath) -> do
     path <-
       case mPath of
         Nothing -> pure externalEditor
         Just path -> saveExternalEditor path
-    printConfig path
+    jprint path
   Just (Options.ConfigUI mShuffle) -> do
     ui' <-
       case mShuffle of
         Nothing -> pure ui
         Just Shuffle -> saveShuffle True
         Just Sort -> saveShuffle False
-    printConfig ui'
+    jprint ui'
   where
     trySaveDataDir baseDir = do
       guard =<< doesDirectoryExist baseDir

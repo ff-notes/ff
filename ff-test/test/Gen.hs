@@ -4,6 +4,7 @@ module Gen (config, contact, day, note) where
 
 import           Prelude hiding (maybe)
 
+import           Data.Char (isControl)
 import           Data.Time (Day, fromGregorian)
 import           Hedgehog (Gen)
 import           Hedgehog.Gen (bool_, choice, enumBounded, integral, maybe,
@@ -17,7 +18,8 @@ import           FF.Types (Contact (..), Note (..), NoteStatus (..), Status,
 
 config :: Gen Config
 config = do
-    dataDir <- maybe $ string (Range.linear 1 100) unicode
+    dataDir <-
+        maybe $ filter (not . isControl) <$> string (Range.linear 1 100) unicode
     externalEditor <- maybe $ string (Range.linear 1 100) unicode
     ui <- configUI
     pure Config{..}

@@ -5,10 +5,9 @@
 module FF.Config where
 
 import           Control.Exception (throw)
+import           Data.Aeson (FromJSON, withObject, (.!=), (.:?))
+import qualified Data.Aeson as JSON
 import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON)
-import qualified Data.ByteString as BS
-import           Data.Yaml (FromJSON, ToJSON, decodeFileEither, encodeFile,
-                            withObject, (.!=), (.:?))
 import qualified Data.Yaml as Yaml
 import           System.Directory (XdgDirectory (XdgConfig),
                                    createDirectoryIfMissing, doesFileExist,
@@ -55,14 +54,11 @@ loadConfig = do
     path   <- getCfgFilePath
     exists <- doesFileExist path
     if exists
-        then either throw pure =<< decodeFileEither path
+        then either throw pure =<< Yaml.decodeFileEither path
         else pure emptyConfig
 
 saveConfig :: Config -> IO ()
 saveConfig cfg = do
     cfgFilePath <- getCfgFilePath
     createDirectoryIfMissing True $ takeDirectory cfgFilePath
-    encodeFile cfgFilePath cfg
-
-printConfig :: ToJSON a => a -> IO ()
-printConfig = BS.putStr . Yaml.encode
+    JSON.encodeFile cfgFilePath cfg
