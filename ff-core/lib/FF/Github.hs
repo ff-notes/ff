@@ -142,9 +142,8 @@ issueToNote address Issue{..} = NoteView
         Just (URL url) -> url
         Nothing -> "https://github.com/" <> address <> "/issues/" <> externalId
     note_end = case issueMilestone of
-        Just Milestone { milestoneDueOn = Just UTCTime { utctDay } } ->
-            Just utctDay
-        _ -> Nothing
+        Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
+        _                                                      -> Nothing
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b

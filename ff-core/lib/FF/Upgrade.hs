@@ -15,45 +15,28 @@ module FF.Upgrade
     )
 where
 
-import Data.Foldable (for_)
+import           Data.Foldable (for_)
 import qualified Data.Map.Strict as Map
-import FF.Types (Note)
-import RON.Data
-  ( MonadObjectState,
-    getObjectStateChunk,
-    reducibleOpType,
-    stateFromWireChunk,
-    stateToWireChunk,
-    )
-import RON.Data.LWW (LwwRep (LwwRep))
-import RON.Data.ORSet (ORSetRep (ORSetRep))
-import RON.Error (Error (Error), MonadE, errorContext, liftMaybe)
-import RON.Event (ReplicaClock, getEventUuid)
-import RON.Prelude
-import RON.Storage.Backend
-  ( MonadStorage,
-    changeDocId,
-    getCollections,
-    getDocuments
-    )
-import RON.Storage.FS
-  ( Collection,
-    DocId,
-    decodeDocId,
-    docIdFromUuid,
-    modify
-    )
-import RON.Types
-  ( Atom (AUuid),
-    ObjectRef (ObjectRef),
-    Op (Op, opId, payload, refId),
-    StateChunk (StateChunk),
-    StateFrame,
-    UUID,
-    WireStateChunk (WireStateChunk, stateType),
-    )
-import RON.UUID (pattern Zero)
+import           RON.Data (MonadObjectState, getObjectStateChunk,
+                           reducibleOpType, stateFromWireChunk,
+                           stateToWireChunk)
+import           RON.Data.LWW (LwwRep (LwwRep))
+import           RON.Data.ORSet (ORSetRep (ORSetRep))
+import           RON.Error (Error (Error), MonadE, errorContext, liftMaybe)
+import           RON.Event (ReplicaClock, getEventUuid)
+import           RON.Prelude
+import           RON.Storage.Backend (MonadStorage, changeDocId, getCollections,
+                                      getDocuments)
+import           RON.Storage.FS (Collection, DocId, decodeDocId, docIdFromUuid,
+                                 modify)
+import           RON.Types (Atom (AUuid), ObjectRef (ObjectRef),
+                            Op (Op, opId, payload, refId),
+                            StateChunk (StateChunk), StateFrame, UUID,
+                            WireStateChunk (WireStateChunk, stateType))
+import           RON.UUID (pattern Zero)
 import qualified RON.UUID as UUID
+
+import           FF.Types (Note)
 
 upgradeDatabase :: (MonadE m, MonadStorage m) => m ()
 upgradeDatabase = do
@@ -80,7 +63,7 @@ convertLwwToSet
 convertLwwToSet uuid =
   errorContext "convertLwwToSet" $ do
     frame <- get
-    chunk@WireStateChunk {stateType} <-
+    chunk@WireStateChunk{stateType} <-
       liftMaybe "no such object in chunk" $ Map.lookup uuid frame
     if
       | stateType == lwwType -> doConvert chunk
@@ -97,16 +80,15 @@ convertLwwToSet uuid =
     doConvert chunk = do
       LwwRep lwwRep <- stateFromWireChunk chunk
       opMap <-
-        for (Map.assocs lwwRep) $ \(field, Op {payload}) -> do
+        for (Map.assocs lwwRep) $ \(field, Op{payload}) -> do
           opId <- getEventUuid
           pure
-            ( opId,
-              Op
-                { opId,
-                  refId = Zero,
-                  payload = AUuid field : removeOption payload
-                  }
-              )
+            ( opId
+            , Op{ opId
+                , refId = Zero
+                , payload = AUuid field : removeOption payload
+                }
+            )
       modify'
         $ Map.insert uuid
         $ stateToWireChunk
@@ -124,13 +106,13 @@ convertLwwToSet uuid =
 note_track_get :: (MonadE m, MonadObjectState Note m) => m (Maybe UUID)
 note_track_get = do
   StateChunk stateBody <- getObjectStateChunk
-  pure
-    $ asum
-        [ case payload of
-            AUuid field : AUuid ref : _ | field == track -> Just ref
-            _ -> Nothing
-          | Op {refId = Zero, payload} <- stateBody
-          ]
+  pure $
+    asum
+      [ case payload of
+          AUuid field : AUuid ref : _ | field == track -> Just ref
+          _ -> Nothing
+      | Op{refId = Zero, payload} <- stateBody
+      ]
   where
     track = $(UUID.liftName "track")
 

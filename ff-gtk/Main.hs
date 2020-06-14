@@ -11,54 +11,34 @@ module Main
   )
 where
 
-import Control.Lens ((%~), makeClassy_)
-import Control.Monad (void)
-import Control.Monad.Trans (lift)
-import Data.Function ((&))
-import Data.Map.Strict (Map)
+import           Control.Lens (makeClassy_, (%~))
+import           Control.Monad (void)
+import           Control.Monad.Trans (lift)
+import           Data.Function ((&))
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
 import qualified Data.Text as Text
 import qualified Data.Vector as Vector
-import FF
-  ( filterTasksByStatus,
-    fromRgaM,
-    getDataDir,
-    loadAllNotes,
-    noDataDirectoryMessage,
-    viewNote,
-  )
-import FF.Config (loadConfig)
-import FF.Types
-  ( Entity (Entity),
-    EntityView,
-    Note (Note),
-    NoteId,
-    NoteStatus (TaskStatus),
-    Status (Active),
-    View (NoteView, note),
-  )
-import qualified FF.Types
 import qualified GI.Gtk as Gtk
-import GI.Gtk.Declarative
-  ( Attribute ((:=)),
-    BoxChild,
-    bin,
-    container,
-    on,
-    widget,
-  )
-import GI.Gtk.Declarative.App.Simple
-  ( App (App),
-    AppView,
-    Transition (Exit, Transition),
-    run,
-  )
+import           GI.Gtk.Declarative (Attribute ((:=)), BoxChild, bin, container,
+                                     on, widget)
+import           GI.Gtk.Declarative.App.Simple (App (App), AppView,
+                                                Transition (Exit, Transition),
+                                                run)
 import qualified GI.Gtk.Declarative.App.Simple
-import Pipes (Producer, each)
-import RON.Storage.FS (runStorage)
+import           Pipes (Producer, each)
+import           RON.Storage.FS (runStorage)
 import qualified RON.Storage.FS as StorageFS
 
-newtype State = State {tasks :: Map NoteId (View Note)}
+import           FF (filterTasksByStatus, fromRgaM, getDataDir, loadAllNotes,
+                     noDataDirectoryMessage, viewNote)
+import           FF.Config (loadConfig)
+import           FF.Types (Entity (Entity), EntityView, Note (Note), NoteId,
+                           NoteStatus (TaskStatus), Status (Active),
+                           View (NoteView, note))
+import qualified FF.Types
+
+newtype State = State{tasks :: Map NoteId (View Note)}
 
 makeClassy_ ''State
 
@@ -67,7 +47,7 @@ data Event
   | UpsertTask (EntityView Note)
 
 view :: State -> AppView Gtk.Window Event
-view State {tasks} =
+view State{tasks} =
   bin Gtk.Window
     [ #title := "ff-gtk",
       #heightRequest := 300,
@@ -87,7 +67,7 @@ view State {tasks} =
             ]
         )
     taskWidget :: EntityView Note -> BoxChild Event
-    taskWidget Entity {entityVal} =
+    taskWidget Entity{entityVal} =
       widget Gtk.Label
         [ #halign := Gtk.AlignStart,
           #label := (if isActive then id else strike) (Text.pack noteText),
@@ -95,7 +75,7 @@ view State {tasks} =
           #wrap := True
         ]
       where
-        NoteView {note = Note {note_status, note_text}} = entityVal
+        NoteView{note = Note{note_status, note_text}} = entityVal
         noteText = fromRgaM note_text
         isActive = note_status == Just (TaskStatus Active)
         strike text = "<s>" <> text <> "</s>"
@@ -110,7 +90,7 @@ view State {tasks} =
 update :: State -> Event -> Transition State Event
 update st = \case
   Close -> Exit
-  UpsertTask Entity {entityId, entityVal} ->
+  UpsertTask Entity{entityId, entityVal} ->
     Transition (st & _tasks %~ Map.insert entityId entityVal) (pure Nothing)
 
 main :: IO ()
@@ -118,12 +98,11 @@ main = do
     path <- getDataDirOrFail
     storage <- StorageFS.newHandle path
     void $
-        run App{
-                view,
-                update,
-                initialState = State {tasks = []},
-                inputs = [
-                    initiallyLoadActiveTasks storage
+        run App { view
+                , update
+                , initialState = State{tasks = []}
+                , inputs =
+                    [ initiallyLoadActiveTasks storage
                     -- TODO , listenToChanges
                     ]
                 }

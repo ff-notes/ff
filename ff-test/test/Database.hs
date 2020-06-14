@@ -24,16 +24,6 @@ import qualified Data.Text as Text
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time (Day, UTCTime (..), fromGregorian)
 import qualified Data.Vector as Vector
-import           FF (cmdNewNote, loadAllNotes, viewTaskSamples)
-import           FF.Config (defaultConfigUI)
-import qualified FF.Github as Github
-import           FF.Options (New (..), Tags (Tags))
-import           FF.Types (pattern Entity, Limit, Note (..),
-                           NoteStatus (TaskStatus),
-                           Sample (Sample, items, total), Status (Active),
-                           TaskMode (Overdue), Track (..),
-                           View (NoteView, note, tags), entityVal)
-import           FF.Upgrade (upgradeDatabase)
 import qualified Gen
 import           GitHub (Issue (..), IssueLabel (..), IssueNumber (IssueNumber),
                          IssueState (..), Milestone (..), URL (..))
@@ -52,6 +42,17 @@ import qualified RON.UUID as UUID
 import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Hedgehog (testProperty)
 import           Test.Tasty.TH (testGroupGenerator)
+
+import           FF (cmdNewNote, loadAllNotes, viewTaskSamples)
+import           FF.Config (defaultConfigUI)
+import qualified FF.Github as Github
+import           FF.Options (New (..), Tags (Tags))
+import           FF.Types (pattern Entity, Limit, Note (..),
+                           NoteStatus (TaskStatus),
+                           Sample (Sample, items, total), Status (Active),
+                           TaskMode (Overdue), Track (..),
+                           View (NoteView, note, tags), entityVal)
+import           FF.Upgrade (upgradeDatabase)
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -86,19 +87,20 @@ prop_smoke = property $ do
               [ Entity
                   (DocId "B00000000002D-200000000002D")
                   NoteView
-                    { note = Note
-                        { note_status = Just $ TaskStatus Active,
-                          note_text = Just $ RGA "helloworld",
-                          note_start = Just $ fromGregorian 22 11 24,
-                          note_end = Just $ fromGregorian 17 06 19,
-                          note_tags = [],
-                          note_track = Nothing,
-                          note_links = []
-                        },
-                      tags = mempty
+                    { note =
+                        Note
+                          { note_status = Just $ TaskStatus Active
+                          , note_text = Just $ RGA "helloworld"
+                          , note_start = Just $ fromGregorian 22 11 24
+                          , note_end = Just $ fromGregorian 17 06 19
+                          , note_tags = []
+                          , note_track = Nothing
+                          , note_links = []
+                          }
+                    , tags = mempty
                     }
-              ],
-            total = 1
+              ]
+          , total = 1
           }
 
 fs123 :: TestDB
@@ -195,11 +197,11 @@ prop_new =
    in property $ do
         (note, fs') <-
           evalEither $ runStorageSim mempty
-            $ cmdNewNote New {text, start, end, isWiki = False, tags} today
+            $ cmdNewNote New{text, start, end, isWiki = False, tags} today
         let tags' =
               mapMaybe UUID.decodeBase32
                 ["B000000001NDU-2000000000012", "B000000004HKM-2000000000012"]
-        let Note {note_text, note_start, note_end, note_tags} = entityVal note
+        let Note{note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start === note_start
         end === note_end

@@ -39,6 +39,21 @@ import           Data.Time (Day)
 import           Data.Traversable (for)
 import           Data.Version (Version, showVersion)
 import           Development.GitRev (gitDirty, gitHash)
+import           RON.Storage.Backend (MonadStorage)
+import           RON.Storage.FS (runStorage)
+import qualified RON.Storage.FS as StorageFS
+import qualified ShellWords
+import qualified System.Console.Terminal.Size as Terminal
+import           System.Directory (doesDirectoryExist, findExecutable,
+                                   getHomeDirectory)
+import           System.Environment (getEnv, lookupEnv, setEnv)
+import           System.Exit (ExitCode (..), exitFailure)
+import           System.FilePath ((</>))
+import           System.IO (hClose, hPutChar, hPutStr, hPutStrLn, stderr)
+import           System.IO.Temp (withSystemTempFile)
+import           System.Pager (printOrPage)
+import           System.Process.Typed (proc, runProcess)
+
 import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
                      cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
                      cmdUnarchive, getContactSamples, getDataDir, getUtcToday,
@@ -60,20 +75,6 @@ import           FF.UI (prettyContact, prettyContactSample, prettyNote,
                         prettyTaskSections, prettyTasksWikisContacts,
                         prettyWikiSample, withHeader, (<//>))
 import           FF.Upgrade (upgradeDatabase)
-import           RON.Storage.Backend (MonadStorage)
-import           RON.Storage.FS (runStorage)
-import qualified RON.Storage.FS as StorageFS
-import qualified ShellWords
-import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, findExecutable,
-                                   getHomeDirectory)
-import           System.Environment (getEnv, lookupEnv, setEnv)
-import           System.Exit (ExitCode (..), exitFailure)
-import           System.FilePath ((</>))
-import           System.IO (hClose, hPutChar, hPutStr, hPutStrLn, stderr)
-import           System.IO.Temp (withSystemTempFile)
-import           System.Pager (printOrPage)
-import           System.Process.Typed (proc, runProcess)
 
 cli :: Version -> IO ()
 cli version = do
@@ -128,12 +129,12 @@ runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
     trySaveDataDir baseDir = do
       guard =<< doesDirectoryExist baseDir
       saveDataDir $ baseDir </> "Apps" </> appName
-    saveDataDir dir = saveConfig cfg {dataDir = Just dir} $> Just dir
+    saveDataDir dir = saveConfig cfg{dataDir = Just dir} $> Just dir
     saveExternalEditor path =
-      saveConfig cfg {externalEditor = Just path} $> Just path
-    saveShuffle shuffle' = saveConfig cfg {ui = ui'} $> ui'
+      saveConfig cfg{externalEditor = Just path} $> Just path
+    saveShuffle shuffle' = saveConfig cfg{ui = ui'} $> ui'
       where
-        ui' = ConfigUI {shuffle = shuffle'}
+        ui' = ConfigUI{shuffle = shuffle'}
 
 runCmdAction ::
   (MonadIO m, MonadStorage m) =>
@@ -225,7 +226,7 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
         pprint $
                 withHeader "Postponed:" (prettyNoteList brief $ toList notes)
           <//>  prettyPath path
-    CmdSearch Search {..} -> do
+    CmdSearch Search{..} -> do
       (tasks, wikis, contacts) <-
         cmdSearch text status ui limit today tags withoutTags
       if json then
@@ -295,7 +296,7 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
         pprint $ prettyWikiSample brief wikis <//> prettyPath path
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
-cmdTrack Track {dryRun, address, limit} today brief
+cmdTrack Track{dryRun, address, limit} today brief
   | dryRun =
       liftIO $ do
         samples <- run $ getOpenIssueSamples address limit today

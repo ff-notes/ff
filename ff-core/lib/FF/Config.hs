@@ -31,7 +31,7 @@ emptyConfig =
     Config{dataDir = Nothing, externalEditor = Nothing, ui = defaultConfigUI}
 
 defaultConfigUI :: ConfigUI
-defaultConfigUI = ConfigUI {shuffle = False}
+defaultConfigUI = ConfigUI{shuffle = False}
 
 instance FromJSON Config where
     parseJSON = withObject "Config" $ \obj -> do

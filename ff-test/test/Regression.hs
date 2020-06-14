@@ -16,9 +16,6 @@ where
 import           Data.Aeson.TH (defaultOptions, deriveToJSON)
 import           Data.Traversable (for)
 import           Data.Yaml (encodeFile)
-import           FF (load, viewNote)
-import           FF.Types (Entity (Entity, entityVal), Note, NoteId, Tag, TagId,
-                           loadNote)
 import           RON.Data.ORSet (ORSet)
 import           RON.Storage (CollectionName)
 import           RON.Storage.Backend (getCollections, getDocuments)
@@ -27,6 +24,10 @@ import           System.Directory (createDirectoryIfMissing)
 import           System.FilePath (takeDirectory, (</>))
 import           Test.Tasty (TestTree, testGroup)
 import           Test.Tasty.Golden (goldenVsFileDiff)
+
+import           FF (load, viewNote)
+import           FF.Types (Entity (Entity, entityVal), Note, NoteId, Tag, TagId,
+                           loadNote)
 
 deriveToJSON defaultOptions ''ORSet
 
@@ -57,7 +58,7 @@ testNote h tmp docid =
   where
     outFile = tmp </> show docid
     action = do
-      Entity {entityVal} <- runStorage h $ loadNote docid >>= viewNote
+      Entity{entityVal} <- runStorage h $ loadNote docid >>= viewNote
       createDirectoryIfMissing True $ takeDirectory outFile
       encodeFile outFile entityVal
 
@@ -67,7 +68,7 @@ testTag h tmp docid =
   where
     outFile = tmp </> show docid
     action = do
-      Entity {entityVal} <- runStorage h $ load docid
+      Entity{entityVal} <- runStorage h $ load docid
       createDirectoryIfMissing True $ takeDirectory outFile
       encodeFile outFile entityVal
 
