@@ -17,6 +17,7 @@ import           Control.Monad.IO.Class (MonadIO, liftIO)
 import           Data.Aeson (ToJSON, (.=))
 import qualified Data.Aeson as JSON
 import qualified Data.Aeson.Encode.Pretty as JSON
+import qualified Data.Aeson.Types as JSON
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Foldable (asum, for_, toList)
@@ -144,11 +145,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
       notes   <- loadAllNotes
       samples <- viewTaskSamples Active ui limit today tags withoutTags notes
       if json then
-        jprint $
-          JSON.object
-            [ "notes"    .= foldMap Sample.items samples
-            , "database" .= path
-            ]
+        jprintObject
+          ["notes" .= foldMap Sample.items samples, "database" .= path]
       else
         pprint $ prettyTaskSections brief tags samples <//> prettyPath path
     CmdContact contact -> cmdContact options path contact
@@ -158,12 +156,11 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           note <- cmdDeleteNote noteId
           viewNote note
       if json then
-        jprint $
-          JSON.object
-            [ "result"   .= ("deleted" :: Text)
-            , "notes"    .= notes
-            , "database" .= path
-            ]
+        jprintObject
+          [ "result"   .= ("deleted" :: Text)
+          , "notes"    .= notes
+          , "database" .= path
+          ]
       else
         pprint $
                 withHeader "Deleted:" (prettyNoteList brief $ toList notes)
@@ -174,12 +171,11 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           note <- cmdDone noteId
           viewNote note
       if json then
-        jprint $
-          JSON.object
-            [ "result"   .= ("archived" :: Text)
-            , "notes"    .= notes
-            , "database" .= path
-            ]
+        jprintObject
+          [ "result"   .= ("archived" :: Text)
+          , "notes"    .= notes
+          , "database" .= path
+          ]
       else
         pprint $
                 withHeader "Archived:" (prettyNoteList brief $ toList notes)
@@ -193,12 +189,11 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
             liftIO . runExternalEditor
       notes' <- traverse viewNote notes
       if json then
-        jprint $
-          JSON.object
-            [ "result"   .= ("edited" :: Text)
-            , "notes"    .= notes'
-            , "database" .= path
-            ]
+        jprintObject
+          [ "result"   .= ("edited" :: Text)
+          , "notes"    .= notes'
+          , "database" .= path
+          ]
       else
         pprint $
                 withHeader "Edited:" (prettyNoteList brief notes')
@@ -207,41 +202,39 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
       note <- cmdNewNote new today
       noteview <- viewNote note
       if json then
-        jprint $
-          JSON.object
-            [ "result"   .= ("added" :: Text)
-            , "note"     .= noteview
-            , "database" .= path
-            ]
+        jprintObject
+          [ "result"   .= ("added" :: Text)
+          , "note"     .= noteview
+          , "database" .= path
+          ]
       else
         pprint $
           withHeader "Added:" (prettyNote brief noteview) <//> prettyPath path
-    CmdPostpone notes ->
-      for_ notes $ \noteId -> do
-        note <- cmdPostpone noteId
-        noteview <- viewNote note
-        if json then
-          jprint $
-            JSON.object
-              [ "result"   .= ("postponed" :: Text)
-              , "note"     .= noteview
-              , "database" .= path
-              ]
-        else
-          pprint $
-                  withHeader "Postponed:" (prettyNote brief noteview)
-            <//>  prettyPath path
+    CmdPostpone noteIds -> do
+      notes <-
+        for noteIds $ \noteId -> do
+          note <- cmdPostpone noteId
+          viewNote note
+      if json then
+        jprintObject
+          [ "result"   .= ("postponed" :: Text)
+          , "notes"    .= notes
+          , "database" .= path
+          ]
+      else
+        pprint $
+                withHeader "Postponed:" (prettyNoteList brief $ toList notes)
+          <//>  prettyPath path
     CmdSearch Search {..} -> do
       (tasks, wikis, contacts) <-
         cmdSearch text status ui limit today tags withoutTags
       if json then
-        jprint $
-          JSON.object
-            [ "tasks"    .= foldMap Sample.items tasks
-            , "wiki"     .= wikis
-            , "contacts" .= contacts
-            , "database" .= path
-            ]
+        jprintObject
+          [ "tasks"    .= foldMap Sample.items tasks
+          , "wiki"     .= wikis
+          , "contacts" .= contacts
+          , "database" .= path
+          ]
       else
         pprint $
                 prettyTasksWikisContacts
@@ -258,18 +251,18 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
       if json then
-        jprint $ JSON.object ["notes" .= notes', "database" .= path]
+        jprintObject ["notes" .= notes', "database" .= path]
       else
         pprint $ prettyNoteList brief (toList notes') <//> prettyPath path
     CmdTags
       | json -> do
           tags <- loadAllTags
-          jprint $ JSON.object ["tags" .= tags, "database" .= path]
+          jprintObject ["tags" .= tags, "database" .= path]
       | otherwise -> do
           tags <- loadAllTagTexts
           pprint $ prettyTagsList tags <//> prettyPath path
     CmdSponsors
-      | json      -> jprint $ JSON.object ["sponsors" .= sponsors]
+      | json      -> jprintObject ["sponsors" .= sponsors]
       | otherwise -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track -> cmdTrack track today brief
     CmdUnarchive tasks ->
@@ -277,12 +270,11 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
         task <- cmdUnarchive taskId
         noteview <- viewNote task
         if json then
-          jprint $
-            JSON.object
-              [ "result"   .= ("unarchived" :: Text)
-              , "note"     .= noteview
-              , "database" .= path
-              ]
+          jprintObject
+            [ "result"   .= ("unarchived" :: Text)
+            , "note"     .= noteview
+            , "database" .= path
+            ]
         else
           pprint $
                   withHeader "Unarchived:" (prettyNote brief noteview)
@@ -290,16 +282,15 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
     CmdUpgrade -> do
       upgradeDatabase
       if json then
-        jprint $
-          JSON.object
-            ["result" .= ("database upgraded" :: Text), "database" .= path]
+        jprintObject
+          ["result" .= ("database upgraded" :: Text), "database" .= path]
       else
         pprint $ "Database upgraded" <//>  prettyPath path
     CmdWiki mlimit -> do
       notes <- loadAllNotes
       wikis <- viewWikiSamples ui mlimit today notes
       if json then
-        jprint $ JSON.object ["wiki" .= wikis, "database" .= path]
+        jprintObject ["wiki" .= wikis, "database" .= path]
       else
         pprint $ prettyWikiSample brief wikis <//> prettyPath path
 
@@ -337,35 +328,29 @@ cmdContact ActionOptions{json, brief} path = \case
   Just (Add name) -> do
     contact <- cmdNewContact name
     if json then
-      jprint $
-        JSON.object
-          [ "result"   .= ("added" :: Text)
-          , "contact"  .= contact
-          , "database" .= path
-          ]
+      jprintObject
+        [ "result"   .= ("added" :: Text)
+        , "contact"  .= contact
+        , "database" .= path
+        ]
     else
       pprint $
         withHeader "Added:" (prettyContact brief contact) <//> prettyPath path
   Just (Delete cid) -> do
     contact <- cmdDeleteContact cid
     if json then
-      jprint $
-        JSON.object
-          [ "result"   .= ("deleted" :: Text)
-          , "contact"  .= contact
-          , "database" .= path
-          ]
+      jprintObject
+        [ "result"   .= ("deleted" :: Text)
+        , "contact"  .= contact
+        , "database" .= path
+        ]
     else
       pprint $
         withHeader "Deleted:" (prettyContact brief contact) <//> prettyPath path
   Nothing -> do
     contacts <- getContactSamples Active
     if json then
-      jprint $
-        JSON.object
-          [ "contacts" .= contacts
-          , "database" .= path
-          ]
+      jprintObject ["contacts" .= contacts, "database" .= path]
     else
       pprint $ prettyContactSample brief contacts <//> prettyPath path
 
@@ -374,12 +359,11 @@ cmdContact ActionOptions{json, brief} path = \case
 runCmdVersion :: Bool -> Version -> IO ()
 runCmdVersion json version
   | json =
-      jprint $
-        JSON.object
-          [ "app_version"  .= version
-          , "git_revision" .= ($(gitHash) :: Text)
-          , "git_dirty"    .= $(gitDirty)
-          ]
+      jprintObject
+        [ "app_version"  .= version
+        , "git_revision" .= ($(gitHash) :: Text)
+        , "git_dirty"    .= $(gitDirty)
+        ]
   | otherwise =
       putStrLn $
         concat
@@ -404,6 +388,9 @@ fromEither = either id id
 
 jprint :: (ToJSON a, MonadIO io) => a -> io ()
 jprint = liftIO . BSL.putStrLn . JSON.encodePretty
+
+jprintObject :: MonadIO io => [JSON.Pair] -> io ()
+jprintObject = jprint . JSON.object
 
 runExternalEditor :: Text -> IO Text
 runExternalEditor textOld =
