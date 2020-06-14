@@ -266,7 +266,7 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
           tags <- loadAllTagTexts
           pprint $ prettyTagsList tags <//> prettyPath path
     CmdSponsors
-      | json -> jprint $ JSON.object ["sponsors" .= sponsors]
+      | json      -> jprint $ JSON.object ["sponsors" .= sponsors]
       | otherwise -> pprint $ withHeader "Sponsors" $ vsep $ map pretty sponsors
     CmdTrack track -> cmdTrack track today brief
     CmdUnarchive tasks ->
@@ -282,7 +282,10 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
     CmdWiki mlimit -> do
       notes <- loadAllNotes
       wikis <- viewWikiSamples ui mlimit today notes
-      pprint $ prettyWikiSample brief wikis <//> prettyPath path
+      if json then
+        jprint $ JSON.object ["wiki" .= wikis, "database" .= path]
+      else
+        pprint $ prettyWikiSample brief wikis <//> prettyPath path
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track {dryRun, address, limit} today brief
