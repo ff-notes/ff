@@ -273,9 +273,17 @@ runCmdAction ui cmd ActionOptions{brief, json} path = do
       for_ tasks $ \taskId -> do
         task <- cmdUnarchive taskId
         noteview <- viewNote task
-        pprint $
-                withHeader "Unarchived:" (prettyNote brief noteview)
-          <//>  prettyPath path
+        if json then
+          jprint $
+            JSON.object
+              [ "result"   .= ("unarchived" :: Text)
+              , "note"     .= noteview
+              , "database" .= path
+              ]
+        else
+          pprint $
+                  withHeader "Unarchived:" (prettyNote brief noteview)
+            <//>  prettyPath path
     CmdUpgrade -> do
       upgradeDatabase
       liftIO $ putStrLn "Upgraded"
