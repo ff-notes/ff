@@ -152,36 +152,38 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
       else
         pprint $ prettyTaskSections brief tags samples <//> prettyPath path
     CmdContact contact -> cmdContact options path contact
-    CmdDelete notes ->
-      for_ notes $ \noteId -> do
-        note <- cmdDeleteNote noteId
-        noteview <- viewNote note
-        if json then
-          jprint $
-            JSON.object
-              [ "result"   .= ("deleted" :: Text)
-              , "note"     .= noteview
-              , "database" .= path
-              ]
-        else
-          pprint $
-                  withHeader "Deleted:" (prettyNote brief noteview)
-            <//>  prettyPath path
-    CmdDone notes ->
-      for_ notes $ \noteId -> do
-        note <- cmdDone noteId
-        noteview <- viewNote note
-        if json then
-          jprint $
-            JSON.object
-              [ "result"   .= ("archived" :: Text)
-              , "note"     .= noteview
-              , "database" .= path
-              ]
-        else
-          pprint $
-                  withHeader "Archived:" (prettyNote brief noteview)
-            <//>  prettyPath path
+    CmdDelete noteIds -> do
+      notes <-
+        for noteIds $ \noteId -> do
+          note <- cmdDeleteNote noteId
+          viewNote note
+      if json then
+        jprint $
+          JSON.object
+            [ "result"   .= ("deleted" :: Text)
+            , "notes"    .= notes
+            , "database" .= path
+            ]
+      else
+        pprint $
+                withHeader "Deleted:" (prettyNoteList brief $ toList notes)
+          <//>  prettyPath path
+    CmdDone noteIds -> do
+      notes <-
+        for noteIds $ \noteId -> do
+          note <- cmdDone noteId
+          viewNote note
+      if json then
+        jprint $
+          JSON.object
+            [ "result"   .= ("archived" :: Text)
+            , "notes"    .= notes
+            , "database" .= path
+            ]
+      else
+        pprint $
+                withHeader "Archived:" (prettyNoteList brief $ toList notes)
+          <//>  prettyPath path
     CmdEdit edit -> do
       notes <-
         cmdEdit edit $
@@ -287,7 +289,12 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
             <//>  prettyPath path
     CmdUpgrade -> do
       upgradeDatabase
-      liftIO $ putStrLn "Upgraded"
+      if json then
+        jprint $
+          JSON.object
+            ["result" .= ("database upgraded" :: Text), "database" .= path]
+      else
+        pprint $ "Database upgraded" <//>  prettyPath path
     CmdWiki mlimit -> do
       notes <- loadAllNotes
       wikis <- viewWikiSamples ui mlimit today notes
