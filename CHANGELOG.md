@@ -6,6 +6,12 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- All subcommands output in JSON with `--json` key.
+  This may be useful for scripting around _ff_ in other languages.
+
+### Changed
+- Config is now saved an viewed as JSON, which is still YAML anyway.
 
 ## [0.15] - 2020-03-07
 ### Added
