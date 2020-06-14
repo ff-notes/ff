@@ -80,6 +80,7 @@ cli version = do
   dataDir <- getDataDir cfg
   handle' <- traverse StorageFS.newHandle dataDir
   Options{customDir, cmd, actionOptions} <- parseOptions handle'
+  let ActionOptions{json} = actionOptions
   (handle, dataPath) <-
     case customDir of
       Nothing -> pure (handle', dataDir)
@@ -88,7 +89,7 @@ cli version = do
         pure (Just h, customDir)
   case cmd of
     CmdConfig param -> runCmdConfig cfg param
-    CmdVersion -> runCmdVersion version
+    CmdVersion -> runCmdVersion json version
     CmdAction action -> case handle of
       Nothing -> fail noDataDirectoryMessage
       Just h -> runStorage h $ runCmdAction ui action actionOptions dataPath
@@ -363,13 +364,22 @@ cmdContact ActionOptions{json, brief} path = \case
 
 -- | Template taken from stack:
 -- "Version 1.7.1, Git revision 681c800873816c022739ca7ed14755e8 (5807 commits)"
-runCmdVersion :: Version -> IO ()
-runCmdVersion version =
-  putStrLn $
-    concat
-      [ "Version ", showVersion version
-      , ", Git revision ", $(gitHash), if $(gitDirty) then ", dirty" else ""
-      ]
+runCmdVersion :: Bool -> Version -> IO ()
+runCmdVersion json version
+  | json =
+      jprint $
+        JSON.object
+          [ "app_version"  .= version
+          , "git_revision" .= ($(gitHash) :: Text)
+          , "git_dirty"    .= $(gitDirty)
+          ]
+  | otherwise =
+      putStrLn $
+        concat
+          [ "Version ", showVersion version
+          , ", Git revision ", $(gitHash)
+          , if $(gitDirty) then ", dirty" else ""
+          ]
 
 pprint :: MonadIO io => Doc AnsiStyle -> io ()
 pprint doc = liftIO $ do
