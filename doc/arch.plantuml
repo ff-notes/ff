@@ -1,41 +1,59 @@
 @startuml
 
-state "ff :: executable" as ff_exe
-ff_exe : CLI runner
-ff_exe : JSON input/output
+rectangle "Android app" as android_app #line.dashed
 
-state "ff-gtk" as ff_gtk
+rectangle ff_exe [
+    **ff :: executable**
 
-state "ff-qt" as ff_qt
+    CLI runner
+    JSON input/output
+]
 
-state "ff-core :: Haskell package" as ff_core {
-    state "CLI implementation" as cli
+android_app --> ff_exe : (JSON) domain ops
+android_app <.. ff_exe : (JSON) FS ops
+
+rectangle "ff-gtk" as ff_gtk
+
+rectangle "ff-qt" as ff_qt
+
+rectangle "ff-core :: Haskell package" as ff_core {
+    rectangle "CLI implementation" as cli
     ff_exe --> cli
 
-    state "domain operations" as operations
-    operations : add/remove/edit note
+    rectangle operations [
+        **domain operations**
+
+        add/remove/edit note
+    ]
 
     ff_gtk  --->    operations
     ff_qt   --->    operations
     cli     -->     operations
 }
 
-state filesystem
+rectangle filesystem
 
-state "ron :: Haskell framework" as ron_all {
-    state "ron-storage :: Haskell package" as ron_storage
-    ron_storage : filesystem interaction
-
-    operations --> ron_storage
-    ron_storage --> filesystem
+rectangle "ron-storage :: Haskell package" as ron_storage {
+    rectangle "filesystem interaction" as filesystem_interaction
+    rectangle "op emitter" as op_emitter #line.dashed
 }
 
-state sync
-sync : Dropbox
-sync : git
-sync : Google Drive
-sync : Yandex.Disk
+operations --> ron_storage
+filesystem_interaction --> filesystem
+
+ff_exe <.. op_emitter : FS ops
+
+cloud sync [
+    **sync**
+
+    Dropbox
+    git
+    Google Drive
+    Yandex.Disk
+]
 
 filesystem --> sync
+
+android_app ..> sync : FS ops
 
 @enduml
