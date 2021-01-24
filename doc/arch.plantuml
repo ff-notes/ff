@@ -1,0 +1,41 @@
+@startuml
+
+state "ff :: executable" as ff_exe
+ff_exe : CLI runner
+ff_exe : JSON input/output
+
+state "ff-gtk" as ff_gtk
+
+state "ff-qt" as ff_qt
+
+state "ff-core :: Haskell package" as ff_core {
+    state "CLI implementation" as cli
+    ff_exe --> cli
+
+    state "domain operations" as operations
+    operations : add/remove/edit note
+
+    ff_gtk  --->    operations
+    ff_qt   --->    operations
+    cli     -->     operations
+}
+
+state filesystem
+
+state "ron :: Haskell framework" as ron_all {
+    state "ron-storage :: Haskell package" as ron_storage
+    ron_storage : filesystem interaction
+
+    operations --> ron_storage
+    ron_storage --> filesystem
+}
+
+state sync
+sync : Dropbox
+sync : git
+sync : Google Drive
+sync : Yandex.Disk
+
+filesystem --> sync
+
+@enduml
