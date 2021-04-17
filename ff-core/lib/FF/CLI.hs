@@ -417,7 +417,14 @@ runExternalEditor textOld =
 
     assertExecutableFromConfig = do
       cfg <- loadConfig
-      maybe empty assertExecutable $ externalEditor cfg
+      let eEditor = do
+            editor <- maybe empty ShellWords.parse $ externalEditor cfg
+            maybe (Left "empty") Right $ nonEmpty editor
+      case eEditor of
+        Left err -> do
+          hPutStrLn stderr $ "error in externalEditor configuration: " <> err
+          empty
+        Right editor@(prog :| _) -> assertExecutable prog $> editor
 
     assertExecutableFromEnv var = do
       editorCmd <- getEnv var
