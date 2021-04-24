@@ -26,15 +26,15 @@ extra-deps:
     - binary-instances-1
 
   # ff-qtah:
-    - hoppy-generator-0.7.0
-    - hoppy-runtime-0.7.0
-    - hoppy-std-0.7.0
-    # - qtah-cpp-qt5-0.6.1
-    # - qtah-generator-0.6.1
-    # - qtah-qt5-0.6.1
-    - git: https://gitlab.com/khumba/qtah.git
-      commit: 0b952b894d20e4cf602ad4423f66f8b63f684970  # 0.6.1-unreleased
-      subdirs: [qtah, qtah-cpp, qtah-generator]
+    - hoppy-generator-0.8.0
+    - hoppy-runtime-0.8.0
+    - hoppy-std-0.8.0
+    - qtah-cpp-qt5-0.8.0
+    - qtah-generator-0.8.0
+    - qtah-qt5-0.8.0
+    # - git: https://gitlab.com/khumba/qtah.git
+    #   commit: b8e9492cb7c2ccd7c3cb7308c9d1495770b0198d  # tag: release-0.8.0
+    #   subdirs: [qtah, qtah-cpp, qtah-generator]
 
 docker:
   enable: false
