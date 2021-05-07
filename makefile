@@ -3,12 +3,13 @@
 
 GID := $(shell id -g)
 UID := $(shell id -u)
+RESOLVER := $(shell yq -r .resolver stack.yaml)
 
 build:
-	EULER_GID=${GID} EULER_UID=${UID} docker-compose -p ff-deb -f dockers/debianizer/docker-compose.yml up -d --build
+	EULER_GID=${GID} EULER_UID=${UID} STACK_RESOLVER=${RESOLVER} docker-compose -p ff-deb -f dockers/debianizer/docker-compose.yml up -d --build
 
 rebuild: build-stop
-	EULER_GID=${GID} EULER_UID=${UID} docker-compose -p ff-deb -f dockers/debianizer/docker-compose.yml up -d --build
+	EULER_GID=${GID} EULER_UID=${UID} STACK_RESOLVER=${RESOLVER} docker-compose -p ff-deb -f dockers/debianizer/docker-compose.yml up -d --build
 
 build-stop:
 	EULER_GID=${GID} EULER_UID=${UID} docker-compose -p ff-deb -f dockers/debianizer/docker-compose.yml down

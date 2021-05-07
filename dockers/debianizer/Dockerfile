@@ -5,6 +5,7 @@ ENV LANG=C.UTF-8        \
 
 ARG EULER_UID
 ARG EULER_GID
+ARG STACK_RESOLVER
 ARG apt_install="apt install --no-install-recommends --yes"
 ARG PACKAGE_NAME=ff
 ARG USER=ff
@@ -18,7 +19,8 @@ ARG BIN=$BUILD_DIRECTORY/opt/$PACKAGE_NAME
 RUN \
 # Check for mandatory build arguments
     : "${EULER_UID:?mandatory build argument is missing}" \
-    : "${EULER_GID:?mandatory build argument is missing}"
+    : "${EULER_GID:?mandatory build argument is missing}" \
+    : "${STACK_RESOLVER:?mandatory build argument is missing}"
 
 RUN groupadd -g ${EULER_GID} $GROUP
 RUN useradd -m -u ${EULER_UID} -g ${EULER_GID} $USER
@@ -45,7 +47,7 @@ RUN chown -R ${EULER_UID}:${EULER_GID} $HOME/
 
 # RUN tree
 
-RUN stack --allow-different-user --resolver=lts-14.20 install aeson
+RUN stack --allow-different-user --resolver=$STACK_RESOLVER install aeson
 
 WORKDIR $REPO
 
