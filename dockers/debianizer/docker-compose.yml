@@ -1,0 +1,18 @@
+version: "3"
+services:
+
+  ff:
+    image: ff-deb
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        EULER_UID: ${EULER_UID}
+        EULER_GID: ${EULER_GID}
+    volumes:
+      - ./ff-deb:/home/ff/ff-deb
+    stdin_open: true
+    tty: true
+
+    # environment:
+    #   - BUILD_DIRECTORY=ff-deb
