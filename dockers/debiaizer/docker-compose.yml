@@ -1,0 +1,13 @@
+version: "3"
+services:
+
+  sandbox:
+    image: ff-deb
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../../debian:/${BUILD_DIRECTORY}
+    stdin_open: true
+    tty: true
+
