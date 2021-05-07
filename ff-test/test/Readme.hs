@@ -1,36 +1,41 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Readme (readmeTest) where
+module Readme
+  ( readmeTest,
+  )
+where
 
-import           CMark (Node (Node), NodeType (CODE_BLOCK), commonmarkToNode,
-                        optSafe)
-import           Data.Text (Text)
+import CMark (Node (Node), NodeType (CODE_BLOCK), commonmarkToNode, optSafe)
+import Control.Error (note)
+import qualified Data.ByteString as BS
+import Data.Text (Text)
 import qualified Data.Text as Text
-import qualified Data.Text.IO as Text
-import           Hedgehog (Property, evalIO, property, (===))
-import           Safe (headMay)
-import           Test.Tasty (TestTree)
-import           Test.Tasty.Hedgehog (testProperty)
-
-import           FF.Options (showHelp)
+import Data.Text.Encoding (decodeUtf8')
+import FF.Options (showHelp)
+import Hedgehog ((===), PropertyT, evalEither, evalIO, property, withTests)
+import Safe (headMay)
+import Test.Tasty (TestTree)
+import Test.Tasty.Hedgehog (testProperty)
 
 readmeTest :: TestTree
-readmeTest = testProperty "readme" prop_readme
-
-prop_readme :: Property
-prop_readme = property $ do
-    readme <- evalIO $ Text.readFile "../README.md"
-    Just readme' <- pure $ parseFFHelp readme
-    ffhelp === Text.lines readme'
+readmeTest = testCase "readme" $ do
+  readmeBS <- evalIO $ BS.readFile "../README.md"
+  readmeText <- evalEither $ decodeUtf8' readmeBS
+  readme <- evalEither $ parseFFHelp readmeText
+  ffhelp === Text.lines readme
 
 ffhelp :: [Text]
 ffhelp = pref : Text.lines (Text.pack showHelp)
 
-parseFFHelp :: Text -> Maybe Text
-parseFFHelp s = headMay help where
+parseFFHelp :: Text -> Either String Text
+parseFFHelp s = note "no help found" $ headMay help
+  where
     Node _ _ ns = commonmarkToNode [optSafe] s
     code = [block | Node _ (CODE_BLOCK _ block) _ <- ns]
     help = filter ((==) pref . Text.take (Text.length pref)) code
 
 pref :: Text
 pref = "$ ff --help"
+
+testCase :: String -> PropertyT IO () -> TestTree
+testCase name action = testProperty name $ withTests 1 $ property action

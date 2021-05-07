@@ -1,7 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -199,7 +198,7 @@ prettyTaskSample :: Bool -> TaskMode -> NoteSample -> Doc AnsiStyle
 prettyTaskSample isBrief mode = \case
     Sample{total = 0} -> red "No notes to show"
     Sample{total, items} ->
-        withHeader (sampleLabel mode) . stack isBrief $
+        withHeader (sampleLabel mode <> ":") . stack isBrief $
             map ((bullet <>) . indent 1 . prettyNote isBrief) items
             ++  [ hang indentation $
                     fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
@@ -222,16 +221,16 @@ prettyTaskSample isBrief mode = \case
 sampleLabel :: TaskMode -> Text
 sampleLabel = \case
     Overdue n -> case n of
-        1 -> "1 day overdue:"
-        _ -> Text.pack (show n) <> " days overdue:"
-    EndToday -> "Due today:"
+        1 -> "1 day overdue"
+        _ -> Text.pack (show n) <> " days overdue"
+    EndToday -> "Due today"
     EndSoon n -> case n of
-        1 -> "Due tomorrow:"
-        _ -> "Due in " <> Text.pack (show n) <> " days:"
-    Actual -> "Actual:"
+        1 -> "Due tomorrow"
+        _ -> "Due in " <> Text.pack (show n) <> " days"
+    Actual -> "Actual"
     Starting n -> case n of
-        1 -> "Starting tomorrow:"
-        _ -> "Starting in " <> Text.pack (show n) <> " days:"
+        1 -> "Starting tomorrow"
+        _ -> "Starting in " <> Text.pack (show n) <> " days"
 
 prettyContact :: Bool -> EntityDoc Contact -> Doc AnsiStyle
 prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]

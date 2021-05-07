@@ -1,0 +1,59 @@
+@startuml
+
+rectangle "Android app" as android_app #line.dashed
+
+rectangle ff_exe [
+    **ff :: executable**
+
+    CLI runner
+    JSON input/output
+]
+
+android_app --> ff_exe : (JSON) domain ops
+android_app <.. ff_exe : (JSON) FS ops
+
+rectangle "ff-gtk" as ff_gtk
+
+rectangle "ff-qt" as ff_qt
+
+rectangle "ff-core :: Haskell package" as ff_core {
+    rectangle "CLI implementation" as cli
+    ff_exe --> cli
+
+    rectangle operations [
+        **domain operations**
+
+        add/remove/edit note
+    ]
+
+    ff_gtk  --->    operations
+    ff_qt   --->    operations
+    cli     -->     operations
+}
+
+rectangle filesystem
+
+rectangle "ron-storage :: Haskell package" as ron_storage {
+    rectangle "filesystem interaction" as filesystem_interaction
+    rectangle "op emitter" as op_emitter #line.dashed
+}
+
+operations --> ron_storage
+filesystem_interaction --> filesystem
+
+ff_exe <.. op_emitter : FS ops
+
+cloud sync [
+    **sync**
+
+    Dropbox
+    git
+    Google Drive
+    Yandex.Disk
+]
+
+filesystem --> sync
+
+android_app ..> sync : FS ops
+
+@enduml

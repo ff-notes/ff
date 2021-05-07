@@ -1,10 +1,10 @@
 cabal-version: >= 1.2
 
 name: ff
-version: 0.13
+version: 0.15
 copyright:
     2018 Yuriy Syrovetskiy, Nikolay Loginov;
-    2019 Yuriy Syrovetskiy
+    2019-2020 Yuriy Syrovetskiy
 
 build-type: Simple
 

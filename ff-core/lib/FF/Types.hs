@@ -1,11 +1,15 @@
+{-# OPTIONS_GHC -Wno-orphans #-}
+
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -17,62 +21,59 @@
 
 module FF.Types where
 
+import           Control.Monad ((>=>))
+import           Control.Monad.Except (throwError)
+import           Control.Monad.Reader (ask, runReaderT)
 import qualified CRDT.Cv.RGA as CRDT
-import qualified CRDT.LWW as CRDT
 import qualified CRDT.LamportClock as CRDT
-import Control.Monad ((>=>))
-import Control.Monad.Except (throwError)
-import Control.Monad.Reader (ask, runReaderT)
-import Data.Aeson ((.:), (.:?), FromJSON, eitherDecode, parseJSON, withObject)
+import qualified CRDT.LWW as CRDT
 import qualified Data.Aeson as JSON
-import Data.Aeson.TH (defaultOptions, deriveFromJSON)
-import Data.Aeson.Types (parseEither)
-import Data.ByteString.Lazy (ByteString)
-import Data.Hashable (Hashable)
-import Data.List (genericLength)
-import Data.Map.Strict (Map)
+import           Data.Aeson.Extra (ToJSON, eitherDecode, singletonObjectSum,
+                                   toJSON, untaggedSum, withObject, (.:), (.:?),
+                                   (.=))
+import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveToJSON)
+import           Data.Aeson.Types (parseEither)
+import qualified Data.Aeson.Types as JSON
+import           Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as BSL
+import           Data.Hashable (Hashable)
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HashMap
+import           Data.List (genericLength)
+import           Data.Map.Strict (Map)
 import qualified Data.Map.Strict as Map
-import Data.Maybe (fromJust, maybeToList)
-import Data.Set (Set)
-import Data.Text (Text)
-import Data.Time (diffDays)
-import FF.CrdtAesonInstances ()
-import GHC.Generics (Generic)
-import Numeric.Natural (Natural)
-import RON.Data
-  ( MonadObjectState,
-    Replicated (encoding),
-    ReplicatedAsPayload (fromPayload, toPayload),
-    evalObjectState,
-    payloadEncoding,
-    readObject,
-    stateFromChunk,
-    stateToWireChunk,
-  )
-import RON.Data.LWW (lwwType)
-import RON.Data.RGA (RgaRep)
-import RON.Data.Time (Day)
-import RON.Epoch (localEpochTimeFromUnix)
-import RON.Error (Error (Error), MonadE, liftEitherString)
-import RON.Event (Event (Event), applicationSpecific, encodeEvent)
-import RON.Schema.TH (mkReplicated)
-import RON.Storage
-  ( Collection,
-    DocId,
-    collectionName,
-    fallbackParse,
-    loadDocument,
-  )
-import RON.Storage.Backend (Document (Document, objectFrame), MonadStorage)
-import RON.Types
-  ( Atom (AUuid),
-    ObjectFrame (ObjectFrame, frame, uuid),
-    ObjectRef (ObjectRef),
-    Op (Op),
-    UUID,
-    WireStateChunk (WireStateChunk, stateBody, stateType),
-  )
+import           Data.Maybe (fromJust, maybeToList)
+import           Data.Text (Text)
+import qualified Data.Text.Encoding as Text
+import           Data.Time (diffDays)
+import           FF.CrdtAesonInstances ()
+import           GHC.Generics (Generic)
+import           Numeric.Natural (Natural)
+import           RON.Data (MonadObjectState, Replicated (encoding),
+                           ReplicatedAsPayload (fromPayload, toPayload),
+                           evalObjectState, payloadEncoding, readObject,
+                           stateFromChunk, stateToWireChunk)
+import           RON.Data.LWW (lwwType)
+import           RON.Data.RGA (RGA, RgaRep)
+import           RON.Data.Time (Day)
+import           RON.Epoch (localEpochTimeFromUnix)
+import           RON.Error (Error (Error), MonadE, liftEitherString)
+import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
+import           RON.Schema.TH (mkReplicated)
+import           RON.Storage (Collection, DocId, collectionName, fallbackParse,
+                              loadDocument)
+import           RON.Storage.Backend (DocId (DocId),
+                                      Document (Document, objectFrame),
+                                      MonadStorage)
+import           RON.Text.Serialize (serializeUuid)
+import           RON.Types (Atom (AUuid),
+                            ObjectFrame (ObjectFrame, frame, uuid),
+                            ObjectRef (ObjectRef), Op (Op), UUID,
+                            WireStateChunk (WireStateChunk, stateBody, stateType))
 import qualified RON.UUID as UUID
+
+instance ToJSON UUID where
+  toJSON = JSON.String . uuidToText
 
 data NoteStatus = TaskStatus Status | Wiki
   deriving (Eq, Show)
@@ -146,9 +147,15 @@ instance ReplicatedAsPayload NoteStatus where
     track   Track
     links   (ObjectRef Link)  #ron{merge set})
 
+  (enum LinkType
+    SubNote ; a note (target) is a part of another note (source),
+            ; e. g. a subtask
+    )
+
   (struct_set Link
     #haskell {field_prefix "link_"}
-    target  (ObjectRef Note)  #ron{merge LWW})
+    target  (ObjectRef Note)  #ron{merge LWW}
+    type    LinkType          #ron{merge LWW})
 |]
 
 deriving instance Eq Contact
@@ -186,9 +193,7 @@ type ContactId = DocId Contact
 type TagId = DocId Tag
 
 instance Collection Note where
-
   collectionName = "note"
-
   fallbackParse = parseNoteV1
 
 instance Collection Contact where
@@ -197,19 +202,35 @@ instance Collection Contact where
 instance Collection Tag where
   collectionName = "tag"
 
-data Sample a = Sample {items :: [a], total :: Natural}
+data Sample a = Sample{items :: [a], total :: Natural}
   deriving (Eq, Functor, Show)
+
+instance ToJSON a => ToJSON (Sample a) where
+  toJSON Sample{items} = toJSON items
 
 {- |
   A value identified with some document.
   Should not be used directly, use 'EntityDoc' or 'EntityView' instead.
 -}
 data Entity doc val
-  = Collection doc => Entity {entityId :: DocId doc, entityVal :: val}
+  = Collection doc => Entity{entityId :: DocId doc, entityVal :: val}
 
 deriving instance Eq val => Eq (Entity doc val)
 
 deriving instance Show val => Show (Entity doc val)
+
+instance ToJSON val => ToJSON (Entity doc val) where
+  toJSON e = JSON.object [entityToJson e]
+  toJSONList = JSON.object . map entityToJson
+
+entityToJson :: ToJSON val => Entity doc val -> JSON.Pair
+entityToJson Entity{entityId = DocId entityId, entityVal} = key .= entityVal
+  where
+    key =
+      maybe
+        (error "entityId is not a valid RON-UUID")
+        (Text.decodeUtf8 . BSL.toStrict . serializeUuid)
+        (UUID.decodeBase32 entityId)
 
 type EntityDoc doc = Entity doc doc
 
@@ -220,20 +241,31 @@ type ContactSample = Sample (EntityDoc Contact)
 type NoteSample = Sample (EntityView Note)
 
 emptySample :: Sample a
-emptySample = Sample {items = [], total = 0}
+emptySample = Sample{items = [], total = 0}
 
 -- | Number of notes omitted from the sample.
 omitted :: Sample a -> Natural
-omitted Sample {total, items} = total - genericLength items
+omitted Sample{total, items} = total - genericLength items
 
 data family View doc
 
-data instance View Note
-  = NoteView
-      { note :: Note,
-        tags :: Set Text
-      }
+data instance View Note = NoteView
+  { note :: Note
+  , tags :: HashMap Text Text -- ^ the key is UUID or URI of the tag
+  }
   deriving (Eq, Show)
+
+instance ToJSON (View Note) where
+  toJSON NoteView{note, tags} =
+    JSON.Object $ HashMap.insert "note_tags" tags' noteObj
+    where
+      noteObj = case toJSON note of
+        JSON.Object obj -> obj
+        _               -> error "Note must be serialized to Object"
+      tags' = JSON.Object $ JSON.String <$> tags
+
+uuidToText :: UUID -> Text
+uuidToText = Text.decodeUtf8 . BSL.toStrict . serializeUuid
 
 type ModeMap = Map TaskMode
 
@@ -248,29 +280,30 @@ data TaskMode
 
 taskModeOrder :: TaskMode -> Int
 taskModeOrder = \case
-  Overdue _ -> 0
-  EndToday -> 1
-  EndSoon _ -> 2
-  Actual -> 3
+  Overdue  _ -> 0
+  EndToday   -> 1
+  EndSoon  _ -> 2
+  Actual     -> 3
   Starting _ -> 4
 
 instance Ord TaskMode where
-  Overdue n <= Overdue m = n >= m
-  EndSoon n <= EndSoon m = n <= m
-  Starting n <= Starting m = n <= m
-  m1 <= m2 = taskModeOrder m1 <= taskModeOrder m2
+  Overdue  n <= Overdue  m = n               >= m
+  EndSoon  n <= EndSoon  m = n               <= m
+  Starting n <= Starting m = n               <= m
+  n          <= m          = taskModeOrder n <= taskModeOrder m
 
 taskMode :: Day -> Note -> TaskMode
-taskMode today Note {note_start, note_end} = case note_end of
-  Nothing
-    | start <= today -> Actual
-    | otherwise -> starting start today
-  Just e -> case compare e today of
-    LT -> overdue today e
-    EQ -> EndToday
-    GT
-      | start <= today -> endSoon e today
-      | otherwise -> starting start today
+taskMode today Note{note_start, note_end} =
+  case note_end of
+    Nothing
+      | start <= today -> Actual
+      | otherwise      -> starting start today
+    Just e -> case compare e today of
+      LT -> overdue today e
+      EQ -> EndToday
+      GT
+        | start <= today -> endSoon e today
+        | otherwise      -> starting start today
   where
     start = fromJust note_start
     overdue = helper Overdue
@@ -283,20 +316,20 @@ type Limit = Natural
 -- * Legacy, v2
 loadNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
 loadNote entityId = do
-  Document {objectFrame} <- loadDocument entityId
+  Document{objectFrame} <- loadDocument entityId
   let tryCurrentEncoding = evalObjectState objectFrame readObject
   case tryCurrentEncoding of
-    Right entityVal -> pure Entity {entityId, entityVal}
+    Right entityVal -> pure Entity{entityId, entityVal}
     Left e1 -> do
       let tryNote2Encoding = evalObjectState objectFrame readNoteFromV2
       case tryNote2Encoding of
-        Right entityVal -> pure Entity {entityId, entityVal}
+        Right entityVal -> pure Entity{entityId, entityVal}
         Left e2 -> throwError $ Error "loadNote" [e1, e2]
 
 readNoteFromV2 :: (MonadE m, MonadObjectState a m) => m Note
 readNoteFromV2 = do
   ObjectRef uuid <- ask
-  NoteV2 {..} <- runReaderT readObject (ObjectRef @NoteV2 uuid)
+  NoteV2{..} <- runReaderT readObject (ObjectRef @NoteV2 uuid)
   pure Note
     { note_end = noteV2_end,
       note_start = noteV2_start,
@@ -308,7 +341,7 @@ readNoteFromV2 = do
     }
 
 trackFromV2 :: TrackV2 -> Track
-trackFromV2 TrackV2 {..} =
+trackFromV2 TrackV2{..} =
   Track
     { track_externalId = trackV2_externalId,
       track_provider = trackV2_provider,
@@ -363,8 +396,8 @@ parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
                   (textId, stateToWireChunk $ rgaFromV1 text) -- rgaType
                 ]
                 ++ maybeToList mTrackObject
-      pure ObjectFrame {uuid = objectId, frame}
-    mkLww stateBody = WireStateChunk {stateType = lwwType, stateBody}
+      pure ObjectFrame{uuid = objectId, frame}
+    mkLww stateBody = WireStateChunk{stateType = lwwType, stateBody}
     textId = UUID.succValue objectId
     trackId = UUID.succValue textId
     endName = $(UUID.liftName "end")
@@ -388,17 +421,27 @@ rgaFromV1 :: CRDT.RgaString -> RgaRep
 rgaFromV1 (CRDT.RGA oldRga) =
   stateFromChunk
     [ Op event ref $ toPayload a
-      | (vid, a) <- oldRga,
-        let event = timeFromV1 vid
-            ref = case a of
-              '\0' -> UUID.succValue event
-              _ -> UUID.zero
+    | (vid, a) <- oldRga
+    , let
+        event = timeFromV1 vid
+        ref =
+          case a of
+            '\0' -> UUID.succValue event
+            _    -> UUID.zero
     ]
 
--- used in parseNoteV1
-deriveFromJSON defaultOptions ''Status
+deriveToJSON defaultOptions     ''Contact
+deriveToJSON defaultOptions     ''Link
+deriveToJSON defaultOptions     ''LinkType
+deriveToJSON defaultOptions     ''Note
+deriveToJSON singletonObjectSum ''NoteStatus
+deriveToJSON defaultOptions     ''ObjectRef
+deriveToJSON defaultOptions     ''RGA
+deriveToJSON defaultOptions     ''Status
+deriveToJSON defaultOptions     ''Tag
+deriveToJSON defaultOptions     ''TaskMode
+deriveToJSON defaultOptions     ''Track
 
-instance FromJSON NoteStatus where
-  parseJSON v = case v of
-    "Wiki" -> pure Wiki
-    _ -> TaskStatus <$> parseJSON v
+-- used in parseNoteV1
+deriveFromJSON untaggedSum    ''NoteStatus
+deriveFromJSON defaultOptions ''Status

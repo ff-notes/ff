@@ -80,13 +80,14 @@ Ubuntu:
 ### Look what 𝑓𝑓 can do for you
 
     $ ff --help
-    Usage:  [-b|--brief] [-C|--data-dir DIRECTORY] ([-V|--version] | [COMMAND] |
-            [-l|--limit ARG] ([-n|--no-tag] | [--tag TAG]...)
+    Usage:  [-b|--brief] [--json] [-C|--data-dir DIRECTORY] ([-V|--version] |
+            [COMMAND] | [-l|--limit ARG] ([-n|--no-tag] | [--tag TAG]...)
             [--without-tag TAG]...)
       A note taker and task tracker
 
     Available options:
       -b,--brief               List only note titles and ids
+      --json                   Use JSON for input/output
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
@@ -102,7 +103,8 @@ Ubuntu:
       contact                  show contacts
       delete                   delete a task
       done                     mark a task done (archive)
-      edit                     edit a task or a note
+      edit                     edit a task or a note, using command from environment
+                               variable `EDITOR` or program `editor`
       new                      synonym for `add`
       postpone                 make a task start later
       search                   search for notes with the given text

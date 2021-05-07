@@ -1,11 +1,15 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Options
-  ( Agenda (..),
+  ( ActionOptions (..),
+    Agenda (..),
     Assign (..),
     Cmd (..),
     CmdAction (..),
@@ -17,7 +21,7 @@ module FF.Options
     Options (..),
     Search (..),
     Shuffle (..),
-    Tags(..),
+    Tags (..),
     Track (..),
     assignToMaybe,
     parseOptions,
@@ -25,54 +29,32 @@ module FF.Options
   )
 where
 
-import Control.Applicative ((<|>), many, optional)
-import Data.List.NonEmpty (NonEmpty, some1)
-import Data.Semigroup ((<>))
-import Data.Set (Set)
+import           Control.Applicative (many, optional, (<|>))
+import           Data.List.NonEmpty (NonEmpty, some1)
+import           Data.Semigroup ((<>))
+import           Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Text (Text)
-import Data.Time (Day)
-import FF.Types (ContactId, Limit, Note, NoteId, Status (Active, Archived))
-import qualified FF.Types
-import Options.Applicative
-  ( (<**>),
-    Completer,
-    ParseError (ShowHelpText),
-    Parser,
-    ParserInfo,
-    ParserPrefs,
-    argument,
-    auto,
-    command,
-    completer,
-    customExecParser,
-    defaultPrefs,
-    flag,
-    flag',
-    fullDesc,
-    help,
-    helper,
-    info,
-    listIOCompleter,
-    long,
-    metavar,
-    option,
-    parserFailure,
-    prefDisambiguate,
-    prefMultiSuffix,
-    prefShowHelpOnError,
-    progDesc,
-    renderFailure,
-    short,
-    str,
-    strArgument,
-    strOption,
-    subparser,
-    switch,
-  )
-import RON.Storage.Backend (DocId (DocId), getDocuments)
-import RON.Storage.FS (Collection, runStorage)
+import           Data.Text (Text)
+import           Data.Time (Day)
+import           Options.Applicative (Completer, InfoMod,
+                                      ParseError (ShowHelpText), Parser,
+                                      ParserInfo, ParserPrefs, argument, auto,
+                                      command, completer, customExecParser,
+                                      defaultPrefs, flag, flag', footerDoc,
+                                      fullDesc, help, helper, info,
+                                      listIOCompleter, long, metavar, option,
+                                      parserFailure, prefDisambiguate,
+                                      prefMultiSuffix, prefShowHelpOnError,
+                                      progDesc, renderFailure, short, str,
+                                      strArgument, strOption, subparser, switch,
+                                      (<**>))
+import           RON.Storage.Backend (DocId (DocId), getDocuments)
+import           RON.Storage.FS (Collection, runStorage)
 import qualified RON.Storage.FS as StorageFS
+
+import           FF.Types (ContactId, Limit, Note, NoteId,
+                           Status (Active, Archived))
+import qualified FF.Types
 
 data Cmd
   = CmdConfig (Maybe Config)
@@ -96,12 +78,17 @@ data CmdAction
   | CmdUpgrade
   | CmdWiki (Maybe Limit)
 
-data Options
-  = Options
-      { brief :: Bool,
-        customDir :: Maybe FilePath,
-        cmd :: Cmd
-      }
+data Options = Options
+  { customDir     :: Maybe FilePath
+  , cmd           :: Cmd
+  , actionOptions :: ActionOptions
+    -- ^ 'CmdAction'-specific options
+  }
+
+data ActionOptions = ActionOptions
+  { brief :: Bool
+  , json  :: Bool
+  }
 
 data Track
   = Track
@@ -112,7 +99,10 @@ data Track
 
 data Contact = Add Text | Delete ContactId
 
-data Config = ConfigDataDir (Maybe DataDir) | ConfigUI (Maybe Shuffle)
+data Config
+  = ConfigDataDir        (Maybe DataDir)
+  | ConfigExternalEditor (Maybe FilePath)
+  | ConfigUI             (Maybe Shuffle)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
 
@@ -126,12 +116,11 @@ assignToMaybe = \case
   Clear -> Nothing
   Set x -> Just x
 
-data Agenda
-  = Agenda
-      { limit :: Maybe Limit,
-        tags :: Tags,
-        withoutTags :: Set Text
-      }
+data Agenda = Agenda
+  { limit       :: Maybe Limit
+  , tags        :: Tags
+  , withoutTags :: Set Text
+  }
 
 data Tags = Tags (Set Text) | NoTags
 
@@ -181,10 +170,12 @@ prefs =
 
 parser :: Maybe StorageFS.Handle -> Parser Options
 parser h =
-  Options
-    <$> briefOption
-    <*> customDirOption
-    <*> (version <|> subparser commands <|> (CmdAction <$> cmdAgenda))
+  do
+    brief     <- briefOption
+    json      <- jsonOption
+    customDir <- customDirOption
+    cmd       <- version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
+    pure Options{actionOptions = ActionOptions{..}, ..}
   where
     commands =
       mconcat
@@ -208,56 +199,76 @@ parser h =
         ]
       where
         action s = command s . fmap CmdAction
-    iCmdAdd = i cmdNew "add new task or note"
-    iCmdAgenda = i cmdAgenda "show what you can do right now [default action]"
-    iCmdConfig = i cmdConfig "show/edit configuration"
+
+    iCmdAdd     = i cmdNew     "add new task or note"
+    iCmdAgenda  = i cmdAgenda  "show what you can do right now [default action]"
+    iCmdConfig  = i cmdConfig  "show/edit configuration"
     iCmdContact = i cmdContact "show contacts"
-    iCmdDelete = i cmdDelete "delete a task"
-    iCmdDone = i cmdDone "mark a task done (archive)"
-    iCmdEdit = i cmdEdit "edit a task or a note"
-    iCmdNew = i cmdNew "synonym for `add`"
-    iCmdPostpone = i cmdPostpone "make a task start later"
-    iCmdSearch = i cmdSearch "search for notes with the given text"
-    iCmdShow = i cmdShow "show note by id"
-    iCmdTags = i cmdTags "show tags of all notes"
-    iCmdSponsors = i cmdSponsors "show project sponsors"
-    iCmdTrack = i cmdTrack "track issues from external sources"
+    iCmdDelete  = i cmdDelete  "delete a task"
+    iCmdDone    = i cmdDone    "mark a task done (archive)"
+    iCmdEdit    =
+      i_
+        cmdEdit
+        "edit a task or a note, using command from environment variable\
+          \ `EDITOR` or program `editor`"
+        (footerDoc . Just $
+          "Examples for EDITOR: 'code --wait', 'emacs', 'micro', 'nano', 'vim'.\
+            \\n\n\
+            \In JSON mode, instead of running an editor program, the text is\
+            \ expected in stdin.")
+    iCmdNew       = i cmdNew       "synonym for `add`"
+    iCmdPostpone  = i cmdPostpone  "make a task start later"
+    iCmdSearch    = i cmdSearch    "search for notes with the given text"
+    iCmdShow      = i cmdShow      "show note by id"
+    iCmdSponsors  = i cmdSponsors  "show project sponsors"
+    iCmdTags      = i cmdTags      "show tags of all notes"
+    iCmdTrack     = i cmdTrack     "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive "restore the note from archive"
     iCmdUpgrade =
       i cmdUpgrade "check and upgrade the database to the most recent format"
     iCmdWiki = i cmdWiki "show all wiki notes"
-    cmdAgenda = CmdAgenda <$> agenda
-    cmdContact = CmdContact <$> optional contact
-    cmdDelete = CmdDelete <$> some1 noteid
-    cmdDone = CmdDone <$> some1 noteid
-    cmdEdit = CmdEdit <$> edit
-    cmdNew = CmdNew <$> new
-    cmdPostpone = CmdPostpone <$> some1 noteid
-    cmdSearch = CmdSearch <$> search
-    cmdShow = CmdShow <$> some1 noteid
-    cmdSponsors = pure CmdSponsors
-    cmdTags = pure CmdTags
-    cmdTrack = CmdTrack <$> track
+
+    cmdAgenda    = CmdAgenda   <$> agenda
+    cmdContact   = CmdContact  <$> optional contact
+    cmdDelete    = CmdDelete   <$> some1 noteid
+    cmdDone      = CmdDone     <$> some1 noteid
+    cmdEdit      = CmdEdit     <$> edit
+    cmdNew       = CmdNew      <$> new
+    cmdPostpone  = CmdPostpone <$> some1 noteid
+    cmdSearch    = CmdSearch   <$> search
+    cmdShow      = CmdShow     <$> some1 noteid
+    cmdSponsors  = pure CmdSponsors
+    cmdTags      = pure CmdTags
+    cmdTrack     = CmdTrack     <$> track
     cmdUnarchive = CmdUnarchive <$> some1 noteid
-    cmdUpgrade = pure CmdUpgrade
-    cmdWiki = CmdWiki <$> optional limitOption
+    cmdUpgrade   = pure CmdUpgrade
+    cmdWiki      = CmdWiki <$> optional limitOption
+
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
+
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
-    agenda = Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
+
+    agenda =
+      Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
+
     filterTags = filterByNoTags <|> Tags <$> filterByTags
+
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
+
     dryRunOption =
-      switch
-        $ long "dry-run"
-          <> short 'd'
-          <> help "List only issues, don't set up tracking"
+      switch $
+            long "dry-run"
+        <>  short 'd'
+        <>  help "List only issues, don't set up tracking"
+
     repo =
-      strOption
-        $ long "repo"
-          <> short 'r'
-          <> metavar "USER/REPO"
-          <> help "User or organization/repository"
+      strOption $
+            long "repo"
+        <>  short 'r'
+        <>  metavar "USER/REPO"
+        <>  help "User or organization/repository"
+
     contact = subparser $ command "add" iAdd <> command "delete" iDelete
       where
         iAdd = i pAdd "Add contact"
@@ -266,82 +277,112 @@ parser h =
           Add <$> strArgument (metavar "CONTACT_NAME" <> help "contact name")
         pDelete =
           Delete
-            <$> argument readDocId
-                  ( metavar "CONTACT_ID" <> help "contact id"
-                      <> completer completeContactIds
-                  )
+          <$> argument
+                readDocId
+                (   metavar "CONTACT_ID"
+                <>  help "contact id"
+                <>  completer completeContactIds
+                )
+
     new =
       New
-        <$> noteTextArgument
-        <*> optional startDateOption
-        <*> optional endDateOption
-        <*> wiki
-        <*> addTagsOption
+      <$> noteTextArgument
+      <*> optional startDateOption
+      <*> optional endDateOption
+      <*> wiki
+      <*> addTagsOption
+
     edit =
       Edit
-        <$> some1 noteid
-        <*> optional noteTextOption
-        <*> optional startDateOption
-        <*> optional assignEnd
-        <*> addTagsOption
-        <*> deleteTagsOption
+      <$> some1 noteid
+      <*> optional noteTextOption
+      <*> optional startDateOption
+      <*> optional assignEnd
+      <*> addTagsOption
+      <*> deleteTagsOption
+
     search =
       Search
-        <$> strArgument (metavar "TEXT")
-        <*> searchT
-        <*> searchW
-        <*> searchC
-        <*> searchA
-        <*> optional limitOption
-        <*> filterTags
-        <*> withoutTagsOption
+      <$> strArgument (metavar "TEXT")
+      <*> searchT
+      <*> searchW
+      <*> searchC
+      <*> searchA
+      <*> optional limitOption
+      <*> filterTags
+      <*> withoutTagsOption
+
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
+
     searchW = switch $ long "wiki" <> short 'w' <> help "Search among wiki"
+
     searchC =
       switch $ long "contacts" <> short 'c' <> help "Search among contacts"
+
     searchA =
-      flag Active Archived
-        $ long "archived" <> short 'a' <> help "Search among archived"
+      flag Active Archived $
+        long "archived" <> short 'a' <> help "Search among archived"
+
     noteid =
-      argument readDocId
-        $ metavar "ID" <> help "note id" <> completer completeNoteIds
+      argument readDocId $
+        metavar "ID" <> help "note id" <> completer completeNoteIds
+
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
+
     filterByTags =
-      fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Filter by tag"
-    filterByNoTags = flag' NoTags $
-        long "no-tag"
-          <> short 'n'
-          <> help "Filter items that has no tags"
+      fmap Set.fromList $ many $ strOption $
+        long "tag" <> metavar "TAG" <> help "Filter by tag"
+
+    filterByNoTags =
+      flag' NoTags $
+            long "no-tag"
+        <>  short 'n'
+        <>  help "Filter items that has no tags"
+
     addTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "tag" <> metavar "TAG" <> help "Add tag"
+      fmap Set.fromList $ many $ strOption $
+        long "tag" <> metavar "TAG" <> help "Add tag"
+
     deleteTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
+      fmap Set.fromList $ many $ strOption $
+        long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
+
     withoutTagsOption =
-      fmap Set.fromList $ many $ strOption
-        $ long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
+      fmap Set.fromList $ many $ strOption $
+        long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
+
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
+
     limitOption =
       option auto $ long "limit" <> short 'l' <> help "Number of issues"
+
     startDateOption =
       dateOption $ long "start" <> short 's' <> help "start date"
+
     noteTextOption =
       strOption $ long "text" <> short 't' <> help "note text" <> metavar "TEXT"
+
     assignEnd =
-      Set <$> endDateOption
-        <|> flag' Clear (long "end-clear" <> help "clear end date")
+          Set <$> endDateOption
+      <|> flag' Clear (long "end-clear" <> help "clear end date")
+
     dateOption m = option auto $ metavar "DATE" <> m
+
     customDirOption =
-      optional $ strOption
-        $ long "data-dir"
-          <> short 'C'
-          <> metavar "DIRECTORY"
-          <> help "Path to the data dir"
+      optional $
+      strOption $
+            long "data-dir"
+        <>  short 'C'
+        <>  metavar "DIRECTORY"
+        <>  help "Path to the data dir"
+
+    jsonOption = switch $ long "json" <> help "Use JSON for input/output"
+
     cmdConfig =
-      fmap CmdConfig . optional . subparser
-        $ command "dataDir" iDataDir <> command "ui" iUi
+      fmap CmdConfig . optional . subparser $
+            command "dataDir"        iDataDir
+        <>  command "externalEditor" iExternalEditor
+        <>  command "ui"             iUi
       where
         iDataDir = i pDataDir "the database directory"
         pDataDir = ConfigDataDir <$> optional (pJust <|> pYandexDisk)
@@ -352,36 +393,49 @@ parser h =
               flag'
                 DataDirYandexDisk
                 (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
+        iExternalEditor = i pExternalEditor "the external editor to use"
+        pExternalEditor =
+          ConfigExternalEditor
+          <$> optional (strArgument $ metavar "PATH" <> help "path")
         iUi = i ui "UI tweaks"
         ui =
-          fmap ConfigUI . optional
-            $ flag'
-                Shuffle
-                (long "shuffle" <> help "shuffle notes in section")
-              <|> flag' Sort (long "sort" <> help "sort notes in section")
+          fmap ConfigUI . optional $
+                flag'
+                  Shuffle
+                  (long "shuffle" <> help "shuffle notes in section")
+            <|> flag' Sort (long "sort" <> help "sort notes in section")
+
     version =
       flag'
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
+
     completeNoteIds = docIdCompleter @Note
+
     completeContactIds = docIdCompleter @FF.Types.Contact
+
     docIdCompleter :: forall a. Collection a => Completer
-    docIdCompleter = listIOCompleter
-      $ map unDocId <$> case h of
+    docIdCompleter = listIOCompleter $
+      map unDocId <$> case h of
         Nothing -> pure []
         Just h' -> runStorage h' (getDocuments @_ @a)
+
     unDocId (DocId name) = name
+
     readDocId = DocId <$> str
 
 i :: Parser a -> String -> ParserInfo a
-i prsr desc = info (prsr <**> helper) $ fullDesc <> progDesc desc
+i prsr desc = i_ prsr desc mempty
+
+i_ :: Parser a -> String -> InfoMod a -> ParserInfo a
+i_ prsr desc m = info (prsr <**> helper) $ fullDesc <> progDesc desc <> m
 
 parserInfo :: Maybe StorageFS.Handle -> ParserInfo Options
 parserInfo h = i (parser h) "A note taker and task tracker"
 
 showHelp :: String
 showHelp =
-  fst
-    $ renderFailure
-        (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
-        ""
+  fst $
+    renderFailure
+      (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
+      ""

@@ -15,8 +15,8 @@ import           Control.Monad ((>=>))
 import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
+import qualified Data.HashMap.Strict as HashMap
 import           Data.Semigroup ((<>))
-import qualified Data.Set as Set
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
@@ -47,10 +47,14 @@ getIssues mAddress mlimit issueState = do
     address <- case mAddress of
         Just address -> pure address
         Nothing      -> do
-            url <- liftIO $
-                fmap (Text.strip . TextL.toStrict . TextL.decodeUtf8) $
+            url' <-
+                liftIO $
+                fmap TextL.decodeUtf8' $
                 readProcessStdout_ $
                 proc "git" ["remote", "get-url", "--push", "origin"]
+            url <-
+                Text.strip . TextL.toStrict
+                <$> either (throwError . Text.pack . show) pure url'
             case url of
                 (stripPrefixSuffix "https://github.com/" ".git" -> Just repo) ->
                     pure repo
@@ -138,13 +142,16 @@ issueToNote address Issue{..} = NoteView
         Just (URL url) -> url
         Nothing -> "https://github.com/" <> address <> "/issues/" <> externalId
     note_end = case issueMilestone of
-        Just Milestone { milestoneDueOn = Just UTCTime { utctDay } } ->
-            Just utctDay
-        _ -> Nothing
+        Just Milestone{milestoneDueOn = Just UTCTime{utctDay}} -> Just utctDay
+        _                                                      -> Nothing
     body = case issueBody of
         Nothing -> ""
         Just b  -> if Text.null b then "" else "\n\n" <> b
-    labels = Set.fromList $ map (untagName . labelName) $ toList issueLabels
+    labels =
+        HashMap.fromList
+            [ (url, untagName labelName)
+            | IssueLabel{labelName, labelUrl = URL url} <- toList issueLabels
+            ]
 
 toStatus :: IssueState -> NoteStatus
 toStatus = \case

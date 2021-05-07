@@ -37,6 +37,7 @@ rm -rf $BUILD_DIRECTORY
 # Lint deb
 #
 lintian --suppress-tags dir-or-file-in-opt,embedded-library *.deb
+  # - sudo apt install lintian fakeroot debhelper           # pack deb
 
 # Useful function
 # rm *.deb *.buildinfo *.changes

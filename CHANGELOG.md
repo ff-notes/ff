@@ -7,6 +7,30 @@ and this project adheres to
 
 ## [Unreleased]
 ### Added
+- All subcommands output in JSON with `--json` key.
+  This may be useful for scripting around _ff_ in other languages.
+
+### Changed
+- Config is now saved an viewed as JSON, which is still YAML anyway.
+
+## [0.15] - 2020-03-07
+### Added
+- Ability to use shell command as editor
+- GUI client based on Qtah
+- `LinkType` -- type of links between notes
+- Config parameter to set external editor
+- `ff config externalEditor` command to set config parameter
+
+### Removed
+- GUI client based on inline-c access to Qt
+
+### Changed
+- Add error messages for various problems with EDITOR environment variable.
+- Avoid using `Text.IO` for files, keeping for stdout and stderr.
+- Avoid using partial `Text.decodeUtf8`.
+
+## [0.14] - 2019-10-31
+### Added
 - `Tag` type and collection
 - `Note.tags` field
 - `ff agenda --tag=...` to show only tasks with specific tags
