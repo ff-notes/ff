@@ -10,10 +10,5 @@ services:
         EULER_UID: ${EULER_UID}
         EULER_GID: ${EULER_GID}
         STACK_RESOLVER: ${STACK_RESOLVER}
-    volumes:
-      - ./ff-deb:/home/ff/ff-deb
     stdin_open: true
     tty: true
-
-    # environment:
-    #   - BUILD_DIRECTORY=ff-deb
