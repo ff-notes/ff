@@ -2,7 +2,7 @@ Source: ff
 Section: text
 Priority: optional
 Maintainer: Yuriy Syrovetskiy <ff@cblp.su>
-Standards-Version: 0.13
+Standards-Version: 0.15
 
 Package: ff
 Architecture: any
