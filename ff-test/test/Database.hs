@@ -16,21 +16,20 @@ import           Data.Aeson.Types (parseEither)
 import qualified Data.ByteString.Lazy.Char8 as BSLC
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map.Strict as Map
-import           Data.Maybe (mapMaybe)
-import           Data.Semigroup ((<>))
 import qualified Data.Set as Set
 import           Data.String.Interpolate.IsString (i)
 import qualified Data.Text as Text
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Data.Time (Day, UTCTime (..), fromGregorian)
+import           Data.Traversable (for)
 import qualified Data.Vector as Vector
-import qualified Gen
 import           GitHub (Issue (..), IssueLabel (..), IssueNumber (IssueNumber),
                          IssueState (..), Milestone (..), URL (..))
 import           GitHub.Data.Definitions (SimpleUser (..))
 import           GitHub.Data.Id (Id (..))
 import           GitHub.Data.Name (Name (..))
-import           Hedgehog (Gen, Property, evalEither, forAll, property, (===))
+import           Hedgehog (Gen, Property, evalEither, evalMaybe, forAll,
+                           property, (===))
 import           RON.Data (ReplicatedAsObject (readObject), evalObjectState,
                            newObjectFrame)
 import           RON.Data.RGA (RGA (RGA))
@@ -53,6 +52,8 @@ import           FF.Types (Limit, Note (..), NoteStatus (TaskStatus),
                            View (NoteView, note, tags), entityVal,
                            pattern Entity)
 
+import qualified Gen
+
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
 
@@ -71,10 +72,17 @@ prop_not_exist = property $ do
 prop_smoke :: Property
 prop_smoke = property $ do
   (agenda', fs') <-
-    evalEither
-      $ runStorageSim fs123 $ do
+    evalEither $
+      runStorageSim fs123 $ do
         notes <- loadAllNotes
-        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) mempty notes
+        viewTaskSamples
+          Active
+          defaultConfigUI
+          agendaLimit
+          today
+          (Tags mempty)
+          mempty
+          notes
   agenda === agenda'
   fs123 === fs'
   where
@@ -84,32 +92,32 @@ prop_smoke = property $ do
         Sample
           { items =
               [ Entity
-                  (DocId "B00000000002D-200000000002D")
+                  (DocId "700000000002D-200000000002D")
                   NoteView
                     { note =
                         Note
-                          { note_status = Just $ TaskStatus Active
-                          , note_text = Just $ RGA "helloworld"
-                          , note_start = Just $ fromGregorian 22 11 24
-                          , note_end = Just $ fromGregorian 17 06 19
-                          , note_tags = []
-                          , note_track = Nothing
-                          , note_links = []
-                          }
-                    , tags = mempty
+                          { note_status = Just $ TaskStatus Active,
+                            note_text = Just $ RGA "helloworld",
+                            note_start = Just $ fromGregorian 22 11 24,
+                            note_end = Just $ fromGregorian 17 06 19,
+                            note_tags = [],
+                            note_track = Nothing,
+                            note_links = []
+                          },
+                      tags = mempty
                     }
-              ]
-          , total = 1
+              ],
+            total = 1
           }
 
 fs123 :: TestDB
 fs123 =
-  Map.singleton "note" $ Map.singleton "B00000000002D-200000000002D"
+  Map.singleton "note" $ Map.singleton "700000000002D-200000000002D"
     $ Map.fromList
         [ ( "event 2 93",
             BSLC.lines
               [i|
-                *lww #B/000000001D+000000001D !
+                *lww #7/000000001D+000000001D !
                   @20+21  :end    >some =17 =06 =19
                   @25+26  :start  =22 =11 =24
                   @29+30  :status >Active
@@ -156,50 +164,55 @@ prop_new =
       tags = Set.fromList ["Список", "тэг"]
       fs =
         Map.unions
-          [ Map.singleton "note" $ Map.singleton "B000000007N4M-2000000000012"
-              $ Map.singleton "B00000000P8JM-2000000000012"
-              $ map encodeUtf8
-              $ mconcat
-                  [ [ "*set\t#B/0000000ynM+000000000Y\t!",
-                      "\t@`{1DnM\t>end 3150 1 2",
-                      "\t@}TnM\t>start 2154 5 6",
-                      "\t@}inM\t>status >Active",
-                      "\t@}ynM\t>tags >B/0000000Drz+000000000Y",
-                      "\t@{2DnM\t>tags >B/0000000_QM+000000000Y",
-                      "\t@}TnM\t>text >B/0000002inM+000000000Y"
-                    ],
-                    [ "*rga\t#{2inM\t@0\t!",
-                      "\t@`}y_h\t'М'",
-                      "\t@)i\t'и'",
-                      "\t@)j\t'р'",
-                      "."
-                    ]
-                  ],
-            Map.singleton "tag"
-              $ Map.unions
-                  [ Map.singleton "B000000001NDU-2000000000012"
-                      $ Map.singleton "B0000000039SM-2000000000012"
-                      $ map encodeUtf8
-                          [ "*set\t#B/0000000Drz+000000000Y\t!",
-                            "\t@`}IOM\t>text 'Список'",
-                            "."
-                          ],
-                    Map.singleton "B000000004HKM-2000000000012"
-                      $ Map.singleton "B000000006N4M-2000000000012"
-                      $ map encodeUtf8
-                          [ "*set\t#B/0000000_QM+000000000Y\t!",
-                            "\t@`}mnM\t>text 'тэг'",
-                            "."
-                          ]
-                  ]
+          [ Map.singleton "note" $
+              Map.singleton "7000000007N4M-2000000000012" $
+                Map.singleton "700000000P8JM-2000000000012" $
+                  map encodeUtf8 $
+                    mconcat
+                      [ [ "*set\t#7/0000000ynM+000000000Y\t!",
+                          "\t@`{1DnM\t>end 3150 1 2",
+                          "\t@}TnM\t>start 2154 5 6",
+                          "\t@}inM\t>status >Active",
+                          "\t@}ynM\t>tags >7/0000000Drz+000000000Y",
+                          "\t@{2DnM\t>tags >7/0000000_QM+000000000Y",
+                          "\t@}TnM\t>text >7/0000002inM+000000000Y"
+                        ],
+                        [ "*rga\t#{2inM\t@0\t!",
+                          "\t@`}y_h\t'М'",
+                          "\t@)i\t'и'",
+                          "\t@)j\t'р'",
+                          "."
+                        ]
+                      ],
+            Map.singleton "tag" $
+              Map.unions
+                [ Map.singleton "7000000001NDU-2000000000012" $
+                    Map.singleton "70000000039SM-2000000000012" $
+                      map
+                        encodeUtf8
+                        [ "*set\t#7/0000000Drz+000000000Y\t!",
+                          "\t@`}IOM\t>text 'Список'",
+                          "."
+                        ],
+                  Map.singleton "7000000004HKM-2000000000012" $
+                    Map.singleton "7000000006N4M-2000000000012" $
+                      map
+                        encodeUtf8
+                        [ "*set\t#7/0000000_QM+000000000Y\t!",
+                          "\t@`}mnM\t>text 'тэг'",
+                          "."
+                        ]
+                ]
           ]
    in property $ do
         (note, fs') <-
-          evalEither $ runStorageSim mempty
-            $ cmdNewNote New{text, start, end, isWiki = False, tags} today
-        let tags' =
-              mapMaybe UUID.decodeBase32
-                ["B000000001NDU-2000000000012", "B000000004HKM-2000000000012"]
+          evalEither $
+          runStorageSim mempty $
+          cmdNewNote New{text, start, end, isWiki = False, tags} today
+        tags' <-
+          for
+            ["7000000001NDU-2000000000012", "7000000004HKM-2000000000012"]
+            (evalMaybe . UUID.decodeBase32)
         let Note{note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start === note_start
@@ -333,10 +346,12 @@ issues =
           { labelColor = "7057ff"
           , labelUrl = URL "https://api.github.com/repos/ff-notes/ron/labels/level_Research"
           , labelName = "level_Research"
+          , labelDesc = Nothing
           }
       , IssueLabel
           { labelColor = "b60205"
           , labelUrl = URL "https://api.github.com/repos/ff-notes/ron/labels/type_Enhancement"
           , labelName = "type_Enhancement"
+          , labelDesc = Nothing
           }
       ]

@@ -24,7 +24,6 @@ import           Data.Foldable (toList)
 import           Data.List (genericLength, intersperse)
 import qualified Data.Map.Strict as Map
 import           Data.Maybe (fromJust)
-import           Data.Semigroup ((<>))
 import           Data.Set (Set)
 import           Data.Text (Text)
 import qualified Data.Text as Text

@@ -15,7 +15,6 @@ module FF.Upgrade
     )
 where
 
-import           Data.Foldable (for_)
 import qualified Data.Map.Strict as Map
 import           RON.Data (MonadObjectState, getObjectStateChunk,
                            reducibleOpType, stateFromWireChunk,

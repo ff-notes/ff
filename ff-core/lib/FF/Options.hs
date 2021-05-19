@@ -31,7 +31,6 @@ where
 
 import           Control.Applicative (many, optional, (<|>))
 import           Data.List.NonEmpty (NonEmpty, some1)
-import           Data.Semigroup ((<>))
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Text (Text)

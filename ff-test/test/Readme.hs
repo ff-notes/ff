@@ -25,7 +25,7 @@ readmeTest = testCase "readme" $ do
   ffhelp === Text.lines readme
 
 ffhelp :: [Text]
-ffhelp = pref : Text.lines (Text.pack showHelp)
+ffhelp = pref : map Text.stripEnd (Text.lines $ Text.pack showHelp)
 
 parseFFHelp :: Text -> Either String Text
 parseFFHelp s = note "no help found" $ headMay help

@@ -8,7 +8,6 @@ module Main (main) where
 
 import           Data.Foldable (for_)
 import           Data.Function ((&))
-import           Data.Semigroup ((<>))
 import           Data.String (IsString, fromString)
 import           Data.String.Interpolate.IsString (i)
 import           Text.Blaze.Html.Renderer.Pretty (renderHtml)

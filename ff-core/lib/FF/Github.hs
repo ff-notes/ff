@@ -16,7 +16,6 @@ import           Control.Monad.Except (ExceptT (..), liftIO, throwError,
                                        withExceptT)
 import           Data.Foldable (toList)
 import qualified Data.HashMap.Strict as HashMap
-import           Data.Semigroup ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy as TextL
