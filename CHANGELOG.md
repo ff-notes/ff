@@ -13,6 +13,9 @@ and this project adheres to
 ### Changed
 - Config is now saved an viewed as JSON, which is still YAML anyway.
 
+### Removed
+- Dropped support of old JSON note encoding.
+
 ## [0.15] - 2020-03-07
 ### Added
 - Ability to use shell command as editor

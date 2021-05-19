@@ -47,12 +47,11 @@ import           FF (cmdNewNote, loadAllNotes, viewTaskSamples)
 import           FF.Config (defaultConfigUI)
 import qualified FF.Github as Github
 import           FF.Options (New (..), Tags (Tags))
-import           FF.Types (pattern Entity, Limit, Note (..),
-                           NoteStatus (TaskStatus),
+import           FF.Types (Limit, Note (..), NoteStatus (TaskStatus),
                            Sample (Sample, items, total), Status (Active),
                            TaskMode (Overdue), Track (..),
-                           View (NoteView, note, tags), entityVal)
-import           FF.Upgrade (upgradeDatabase)
+                           View (NoteView, note, tags), entityVal,
+                           pattern Entity)
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
@@ -341,134 +340,3 @@ issues =
           , labelName = "type_Enhancement"
           }
       ]
-
-prop_json2ron :: Property
-prop_json2ron = property $ do
-  -- read JSON, merge, write RON
-  do
-    ((), db') <- evalEither $ runStorageSim fs123jsonAndLww upgradeDatabase
-    fs123merged === db'
-  -- idempotency
-  do
-    ((), db') <- evalEither $ runStorageSim fs123merged upgradeDatabase
-    fs123merged === db'
-
-fs123jsonAndLww :: TestDB
-fs123jsonAndLww =
-  Map.singleton "note"
-    $ Map.fromList
-        [ ( "000000000008K-000000000001J",
-            Map.fromList
-              [ ( "event 2 72",
-                  BSLC.lines
-                    [i|{
-                      "end"   : ["17-06-19", 20, 21],
-                      "start" : ["22-11-24", 25, 26],
-                      "status": ["Active",   29, 30],
-                      "text"  : ["hello",     6,  7]
-                      }|]
-                ),
-                ( "event 2 78",
-                  BSLC.lines
-                    [i|{
-                      "end"   : ["12-01-14", 15, 16],
-                      "start" : ["9-10-11",   7,  8],
-                      "status": ["Active",   27, 28],
-                      "text"  : ["world",     4,  5]
-                      }|]
-                )
-              ]
-          ),
-          ( "000000000008M-000000000001J",
-            Map.singleton "event 3 24"
-              $ mconcat
-                  [ [ "*lww #000000004M$000000000o !",
-                      "\t@B/6n7T8JWK0K+000000000L :end 17 6 19",
-                      "\t@B/6n7T8JWK0P+000000000Q :start 22 11 24",
-                      "\t@B/6n7T8JWK0T+000000000U :status >Active",
-                      "\t@` :text >)P",
-                      "\t:track >)Q"
-                    ],
-                    [ "*lww #)Q !",
-                      "\t:externalId '54'",
-                      "\t:provider 'github'",
-                      "\t:source 'ff-notes/ff'",
-                      "\t:url 'https://github.com/ff-notes/ff/pull/54'",
-                      "*rga #)P @0 :0 !"
-                    ],
-                    [ "\t@B/6n7T8JWK06+0000000007 'h'",
-                      "\t@)7 'e'",
-                      "\t@)8 'l'",
-                      "\t@)9 'l'",
-                      "\t@)A 'o'",
-                      "\t@B/6n7T8JWK04+0000000005 'w'",
-                      "\t@)5 'o'",
-                      "\t@)6 'r'",
-                      "\t@)7 'l'",
-                      "\t@)8 'd'",
-                      "."
-                    ]
-                  ]
-          )
-        ]
-
-fs123merged :: TestDB
-fs123merged =
-  Map.singleton "note"
-    $ Map.fromList
-        [ ( "000000000008K-000000000001J",
-            Map.singleton "B00000000674M-2000000000012"
-              $ mconcat
-                  [ [ "*set\t#000000004K$000000000o\t!",
-                      "\t@B/0000000Drz+000000000Y\t>end 17 6 19",
-                      "\t@}IOM\t>start 22 11 24",
-                      "\t@}QUM\t>status >Active",
-                      "\t@}_QM\t>text >000000004L$000000000o"
-                    ],
-                    [ "*rga\t#)L\t@0\t!",
-                      "\t@B/6n7T8JWK06+0000000007\t'h'",
-                      "\t@)7\t'e'",
-                      "\t@)8\t'l'",
-                      "\t@)9\t'l'",
-                      "\t@)A\t'o'",
-                      "\t@B/6n7T8JWK04+0000000005\t'w'",
-                      "\t@)5\t'o'",
-                      "\t@)6\t'r'",
-                      "\t@)7\t'l'",
-                      "\t@)8\t'd'",
-                      "."
-                    ]
-                  ]
-          ),
-          ( "000000000008M-000000000001J",
-            Map.singleton "B00000000NN4M-2000000000012"
-              $ mconcat
-                  [ [ "*set\t#000000004M$000000000o\t!",
-                      "\t@B/0000000qnM+000000000Y\t>end 17 6 19",
-                      "\t@}ynM\t>start 22 11 24",
-                      "\t@{1DnM\t>status >Active",
-                      "\t@}TnM\t>text >000000004P$000000000o",
-                      "\t@}inM\t>track >000000004Q$000000000o"
-                    ],
-                    [ "*rga\t#)P\t@0\t!",
-                      "\t@B/6n7T8JWK06+0000000007\t'h'",
-                      "\t@)7\t'e'",
-                      "\t@)8\t'l'",
-                      "\t@)9\t'l'",
-                      "\t@)A\t'o'",
-                      "\t@B/6n7T8JWK04+0000000005\t'w'",
-                      "\t@)5\t'o'",
-                      "\t@)6\t'r'",
-                      "\t@)7\t'l'",
-                      "\t@)8\t'd'"
-                    ],
-                    [ "*set\t#)Q\t@0\t!",
-                      "\t@B/0000001ynM+000000000Y\t>externalId '54'",
-                      "\t@{2DnM\t>provider 'github'",
-                      "\t@}TnM\t>source 'ff-notes/ff'",
-                      "\t@}inM\t>url 'https://github.com/ff-notes/ff/pull/54'",
-                      "."
-                    ]
-                  ]
-          )
-        ]

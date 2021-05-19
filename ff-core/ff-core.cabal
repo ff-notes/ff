@@ -17,7 +17,6 @@ library
         base,
         bytestring,
         containers,
-        crdt,
         directory,
         filepath,
         github,
@@ -57,7 +56,6 @@ library
         FF.Upgrade
     other-modules:
         Data.Aeson.Extra
-        FF.CrdtAesonInstances
     hs-source-dirs: lib
 
 test-suite features

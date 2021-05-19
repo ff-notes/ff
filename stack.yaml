@@ -3,7 +3,7 @@ resolver: lts-14.20
 packages:
   - ff
   - ff-core
-  - ff-gtk
+  # - ff-gtk
   - ff-qtah
   - ff-test
 

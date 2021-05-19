@@ -21,55 +21,37 @@
 
 module FF.Types where
 
-import           Control.Monad ((>=>))
 import           Control.Monad.Except (throwError)
 import           Control.Monad.Reader (ask, runReaderT)
-import qualified CRDT.Cv.RGA as CRDT
-import qualified CRDT.LamportClock as CRDT
-import qualified CRDT.LWW as CRDT
 import qualified Data.Aeson as JSON
-import           Data.Aeson.Extra (ToJSON, eitherDecode, singletonObjectSum,
-                                   toJSON, untaggedSum, withObject, (.:), (.:?),
-                                   (.=))
-import           Data.Aeson.TH (defaultOptions, deriveFromJSON, deriveToJSON)
-import           Data.Aeson.Types (parseEither)
+import           Data.Aeson.Extra (ToJSON, singletonObjectSum, toJSON, (.=))
+import           Data.Aeson.TH (defaultOptions, deriveToJSON)
 import qualified Data.Aeson.Types as JSON
-import           Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as BSL
-import           Data.Hashable (Hashable)
 import           Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HashMap
+import           Data.Hashable (Hashable)
 import           Data.List (genericLength)
 import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromJust, maybeToList)
+import           Data.Maybe (fromJust)
 import           Data.Text (Text)
 import qualified Data.Text.Encoding as Text
 import           Data.Time (diffDays)
-import           FF.CrdtAesonInstances ()
 import           GHC.Generics (Generic)
 import           Numeric.Natural (Natural)
 import           RON.Data (MonadObjectState, Replicated (encoding),
                            ReplicatedAsPayload (fromPayload, toPayload),
-                           evalObjectState, payloadEncoding, readObject,
-                           stateFromChunk, stateToWireChunk)
-import           RON.Data.LWW (lwwType)
-import           RON.Data.RGA (RGA, RgaRep)
+                           evalObjectState, payloadEncoding, readObject)
+import           RON.Data.RGA (RGA)
 import           RON.Data.Time (Day)
-import           RON.Epoch (localEpochTimeFromUnix)
-import           RON.Error (Error (Error), MonadE, liftEitherString)
-import           RON.Event (Event (Event), applicationSpecific, encodeEvent)
+import           RON.Error (Error (Error), MonadE)
 import           RON.Schema.TH (mkReplicated)
-import           RON.Storage (Collection, DocId, collectionName, fallbackParse,
-                              loadDocument)
+import           RON.Storage (Collection, DocId, collectionName, loadDocument)
 import           RON.Storage.Backend (DocId (DocId),
                                       Document (Document, objectFrame),
                                       MonadStorage)
 import           RON.Text.Serialize (serializeUuid)
-import           RON.Types (Atom (AUuid),
-                            ObjectFrame (ObjectFrame, frame, uuid),
-                            ObjectRef (ObjectRef), Op (Op), UUID,
-                            WireStateChunk (WireStateChunk, stateBody, stateType))
+import           RON.Types (Atom (AUuid), ObjectRef (ObjectRef), UUID)
 import qualified RON.UUID as UUID
 
 instance ToJSON UUID where
@@ -194,7 +176,6 @@ type TagId = DocId Tag
 
 instance Collection Note where
   collectionName = "note"
-  fallbackParse = parseNoteV1
 
 instance Collection Contact where
   collectionName = "contact"
@@ -349,87 +330,6 @@ trackFromV2 TrackV2{..} =
       track_url = trackV2_url
     }
 
--- * Legacy, v1
-parseNoteV1 :: MonadE m => UUID -> ByteString -> m (ObjectFrame Note)
-parseNoteV1 objectId = liftEitherString . (eitherDecode >=> parseEither p)
-  where
-    p = withObject "Note" $ \obj -> do
-      CRDT.LWW (end :: Maybe Day) endTime <- obj .: "end"
-      CRDT.LWW (start :: Day) startTime <- obj .: "start"
-      CRDT.LWW (status :: Status) statusTime <- obj .: "status"
-      (mTracked :: Maybe JSON.Object) <- obj .:? "tracked"
-      text :: CRDT.RgaString <- obj .: "text"
-      let endTime' = timeFromV1 endTime
-          startTime' = timeFromV1 startTime
-          statusTime' = timeFromV1 statusTime
-      mTrackObject <-
-        case mTracked of
-          Nothing -> pure Nothing
-          Just tracked -> do
-            externalId :: Text <- tracked .: "external_id"
-            provider :: Text <- tracked .: "provider"
-            source :: Text <- tracked .: "source"
-            url :: Text <- tracked .: "url"
-            pure
-              $ Just
-                  ( trackId,
-                    mkLww
-                      [ Op trackId externalIdName $ toPayload externalId,
-                        Op trackId providerName $ toPayload provider,
-                        Op trackId sourceName $ toPayload source,
-                        Op trackId urlName $ toPayload url
-                      ]
-                  )
-      let frame =
-            Map.fromList
-              $ [ ( objectId,
-                    mkLww
-                      $ [Op endTime' endName $ toPayload e | Just e <- [end]]
-                        ++ [ Op startTime' startName $ toPayload start,
-                             Op statusTime' statusName $ toPayload status,
-                             Op objectId textName $ toPayload textId
-                           ]
-                        ++ [ Op objectId trackName $ toPayload trackId
-                             | Just _ <- [mTracked]
-                           ]
-                  ),
-                  (textId, stateToWireChunk $ rgaFromV1 text) -- rgaType
-                ]
-                ++ maybeToList mTrackObject
-      pure ObjectFrame{uuid = objectId, frame}
-    mkLww stateBody = WireStateChunk{stateType = lwwType, stateBody}
-    textId = UUID.succValue objectId
-    trackId = UUID.succValue textId
-    endName = $(UUID.liftName "end")
-    startName = $(UUID.liftName "start")
-    statusName = $(UUID.liftName "status")
-    textName = $(UUID.liftName "text")
-    trackName = $(UUID.liftName "track")
-    externalIdName = $(UUID.liftName "externalId")
-    providerName = $(UUID.liftName "provider")
-    sourceName = $(UUID.liftName "source")
-    urlName = $(UUID.liftName "url")
-
-timeFromV1 :: CRDT.LamportTime -> UUID
-timeFromV1 (CRDT.LamportTime unixTime (CRDT.Pid pid)) =
-  encodeEvent
-    $ Event
-        (localEpochTimeFromUnix $ fromIntegral unixTime)
-        (applicationSpecific pid)
-
-rgaFromV1 :: CRDT.RgaString -> RgaRep
-rgaFromV1 (CRDT.RGA oldRga) =
-  stateFromChunk
-    [ Op event ref $ toPayload a
-    | (vid, a) <- oldRga
-    , let
-        event = timeFromV1 vid
-        ref =
-          case a of
-            '\0' -> UUID.succValue event
-            _    -> UUID.zero
-    ]
-
 deriveToJSON defaultOptions     ''Contact
 deriveToJSON defaultOptions     ''Link
 deriveToJSON defaultOptions     ''LinkType
@@ -441,7 +341,3 @@ deriveToJSON defaultOptions     ''Status
 deriveToJSON defaultOptions     ''Tag
 deriveToJSON defaultOptions     ''TaskMode
 deriveToJSON defaultOptions     ''Track
-
--- used in parseNoteV1
-deriveFromJSON untaggedSum    ''NoteStatus
-deriveFromJSON defaultOptions ''Status
