@@ -22,7 +22,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as BSL
 import           Data.Foldable (asum, for_, toList)
 import           Data.Functor (($>))
-import           Data.List.NonEmpty (NonEmpty ((:|)), nonEmpty)
+import           Data.List.NonEmpty (NonEmpty ((:|)))
 import           Data.Maybe (isNothing)
 import           Data.Text (Text, snoc)
 import qualified Data.Text as Text
@@ -417,16 +417,21 @@ runExternalEditor textOld =
 
     assertExecutableFromConfig = do
       cfg <- loadConfig
-      maybe empty assertExecutable $ externalEditor cfg
+      case externalEditor cfg of
+        Nothing -> empty
+        Just editor ->
+          assertExecutableWithArgs "config parameter 'externalEditor'" editor
 
     assertExecutableFromEnv var = do
-      editorCmd <- getEnv var
-      let
-        eEditor = do
-          editor <- ShellWords.parse editorCmd
-          maybe (Left "empty") Right $ nonEmpty editor
-      case eEditor of
+      cmd <- getEnv var
+      assertExecutableWithArgs ("environment variable " <> var) cmd
+
+    assertExecutableWithArgs source cmd = do
+      case ShellWords.parse cmd of
         Left err -> do
-          hPutStrLn stderr $ "error in $EDITOR environment variable: " <> err
+          hPutStrLn stderr $ "bad editor command in " <> source <> ": " <> err
           empty
-        Right editor@(prog :| _) -> assertExecutable prog $> editor
+        Right [] -> do
+          hPutStrLn stderr $ "empty editor command in " <> source
+          empty
+        Right (prog : args) -> assertExecutable prog $> prog :| args
