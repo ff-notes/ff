@@ -1,4 +1,4 @@
-resolver: lts-17.2
+resolver: lts-18.10
 
 packages:
   - ff
@@ -10,7 +10,7 @@ packages:
 extra-deps:
   # ff-core:
     # - crdt-10.5
-    # - github-0.24
+    - github-0.27
     # - ron-0.10
     # - ron-rdt-0.10
     # - ron-schema-0.9.1
@@ -21,20 +21,20 @@ extra-deps:
     - shellwords-0.1.2.2
 
   # ff-gtk:
-    - gi-gtk-declarative-0.7.0
-    - gi-gtk-declarative-app-simple-0.7.0
+    # - gi-gtk-declarative-0.7.0
+    # - gi-gtk-declarative-app-simple-0.7.0
 
   # github:
     # - binary-instances-1
 
   # ff-qtah:
-    - haskell-src-1.0.3.1
-    - hoppy-generator-0.8.0
-    - hoppy-runtime-0.8.0
-    - hoppy-std-0.8.0
-    - qtah-cpp-qt5-0.8.0
-    - qtah-generator-0.8.0
-    - qtah-qt5-0.8.0
+    # - haskell-src-1.0.3.1
+    # - hoppy-generator-0.8.0
+    # - hoppy-runtime-0.8.0
+    # - hoppy-std-0.8.0
+    # - qtah-cpp-qt5-0.8.0
+    # - qtah-generator-0.8.0
+    # - qtah-qt5-0.8.0
     # - git: https://gitlab.com/khumba/qtah.git
     #   commit: b8e9492cb7c2ccd7c3cb7308c9d1495770b0198d  # tag: release-0.8.0
     #   subdirs: [qtah, qtah-cpp, qtah-generator]

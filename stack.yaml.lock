@@ -4,12 +4,19 @@
 #   https://docs.haskellstack.org/en/stable/lock_files
 
 snapshots:
-- original: lts-17.2
+- original: lts-18.10
   completed:
-    sha256: 92b1a17e31d0a978fca4bf270305d4d1dd8092271bf60eafbc9349c890854026
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/17/2.yaml
-    size: 563099
+    sha256: 88b4f81e162ba3adc230a9fcccc4d19ac116377656bab56c7382ca88598b257a
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/18/10.yaml
+    size: 587546
 packages:
+- original:
+    hackage: github-0.27
+  completed:
+    pantry-tree:
+      sha256: b1c7b80c48aa78664cbf787ca3752d7e0389e32ad12c7912680ed10fd5c513ec
+      size: 7838
+    hackage: github-0.27@sha256:074e69ad24b94b1199331b156e5373e9d4fa4a4452e02217f3539fe94a21a838,6995
 - original:
     subdir: ron
     git: https://github.com/ff-notes/ron.git
@@ -69,66 +76,3 @@ packages:
       sha256: a16bcdbe3cb1cf8b715242c5ab6843950bafc892fe503299ff3bbf46842e9d6e
       size: 427
     hackage: shellwords-0.1.2.2@sha256:fbcdec62b665eab3e30eadde91becbeacec735bb3780988eaae52f9b8c91b09b,1412
-- original:
-    hackage: gi-gtk-declarative-0.7.0
-  completed:
-    pantry-tree:
-      sha256: eba1ca9b183eabe6f6b3ab2be9250428c97d2982d303f7abc0a431e5eaada73f
-      size: 2393
-    hackage: gi-gtk-declarative-0.7.0@sha256:7e6318ad162a97dc19af79499eb7bbb72022aa4ac3368e8a20fa199a7e8db2c6,4417
-- original:
-    hackage: gi-gtk-declarative-app-simple-0.7.0
-  completed:
-    pantry-tree:
-      sha256: 06ceda071cbb81f20e41a3ac1d7291d63b040aacce428817c31a6aea8ca94c2d
-      size: 310
-    hackage: gi-gtk-declarative-app-simple-0.7.0@sha256:bc14f7cee5b933ce448f7ff5af13bd2cf63c657426003a8b41457556997ac39f,2276
-- original:
-    hackage: haskell-src-1.0.3.1
-  completed:
-    pantry-tree:
-      sha256: 66c93cb9b354563c10ded033976f71f6d090c53a9ac8ecd1945e63f518bee7be
-      size: 621
-    hackage: haskell-src-1.0.3.1@sha256:6601bb4165fc5d66fb9ffc95912f770ceb1b59fce2248dd3cab4a4fa6a8b5942,1622
-- original:
-    hackage: hoppy-generator-0.8.0
-  completed:
-    pantry-tree:
-      sha256: 9babba949e717c0487dc8f3599b200d671455b9dc0f6d8f1e0998e833114ddee
-      size: 2776
-    hackage: hoppy-generator-0.8.0@sha256:0bde228c625e307f836adf2be71e34e8bf74fc7658b19f8a04901fc81a482e2a,2178
-- original:
-    hackage: hoppy-runtime-0.8.0
-  completed:
-    pantry-tree:
-      sha256: 0f5b781a66580bc223e82f3e9d914855bd8d112892660048e951756b498c1d72
-      size: 297
-    hackage: hoppy-runtime-0.8.0@sha256:c6707ae20f21a1392f42c38ad45b0c1188de08fcda98883c6815088d622b17f1,1146
-- original:
-    hackage: hoppy-std-0.8.0
-  completed:
-    pantry-tree:
-      sha256: cb6e6f4a465fe1bd813f8a846b6f9eb62e4711f600fdfc394f1a66d4f09af98a
-      size: 1567
-    hackage: hoppy-std-0.8.0@sha256:aff7bb6744d1b1366d0672db3722fc7b8f80f478293d100091867c6b19050ec8,1540
-- original:
-    hackage: qtah-cpp-qt5-0.8.0
-  completed:
-    pantry-tree:
-      sha256: 6ef5f138b01a739a3fb3a2b6c81a76c4b167ddfa3f3ae6a3cb36320d74a703b8
-      size: 1805
-    hackage: qtah-cpp-qt5-0.8.0@sha256:bde73d4ebf7f118127fa1b775fb087873e6d74623dd9a004e868f87e666806f9,1519
-- original:
-    hackage: qtah-generator-0.8.0
-  completed:
-    pantry-tree:
-      sha256: a37249a9ca084c910618a2c9151beeb5e989668556fef081720c6104f3f177d1
-      size: 28229
-    hackage: qtah-generator-0.8.0@sha256:389a5d5511b323d067709bbc6eabe8d70a34c3f6b352cd714ffcf370b7b3ba25,16278
-- original:
-    hackage: qtah-qt5-0.8.0
-  completed:
-    pantry-tree:
-      sha256: 2bd684b751f9d3f526ee01430a5238d4a36e93bb53f51f61c572874daa512b64
-      size: 51507
-    hackage: qtah-qt5-0.8.0@sha256:49dc0fcfa5996378fd7f04edf051880ce6b63205dd49ae4125d44101e922ddc9,25961

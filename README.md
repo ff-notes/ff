@@ -36,7 +36,7 @@ Feel free to open a ticket if you want to extend support.
 
 #### Prerequisites
 
-Follow https://github.com/haskell-gi/haskell-gi#installation.
+Follow https://github.com/haskell-gi/haskell-gi\#installation.
 
 #### Program
 
@@ -82,7 +82,7 @@ Ubuntu:
     $ ff --help
     Usage:  [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
             [(-V|--version) | COMMAND | [-l|--limit ARG]
-              [(-n|--no-tag) | --tag TAG...] [--without-tag TAG...]]
+              [(-n|--no-tag) | [--tag TAG]...] [--without-tag TAG]...]
       A note taker and task tracker
 
     Available options:
@@ -92,8 +92,8 @@ Ubuntu:
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
       -n,--no-tag              Filter items that has no tags
-      --tag TAG...             Filter by tag
-      --without-tag TAG...     Filter items without tag
+      --tag TAG                Filter by tag
+      --without-tag TAG        Filter items without tag
       -h,--help                Show this help text
 
     Available commands:

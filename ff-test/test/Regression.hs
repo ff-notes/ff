@@ -13,21 +13,22 @@ module Regression
   )
 where
 
-import           Data.Aeson.TH (defaultOptions, deriveToJSON)
-import           Data.Traversable (for)
-import           Data.Yaml (encodeFile)
-import           RON.Data.ORSet (ORSet)
-import           RON.Storage (CollectionName)
-import           RON.Storage.Backend (getCollections, getDocuments)
-import           RON.Storage.FS (Handle, newHandle, runStorage)
-import           System.Directory (createDirectoryIfMissing)
-import           System.FilePath (takeDirectory, (</>))
-import           Test.Tasty (TestTree, testGroup)
-import           Test.Tasty.Golden (goldenVsFileDiff)
+import Data.Aeson.TH (defaultOptions, deriveToJSON)
+import Data.Traversable (for)
+import Data.Yaml (encodeFile)
+import RON.Data.ORSet (ORSet)
+import RON.Storage (CollectionName)
+import RON.Storage.Backend (getCollections, getDocuments)
+import RON.Storage.FS (Handle, newHandle, runStorage)
+import System.Directory (createDirectoryIfMissing)
+import System.FilePath (takeDirectory, (</>))
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.Golden (goldenVsFileDiff)
 
-import           FF (load, viewNote)
-import           FF.Types (Entity (Entity, entityVal), Note, NoteId, Tag, TagId,
-                           loadNote)
+import FF (load, viewNote)
+import FF.Types (Entity (Entity, entityVal), Note, NoteId, Tag, TagId, loadNote)
+
+import FF.Test.Common (diffCmd)
 
 deriveToJSON defaultOptions ''ORSet
 
@@ -54,7 +55,12 @@ testTagCollection h collectionName = do
 
 testNote :: Handle -> FilePath -> NoteId -> TestTree
 testNote h tmp docid =
-  goldenVsFileDiff (show docid) diff ("ff.dump" </> show docid) outFile action
+  goldenVsFileDiff
+    (show docid)
+    diffCmd
+    ("ff.dump" </> show docid)
+    outFile
+    action
   where
     outFile = tmp </> show docid
     action = do
@@ -64,13 +70,15 @@ testNote h tmp docid =
 
 testTag :: Handle -> FilePath -> TagId -> TestTree
 testTag h tmp docid =
-  goldenVsFileDiff (show docid) diff ("ff.dump" </> show docid) outFile action
+  goldenVsFileDiff
+    (show docid)
+    diffCmd
+    ("ff.dump" </> show docid)
+    outFile
+    action
   where
     outFile = tmp </> show docid
     action = do
       Entity{entityVal} <- runStorage h $ load docid
       createDirectoryIfMissing True $ takeDirectory outFile
       encodeFile outFile entityVal
-
-diff :: String -> String -> [String]
-diff ref new = ["colordiff", "-u", ref, new]

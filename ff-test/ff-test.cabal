@@ -14,16 +14,14 @@ test-suite ff-test
         cmark,
         containers,
         directory,
-        errors,
         filepath,
         github,
         hedgehog,
         interpolate,
         mtl,
-        safe,
         tasty,
-        tasty-hedgehog,
         tasty-golden,
+        tasty-hedgehog,
         tasty-th,
         temporary,
         text,
@@ -45,6 +43,7 @@ test-suite ff-test
     other-modules:
         Config
         Database
+        FF.Test.Common
         Gen
         Readme
         Regression

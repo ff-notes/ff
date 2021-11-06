@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Readme
@@ -5,37 +6,49 @@ module Readme
   )
 where
 
-import CMark (Node (Node), NodeType (CODE_BLOCK), commonmarkToNode, optSafe)
-import Control.Error (note)
-import qualified Data.ByteString as BS
-import Data.Text (Text)
-import qualified Data.Text as Text
-import Data.Text.Encoding (decodeUtf8')
-import FF.Options (showHelp)
-import Hedgehog ((===), PropertyT, evalEither, evalIO, property, withTests)
-import Safe (headMay)
+import CMark (Node (Node), NodeType (CODE_BLOCK), commonmarkToNode,
+              nodeToCommonmark)
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy qualified as BSL
+import Data.Text (Text, isPrefixOf)
+import Data.Text qualified as Text
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import Test.Tasty (TestTree)
-import Test.Tasty.Hedgehog (testProperty)
+import Test.Tasty.Golden (goldenVsStringDiff)
+
+import FF.Options (showHelp)
+
+import FF.Test.Common (diffCmd)
 
 readmeTest :: TestTree
-readmeTest = testCase "readme" $ do
-  readmeBS <- evalIO $ BS.readFile "../README.md"
-  readmeText <- evalEither $ decodeUtf8' readmeBS
-  readme <- evalEither $ parseFFHelp readmeText
-  ffhelp === Text.lines readme
+readmeTest =
+  goldenVsStringDiff
+    "readme"
+    diffCmd
+    "../README.md"
+    (do
+      bytes <- BS.readFile "../README.md"
+      let
+        text = decodeUtf8 bytes
+        node = commonmarkToNode [] text
+        node' = replaceHelp node
+        text' = nodeToCommonmark [] Nothing node'
+      pure $ BSL.fromStrict $ encodeUtf8 text')
 
-ffhelp :: [Text]
-ffhelp = pref : map Text.stripEnd (Text.lines $ Text.pack showHelp)
+progHelp :: Text
+progHelp = Text.unlines [helpPrefix, Text.pack showHelp]
 
-parseFFHelp :: Text -> Either String Text
-parseFFHelp s = note "no help found" $ headMay help
+replaceHelp :: Node -> Node
+replaceHelp (Node pos typ children) = Node pos typ (replaceInChildren children)
   where
-    Node _ _ ns = commonmarkToNode [optSafe] s
-    code = [block | Node _ (CODE_BLOCK _ block) _ <- ns]
-    help = filter ((==) pref . Text.take (Text.length pref)) code
+    replaceInChildren nodes =
+      [ case node of
+          Node pos' (CODE_BLOCK info text) children'
+            | helpPrefix `isPrefixOf` text ->
+                Node pos' (CODE_BLOCK info progHelp) children'
+          _ -> node
+      | node <- nodes
+      ]
 
-pref :: Text
-pref = "$ ff --help"
-
-testCase :: String -> PropertyT IO () -> TestTree
-testCase name action = testProperty name $ withTests 1 $ property action
+helpPrefix :: Text
+helpPrefix = "$ ff --help"

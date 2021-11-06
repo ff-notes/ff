@@ -436,5 +436,5 @@ showHelp :: String
 showHelp =
   fst $
     renderFailure
-      (parserFailure prefs (parserInfo Nothing) ShowHelpText mempty)
+      (parserFailure prefs (parserInfo Nothing) (ShowHelpText Nothing) mempty)
       ""
