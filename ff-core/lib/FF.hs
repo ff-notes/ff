@@ -210,7 +210,7 @@ filterTasksByStatus status =
   filter $ (Just (TaskStatus status) ==) . note_status . entityVal
 
 filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
-filterWikis = filter ((Just Wiki ==) . note_status . entityVal)
+filterWikis = filter $ (Just Wiki ==) . note_status . entityVal
 
 viewTaskSamples ::
   MonadStorage m =>
@@ -222,7 +222,7 @@ viewTaskSamples ::
   Day ->
   -- | requested tags
   Tags ->
-  -- | without tags
+  -- | exclude tags
   Set Text ->
   [EntityDoc Note] ->
   m (ModeMap NoteSample)

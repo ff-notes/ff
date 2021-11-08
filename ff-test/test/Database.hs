@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -11,68 +12,76 @@ module Database
   )
 where
 
-import           Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
-import           Data.Aeson.Types (parseEither)
-import qualified Data.ByteString.Lazy.Char8 as BSLC
-import qualified Data.HashMap.Strict as HashMap
-import qualified Data.Map.Strict as Map
-import qualified Data.Set as Set
-import           Data.String.Interpolate.IsString (i)
-import qualified Data.Text as Text
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import           Data.Time (Day, UTCTime (..), fromGregorian)
-import           Data.Traversable (for)
-import qualified Data.Vector as Vector
-import           GitHub (Issue (..), IssueLabel (..), IssueNumber (IssueNumber),
-                         IssueState (..), Milestone (..), URL (..))
-import           GitHub.Data.Definitions (SimpleUser (..))
-import           GitHub.Data.Id (Id (..))
-import           GitHub.Data.Name (Name (..))
-import           Hedgehog (Gen, Property, evalEither, evalMaybe, forAll,
-                           property, (===))
-import           RON.Data (ReplicatedAsObject (readObject), evalObjectState,
-                           newObjectFrame)
-import           RON.Data.RGA (RGA (RGA))
-import           RON.Storage.Backend (DocId (DocId))
-import           RON.Storage.Test (TestDB, runStorageSim)
-import           RON.Text (parseObject, serializeObject)
-import           RON.Types (ObjectRef (ObjectRef))
-import qualified RON.UUID as UUID
-import           Test.Tasty (TestTree, testGroup)
-import           Test.Tasty.Hedgehog (testProperty)
-import           Test.Tasty.TH (testGroupGenerator)
+import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
+import Data.Aeson.Types (parseEither)
+import Data.ByteString.Lazy.Char8 qualified as BSLC
+import Data.HashMap.Strict qualified as HashMap
+import Data.Map.Strict qualified as Map
+import Data.Set qualified as Set
+import Data.String.Interpolate.IsString (i)
+import Data.Text qualified as Text
+import Data.Text.Lazy.Encoding (encodeUtf8)
+import Data.Time (Day, UTCTime (..), fromGregorian)
+import Data.Traversable (for)
+import Data.Vector qualified as Vector
+import GitHub (Issue (..), IssueLabel (..), IssueNumber (IssueNumber),
+               IssueState (..), Milestone (..), URL (..))
+import GitHub.Data.Definitions (SimpleUser (..))
+import GitHub.Data.Id (Id (..))
+import GitHub.Data.Name (Name (..))
+import Hedgehog (Gen, Property, PropertyT, evalEither, evalMaybe, forAll,
+                 property, withTests, (===))
+import RON.Data (ReplicatedAsObject (readObject), evalObjectState,
+                 newObjectFrame)
+import RON.Data.RGA (RGA (RGA))
+import RON.Storage.Backend (DocId (DocId))
+import RON.Storage.Test (TestDB, runStorageSim)
+import RON.Text (parseObject, serializeObject)
+import RON.Types (ObjectRef (ObjectRef))
+import RON.UUID qualified as UUID
+import Test.Tasty (TestTree, testGroup)
+import Test.Tasty.Hedgehog (testProperty)
+import Test.Tasty.TH (testGroupGenerator)
 
-import           FF (cmdNewNote, loadAllNotes, viewTaskSamples)
-import           FF.Config (defaultConfigUI)
-import qualified FF.Github as Github
-import           FF.Options (New (..), Tags (Tags))
-import           FF.Types (Limit, Note (..), NoteStatus (TaskStatus),
-                           Sample (Sample, items, total), Status (Active),
-                           TaskMode (Overdue), Track (..),
-                           View (NoteView, note, tags), entityVal,
-                           pattern Entity)
+import FF (cmdNewNote, loadAllNotes, viewTaskSamples)
+import FF.Config (defaultConfigUI)
+import FF.Github qualified as Github
+import FF.Options (New (..), Tags (Tags))
+import FF.Types (Limit, Note (..), NoteStatus (TaskStatus),
+                 Sample (Sample, items, total), Status (Active),
+                 TaskMode (Overdue), Track (..), View (NoteView, note, tags),
+                 entityVal, pattern Entity)
 
-import qualified Gen
+import Gen qualified
 
 databaseTests :: TestTree
 databaseTests = $(testGroupGenerator)
 
 prop_not_exist :: Property
-prop_not_exist = property $ do
-  (agenda, fs') <-
-    evalEither
-      $ runStorageSim fs $ do
+prop_not_exist =
+  property1 $ do
+    (agenda, fs') <-
+      evalEither $
+      runStorageSim fs $ do
         notes <- loadAllNotes
-        viewTaskSamples Active defaultConfigUI agendaLimit today (Tags mempty) mempty notes
-  Map.empty === agenda
-  fs === fs'
+        viewTaskSamples
+          Active
+          defaultConfigUI
+          agendaLimit
+          today
+          (Tags mempty)
+          mempty
+          notes
+    Map.empty === agenda
+    fs === fs'
   where
     fs = Map.empty
 
 prop_smoke :: Property
-prop_smoke = property $ do
-  (agenda', fs') <-
-    evalEither $
+prop_smoke =
+  property1 $ do
+    (agenda', fs') <-
+      evalEither $
       runStorageSim fs123 $ do
         notes <- loadAllNotes
         viewTaskSamples
@@ -83,8 +92,8 @@ prop_smoke = property $ do
           (Tags mempty)
           mempty
           notes
-  agenda === agenda'
-  fs123 === fs'
+    agenda === agenda'
+    fs123 === fs'
   where
     agenda =
       Map.singleton
@@ -204,7 +213,7 @@ prop_new =
                         ]
                 ]
           ]
-   in property $ do
+   in property1 $ do
         (note, fs') <-
           evalEither $
           runStorageSim mempty $
@@ -247,8 +256,8 @@ test_RON_Tests =
 
 prop_issues_imported_from_GitHub_can_be_viewed_as_notes :: Property
 prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
-  property
-    (ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues)
+  property1 $
+    ideal === Github.sampleMap "ff-notes/ff" limit todayForIssues issues
   where
     ideal =
       Map.singleton
@@ -355,3 +364,6 @@ issues =
           , labelDesc = Nothing
           }
       ]
+
+property1 :: PropertyT IO () -> Property
+property1 = withTests 1 . property
