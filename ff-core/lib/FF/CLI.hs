@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,73 +9,66 @@
 
 module FF.CLI where
 
-import           Control.Applicative (empty)
-import           Control.Concurrent (threadDelay)
-import           Control.Concurrent.Async (race)
-import           Control.Monad (forever, guard, when)
-import           Control.Monad.Except (runExceptT)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Data.Aeson (ToJSON, (.=))
-import qualified Data.Aeson as JSON
-import qualified Data.Aeson.Encode.Pretty as JSON
-import qualified Data.Aeson.Types as JSON
-import qualified Data.ByteString as BS
-import qualified Data.ByteString.Lazy.Char8 as BSL
-import           Data.Foldable (asum, for_, toList)
-import           Data.Functor (($>))
-import           Data.List.NonEmpty (NonEmpty ((:|)))
-import           Data.Maybe (isNothing)
-import           Data.Text (Text, snoc)
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import qualified Data.Text.Encoding.Error as TextError
-import qualified Data.Text.IO as Text
-import           Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
-                                            defaultLayoutOptions,
-                                            layoutPageWidth, layoutSmart,
-                                            pretty, vsep)
-import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
-                                                            renderStrict)
-import           Data.Time (Day)
-import           Data.Traversable (for)
-import           Data.Version (Version, showVersion)
-import           Development.GitRev (gitDirty, gitHash)
-import           RON.Storage.Backend (MonadStorage)
-import           RON.Storage.FS (runStorage)
-import qualified RON.Storage.FS as StorageFS
-import qualified ShellWords
-import qualified System.Console.Terminal.Size as Terminal
-import           System.Directory (doesDirectoryExist, findExecutable,
-                                   getHomeDirectory)
-import           System.Environment (getEnv, lookupEnv, setEnv)
-import           System.Exit (ExitCode (..), exitFailure)
-import           System.FilePath ((</>))
-import           System.IO (hClose, hPutChar, hPutStr, hPutStrLn, stderr)
-import           System.IO.Temp (withSystemTempFile)
-import           System.Pager (printOrPage)
-import           System.Process.Typed (proc, runProcess)
+import Control.Applicative (empty)
+import Control.Concurrent (threadDelay)
+import Control.Concurrent.Async (race)
+import Control.Monad (forever, guard, when)
+import Control.Monad.Except (runExceptT)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Aeson (ToJSON, (.=))
+import Data.Aeson qualified as JSON
+import Data.Aeson.Encode.Pretty qualified as JSON
+import Data.Aeson.Types qualified as JSON
+import Data.ByteString qualified as BS
+import Data.ByteString.Lazy.Char8 qualified as BSL
+import Data.Foldable (asum, for_, toList)
+import Data.Functor (($>))
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Maybe (isNothing)
+import Data.Text (Text, snoc)
+import Data.Text qualified as Text
+import Data.Text.Encoding qualified as Text
+import Data.Text.Encoding.Error qualified as TextError
+import Data.Text.IO qualified as Text
+import Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
+                                  defaultLayoutOptions, layoutPageWidth,
+                                  layoutSmart, pretty, vsep)
+import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
+import Data.Time (Day)
+import Data.Traversable (for)
+import Data.Version (Version, showVersion)
+import Development.GitRev (gitDirty, gitHash)
+import RON.Storage.Backend (MonadStorage)
+import RON.Storage.FS (runStorage)
+import RON.Storage.FS qualified as StorageFS
+import ShellWords qualified
+import System.Console.Terminal.Size qualified as Terminal
+import System.Directory (doesDirectoryExist, findExecutable, getHomeDirectory)
+import System.Environment (getEnv, lookupEnv, setEnv)
+import System.Exit (ExitCode (..), exitFailure)
+import System.FilePath ((</>))
+import System.IO (hClose, hPutChar, hPutStr, hPutStrLn, stderr)
+import System.IO.Temp (withSystemTempFile)
+import System.Pager (printOrPage)
+import System.Process.Typed (proc, runProcess)
 
-import           FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit,
-                     cmdNewContact, cmdNewNote, cmdPostpone, cmdSearch,
-                     cmdUnarchive, getContactSamples, getDataDir, getUtcToday,
-                     loadAllNotes, loadAllTagTexts, loadAllTags,
-                     noDataDirectoryMessage, sponsors, updateTrackedNotes,
-                     viewNote, viewTaskSamples, viewWikiSamples)
-import           FF.Config (Config (..), ConfigUI (..), appName, loadConfig,
-                            saveConfig)
-import           FF.Github (getIssueViews, getOpenIssueSamples)
-import           FF.Options (ActionOptions (..), Agenda (..), Cmd (..),
-                             CmdAction (..), Contact (..), DataDir (..),
-                             Options (..), Search (..), Shuffle (..),
-                             Tags (Tags), Track (..), parseOptions)
-import qualified FF.Options as Options
-import           FF.Types (Status (Active), loadNote)
-import qualified FF.Types as Sample (Sample (items))
-import           FF.UI (prettyContact, prettyContactSample, prettyNote,
-                        prettyNoteList, prettyPath, prettyTagsList,
-                        prettyTaskSections, prettyTasksWikisContacts,
-                        prettyWikiSample, withHeader, (<//>))
-import           FF.Upgrade (upgradeDatabase)
+import FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit, cmdNewContact,
+           cmdNewNote, cmdPostpone, cmdSearch, cmdUnarchive, getContactSamples,
+           getDataDir, getUtcToday, loadAllNotes, loadAllTagTexts, loadAllTags,
+           noDataDirectoryMessage, sponsors, updateTrackedNotes, viewNote,
+           viewTaskSamples, viewWikiSamples)
+import FF.Config (Config (..), ConfigUI (..), appName, loadConfig, saveConfig)
+import FF.Github (getIssueViews, getOpenIssueSamples)
+import FF.Options (ActionOptions (..), Agenda (..), Cmd (..), CmdAction (..),
+                   Contact (..), DataDir (..), Options (..), Search (..),
+                   Shuffle (..), Tags (Tags), Track (..), parseOptions)
+import FF.Options qualified as Options
+import FF.Types (Status (Active), loadNote)
+import FF.Types qualified as Sample (Sample (items))
+import FF.UI (prettyContact, prettyContactSample, prettyNote, prettyNoteList,
+              prettyPath, prettyTagsList, prettyTaskSections,
+              prettyTasksWikisContacts, prettyWikiSample, withHeader, (<//>))
+import FF.Upgrade (upgradeDatabase)
 
 cli :: Version -> IO ()
 cli version = do
