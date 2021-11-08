@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -40,60 +41,56 @@ module FF
   )
 where
 
-import           Control.Applicative ((<|>))
-import           Control.Monad (unless, void, when)
-import           Control.Monad.Except (throwError)
-import           Control.Monad.IO.Class (MonadIO, liftIO)
-import           Control.Monad.State.Strict (MonadState, evalState, state)
-import           Control.Monad.Trans (lift)
-import           Data.Foldable (for_, toList, traverse_)
-import           Data.Hashable (Hashable)
-import           Data.HashMap.Strict (HashMap)
-import qualified Data.HashMap.Strict as HashMap
-import           Data.HashSet (HashSet)
-import qualified Data.HashSet as HashSet
-import           Data.List (genericLength, sortOn)
-import           Data.List.NonEmpty (NonEmpty ((:|)))
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
-import           Data.Set (Set, disjoint, isSubsetOf, (\\))
-import qualified Data.Set as Set
-import           Data.Text (Text)
-import qualified Data.Text as Text
-import           Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay,
-                            utctDay)
-import           Data.Traversable (for)
-import           RON.Data (MonadObjectState, ObjectStateT, evalObjectState,
-                           newObjectFrame, readObject)
-import           RON.Data.RGA (RGA (RGA))
-import qualified RON.Data.RGA as RGA
-import           RON.Error (MonadE, throwErrorText)
-import           RON.Event (ReplicaClock)
-import           RON.Storage (Collection, DocId, createDocument, decodeDocId,
-                              docIdFromUuid, loadDocument, modify)
-import           RON.Storage.Backend (Document (Document, objectFrame),
-                                      MonadStorage (getDocuments))
-import           RON.Types (ObjectFrame (ObjectFrame, uuid),
-                            ObjectRef (ObjectRef))
-import           System.Directory (doesDirectoryExist, getCurrentDirectory)
-import           System.FilePath (normalise, splitDirectories, (</>))
-import           System.Random (StdGen, mkStdGen, randoms, split)
+import Control.Applicative ((<|>))
+import Control.Monad (unless, void, when)
+import Control.Monad.Except (throwError)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State.Strict (MonadState, evalState, state)
+import Control.Monad.Trans (lift)
+import Data.Foldable (for_, toList, traverse_)
+import Data.HashMap.Strict (HashMap)
+import Data.HashMap.Strict qualified as HashMap
+import Data.HashSet (HashSet)
+import Data.HashSet qualified as HashSet
+import Data.Hashable (Hashable)
+import Data.List (genericLength, sortOn)
+import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Map.Strict qualified as Map
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import Data.Set (Set, disjoint, isSubsetOf, (\\))
+import Data.Set qualified as Set
+import Data.Text (Text)
+import Data.Text qualified as Text
+import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
+import Data.Traversable (for)
+import RON.Data (MonadObjectState, ObjectStateT, evalObjectState,
+                 newObjectFrame, readObject)
+import RON.Data.RGA (RGA (RGA))
+import RON.Data.RGA qualified as RGA
+import RON.Error (MonadE, throwErrorText)
+import RON.Event (ReplicaClock)
+import RON.Storage (Collection, DocId, createDocument, decodeDocId,
+                    docIdFromUuid, loadDocument, modify)
+import RON.Storage.Backend (Document (Document, objectFrame),
+                            MonadStorage (getDocuments))
+import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
+import System.Directory (doesDirectoryExist, getCurrentDirectory)
+import System.FilePath (normalise, splitDirectories, (</>))
+import System.Random (StdGen, mkStdGen, randoms, split)
 
-import           FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir,
-                            shuffle)
-import           FF.Options (Assign (Clear, Set), Edit (..), New (..),
-                             Tags (..), assignToMaybe)
-import           FF.Types (Contact (..), ContactId, ContactSample, Entity (..),
-                           EntityDoc, EntityView, Limit, ModeMap, Note (..),
-                           NoteId, NoteSample, NoteStatus (..), Sample (..),
-                           Status (..), Tag (..), Track (..), View (..),
-                           contact_name_clear, contact_status_clear, loadNote,
-                           note_end_clear, note_end_read, note_end_set,
-                           note_start_clear, note_start_read, note_start_set,
-                           note_status_clear, note_status_read, note_status_set,
-                           note_tags_add, note_tags_clear, note_tags_read,
-                           note_tags_remove, note_text_clear, note_text_zoom,
-                           note_track_read, taskMode, uuidToText)
+import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
+import FF.Options (Assign (Clear, Set), Edit (..), New (..), Tags (..),
+                   assignToMaybe)
+import FF.Types (Contact (..), ContactId, ContactSample, Entity (..), EntityDoc,
+                 EntityView, Limit, ModeMap, Note (..), NoteId, NoteSample,
+                 NoteStatus (..), Sample (..), Status (..), Tag (..),
+                 Track (..), View (..), contact_name_clear,
+                 contact_status_clear, loadNote, note_end_clear, note_end_read,
+                 note_end_set, note_start_clear, note_start_read,
+                 note_start_set, note_status_clear, note_status_read,
+                 note_status_set, note_tags_add, note_tags_clear,
+                 note_tags_read, note_tags_remove, note_text_clear,
+                 note_text_zoom, note_track_read, taskMode, uuidToText)
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
