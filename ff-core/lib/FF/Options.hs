@@ -116,12 +116,13 @@ assignToMaybe = \case
   Set x -> Just x
 
 data Agenda = Agenda
-  { limit       :: Maybe Limit
-  , tags        :: Tags
-  , withoutTags :: Set Text
+  { limit :: Maybe Limit
+  , tags  :: Tags
   }
 
-data Tags = Tags (Set Text) | NoTags
+data Tags
+  = Tags{require, exclude :: Set Text}
+  | NoTags
 
 data Edit
   = Edit
@@ -143,17 +144,15 @@ data New
         tags :: Set Text
       }
 
-data Search
-  = Search
-      { text :: Text,
-        inTasks :: Bool,
-        inWikis :: Bool,
-        inContacts :: Bool,
-        status :: Status,
-        limit :: Maybe Limit,
-        tags :: Tags,
-        withoutTags :: Set Text
-      }
+data Search = Search
+  { text        :: Text
+  , inTasks     :: Bool
+  , inWikis     :: Bool
+  , inContacts  :: Bool
+  , status      :: Status
+  , limit       :: Maybe Limit
+  , tags        :: Tags
+  }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
 parseOptions = customExecParser prefs . parserInfo
@@ -209,9 +208,11 @@ parser h =
       i_
         cmdEdit
         "edit a task or a note, using command from environment variable\
-          \ `EDITOR` or program `editor`"
-        (footerDoc . Just $
-          "Examples for EDITOR: 'code --wait', 'emacs', 'micro', 'nano', 'vim'.\
+        \ `EDITOR` or program `editor`"
+        (footerDoc $
+          Just
+            "Examples for EDITOR:\
+            \ 'code --wait', 'emacs', 'micro', 'nano', 'vim'.\
             \\n\n\
             \In JSON mode, instead of running an editor program, the text is\
             \ expected in stdin.")
@@ -248,25 +249,27 @@ parser h =
     briefOption =
       switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
 
-    agenda =
-      Agenda <$> optional limitOption <*> filterTags <*> withoutTagsOption
+    agenda = Agenda <$> optional limitOption <*> filterTags
 
-    filterTags = filterByNoTags <|> Tags <$> filterByTags
+    filterTags =
+      filterByNoTags <|> (Tags <$> filterRequireTags <*> filterExcludeTags)
 
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
 
     dryRunOption =
-      switch $
-            long "dry-run"
+      switch
+        (   long "dry-run"
         <>  short 'd'
         <>  help "List only issues, don't set up tracking"
+        )
 
     repo =
-      strOption $
-            long "repo"
+      strOption
+        (   long "repo"
         <>  short 'r'
         <>  metavar "USER/REPO"
         <>  help "User or organization/repository"
+        )
 
     contact = subparser $ command "add" iAdd <> command "delete" iDelete
       where
@@ -309,7 +312,6 @@ parser h =
       <*> searchA
       <*> optional limitOption
       <*> filterTags
-      <*> withoutTagsOption
 
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
 
@@ -328,7 +330,7 @@ parser h =
 
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
 
-    filterByTags =
+    filterRequireTags =
       fmap Set.fromList $ many $ strOption $
         long "tag" <> metavar "TAG" <> help "Filter by tag"
 
@@ -336,7 +338,7 @@ parser h =
       flag' NoTags $
             long "no-tag"
         <>  short 'n'
-        <>  help "Filter items that has no tags"
+        <>  help "Filter items that have no tags"
 
     addTagsOption =
       fmap Set.fromList $ many $ strOption $
@@ -346,7 +348,7 @@ parser h =
       fmap Set.fromList $ many $ strOption $
         long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
 
-    withoutTagsOption =
+    filterExcludeTags =
       fmap Set.fromList $ many $ strOption $
         long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
 

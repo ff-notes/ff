@@ -82,7 +82,7 @@ Ubuntu:
     $ ff --help
     Usage:  [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
             [(-V|--version) | COMMAND | [-l|--limit ARG]
-              [(-n|--no-tag) | [--tag TAG]...] [--without-tag TAG]...]
+              [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]]
       A note taker and task tracker
 
     Available options:
@@ -91,7 +91,7 @@ Ubuntu:
       -C,--data-dir DIRECTORY  Path to the data dir
       -V,--version             Current ff-note version
       -l,--limit ARG           Number of issues
-      -n,--no-tag              Filter items that has no tags
+      -n,--no-tag              Filter items that have no tags
       --tag TAG                Filter by tag
       --without-tag TAG        Filter items without tag
       -h,--help                Show this help text

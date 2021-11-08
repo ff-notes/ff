@@ -43,10 +43,10 @@ import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.Hedgehog (testProperty)
 import Test.Tasty.TH (testGroupGenerator)
 
-import FF (cmdNewNote, loadAllNotes, viewTaskSamples)
+import FF (cmdNewNote, defaultNoteFilter, loadAllNotes, viewTaskSamples)
 import FF.Config (defaultConfigUI)
 import FF.Github qualified as Github
-import FF.Options (New (..), Tags (Tags))
+import FF.Options (New (..))
 import FF.Types (Limit, Note (..), NoteStatus (TaskStatus),
                  Sample (Sample, items, total), Status (Active),
                  TaskMode (Overdue), Track (..), View (NoteView, note, tags),
@@ -65,12 +65,10 @@ prop_not_exist =
       runStorageSim fs $ do
         notes <- loadAllNotes
         viewTaskSamples
-          Active
+          defaultNoteFilter
           defaultConfigUI
           agendaLimit
           today
-          (Tags mempty)
-          mempty
           notes
     Map.empty === agenda
     fs === fs'
@@ -85,12 +83,10 @@ prop_smoke =
       runStorageSim fs123 $ do
         notes <- loadAllNotes
         viewTaskSamples
-          Active
+          defaultNoteFilter
           defaultConfigUI
           agendaLimit
           today
-          (Tags mempty)
-          mempty
           notes
     agenda === agenda'
     fs123 === fs'

@@ -174,16 +174,18 @@ prettyTaskSections
     -> Doc AnsiStyle
 prettyTaskSections isBrief tags samples =
     case tags of
-        Tags tagsRequested -> do
-            let tagList = toList tagsRequested
-            case tagList of
-                [] -> tasks
-                _ -> tagHeader tagList tasks
+        Tags{require, exclude} ->
+            if null require && null exclude then
+                tasks
+            else
+                tagHeader require exclude tasks
         NoTags -> noTagHeader tasks
   where
-    noTagHeader = withHeader "Filtered items without tags: "
-    tagHeader t =
-        withHeader ("Filtered by tags: " <> Text.intercalate ", " t)
+    noTagHeader = withHeader "Items without tags: "
+    tagHeader r e =
+        withHeader $
+            "Filtered by tags: "
+            <> Text.intercalate ", " (toList r <> map ("-" <>) (toList e))
     tasks = stack isBrief
         $   [ prettyTaskSample isBrief mode sample
             | (mode, sample) <- Map.assocs samples

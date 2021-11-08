@@ -53,10 +53,11 @@ import System.Pager (printOrPage)
 import System.Process.Typed (proc, runProcess)
 
 import FF (cmdDeleteContact, cmdDeleteNote, cmdDone, cmdEdit, cmdNewContact,
-           cmdNewNote, cmdPostpone, cmdSearch, cmdUnarchive, getContactSamples,
-           getDataDir, getUtcToday, loadAllNotes, loadAllTagTexts, loadAllTags,
-           noDataDirectoryMessage, sponsors, updateTrackedNotes, viewNote,
-           viewTaskSamples, viewWikiSamples)
+           cmdNewNote, cmdPostpone, cmdSearch, cmdUnarchive, defaultNoteFilter,
+           getContactSamples, getDataDir, getUtcToday, loadAllNotes,
+           loadAllTagTexts, loadAllTags, noDataDirectoryMessage, sponsors,
+           updateTrackedNotes, viewNote, viewTaskSamples, viewWikiSamples)
+import FF qualified
 import FF.Config (Config (..), ConfigUI (..), appName, loadConfig, saveConfig)
 import FF.Github (getIssueViews, getOpenIssueSamples)
 import FF.Options (ActionOptions (..), Agenda (..), Cmd (..), CmdAction (..),
@@ -136,9 +137,9 @@ runCmdAction ::
 runCmdAction ui cmd options@ActionOptions{brief, json} path = do
   today <- getUtcToday
   case cmd of
-    CmdAgenda Agenda{limit, tags, withoutTags} -> do
+    CmdAgenda Agenda{limit, tags} -> do
       notes   <- loadAllNotes
-      samples <- viewTaskSamples Active ui limit today tags withoutTags notes
+      samples <- viewTaskSamples defaultNoteFilter{FF.tags} ui limit today notes
       if json then
         jprintObject
           ["notes" .= foldMap Sample.items samples, "database" .= path]
@@ -218,11 +219,10 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           ]
       else
         pprint $
-                withHeader "Postponed:" (prettyNoteList brief $ toList notes)
-          <//>  prettyPath path
+          withHeader "Postponed:" (prettyNoteList brief $ toList notes)
+          <//> prettyPath path
     CmdSearch Search{..} -> do
-      (tasks, wikis, contacts) <-
-        cmdSearch text status ui limit today tags withoutTags
+      (tasks, wikis, contacts) <- cmdSearch text status ui limit today tags
       if json then
         jprintObject
           [ "tasks"    .= foldMap Sample.items tasks
@@ -232,16 +232,16 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           ]
       else
         pprint $
-                prettyTasksWikisContacts
-                  brief
-                  tasks
-                  wikis
-                  contacts
-                  inTasks
-                  inWikis
-                  inContacts
-                  tags
-          <//>  prettyPath path
+          prettyTasksWikisContacts
+            brief
+            tasks
+            wikis
+            contacts
+            inTasks
+            inWikis
+            inContacts
+            tags
+          <//> prettyPath path
     CmdShow noteIds -> do
       notes <- for noteIds loadNote
       notes' <- traverse viewNote notes
@@ -294,7 +294,7 @@ cmdTrack Track{dryRun, address, limit} today brief
   | dryRun =
       liftIO $ do
         samples <- run $ getOpenIssueSamples address limit today
-        pprint $ prettyTaskSections brief (Tags mempty) samples
+        pprint $ prettyTaskSections brief (Tags mempty mempty) samples
   | otherwise = do
       notes <- liftIO $ run $ getIssueViews address limit
       updateTrackedNotes notes

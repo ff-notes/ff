@@ -9,7 +9,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module FF
-  ( cmdDeleteContact,
+  ( NoteFilter (..),
+    cmdDeleteContact,
     cmdDeleteNote,
     cmdDone,
     cmdEdit,
@@ -18,6 +19,7 @@ module FF
     cmdPostpone,
     cmdSearch,
     cmdUnarchive,
+    defaultNoteFilter,
     fromRga,
     fromRgaM,
     getContactSamples,
@@ -209,46 +211,34 @@ filterTasksByStatus status =
 filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
 filterWikis = filter $ (Just Wiki ==) . note_status . entityVal
 
+data NoteFilter = NoteFilter
+  { status        :: Status
+  , tags          :: Tags
+  , textPredicate :: Text -> Bool
+  }
+
+defaultNoteFilter :: NoteFilter
+defaultNoteFilter =
+  NoteFilter
+    { status        = Active
+    , tags          = Tags{require = Set.empty, exclude = Set.empty}
+    , textPredicate = const True
+    }
+
 viewTaskSamples ::
   MonadStorage m =>
-  -- | filter by status
-  Status ->
+  NoteFilter ->
   ConfigUI ->
   Maybe Limit ->
   -- | today
   Day ->
-  -- | requested tags
-  Tags ->
-  -- | exclude tags
-  Set Text ->
   [EntityDoc Note] ->
   m (ModeMap NoteSample)
-viewTaskSamples = viewTaskSamplesWith $ const True
-
-viewTaskSamplesWith ::
-  MonadStorage m =>
-  -- | predicate to filter notes by text
-  (Text -> Bool) ->
-  -- | filter status
-  Status ->
-  ConfigUI ->
-  Maybe Limit ->
-  -- | today
-  Day ->
-  -- | requested tags
-  Tags ->
-  -- | without tags
-  Set Text ->
-  [EntityDoc Note] ->
-  m (ModeMap NoteSample)
-viewTaskSamplesWith
-    textPredicate
-    status
+viewTaskSamples
+    NoteFilter{status, tags = tagFilter, textPredicate}
     ConfigUI{shuffle}
     limit
     today
-    tagsRequested
-    withoutTags
     notes
   =
     do
@@ -278,10 +268,11 @@ viewTaskSamplesWith
       notePredicate Entity{entityVal = Note{note_text}} =
         textPredicate $ Text.pack $ fromRgaM note_text
 
-      tagPredicate tags = case tagsRequested of
-        Tags tagsRequested' ->
-          tagsRequested' `isSubsetOf` tags && withoutTags `disjoint` tags
-        NoTags -> null tags
+      tagPredicate =
+        case tagFilter of
+          Tags{require, exclude} ->
+            \ts -> require `isSubsetOf` ts && exclude `disjoint` ts
+          NoTags -> null
 
       noteViewPredicate Entity{entityVal = NoteView{tags}} =
         tagPredicate $ Set.fromList $ toList tags
@@ -453,21 +444,18 @@ cmdSearch ::
   Maybe Limit ->
   -- | today
   Day ->
-  -- | requested tags
   Tags ->
-  -- | without tags
-  Set Text ->
   m (ModeMap NoteSample, NoteSample, ContactSample)
-cmdSearch substr status ui limit today tags withoutTags =
+cmdSearch substr status ui limit today tags =
   do
-    notes <- loadAllNotes
-    tasks <-
-      viewTaskSamplesWith predicate status ui limit today tags withoutTags notes
-    wikis    <- toWikiSamplesWith predicate ui limit today notes
-    contacts <- getContactSamplesWith predicate status
+    notes     <- loadAllNotes
+    tasks     <- viewTaskSamples noteFilter ui limit today notes
+    wikis     <- toWikiSamplesWith textPredicate ui limit today notes
+    contacts  <- getContactSamplesWith textPredicate status
     pure (tasks, wikis, contacts)
   where
-    predicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+    noteFilter = NoteFilter{status, tags, textPredicate}
+    textPredicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
 
 cmdDeleteNote :: MonadStorage m => NoteId -> m (EntityDoc Note)
 cmdDeleteNote nid =
