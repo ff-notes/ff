@@ -65,14 +65,14 @@ prettyTasksWikisContacts
     -> ModeMap NoteSample        -- ^ tasks
     -> NoteSample                -- ^ wikis
     -> ContactSample             -- ^ contacts
-    -> Bool                      -- ^ does search involve tasks
-    -> Bool                      -- ^ does search involve wikis
-    -> Bool                      -- ^ does search involve contacts
+    -> Bool                      -- ^ does search include tasks
+    -> Bool                      -- ^ does search include wikis
+    -> Bool                      -- ^ does search include contacts
     -> Tags                      -- ^ requested tags
     -> Doc AnsiStyle
 prettyTasksWikisContacts
-        isBrief tasks wiki contacts involveTasks involveWikis involveContacts tags =
-    case (involveTasks, involveWikis, involveContacts) of
+        isBrief tasks wiki contacts useTasks useWikis useContacts tags =
+    case (useTasks, useWikis, useContacts) of
         (True,  False, False) -> ts
         (False, True,  False) -> ws
         (False, False, True ) -> cs
