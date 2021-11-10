@@ -18,9 +18,9 @@ jobs:
 
     - uses: actions/checkout@v2
 
-    - uses: actions/setup-haskell@v1
-      with:
-        ghc-version: '8.10.7'
+    # - uses: actions/setup-haskell@v1
+    #   with:
+    #     ghc-version: '8.10.7'
 
     - name: Cache
       uses: actions/cache@v1
@@ -38,7 +38,7 @@ jobs:
 
     - name: Compile and test
       run:
-        stack --system-ghc --no-install-ghc
+        stack
         test
           --pedantic
           --ghc-options=-Wincomplete-record-updates
