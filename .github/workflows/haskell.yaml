@@ -16,6 +16,9 @@ jobs:
 
     steps:
 
+    - name: Install extra software
+      run: sudo apt-get install -y colordiff
+
     - uses: actions/checkout@v2
 
     # - uses: actions/setup-haskell@v1
