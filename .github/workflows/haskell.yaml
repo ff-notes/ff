@@ -1,0 +1,49 @@
+name: Haskell CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  TASTY_TIMEOUT: 20s
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+    - name: Install extra software
+      run: sudo apt-get install -y colordiff
+
+    - uses: actions/checkout@v2
+
+    # - uses: actions/setup-haskell@v1
+    #   with:
+    #     ghc-version: '8.10.7'
+
+    - name: Cache
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-stack
+      with:
+        path: ~/.stack
+        key:
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/stack.yaml') }}-${{ hashFiles('**/*.cabal') }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/stack.yaml') }}
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
+    - name: Compile and test
+      run:
+        stack
+        test
+          --pedantic
+          --ghc-options=-Wincomplete-record-updates
+          --ghc-options=-Wincomplete-uni-patterns
+          --ghc-options=-Wredundant-constraints
