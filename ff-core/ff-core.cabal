@@ -4,15 +4,15 @@ name: ff-core
 version: 0
 copyright:
     2018      Yuriy Syrovetskiy, Nikolay Loginov;
-    2019-2020 Yuriy Syrovetskiy
+    2019-2021 Yuriy Syrovetskiy
 
 build-type: Simple
 
 library
     build-depends:
         -- global
-        aeson,
         aeson-pretty,
+        aeson,
         async,
         base,
         bytestring,
@@ -25,8 +25,9 @@ library
         mtl,
         optparse-applicative,
         pager,
-        prettyprinter,
+        pretty-simple,
         prettyprinter-ansi-terminal,
+        prettyprinter,
         random,
         shellwords,
         temporary,

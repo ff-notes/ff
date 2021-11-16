@@ -1,3 +1,5 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
@@ -6,6 +8,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module FF.CLI where
 
@@ -23,6 +26,7 @@ import Data.ByteString qualified as BS
 import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.Foldable (asum, for_, toList)
 import Data.Functor (($>))
+import Data.Functor.Const (Const (..))
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Maybe (isNothing)
 import Data.Text (Text, snoc)
@@ -32,11 +36,12 @@ import Data.Text.Encoding.Error qualified as TextError
 import Data.Text.IO qualified as Text
 import Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
                                   defaultLayoutOptions, layoutPageWidth,
-                                  layoutSmart, pretty, vsep)
+                                  layoutSmart, pretty, vsep, layoutPretty)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import Data.Time (Day)
 import Data.Traversable (for)
 import Data.Version (Version, showVersion)
+import Debug.Pretty.Simple (pTrace, pTraceM, pTraceShow, pTraceShowM, pTraceShowId)
 import Development.GitRev (gitDirty, gitHash)
 import RON.Storage.Backend (MonadStorage)
 import RON.Storage.FS (runStorage)
@@ -76,7 +81,9 @@ cli version = do
   cfg@Config{ui} <- loadConfig
   dataDir <- getDataDir cfg
   handle' <- traverse StorageFS.newHandle dataDir
-  Options{customDir, cmd, actionOptions} <- parseOptions handle'
+  options <- parseOptions handle'
+  let Options{customDir, cmd, actionOptions, debug} = options
+  when debug $ pTraceShowM options
   let ActionOptions{json} = actionOptions
   (handle, dataPath) <-
     case customDir of
@@ -89,7 +96,9 @@ cli version = do
     CmdVersion -> runCmdVersion json version
     CmdAction action -> case handle of
       Nothing -> fail noDataDirectoryMessage
-      Just h -> runStorage h $ runCmdAction ui action actionOptions dataPath
+      Just h ->
+        runStorage h $
+        runCmdAction (Const @_ @"debug" debug) ui action actionOptions dataPath
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
@@ -133,22 +142,35 @@ runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
 
 runCmdAction ::
   (MonadIO m, MonadStorage m) =>
-  ConfigUI -> CmdAction -> ActionOptions -> Maybe FilePath -> m ()
-runCmdAction ui cmd options@ActionOptions{brief, json} path = do
+  Const Bool "debug" ->
+  ConfigUI ->
+  CmdAction ->
+  ActionOptions ->
+  Maybe FilePath ->
+  m ()
+runCmdAction debug' ui cmd options@ActionOptions{brief, json} path = do
   today <- getUtcToday
+  when debug $ pTraceShowM today
   case cmd of
     CmdAgenda Agenda{limit, tags} -> do
-      notes   <- loadAllNotes
+      when debug $ pTraceM "Loading all notes..."
+      notes <- loadAllNotes
+      when debug $ pTraceShowM $ length notes
       samples <- viewTaskSamples defaultNoteFilter{FF.tags} ui limit today notes
+      when debug $ pTraceShowM $ length samples
+      -- when debug $ pTraceShowM samples
       if json then
         jprintObject
           ["notes" .= foldMap Sample.items samples, "database" .= path]
-      else
-        pprint $ prettyTaskSections brief tags samples <//> prettyPath path
+      else do
+        when debug $ pTraceM "before prettyTaskSections"
+        pprint $
+          let out = prettyTaskSections brief tags samples <//> prettyPath path
+          in pTraceShow (length $ show out) out
     CmdContact contact -> cmdContact options path contact
     CmdDelete noteIds -> do
       notes <-
-        for noteIds $ \noteId -> do
+        for noteIds \noteId -> do
           note <- cmdDeleteNote noteId
           viewNote note
       if json then
@@ -159,8 +181,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           ]
       else
         pprint $
-                withHeader "Deleted:" (prettyNoteList brief $ toList notes)
-          <//>  prettyPath path
+          withHeader "Deleted:" (prettyNoteList brief $ toList notes)
+          <//> prettyPath path
     CmdDone noteIds -> do
       notes <-
         for noteIds $ \noteId -> do
@@ -174,8 +196,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           ]
       else
         pprint $
-                withHeader "Archived:" (prettyNoteList brief $ toList notes)
-          <//>  prettyPath path
+          withHeader "Archived:" (prettyNoteList brief $ toList notes)
+          <//> prettyPath path
     CmdEdit edit -> do
       notes <-
         cmdEdit edit $
@@ -192,8 +214,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
           ]
       else
         pprint $
-                withHeader "Edited:" (prettyNoteList brief notes')
-          <//>  prettyPath path
+          withHeader "Edited:" (prettyNoteList brief notes')
+          <//> prettyPath path
     CmdNew new -> do
       note <- cmdNewNote new today
       noteview <- viewNote note
@@ -272,8 +294,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
             ]
         else
           pprint $
-                  withHeader "Unarchived:" (prettyNote brief noteview)
-            <//>  prettyPath path
+            withHeader "Unarchived:" (prettyNote brief noteview)
+            <//> prettyPath path
     CmdUpgrade -> do
       upgradeDatabase
       if json then
@@ -288,6 +310,8 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
         jprintObject ["wiki" .= wikis, "database" .= path]
       else
         pprint $ prettyWikiSample brief wikis <//> prettyPath path
+  where
+    Const debug = debug'
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track{dryRun, address, limit} today brief
@@ -368,15 +392,29 @@ runCmdVersion json version
           ]
 
 pprint :: MonadIO io => Doc AnsiStyle -> io ()
-pprint doc = liftIO $ do
-  -- enable colors in `less`
-  lessConf <- lookupEnv "LESS"
-  when (isNothing lessConf) $ setEnv "LESS" "-R"
-  width <- maybe 80 Terminal.width <$> Terminal.size
-  let
-    layoutOptions =
-      defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
-  printOrPage . (`snoc` '\n') . renderStrict $ layoutSmart layoutOptions doc
+pprint doc =
+  pTrace "in pprint" $
+  liftIO do
+    pTraceM "pprint: in liftIO"
+    -- enable colors in `less`
+    lessConf <- lookupEnv "LESS"
+    pTraceShowM lessConf
+    when (isNothing lessConf) $ setEnv "LESS" "-R"
+    width <- maybe 80 Terminal.width <$> Terminal.size
+    pTraceM $ "width = " <> show width
+    let
+      layoutOptions =
+        defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
+    pTraceM $ "defaultLayoutOptions = " <> show defaultLayoutOptions
+    pTraceM $ "layoutOptions = " <> show layoutOptions
+    pTraceM $ "length doc = " <> show (length $ show doc)
+    -- pTraceM $ "doc = " <> show (show doc)
+    let ls = pTrace "layoutSmart" $ layoutPretty layoutOptions doc
+    pTraceM $ "ls = " <> show (length $ show ls)
+    pTraceM $ "length ls = " <> show (length ls)
+    pTraceM "pprint: before printOrPage"
+    -- TODO printOrPage $
+    Text.putStrLn $ (`snoc` '\n') $ pTrace "renderStrict" $ renderStrict ls
 
 fromEither :: Either a a -> a
 fromEither = either id id

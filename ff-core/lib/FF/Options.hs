@@ -59,6 +59,7 @@ data Cmd
   = CmdConfig (Maybe Config)
   | CmdAction CmdAction
   | CmdVersion
+  deriving (Eq, Show)
 
 data CmdAction
   = CmdAgenda Agenda
@@ -76,18 +77,21 @@ data CmdAction
   | CmdUnarchive (NonEmpty NoteId)
   | CmdUpgrade
   | CmdWiki (Maybe Limit)
+  deriving (Eq, Show)
 
 data Options = Options
   { customDir     :: Maybe FilePath
   , cmd           :: Cmd
-  , actionOptions :: ActionOptions
-    -- ^ 'CmdAction'-specific options
+  , actionOptions :: ActionOptions -- ^ 'CmdAction'-specific options
+  , debug         :: Bool
   }
+  deriving (Eq, Show)
 
 data ActionOptions = ActionOptions
   { brief :: Bool
   , json  :: Bool
   }
+  deriving (Eq, Show)
 
 data Track
   = Track
@@ -95,20 +99,25 @@ data Track
         address :: Maybe Text,
         limit :: Maybe Limit
       }
+  deriving (Eq, Show)
 
 data Contact = Add Text | Delete ContactId
+  deriving (Eq, Show)
 
 data Config
   = ConfigDataDir        (Maybe DataDir)
   | ConfigExternalEditor (Maybe FilePath)
   | ConfigUI             (Maybe Shuffle)
+  deriving (Eq, Show)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
+  deriving (Eq, Show)
 
 data Shuffle = Shuffle | Sort
+  deriving (Eq, Show)
 
 data Assign a = Clear | Set a
-  deriving (Show)
+  deriving (Eq, Show)
 
 assignToMaybe :: Assign a -> Maybe a
 assignToMaybe = \case
@@ -119,10 +128,12 @@ data Agenda = Agenda
   { limit :: Maybe Limit
   , tags  :: Tags
   }
+  deriving (Eq, Show)
 
 data Tags
   = Tags{require, exclude :: Set Text}
   | NoTags
+  deriving (Eq, Show)
 
 data Edit
   = Edit
@@ -133,7 +144,7 @@ data Edit
         addTags :: Set Text,
         deleteTags :: Set Text
       }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data New
   = New
@@ -143,6 +154,7 @@ data New
         isWiki :: Bool,
         tags :: Set Text
       }
+  deriving (Eq, Show)
 
 data Search = Search
   { text        :: Text
@@ -153,6 +165,7 @@ data Search = Search
   , limit       :: Maybe Limit
   , tags        :: Tags
   }
+  deriving (Eq, Show)
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
 parseOptions = customExecParser prefs . parserInfo
@@ -173,6 +186,7 @@ parser h =
     json      <- jsonOption
     customDir <- customDirOption
     cmd       <- version <|> subparser commands <|> (CmdAction <$> cmdAgenda)
+    debug     <- debugOption
     pure Options{actionOptions = ActionOptions{..}, ..}
   where
     commands =
@@ -330,27 +344,27 @@ parser h =
 
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
 
-    filterRequireTags =
-      fmap Set.fromList $ many $ strOption $
-        long "tag" <> metavar "TAG" <> help "Filter by tag"
-
     filterByNoTags =
       flag' NoTags $
-            long "no-tag"
-        <>  short 'n'
-        <>  help "Filter items that have no tags"
+      long "no-tags" <> short 'n' <> help "Filter items that have no tags"
+
+    filterRequireTags =
+      fmap Set.fromList $
+      many $ strOption $ long "tag" <> metavar "TAG" <> help "Filter by tag"
+
+    filterExcludeTags =
+      fmap Set.fromList $
+      many $
+      strOption $
+      long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
 
     addTagsOption =
-      fmap Set.fromList $ many $ strOption $
-        long "tag" <> metavar "TAG" <> help "Add tag"
+      fmap Set.fromList $
+      many $ strOption $ long "tag" <> metavar "TAG" <> help "Add tag"
 
     deleteTagsOption =
       fmap Set.fromList $ many $ strOption $
         long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
-
-    filterExcludeTags =
-      fmap Set.fromList $ many $ strOption $
-        long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
 
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
 
@@ -410,6 +424,9 @@ parser h =
       flag'
         CmdVersion
         (long "version" <> short 'V' <> help "Current ff-note version")
+
+    debugOption =
+      switch $ long "debug" <> short 'd' <> help "Print debug information"
 
     completeNoteIds = docIdCompleter @Note
 

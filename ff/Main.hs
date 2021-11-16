@@ -1,8 +1,12 @@
 module Main where
 
-import           FF.CLI (cli)
+import Debug.Trace (traceM)
 
-import           Paths_ff (version)
+import FF.CLI (cli)
+
+import Paths_ff (version)
 
 main :: IO ()
-main = cli version
+main = do
+  traceM "main"
+  cli version

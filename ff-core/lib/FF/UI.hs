@@ -1,3 +1,4 @@
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -19,28 +20,27 @@ module FF.UI (
     (<//>)
 ) where
 
-import           Data.Char (isSpace)
-import           Data.Foldable (toList)
-import           Data.List (genericLength, intersperse)
-import qualified Data.Map.Strict as Map
-import           Data.Maybe (fromJust)
-import           Data.Set (Set)
-import           Data.Text (Text)
-import qualified Data.Text as Text
-import           Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang, line,
-                                            indent, pretty, sep, space, viaShow,
-                                            vsep, (<+>))
-import           Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle,
-                                                            Color (..), bold,
-                                                            color)
-import           Data.Time (Day)
-import           FF (fromRgaM)
-import           FF.Options (Tags (..))
-import           FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
-                           EntityView, ModeMap, Note (..), NoteSample,
-                           NoteStatus (Wiki), Sample (..), TaskMode (..),
-                           Track (..), View (..), omitted)
-import           RON.Storage.Backend (DocId (DocId))
+import Data.Char (isSpace)
+import Data.Foldable (toList)
+import Data.List (genericLength, intersperse)
+import Data.Map.Strict qualified as Map
+import Data.Maybe (fromJust)
+import Data.Set (Set)
+import Data.Text (Text)
+import Data.Text qualified as Text
+import Data.Text.Prettyprint.Doc (Doc, annotate, fillSep, hang, indent, line,
+                                  pretty, sep, space, viaShow, vsep, (<+>))
+import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, Color (..), bold,
+                                                  color)
+import Data.Time (Day)
+import Debug.Pretty.Simple (pTraceShow, pTrace, pTraceShowId)
+import RON.Storage.Backend (DocId (DocId))
+
+import FF (fromRgaM)
+import FF.Options (Tags (..))
+import FF.Types (Contact (..), ContactSample, Entity (..), EntityDoc,
+                 EntityView, ModeMap, Note (..), NoteSample, NoteStatus (Wiki),
+                 Sample (..), TaskMode (..), Track (..), View (..), omitted)
 
 -- | Header with fixed yellow color.
 withHeader :: Text -> Doc AnsiStyle -> Doc AnsiStyle
@@ -173,26 +173,31 @@ prettyTaskSections
     -> ModeMap NoteSample
     -> Doc AnsiStyle
 prettyTaskSections isBrief tags samples =
+    pTraceShow isBrief $
+    pTraceShow tags $
+    pTraceShow (length samples) $
     case tags of
-        Tags{require, exclude} ->
-            if null require && null exclude then
-                tasks
-            else
-                tagHeader require exclude tasks
-        NoTags -> noTagHeader tasks
+        Tags{require, exclude}
+            | null require, null exclude ->
+                pTraceShow (length $ show tasks) tasks
+            | otherwise                  -> tagsHeader require exclude tasks
+        NoTags -> noTagsHeader tasks
   where
-    noTagHeader = withHeader "Items without tags: "
-    tagHeader r e =
+    noTagsHeader = withHeader "Items without tags: "
+    tagsHeader r e =
         withHeader $
             "Filtered by tags: "
             <> Text.intercalate ", " (toList r <> map ("-" <>) (toList e))
-    tasks = stack isBrief
-        $   [ prettyTaskSample isBrief mode sample
-            | (mode, sample) <- Map.assocs samples
-            ]
-        ++  [ magenta (pretty numOmitted) <> yellow " task(s) omitted"
-            | numOmitted > 0
-            ]
+    tasks =
+        stack
+            isBrief
+            (   [ prettyTaskSample isBrief mode sample
+                | (mode, sample) <- Map.assocs samples
+                ]
+            ++  [ magenta (pretty numOmitted) <> yellow " task(s) omitted"
+                | numOmitted > 0
+                ]
+            )
     numOmitted = sum $ fmap omitted samples
 
 prettyTaskSample :: Bool -> TaskMode -> NoteSample -> Doc AnsiStyle

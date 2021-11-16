@@ -44,6 +44,7 @@ test-suite ff-test
         Config
         Database
         FF.Test.Common
+        FF.Test.Options
         Gen
         Readme
         Regression
