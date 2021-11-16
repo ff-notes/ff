@@ -32,7 +32,7 @@ import Data.Text.Encoding.Error qualified as TextError
 import Data.Text.IO qualified as Text
 import Data.Text.Prettyprint.Doc (Doc, PageWidth (AvailablePerLine),
                                   defaultLayoutOptions, layoutPageWidth,
-                                  layoutSmart, pretty, vsep)
+                                  layoutPretty, pretty, vsep)
 import Data.Text.Prettyprint.Doc.Render.Terminal (AnsiStyle, renderStrict)
 import Data.Time (Day)
 import Data.Traversable (for)
@@ -376,7 +376,7 @@ pprint doc = liftIO $ do
   let
     layoutOptions =
       defaultLayoutOptions{layoutPageWidth = AvailablePerLine width 1}
-  printOrPage . (`snoc` '\n') . renderStrict $ layoutSmart layoutOptions doc
+  printOrPage . (`snoc` '\n') . renderStrict $ layoutPretty layoutOptions doc
 
 fromEither :: Either a a -> a
 fromEither = either id id
