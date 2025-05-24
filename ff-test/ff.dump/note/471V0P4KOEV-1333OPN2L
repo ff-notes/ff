@@ -1,10 +1,9 @@
-note_start: 2018-07-07
-note_track:
-  track_url: https://github.com/ff-notes/ff/pull/67
-  track_source: ff-notes/ff
-  track_externalId: '67'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2018-07-07
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: "Add tracking\n\nПока частичная реализация. Функция записи в базу не доведена
   до конца. \r\nСтопор возникает с тем, что _agenda_ ломается. Сначала изменение типов
   помогло\r\n```haskell\r\n...\r\n    , noteTrack  :: LWW (Maybe Tracked)\r\n    }\r\n
@@ -15,7 +14,8 @@ note_text: "Add tracking\n\nПока частичная реализация. Ф
   change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\"
   alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/67)\r\n<!-- Reviewable:end
   -->\r\n"
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '67'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/pull/67

@@ -1,11 +1,11 @@
-note_start: 2018-06-22
-note_track: null
+note_end: null
 note_links: []
+note_start: 2018-06-22
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: |-
   experiment: rewrite ff with Service (Handle) pattern
   https://www.schoolofhaskell.com/user/meiersi/the-service-pattern
   https://jaspervdj.be/posts/2018-03-08-handle-pattern.html
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track: null

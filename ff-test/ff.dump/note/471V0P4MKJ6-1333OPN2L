@@ -1,13 +1,13 @@
-note_start: 2018-05-08
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/45
-  track_source: ff-notes/ff
-  track_externalId: '45'
-  track_provider: github
-note_links: []
-note_text: Start date can't be less than current
 note_end: null
+note_links: []
+note_start: 2018-05-08
 note_status:
   TaskStatus: Archived
 note_tags:
   B/7euI15EbNZ+00P01fLmVG: resolution_Wontfix
+note_text: Start date can't be less than current
+note_track:
+  track_externalId: '45'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/issues/45

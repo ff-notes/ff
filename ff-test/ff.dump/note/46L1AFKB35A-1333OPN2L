@@ -1,8 +1,8 @@
-note_start: 2018-06-21
-note_track: null
-note_links: []
-note_text: show tasks through pager (less), and without limit by default
 note_end: null
+note_links: []
+note_start: 2018-06-21
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: show tasks through pager (less), and without limit by default
+note_track: null

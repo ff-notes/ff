@@ -1,10 +1,9 @@
-note_start: 2019-11-06
-note_track:
-  track_url: https://github.com/ff-notes/ff/pull/210
-  track_source: ff-notes/ff
-  track_externalId: '210'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2019-11-06
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: |
   Add ability to use shell command as editor
 
@@ -13,7 +12,8 @@ note_text: |
   <!-- Reviewable:start -->
   This change is [<img src="https://reviewable.io/review_button.svg" height="34" align="absmiddle" alt="Reviewable"/>](https://reviewable.io/reviews/ff-notes/ff/210)
   <!-- Reviewable:end -->
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '210'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/pull/210

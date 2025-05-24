@@ -1,8 +1,8 @@
-note_start: 2018-03-31
-note_track: null
-note_links: []
-note_text: delete merged versions
 note_end: null
+note_links: []
+note_start: 2018-03-31
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: delete merged versions
+note_track: null

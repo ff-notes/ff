@@ -1,10 +1,9 @@
-note_start: 2019-04-25
-note_track:
-  track_url: https://github.com/ff-notes/ff/pull/157
-  track_source: ff-notes/ff
-  track_externalId: '157'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2019-04-25
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: "[WIP] Add tags\n\nResolves #20 \r\n\r\nToDo:\r\n- [x] Add tags when `ff
   new ...`\r\n- [x] Add, edit, remove tags when `ff edit ...`\r\n- [x] Show all tags
   `ff show-tags`\r\n- [x] Show tag field when `ff`\r\n- [x] List notes by tags\r\n-
@@ -14,7 +13,8 @@ note_text: "[WIP] Add tags\n\nResolves #20 \r\n\r\nToDo:\r\n- [x] Add tags when 
   -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\"
   height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/157)\r\n<!--
   Reviewable:end -->\r\n"
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '157'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/pull/157

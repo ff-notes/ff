@@ -1,12 +1,12 @@
-note_start: 2018-01-08
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/23
-  track_source: ff-notes/ff
-  track_externalId: '23'
-  track_provider: github
-note_links: []
-note_text: Use sequence CRDT for text
 note_end: null
+note_links: []
+note_start: 2018-01-08
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: Use sequence CRDT for text
+note_track:
+  track_externalId: '23'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/issues/23

@@ -1,15 +1,15 @@
-note_start: 2019-05-27
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/158
-  track_source: ff-notes/ff
-  track_externalId: '158'
-  track_provider: github
-note_links: []
-note_text: 'CLI: Calendar output'
 note_end: null
+note_links: []
+note_start: 2019-05-27
 note_status:
   TaskStatus: Active
 note_tags:
   B/7euI15DAyL+00P01fLmVG: level_Beginner
   B/7euI15DBES+00P01fLmVG: type_Enhancement
   B/7euI15DGwV+00P01fLmVG: component_CLI
+note_text: 'CLI: Calendar output'
+note_track:
+  track_externalId: '158'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/issues/158

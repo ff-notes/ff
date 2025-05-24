@@ -217,12 +217,12 @@ prop_new =
         tags' <-
           for
             ["7000000001NDU-2000000000012", "7000000004HKM-2000000000012"]
-            (evalMaybe . UUID.decodeBase32)
+            (fmap ObjectRef . evalMaybe . UUID.decodeBase32)
         let Note{note_text, note_start, note_end, note_tags} = entityVal note
         Just (RGA $ Text.unpack text) === note_text
         start === note_start
         end === note_end
-        map ObjectRef tags' === note_tags
+        tags' === note_tags
         fs === fs'
 
 jsonRoundtrip :: (Eq a, FromJSON a, Show a, ToJSON a) => Gen a -> Property

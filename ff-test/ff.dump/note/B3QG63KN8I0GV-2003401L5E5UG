@@ -1,10 +1,9 @@
-note_start: 2019-10-24
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/203
-  track_source: ff-notes/ff
-  track_externalId: '203'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2019-10-24
+note_status:
+  TaskStatus: Active
+note_tags: {}
 note_text: |+
   (2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
 
@@ -13,7 +12,8 @@ note_text: |+
 
   * Found on master
 
-note_end: null
-note_status:
-  TaskStatus: Active
-note_tags: {}
+note_track:
+  track_externalId: '203'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/issues/203

@@ -54,7 +54,6 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
 import Data.HashSet qualified as HashSet
-import Data.Hashable (Hashable)
 import Data.List (genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
 import Data.Map.Strict qualified as Map
@@ -119,11 +118,11 @@ loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAllTags
 
 -- | Load 'Tag' references only for text strings existing in the collection.
 loadTagRefsByText ::
-  (Foldable f, MonadStorage m) => f Text -> m (HashSet (ObjectRef Tag))
+  (Foldable f, MonadStorage m) => f Text -> m (Set (ObjectRef Tag))
 loadTagRefsByText queryTags = do
   allTags <- loadAll
   pure $
-    HashSet.fromList
+    Set.fromList
       [ docIdToRef entityId
       | Entity{entityId, entityVal = Tag{tag_text = Just tag}} <- allTags
       , tag `elem` queryTags
@@ -137,9 +136,9 @@ loadTagsByRefs refs =
     fmap (ref,) . tag_text . entityVal <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
-createTags :: MonadStorage m => Set Text -> m (HashSet (ObjectRef Tag))
+createTags :: MonadStorage m => Set Text -> m (Set (ObjectRef Tag))
 createTags tags =
-  fmap HashSet.fromList $
+  fmap Set.fromList $
   for (toList tags) $ \tag -> do
     tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
     createDocument tagFrame
@@ -151,9 +150,9 @@ createTags tags =
 -- It returns references that should be added to note_tags.
 -- References may content ones that note_tags has already.
 getOrCreateTags ::
-  (Foldable f, MonadStorage m) => f Text -> m (HashSet (ObjectRef Tag))
+  (Foldable f, MonadStorage m) => f Text -> m (Set (ObjectRef Tag))
 getOrCreateTags tags
-  | null tags = pure HashSet.empty
+  | null tags = pure Set.empty
   | otherwise = do
       allTags <- loadAllTagTexts
       existentTagRefs <- loadTagRefsByText tags
@@ -373,9 +372,9 @@ updateTrackedNote oldNotes NoteView{note, tags} =
             note_status_setIfDiffer note_status
             note_text_zoom $ RGA.edit text
             -- Add new tags
-            currentRefs <- HashSet.fromList <$> note_tags_read
-            traverse_ note_tags_add $ newRefs \- currentRefs
-            traverse_ note_tags_remove $ currentRefs \- newRefs
+            currentRefs <- Set.fromList <$> note_tags_read
+            traverse_ note_tags_add $ newRefs \\ currentRefs
+            traverse_ note_tags_remove $ currentRefs \\ newRefs
     Nothing ->
       throwError "External note is expected to be supplied with tracking"
   where
@@ -529,9 +528,9 @@ cmdEdit edit input = case edit of
         for_ text $ note_text_zoom . RGA.editText
         -- add new tags
         unless (null addTags) $ do
-          currentRefs <- HashSet.fromList <$> note_tags_read
+          currentRefs <- Set.fromList <$> note_tags_read
           -- skip tags if note_tags has them already
-          let newRefs = refsToAdd \- currentRefs
+          let newRefs = refsToAdd \\ currentRefs
           mapM_ note_tags_add newRefs
         -- delete tags
         unless (null deleteTags) $
@@ -617,6 +616,3 @@ docIdToRef docId =
   case decodeDocId docId of
     Nothing       -> error "Decode UUID from DocId failed. DocId is "
     Just (_, uid) -> ObjectRef uid
-
-(\-) :: (Eq a, Hashable a) => HashSet a -> HashSet a -> HashSet a
-(\-) = HashSet.difference

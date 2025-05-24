@@ -1,8 +1,8 @@
-note_start: 2018-07-21
-note_track: null
-note_links: []
-note_text: Add index for faster database lookup. Local for each replica, non-synchronized
 note_end: null
+note_links: []
+note_start: 2018-07-21
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: Add index for faster database lookup. Local for each replica, non-synchronized
+note_track: null

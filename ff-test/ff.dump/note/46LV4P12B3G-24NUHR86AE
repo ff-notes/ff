@@ -1,8 +1,8 @@
-note_start: 2018-06-21
-note_track: null
-note_links: []
-note_text: 'git: store data in a separate branch and/or remote'
 note_end: null
+note_links: []
+note_start: 2018-06-21
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: 'git: store data in a separate branch and/or remote'
+note_track: null

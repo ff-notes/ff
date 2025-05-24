@@ -1,4 +1,4 @@
-resolver: lts-18.10
+resolver: lts-18.20
 
 packages:
   - ff
@@ -15,7 +15,7 @@ extra-deps:
     # - ron-schema-0.9.1
     # - ron-storage-0.11
     - git: https://github.com/ff-notes/ron.git
-      commit: f600cef831de2f52b7f89102b893c215a65941cf
+      commit: 2acfb3d5482a84017d1ad1b22f58d7a2afc014a2 # master 2025-05-24
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
     - shellwords-0.1.2.2
 

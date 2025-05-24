@@ -1,10 +1,9 @@
-note_start: 2018-06-06
-note_track:
-  track_url: https://github.com/ff-notes/ff/pull/54
-  track_source: ff-notes/ff
-  track_externalId: '54'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2018-06-06
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: "Choose repo by user and list as command\n\nПока не работает. Загвоздка
   в файле `Main.hs`  в строке 116:\r\n`CmdGithub list -> liftIO $ runCmdGithub list`\r\nгде\r\n`CmdGithub`
   принимает один аргумент, а `runCmdGithub` два. И не ясно, нужно дополнительную функцию
@@ -12,7 +11,8 @@ note_text: "Choose repo by user and list as command\n\nПока не работ�
   Вопрос снят.\r\n\r\n<!-- Reviewable:start -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\"
   height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/54)\r\n<!--
   Reviewable:end -->\r\n"
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '54'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/pull/54

@@ -1,8 +1,8 @@
-note_start: 2018-04-17
-note_track: null
-note_links: []
-note_text: 'CLI: syntax coloring'
 note_end: null
+note_links: []
+note_start: 2018-04-17
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: 'CLI: syntax coloring'
+note_track: null

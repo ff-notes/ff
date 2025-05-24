@@ -1,10 +1,10 @@
-note_start: 2018-02-25
-note_track: null
-note_links: []
-note_text: |-
-  postponed N times
-  increment counter on `postpone` and `edit --start` or `edit --end`
 note_end: null
+note_links: []
+note_start: 2018-02-25
 note_status:
   TaskStatus: Archived
 note_tags: {}
+note_text: |-
+  postponed N times
+  increment counter on `postpone` and `edit --start` or `edit --end`
+note_track: null

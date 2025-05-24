@@ -2,6 +2,7 @@
 
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -13,9 +14,11 @@ module Regression
   )
 where
 
+import Data.Aeson (ToJSON)
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
+import Data.ByteString qualified as BS
 import Data.Traversable (for)
-import Data.Yaml (encodeFile)
+import Data.Yaml.Pretty (defConfig, encodePretty, setConfCompare)
 import RON.Data.ORSet (ORSet)
 import RON.Storage (CollectionName)
 import RON.Storage.Backend (getCollections, getDocuments)
@@ -65,8 +68,7 @@ testNote h tmp docid =
     outFile = tmp </> show docid
     action = do
       Entity{entityVal} <- runStorage h $ loadNote docid >>= viewNote
-      createDirectoryIfMissing True $ takeDirectory outFile
-      encodeFile outFile entityVal
+      writeYamlDoc outFile entityVal
 
 testTag :: Handle -> FilePath -> TagId -> TestTree
 testTag h tmp docid =
@@ -80,5 +82,10 @@ testTag h tmp docid =
     outFile = tmp </> show docid
     action = do
       Entity{entityVal} <- runStorage h $ load docid
-      createDirectoryIfMissing True $ takeDirectory outFile
-      encodeFile outFile entityVal
+      writeYamlDoc outFile entityVal
+
+writeYamlDoc :: ToJSON a => FilePath -> a -> IO ()
+writeYamlDoc outFile entityVal = do
+  createDirectoryIfMissing True $ takeDirectory outFile
+  BS.writeFile outFile $
+    encodePretty (setConfCompare compare defConfig) entityVal

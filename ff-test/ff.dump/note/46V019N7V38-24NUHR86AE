@@ -1,15 +1,15 @@
-note_start: 2018-07-18
-note_track:
-  track_url: https://github.com/ff-notes/ff/issues/70
-  track_source: ff-notes/ff
-  track_externalId: '70'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2018-07-18
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: |-
   Brief view option
 
   Show the note titles without meta data.
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '70'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/issues/70

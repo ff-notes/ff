@@ -1,10 +1,9 @@
-note_start: 2018-10-09
-note_track:
-  track_url: https://github.com/ff-notes/ff/pull/99
-  track_source: ff-notes/ff
-  track_externalId: '99'
-  track_provider: github
+note_end: null
 note_links: []
+note_start: 2018-10-09
+note_status:
+  TaskStatus: Archived
+note_tags: {}
 note_text: "Search in all docs\n\nПеределал немного wiki вывод, чтобы он не захватывал
   `mode`, который для него не актуален.\r\nВ связи с этим ряд других функций оптимизировал.
   \r\n- [x] Но вот как `shuffleItems` под вики, пока не понял.\r\n- [x] И остается
@@ -12,7 +11,8 @@ note_text: "Search in all docs\n\nПеределал немного wiki выв�
   Reviewable:start -->\r\n---\r\nThis change is [<img src=\"https://reviewable.io/review_button.svg\"
   height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/99)\r\n<!--
   Reviewable:end -->\r\n"
-note_end: null
-note_status:
-  TaskStatus: Archived
-note_tags: {}
+note_track:
+  track_externalId: '99'
+  track_provider: github
+  track_source: ff-notes/ff
+  track_url: https://github.com/ff-notes/ff/pull/99
