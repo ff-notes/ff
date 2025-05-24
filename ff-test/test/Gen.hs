@@ -58,11 +58,12 @@ noteStatus :: Gen NoteStatus
 noteStatus = choice [TaskStatus <$> status, pure Wiki]
 
 track :: Gen Track
-track = Track
-    <$> (Just <$> text (Range.linear 1 100) unicode)
-    <*> (Just <$> text (Range.linear 1 100) unicode)
-    <*> (Just <$> text (Range.linear 1 100) unicode)
-    <*> (Just <$> text (Range.linear 1 100) unicode)
+track = do
+    track_provider   <- Just <$> text (Range.linear 1 100) unicode
+    track_source     <- Just <$> text (Range.linear 1 100) unicode
+    track_externalId <- Just <$> text (Range.linear 1 100) unicode
+    track_url        <- Just <$> text (Range.linear 1 100) unicode
+    pure Track{..}
 
 status :: Gen Status
 status = enumBounded

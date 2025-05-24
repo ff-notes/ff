@@ -397,7 +397,7 @@ updateTrackedNotes newNotes = do
 cmdNewNote :: MonadStorage m => New -> Day -> m (EntityDoc Note)
 cmdNewNote New{text, start, end, isWiki, tags} today = do
   let start' = fromMaybe today start
-  whenJust end $ assertStartBeforeEnd start'
+  for_ end $ assertStartBeforeEnd start'
   (status, note_end, noteStart) <-
     case end of
       _ | not isWiki -> pure (TaskStatus Active, end, start')
@@ -504,7 +504,7 @@ cmdEdit edit input = case edit of
     fmap toList . for ids $ \nid ->
       modifyAndView nid $ do
         -- check text editability
-        whenJust text $ const assertNoteIsNative
+        for_ text $ const assertNoteIsNative
         -- check start and end editability
         when (isJust start || isJust end) $ do
           status <- note_status_read
@@ -519,14 +519,14 @@ cmdEdit edit input = case edit of
                   <$> (start <|> curStart)
                   <*> (end' <|> curEnd)
               end' = end >>= assignToMaybe
-          whenJust newStartEnd $
+          for_ newStartEnd $
             uncurry assertStartBeforeEnd
         -- update
-        whenJust end $ \case
+        for_ end $ \case
           Clear -> note_end_clear
           Set e -> note_end_set e
-        whenJust start note_start_set
-        whenJust text $ note_text_zoom . RGA.editText
+        for_ start note_start_set
+        for_ text $ note_text_zoom . RGA.editText
         -- add new tags
         unless (null addTags) $ do
           currentRefs <- HashSet.fromList <$> note_tags_read
@@ -580,7 +580,7 @@ note_status_setIfDiffer newStatus = do
 assertNoteIsNative :: (MonadE m, MonadObjectState Note m) => m ()
 assertNoteIsNative = do
   tracking <- note_track_read
-  whenJust tracking $ \Track{track_url} ->
+  for_ tracking $ \Track{track_url} ->
     throwErrorText $
           "A tracked note must be edited in its source"
       <>  maybe "" (" :" <>) track_url
@@ -605,11 +605,6 @@ getDataDir Config{dataDir} =
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
   "Data directory isn't set, run `ff config dataDir --help`"
-
-whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
-whenJust m f = case m of
-  Nothing -> pure ()
-  Just x -> f x
 
 sponsors :: [Text]
 sponsors = ["Alexander Granin", "Nadezda"]
