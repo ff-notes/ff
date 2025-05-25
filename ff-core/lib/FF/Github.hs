@@ -13,12 +13,8 @@ module FF.Github (
 ) where
 
 import Control.Monad ((>=>))
-import Control.Monad.Except (
-    ExceptT (..),
-    liftIO,
-    throwError,
-    withExceptT,
- )
+import Control.Monad.Except (ExceptT (..), throwError, withExceptT)
+import Control.Monad.IO.Class (liftIO)
 import Data.Foldable (toList)
 import Data.Map.Strict qualified as Map
 import Data.Text (Text)

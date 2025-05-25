@@ -5,7 +5,7 @@
 
 packages:
 - completed:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     name: ron
     pantry-tree:
@@ -14,11 +14,11 @@ packages:
     subdir: ron
     version: '0.12'
   original:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     subdir: ron
 - completed:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     name: ron-rdt
     pantry-tree:
@@ -27,11 +27,11 @@ packages:
     subdir: ron-rdt
     version: '0.10'
   original:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     subdir: ron-rdt
 - completed:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     name: ron-schema
     pantry-tree:
@@ -40,11 +40,11 @@ packages:
     subdir: ron-schema
     version: 0.9.1
   original:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     subdir: ron-schema
 - completed:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     name: ron-storage
     pantry-tree:
@@ -53,19 +53,12 @@ packages:
     subdir: ron-storage
     version: '0.11'
   original:
-    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
+    commit: adab718071528824d7ed4ed252fc85af7a3cb887
     git: https://github.com/ff-notes/ron.git
     subdir: ron-storage
-- completed:
-    hackage: cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
-    pantry-tree:
-      sha256: 830ba0871a9ede58b41528fcb0bb1fe1b550a7536c3ff05a3cd662de164ee597
-      size: 2580
-  original:
-    hackage: cmark-0.6.1
 snapshots:
 - completed:
-    sha256: 5921ddc75f5dd3f197fbc32e1e5676895a8e7b971d4f82ef6b556657801dd18a
-    size: 640054
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/20.yaml
-  original: lts-21.20
+    sha256: 521009bd88879b6993fab5ea5abe1ee2a539dfd8ec2dfc7c57017a8eaee1e78b
+    size: 720262
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/40.yaml
+  original: lts-22.40
