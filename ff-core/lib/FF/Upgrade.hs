@@ -37,7 +37,7 @@ import qualified RON.UUID as UUID
 
 import           FF.Types (Note)
 
-upgradeDatabase :: (MonadE m, MonadStorage m) => m ()
+upgradeDatabase :: (MonadStorage m) => m ()
 upgradeDatabase = do
   collections <- getCollections
   for_ collections $ \case

@@ -83,6 +83,7 @@ Ubuntu:
     Usage:  [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
             [(-V|--version) | COMMAND | [-l|--limit ARG]
               [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]]
+
       A note taker and task tracker
 
     Available options:
