@@ -1,4 +1,4 @@
-resolver: lts-22.40
+resolver: lts-23.20
 
 packages:
   - ff
@@ -14,7 +14,7 @@ extra-deps:
     # - ron-schema-0.9.1
     # - ron-storage-0.11
     - git: https://github.com/ff-notes/ron.git
-      commit: adab718071528824d7ed4ed252fc85af7a3cb887 # master 2025-05-25
+      commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1 # master 2025-05-25
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
   # ff-gtk:
