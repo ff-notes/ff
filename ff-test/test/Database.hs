@@ -15,7 +15,6 @@ where
 import Data.Aeson (FromJSON, ToJSON, parseJSON, toJSON)
 import Data.Aeson.Types (parseEither)
 import Data.ByteString.Lazy.Char8 qualified as BSLC
-import Data.HashMap.Strict qualified as HashMap
 import Data.Map.Strict qualified as Map
 import Data.Set qualified as Set
 import Data.String.Interpolate.IsString (i)
@@ -279,7 +278,7 @@ prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
                           note_links = []
                         },
                       tags =
-                        HashMap.fromList
+                        Map.fromList
                           [ ( "https://api.github.com/repos/ff-notes/ron/labels\
                               \/level_Research"
                             , "level_Research"

@@ -1,18 +1,33 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module FF.Config where
 
-import           Control.Exception (throw)
-import           Data.Aeson (FromJSON, withObject, (.!=), (.:?))
-import qualified Data.Aeson as JSON
-import           Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON)
-import qualified Data.Yaml as Yaml
-import           System.Directory (XdgDirectory (XdgConfig),
-                                   createDirectoryIfMissing, doesFileExist,
-                                   getXdgDirectory)
-import           System.FilePath (takeDirectory, (</>))
+import Control.Exception (throw)
+import Data.Aeson (FromJSON, withObject, (.!=), (.:?))
+import Data.Aeson qualified as JSON
+import Data.Aeson.TH (defaultOptions, deriveJSON, deriveToJSON)
+import Data.Yaml qualified as Yaml
+import System.Directory (
+    XdgDirectory (XdgConfig),
+    createDirectoryIfMissing,
+    doesFileExist,
+    getXdgDirectory,
+ )
+import System.FilePath (takeDirectory, (</>))
+
+newtype ConfigUI = ConfigUI
+    { shuffle :: Bool
+    }
+    deriving (Eq, Show)
+
+deriveJSON defaultOptions ''ConfigUI
+
+defaultConfigUI :: ConfigUI
+defaultConfigUI = ConfigUI{shuffle = False}
 
 data Config = Config
     { dataDir :: Maybe FilePath
@@ -21,27 +36,19 @@ data Config = Config
     }
     deriving (Eq, Show)
 
-newtype ConfigUI = ConfigUI
-    { shuffle :: Bool
-    }
-    deriving (Eq, Show)
+instance FromJSON Config where
+    parseJSON =
+        withObject "Config" \obj -> do
+            dataDir <- obj .:? "dataDir"
+            externalEditor <- obj .:? "externalEditor"
+            ui <- obj .:? "ui" .!= defaultConfigUI
+            pure Config{..}
+
+deriveToJSON defaultOptions ''Config
 
 emptyConfig :: Config
 emptyConfig =
     Config{dataDir = Nothing, externalEditor = Nothing, ui = defaultConfigUI}
-
-defaultConfigUI :: ConfigUI
-defaultConfigUI = ConfigUI{shuffle = False}
-
-instance FromJSON Config where
-    parseJSON = withObject "Config" $ \obj -> do
-        dataDir        <- obj .:? "dataDir"
-        externalEditor <- obj .:? "externalEditor"
-        ui             <- obj .:? "ui" .!= defaultConfigUI
-        pure Config{..}
-
-deriveJSON   defaultOptions ''ConfigUI
-deriveToJSON defaultOptions ''Config
 
 appName :: String
 appName = "ff"
@@ -51,7 +58,7 @@ getCfgFilePath = getXdgDirectory XdgConfig $ appName </> "config.yaml"
 
 loadConfig :: IO Config
 loadConfig = do
-    path   <- getCfgFilePath
+    path <- getCfgFilePath
     exists <- doesFileExist path
     if exists
         then either throw pure =<< Yaml.decodeFileEither path

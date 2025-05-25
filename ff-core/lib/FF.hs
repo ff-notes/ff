@@ -160,16 +160,15 @@ getOrCreateTags tags
       createdTagRefs <- createTags newTags
       pure $ existentTagRefs <> createdTagRefs
 
-viewNote :: MonadStorage m => EntityDoc Note -> m (EntityView Note)
-viewNote Entity{entityId, entityVal} =
-  do
+viewNote :: (MonadStorage m) => EntityDoc Note -> m (EntityView Note)
+viewNote Entity{entityId, entityVal} = do
     tagsLoaded <- loadTagsByRefs tagRefs
     let
-      tags =
-        HashMap.fromList
-          [ (uuidToText uuid, tag)
-          | (ObjectRef uuid, tag) <- HashMap.toList tagsLoaded
-          ]
+        tags =
+            Map.fromList
+                [ (uuidToText uuid, tag)
+                | (ObjectRef uuid, tag) <- HashMap.toList tagsLoaded
+                ]
     pure Entity{entityId, entityVal = NoteView{note = entityVal, tags}}
   where
     tagRefs = HashSet.fromList note_tags
