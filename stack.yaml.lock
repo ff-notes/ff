@@ -5,33 +5,33 @@
 
 packages:
 - completed:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     name: ron
     pantry-tree:
-      sha256: a5acf6104dee8461ccdac9215d1feb15baa382fe3a75af6c1516c826d7b3c61e
+      sha256: 5e21c7eb27e50594a88d8564d4714fe1d0a7241cae7e7a872936cf8e02695e48
       size: 1765
     subdir: ron
     version: '0.12'
   original:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     subdir: ron
 - completed:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     name: ron-rdt
     pantry-tree:
-      sha256: e1feb2e388202f5607470f3b930346e47d2c750c053a0ee8aaca9cc0327af292
+      sha256: e247dc1d1dfd26d7110cb304442182991b6e4343036d92bf9cbbf2100a15384d
       size: 1120
     subdir: ron-rdt
     version: '0.10'
   original:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     subdir: ron-rdt
 - completed:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     name: ron-schema
     pantry-tree:
@@ -40,25 +40,32 @@ packages:
     subdir: ron-schema
     version: 0.9.1
   original:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     subdir: ron-schema
 - completed:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     name: ron-storage
     pantry-tree:
-      sha256: 6894d3ced10b716173de3d45c604ec505ec163ebf6bb925eef90d53c35c64556
+      sha256: 8b6762e080ad144dcdc111e74cfb17b448d82956c8470631868a44d1539ac796
       size: 477
     subdir: ron-storage
     version: '0.11'
   original:
-    commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3
+    commit: cc212d97fa9071f0ebb01baeac4894088162a5c5
     git: https://github.com/ff-notes/ron.git
     subdir: ron-storage
+- completed:
+    hackage: cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
+    pantry-tree:
+      sha256: 830ba0871a9ede58b41528fcb0bb1fe1b550a7536c3ff05a3cd662de164ee597
+      size: 2580
+  original:
+    hackage: cmark-0.6.1
 snapshots:
 - completed:
-    sha256: 126fa33ceb11f5e85ceb4e86d434756bd9a8439e2e5776d306a15fbc63b01e89
-    size: 650041
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/20.yaml
-  original: lts-20.20
+    sha256: 5921ddc75f5dd3f197fbc32e1e5676895a8e7b971d4f82ef6b556657801dd18a
+    size: 640054
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/20.yaml
+  original: lts-21.20

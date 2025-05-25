@@ -1,4 +1,4 @@
-resolver: lts-20.20
+resolver: lts-21.20
 
 packages:
   - ff
@@ -14,7 +14,7 @@ extra-deps:
     # - ron-schema-0.9.1
     # - ron-storage-0.11
     - git: https://github.com/ff-notes/ron.git
-      commit: 4b9b907f79b5c95e6c922a619326bc6cec8b3af3 # master 2025-05-25
+      commit: cc212d97fa9071f0ebb01baeac4894088162a5c5 # master 2025-05-25
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
   # ff-gtk:
@@ -35,6 +35,9 @@ extra-deps:
     # - git: https://gitlab.com/khumba/qtah.git
     #   commit: b8e9492cb7c2ccd7c3cb7308c9d1495770b0198d  # tag: release-0.8.0
     #   subdirs: [qtah, qtah-cpp, qtah-generator]
+
+  # ff-test:
+    - cmark-0.6.1
 
 docker:
   enable: false

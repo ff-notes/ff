@@ -26,9 +26,11 @@ Feel free to open a ticket if you want to extend support.
 
 ## Install
 
-    $ git clone https://github.com/ff-notes/ff.git
-    $ cd ff
-    $ stack install ff
+```
+$ git clone https://github.com/ff-notes/ff.git
+$ cd ff
+$ stack install ff
+```
 
 ## Install experimental GUI
 
@@ -42,12 +44,16 @@ Follow https://github.com/haskell-gi/haskell-gi\#installation.
 
 Mac OS:
 
-    $ export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
-    $ stack install ff-gtk
+```
+$ export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+$ stack install ff-gtk
+```
 
 Ubuntu:
 
-    $ stack install ff-gtk
+```
+$ stack install ff-gtk
+```
 
 ### Qt version
 
@@ -55,68 +61,80 @@ Ubuntu:
 
 Mac OS:
 
-    $ brew install qt
+```
+$ brew install qt
+```
 
 Ubuntu:
 
-    # apt install qt5-default
+```
+# apt install qt5-default
+```
 
 #### Program
 
-    $ stack install ff-qt
+```
+$ stack install ff-qt
+```
 
 ### Completion for commands and options
 
 #### Ubuntu 18.04
 
-    ff --bash-completion-script `which ff` | sudo tee /etc/bash_completion.d/ff
+```
+ff --bash-completion-script `which ff` | sudo tee /etc/bash_completion.d/ff
+```
 
 #### MacOS
 
-    ff --bash-completion-script `which ff` | sudo tee /usr/local/etc/bash_completion.d/ff
+```
+ff --bash-completion-script `which ff` | sudo tee /usr/local/etc/bash_completion.d/ff
+```
 
 ## Usage
 
 ### Look what 𝑓𝑓 can do for you
 
-    $ ff --help
-    Usage:  [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
-            [(-V|--version) | COMMAND | [-l|--limit ARG]
-              [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]]
+```
+$ ff --help
+Usage: ff [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
+          [(-V|--version) | COMMAND | [-l|--limit ARG]
+            [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]]
 
-      A note taker and task tracker
+  A note taker and task tracker
 
-    Available options:
-      -b,--brief               List only note titles and ids
-      --json                   Use JSON for input/output
-      -C,--data-dir DIRECTORY  Path to the data dir
-      -V,--version             Current ff-note version
-      -l,--limit ARG           Number of issues
-      -n,--no-tag              Filter items that have no tags
-      --tag TAG                Filter by tag
-      --without-tag TAG        Filter items without tag
-      -h,--help                Show this help text
+Available options:
+  -b,--brief               List only note titles and ids
+  --json                   Use JSON for input/output
+  -C,--data-dir DIRECTORY  Path to the data dir
+  -V,--version             Current ff-note version
+  -l,--limit ARG           Number of issues
+  -n,--no-tag              Filter items that have no tags
+  --tag TAG                Filter by tag
+  --without-tag TAG        Filter items without tag
+  -h,--help                Show this help text
 
-    Available commands:
-      add                      add new task or note
-      agenda                   show what you can do right now [default action]
-      config                   show/edit configuration
-      contact                  show contacts
-      delete                   delete a task
-      done                     mark a task done (archive)
-      edit                     edit a task or a note, using command from environment
-                               variable `EDITOR` or program `editor`
-      new                      synonym for `add`
-      postpone                 make a task start later
-      search                   search for notes with the given text
-      show                     show note by id
-      tags                     show tags of all notes
-      sponsors                 show project sponsors
-      track                    track issues from external sources
-      unarchive                restore the note from archive
-      upgrade                  check and upgrade the database to the most recent
-                               format
-      wiki                     show all wiki notes
+Available commands:
+  add                      add new task or note
+  agenda                   show what you can do right now [default action]
+  config                   show/edit configuration
+  contact                  show contacts
+  delete                   delete a task
+  done                     mark a task done (archive)
+  edit                     edit a task or a note, using command from environment
+                           variable `EDITOR` or program `editor`
+  new                      synonym for `add`
+  postpone                 make a task start later
+  search                   search for notes with the given text
+  show                     show note by id
+  tags                     show tags of all notes
+  sponsors                 show project sponsors
+  track                    track issues from external sources
+  unarchive                restore the note from archive
+  upgrade                  check and upgrade the database to the most recent
+                           format
+  wiki                     show all wiki notes
+```
 
 ### Get started
 
@@ -125,61 +143,75 @@ Ubuntu:
 To save personal notes and tasks somewhere you must configure 𝑓𝑓's data
 directory
 
-    ff config dataDir --help
+```
+ff config dataDir --help
+```
 
 If you use Yandex.Disk, you can say just
 
-    ff config dataDir -y
+```
+ff config dataDir -y
+```
 
 #### Project-based
 
 To work with a project's tasks, just run 𝑓𝑓 inside a VCS repository.
 
-    $ ls
-    .git
-    $ ff add ...
-    $ ls
-    .ff .git
-    $ git add .ff
+```
+$ ls
+.git
+$ ff add ...
+$ ls
+.ff .git
+$ git add .ff
+```
 
 ### Get some unfinished tasks
 
-    $ ff
-    Actual:
-        * buy milk
-          id 458a1456lrc-12z3opnykw, start 2018-01-10
+```
+$ ff
+Actual:
+  * buy milk
+    id 458a1456lrc-12z3opnykw, start 2018-01-10
+```
 
 ### Add new task or note
 
-    $ ff add 'learn Haskell'
+```
+$ ff add 'learn Haskell'
+```
 
 Now you can find it in your agenda:
 
-    $ ff
-    Actual:
-        * buy milk
-          id 458a1456lrc-12z3opnykw, start 2018-01-10
-        * learn Haskell
-          id 459h2tqxutq-24nuhr86ae, start 2018-01-14
+```
+$ ff
+Actual:
+  * buy milk
+    id 458a1456lrc-12z3opnykw, start 2018-01-10
+  * learn Haskell
+    id 459h2tqxutq-24nuhr86ae, start 2018-01-14
+```
 
 ### Mark task done
 
 Marking done is actually moving to archive.
 
-    $ ff done 458a1456lrc-12z3opnykw
-    archived:
-        buy milk
-        id 458a1456lrc-12z3opnykw, start 2018-01-10
+```
+$ ff done 458a1456lrc-12z3opnykw
+archived:
+  buy milk
+  id 458a1456lrc-12z3opnykw, start 2018-01-10
+```
 
 Archived tasks don't appear in an agenda:
 
-    $ ff
-    Actual:
-        * learn Haskell
-          id 459h2tqxutq-24nuhr86ae, start 2018-01-14
+```
+$ ff
+Actual:
+  * learn Haskell
+    id 459h2tqxutq-24nuhr86ae, start 2018-01-14
+```
 
 ## Developers community
 
 We have a telegram chat [ff-dev](https://t.me/ff_dev) where you can ask your questions.
-
-Alternative chat: https://gitter.im/ff-notes
