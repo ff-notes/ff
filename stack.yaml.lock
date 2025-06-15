@@ -5,57 +5,57 @@
 
 packages:
 - completed:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
     name: ron
     pantry-tree:
-      sha256: 5e21c7eb27e50594a88d8564d4714fe1d0a7241cae7e7a872936cf8e02695e48
-      size: 1765
+      sha256: 6854aba9db22cc3291db3e4fd575a973bbdba7fd83adc85b37ffcaa44734f070
+      size: 1698
+    sha256: 91fbf433c5e0b9c631b010a3fb2bfbacb5633f38cdf6e82236d6661f1f03ac44
+    size: 241672
     subdir: ron
-    version: '0.12'
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
+    version: '0.13'
   original:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
     subdir: ron
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
 - completed:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
     name: ron-rdt
     pantry-tree:
-      sha256: ec185a481b585b96f9a22874ef90d936a58e8be18882de11530481445f82044f
-      size: 1120
+      sha256: ac5ca24461846007f50fdae85d2e1f26fd00e0bbe8a2efd63eaace9851ae2ab6
+      size: 1180
+    sha256: 91fbf433c5e0b9c631b010a3fb2bfbacb5633f38cdf6e82236d6661f1f03ac44
+    size: 241672
     subdir: ron-rdt
-    version: '0.10'
-  original:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
-    subdir: ron-rdt
-- completed:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
-    name: ron-schema
-    pantry-tree:
-      sha256: 7aa6b1ff4edaeb36d82ad702c9fe6d7bd3f80908ce1b849f0a49c316333e3b98
-      size: 542
-    subdir: ron-schema
-    version: 0.9.1
-  original:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
-    subdir: ron-schema
-- completed:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
-    name: ron-storage
-    pantry-tree:
-      sha256: 8b6762e080ad144dcdc111e74cfb17b448d82956c8470631868a44d1539ac796
-      size: 477
-    subdir: ron-storage
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
     version: '0.11'
   original:
-    commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1
-    git: https://github.com/ff-notes/ron.git
+    subdir: ron-rdt
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
+- completed:
+    name: ron-schema
+    pantry-tree:
+      sha256: 4c174c711f0b11e50079ff4d8ea4197677a3443a91144ae14de841df3cfc07f5
+      size: 542
+    sha256: 91fbf433c5e0b9c631b010a3fb2bfbacb5633f38cdf6e82236d6661f1f03ac44
+    size: 241672
+    subdir: ron-schema
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
+    version: '0.10'
+  original:
+    subdir: ron-schema
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
+- completed:
+    name: ron-storage
+    pantry-tree:
+      sha256: d7270d71fad167ac12b84894b59b0767d142536d3fdb2bae9005819a532a88d8
+      size: 477
+    sha256: 91fbf433c5e0b9c631b010a3fb2bfbacb5633f38cdf6e82236d6661f1f03ac44
+    size: 241672
     subdir: ron-storage
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
+    version: '0.11'
+  original:
+    subdir: ron-storage
+    url: https://github.com/ff-notes/ron/archive/f71fb5c649fdf3cb96a311c8ca8dd8474749bd37.tar.gz
 snapshots:
 - completed:
     sha256: 00f925a9777b4315ee11d05b2dbed5b37296d3635bbeb3afd10d06a4b4504b02

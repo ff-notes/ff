@@ -200,7 +200,7 @@ prop_new =
             Map.unions
                 [ Map.singleton "note" $
                     Map.singleton "7000000007N4M-2000000000012" $
-                        Map.singleton "700000000P8JM-2000000000012" $
+                        Map.singleton "700000000NVEU-2000000000012" $
                             map encodeUtf8 $
                                 mconcat
                                     [
@@ -214,9 +214,7 @@ prop_new =
                                         ]
                                     ,
                                         [ "*rga\t#{2inM\t@0\t!"
-                                        , "\t@`}y_h\t'М'"
-                                        , "\t@)i\t'и'"
-                                        , "\t@)j\t'р'"
+                                        , "\t@`}ynM\t%f 'Мир'"
                                         , "."
                                         ]
                                     ]

@@ -13,8 +13,8 @@ extra-deps:
     # - ron-rdt-0.10
     # - ron-schema-0.9.1
     # - ron-storage-0.11
-    - git: https://github.com/ff-notes/ron.git
-      commit: db1929552d5d97063dd9312efb8fa9f84efdb6a1 # master 2025-05-25
+    - github: ff-notes/ron
+      commit: f71fb5c649fdf3cb96a311c8ca8dd8474749bd37  # ron-0.13
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
   # ff-gtk:
