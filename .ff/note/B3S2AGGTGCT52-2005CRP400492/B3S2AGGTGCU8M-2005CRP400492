@@ -1,0 +1,13 @@
+*set	#B/7lIdGw1cIY+00gDu8014Y	!
+	@`]JK	>start 2020 6 9
+	@)n	>status >Archived
+	@]K6	>text >B/7lIdGw1cKG+00gDu8014Y
+	@]Yd	>track >B/7lIdGw1cYx+00gDu8014Y
+*rga	#]KG	@0	!
+	@`)_	%f 'Add JSON output for `ff agenda`\n\n\n\n<!-- Reviewable:start -->\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/229)\n<!-- Reviewable:end -->\n'
+*set	#]Yx	@0	!
+	@`]Z6	>externalId '229'
+	@)Q	>provider 'github'
+	@)_	>source 'ff-notes/ff'
+	@)t	>url 'https://github.com/ff-notes/ff/pull/229'
+.

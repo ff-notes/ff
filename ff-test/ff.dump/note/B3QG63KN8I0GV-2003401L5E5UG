@@ -8,7 +8,7 @@ note_text: |+
   (2018-10-22, https://github.com/ff-notes/ron/issues/116, cblp) index
 
   notes by track in the database and select specific note by its track
-  https://github.com/ff-notes/ff/blob/90c02766fd7bfaa4e87ab6bcbbb4b849221c35a0/ff-core/lib/FF.hs#L386-L388
+  https://github.com/ff-notes/ff/blob/4617d27ba6e342500bfcf6f28a29f8690731cc76/ff-core/lib/FF.hs#L386-L388
 
   * Found on master
 

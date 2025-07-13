@@ -1,0 +1,16 @@
+*set	#B/7lIdGw1_e+00gDu8014Y	!
+	@`]ft	>start 2021 4 17
+	@]gM	>status >Archived
+	@)f	>tags >B/7euI15DAyL+00P01fLmVG
+	@)z	>tags >B/7euI15DBES+00P01fLmVG
+	@]hI	>tags >B/7euI15DGwV+00P01fLmVG
+	@)b	>text >B/7lIdGw1_hv+00gDu8014Y
+	@}aAl	>track >B/7lIdGw1aBE+00gDu8014Y
+*rga	#]hv	@0	!
+	@`]i4	%f 'Add support for command line options for external editor\n\nThis adds  command line options support for external editor configuration, so you can enter something like `ff config externalEditor \"code -n -w\"`\n\nThis is more of a copy & paste than original code. I am new to Haskell, so I appreciate any pointers/suggestions/criticisms that can help me improve.\n\n<!-- Reviewable:start -->\n---\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/231)\n<!-- Reviewable:end -->\n'
+*set	#}aBE	@0	!
+	@`)O	>externalId '231'
+	@)h	>provider 'github'
+	@)r	>source 'ff-notes/ff'
+	@]C	>url 'https://github.com/ff-notes/ff/pull/231'
+.

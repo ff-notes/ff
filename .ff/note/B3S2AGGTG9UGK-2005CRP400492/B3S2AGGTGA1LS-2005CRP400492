@@ -1,0 +1,13 @@
+*set	#B/7lIdGw1FdK+00gDu8014Y	!
+	@`]id	>start 2021 11 10
+	@]kW	>status >Archived
+	@]lv	>text >B/7lIdGw1Fmr+00gDu8014Y
+	@}GLK	>track >B/7lIdGw1GM_+00gDu8014Y
+*rga	#]mr	@0	!
+	@`]nU	%f 'Add GitHub CI\n\n\n\n<!-- Reviewable:start -->\nThis change is [<img src=\"https://reviewable.io/review_button.svg\" height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/232)\n<!-- Reviewable:end -->\n'
+*set	#}GM_	@0	!
+	@`]NC	>externalId '232'
+	@)z	>provider 'github'
+	@]Ob	>source 'ff-notes/ff'
+	@]P4	>url 'https://github.com/ff-notes/ff/pull/232'
+.

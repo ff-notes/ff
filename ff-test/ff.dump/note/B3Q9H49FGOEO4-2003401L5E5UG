@@ -7,7 +7,7 @@ note_tags:
   B/7euI15DAJq+00P01fLmVG: component_Core
   B/7euI15DAyL+00P01fLmVG: level_Beginner
   B/7euI15DBES+00P01fLmVG: type_Enhancement
-note_text: Remove JSON support after 2019-11-03
+note_text: Remove JSON storage format after 2019-11-03
 note_track:
   track_externalId: '117'
   track_provider: github

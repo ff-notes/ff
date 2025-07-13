@@ -8,7 +8,7 @@ note_text: |+
   connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
 
 
-  https://github.com/ff-notes/ff/blob/90c02766fd7bfaa4e87ab6bcbbb4b849221c35a0/ff-qtah/FF/Qt/MainWindow.hs#L123-L126
+  https://github.com/ff-notes/ff/blob/4617d27ba6e342500bfcf6f28a29f8690731cc76/ff-qtah/FF/Qt/MainWindow.hs#L123-L126
 
   * Found on master
 
