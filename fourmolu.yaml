@@ -1,0 +1,5 @@
+in-style: left-align
+one-level-ifs: true
+sort-constraints: true
+sort-derived-classes: true
+sort-deriving-clauses: true
