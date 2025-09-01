@@ -1,0 +1,21 @@
+cabal-version: 3.4
+name: ff-hsqml
+version: 0
+
+executable ff-hsqml
+  -- global
+  build-depends:
+    base,
+    hsqml,
+
+  -- project
+  build-depends: ff-core
+  default-language: GHC2024
+  ghc-options:
+    -threaded
+    -rtsopts
+    -with-rtsopts=-N
+
+  main-is: Main.hs
+
+-- other-modules: Paths_ff

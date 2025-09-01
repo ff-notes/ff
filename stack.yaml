@@ -3,6 +3,7 @@ resolver: lts-24.0
 packages:
   - ff
   - ff-core
+  - ff-hsqml
   # - ff-gtk
   # - ff-qtah
   - ff-test
@@ -16,6 +17,11 @@ extra-deps:
     - github: ff-notes/ron
       commit: f71fb5c649fdf3cb96a311c8ca8dd8474749bd37  # ron-0.13
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
+
+  # ff-hsqml:
+    # - hsqml-0.3.6.1
+    - github: cblp/HsQML
+      commit: e0fcd25d1383cede087f2e1b5d7404f014b83045  # dev 2025-09-01
 
   # ff-gtk:
     # - gi-gtk-declarative-0.7.0
