@@ -1,3 +1,4 @@
+if-style: hanging
 in-style: left-align
 one-level-ifs: true
 sort-constraints: true
