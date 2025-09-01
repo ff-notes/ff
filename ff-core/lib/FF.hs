@@ -190,8 +190,7 @@ loadTagsByRefs refs =
 createTags :: (MonadStorage m) => Set Text -> m (Set (ObjectRef Tag))
 createTags tags =
     Set.fromList <$> for (toList tags) \tag -> do
-        tagFrame@ObjectFrame{uuid} <-
-            newObjectFrame Tag{tag_text = Just tag}
+        tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
         createDocument tagFrame
         pure $ ObjectRef uuid
 
