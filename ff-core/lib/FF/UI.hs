@@ -29,7 +29,7 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Time (Day)
 import FF (fromRgaM)
-import FF.Options (Tags (..))
+import FF.Options (Tags (..), TagsRequest (TagsContain, TagsAbsent))
 import FF.Types (
     Contact (..),
     ContactSample,
@@ -102,7 +102,7 @@ prettyTasksWikisContacts ::
     -- | does search include contacts
     Bool ->
     -- | requested tags
-    Tags ->
+    TagsRequest ->
     Doc AnsiStyle
 prettyTasksWikisContacts
     isBrief
@@ -210,15 +210,15 @@ title =
 prettyTaskSections ::
     Bool ->
     -- | requested tags
-    Tags ->
+    TagsRequest ->
     ModeMap NoteSample ->
     Doc AnsiStyle
 prettyTaskSections isBrief tags samples =
     case tags of
-        Tags{require, exclude}
+        TagsContain Tags{require, exclude}
             | null require && null exclude -> tasks
             | otherwise -> tagHeader require exclude tasks
-        NoTags -> noTagHeader tasks
+        TagsAbsent -> noTagHeader tasks
   where
     noTagHeader = withHeader "Items without tags: "
 

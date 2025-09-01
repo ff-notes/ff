@@ -3,10 +3,13 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module FF.Options (
     ActionOptions (..),
@@ -23,6 +26,7 @@ module FF.Options (
     Search (..),
     Shuffle (..),
     Tags (..),
+    TagsRequest (EmptyTagsRequest, ..),
     Track (..),
     assignToMaybe,
     parseOptions,
@@ -136,9 +140,21 @@ assignToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
-data Agenda = Agenda {limit :: Maybe Limit, tags :: Tags}
+data Agenda = Agenda {limit :: Maybe Limit, tags :: TagsRequest}
 
-data Tags = Tags {require, exclude :: Set Text} | NoTags
+data Tags = Tags {require, exclude :: Set Text}
+    deriving (Eq)
+
+data TagsRequest = TagsContain Tags | TagsAbsent
+    deriving (Eq)
+
+emptyTagsRequest :: TagsRequest
+emptyTagsRequest = TagsContain Tags{require = mempty, exclude = mempty}
+
+pattern EmptyTagsRequest :: TagsRequest
+pattern EmptyTagsRequest <- ((emptyTagsRequest ==) -> True)
+    where
+        EmptyTagsRequest = emptyTagsRequest
 
 data Edit = Edit
     { ids :: NonEmpty NoteId
@@ -166,7 +182,7 @@ data Search = Search
     , inContacts :: Bool
     , status :: Status
     , limit :: Maybe Limit
-    , tags :: Tags
+    , tags :: TagsRequest
     }
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
@@ -263,10 +279,14 @@ parser h = do
     briefOption =
         switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
 
-    agenda = Agenda <$> optional limitOption <*> filterTags
+    agenda = Agenda <$> optional limitOption <*> filterByTags
 
-    filterTags =
-        filterByNoTags <|> (Tags <$> filterRequireTags <*> filterExcludeTags)
+    filterByTags = filterByTagsAbsent <|> filterByTagsContain
+
+    filterByTagsContain = do
+        require <- filterRequireTags
+        exclude <- filterExcludeTags
+        pure $ TagsContain Tags{require, exclude}
 
     track = Track <$> dryRunOption <*> optional repo <*> optional limitOption
 
@@ -325,7 +345,7 @@ parser h = do
             <*> searchC
             <*> searchA
             <*> optional limitOption
-            <*> filterTags
+            <*> filterByTags
 
     searchT = switch $ long "tasks" <> short 't' <> help "Search among tasks"
 
@@ -350,8 +370,8 @@ parser h = do
                 strOption $
                     long "tag" <> metavar "TAG" <> help "Filter by tag"
 
-    filterByNoTags =
-        flag' NoTags $
+    filterByTagsAbsent =
+        flag' TagsAbsent $
             long "no-tag"
                 <> short 'n'
                 <> help "Filter items that have no tags"

@@ -81,7 +81,7 @@ import System.Random (StdGen, mkStdGen, randoms, split)
 
 import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
 import FF.Options (Assign (Clear, Set), Edit (..), New (..), Tags (..),
-                   assignToMaybe)
+                   TagsRequest (..), assignToMaybe)
 import FF.Types (Contact (..), ContactId, ContactSample, Entity (..), EntityDoc,
                  EntityView, Limit, ModeMap, Note (..), NoteId, NoteSample,
                  NoteStatus (..), Sample (..), Status (..), Tag (..),
@@ -211,7 +211,7 @@ filterWikis = filter $ (Just Wiki ==) . note_status . entityVal
 
 data NoteFilter = NoteFilter
   { status        :: Status
-  , tags          :: Tags
+  , tags          :: TagsRequest
   , textPredicate :: Text -> Bool
   }
 
@@ -219,7 +219,7 @@ defaultNoteFilter :: NoteFilter
 defaultNoteFilter =
   NoteFilter
     { status        = Active
-    , tags          = Tags{require = Set.empty, exclude = Set.empty}
+    , tags          = EmptyTagsRequest
     , textPredicate = const True
     }
 
@@ -268,9 +268,10 @@ viewTaskSamples
 
       tagPredicate =
         case tagFilter of
-          Tags{require, exclude} ->
+          EmptyTagsRequest -> const True
+          TagsContain Tags{require, exclude} ->
             \ts -> require `isSubsetOf` ts && exclude `disjoint` ts
-          NoTags -> null
+          TagsAbsent -> null
 
       noteViewPredicate Entity{entityVal = NoteView{tags}} =
         tagPredicate $ Set.fromList $ toList tags
@@ -442,7 +443,7 @@ cmdSearch ::
   Maybe Limit ->
   -- | today
   Day ->
-  Tags ->
+  TagsRequest ->
   m (ModeMap NoteSample, NoteSample, ContactSample)
 cmdSearch substr status ui limit today tags =
   do

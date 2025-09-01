@@ -10,7 +10,6 @@
 
 module FF.CLI where
 
-import Control.Applicative (empty)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (race)
 import Control.Monad (forever, guard, when)
@@ -96,7 +95,7 @@ import FF.Options (
     Options (..),
     Search (..),
     Shuffle (..),
-    Tags (Tags),
+    TagsRequest (EmptyTagsRequest),
     Track (..),
     parseOptions,
  )
@@ -373,7 +372,7 @@ cmdTrack Track{dryRun, address, limit} today brief
     | dryRun =
         liftIO do
             samples <- run $ getOpenIssueSamples address limit today
-            pprint $ prettyTaskSections brief (Tags mempty mempty) samples
+            pprint $ prettyTaskSections brief EmptyTagsRequest samples
     | otherwise = do
         notes <- liftIO $ run $ getIssueViews address limit
         updateTrackedNotes notes
@@ -469,7 +468,7 @@ pprint doc = liftIO do
 fromEither :: Either a a -> a
 fromEither = either id id
 
-jprint :: (ToJSON a, MonadIO io) => a -> io ()
+jprint :: (MonadIO io, ToJSON a) => a -> io ()
 jprint = liftIO . BSL.putStrLn . JSON.encodePretty
 
 jprintObject :: (MonadIO io) => [JSON.Pair] -> io ()
@@ -500,7 +499,7 @@ runExternalEditor textOld = do
     assertExecutableFromConfig = do
         cfg <- loadConfig
         case externalEditor cfg of
-            Nothing -> empty
+            Nothing -> fail "Empty config parameter 'externalEditor'"
             Just editor ->
                 assertExecutableWithArgs
                     "config parameter 'externalEditor'"
@@ -512,11 +511,6 @@ runExternalEditor textOld = do
 
     assertExecutableWithArgs source cmd = do
         case ShellWords.parse cmd of
-            Left err -> do
-                hPutStrLn stderr $
-                    "bad editor command in " <> source <> ": " <> err
-                empty
-            Right [] -> do
-                hPutStrLn stderr $ "empty editor command in " <> source
-                empty
+            Left err -> fail $ "bad editor command in " <> source <> ": " <> err
+            Right [] -> fail $ "empty editor command in " <> source
             Right (prog : args) -> assertExecutable prog $> prog :| args
