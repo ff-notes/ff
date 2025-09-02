@@ -7,6 +7,7 @@ executable ff-hsqml
   build-depends:
     base,
     hsqml,
+    text,
 
   -- project
   build-depends: ff-core
