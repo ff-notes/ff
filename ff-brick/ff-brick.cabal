@@ -1,0 +1,8 @@
+cabal-version: 3.4
+name: ff-brick
+version: 0
+build-type: Simple
+
+executable ff-brick
+  build-depends: base
+  main-is: Main.hs

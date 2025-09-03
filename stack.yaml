@@ -2,6 +2,7 @@ resolver: lts-24.0
 
 packages:
   - ff
+  - ff-brick
   - ff-core
   # - ff-gtk
   # - ff-qtah
