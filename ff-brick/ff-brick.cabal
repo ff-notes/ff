@@ -4,5 +4,13 @@ version: 0
 build-type: Simple
 
 executable ff-brick
-  build-depends: base
+  build-depends:
+    base,
+    brick,
+    generic-lens,
+    vector,
+    vty,
+
+  default-language: GHC2024
+  ghc-options: -threaded
   main-is: Main.hs
