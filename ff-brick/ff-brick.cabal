@@ -1,0 +1,20 @@
+cabal-version: 3.4
+name: ff-brick
+version: 0
+build-type: Simple
+
+executable ff-brick
+  -- global
+  build-depends:
+    base,
+    brick,
+    generic-lens,
+    ron-storage,
+    vector,
+    vty,
+
+  -- project
+  build-depends: ff-core
+  default-language: GHC2024
+  ghc-options: -threaded
+  main-is: Main.hs
