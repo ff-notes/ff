@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 import Brick (
@@ -57,7 +58,13 @@ import RON.Storage.FS qualified as StorageFS
 
 import FF (fromRgaM, getDataDir, loadAllNotes, noDataDirectoryMessage)
 import FF.Config (loadConfig)
-import FF.Types (Entity (Entity), EntityDoc, Note (Note))
+import FF.Types (
+    Entity (Entity),
+    EntityDoc,
+    Note (Note),
+    NoteStatus (TaskStatus),
+    Status (Active),
+ )
 import FF.Types qualified
 
 -- | Brick widget names
@@ -67,10 +74,9 @@ data WN
     deriving (Eq, Ord, Show)
 
 data Model = Model
-    { notes :: List WN (EntityDoc Note)
-    -- ^ all notes
+    { visibleNotes :: List WN (EntityDoc Note)
     , openNoteM :: Maybe (EntityDoc Note)
-    -- ^ currently opened note
+    -- ^ currently opened note, if opened
     }
     deriving (Generic)
 
@@ -88,13 +94,18 @@ main = do
     dataDirM <- getDataDir cfg
     handleM <- traverse StorageFS.newHandle dataDirM
     handle <- handleM `orElse` fail noDataDirectoryMessage
-    notes <- runStorage handle loadAllNotes
+    allNotes <- runStorage handle loadAllNotes
+    let filteredNotes = filter (isNoteActive . (.entityVal)) allNotes
     let initialModel =
             Model
-                { notes = list NoteList (Vector.fromList notes) listItemHeight
+                { visibleNotes =
+                    list NoteList (Vector.fromList filteredNotes) listItemHeight
                 , openNoteM = Nothing
                 }
     void $ defaultMain app initialModel
+
+isNoteActive :: Note -> Bool
+isNoteActive Note{note_status} = note_status == Just (TaskStatus Active)
 
 listItemHeight :: Int
 listItemHeight = 1
@@ -122,23 +133,26 @@ appAttrMap =
         ]
 
 appDraw :: Model -> [Widget]
-appDraw Model{notes, openNoteM} = [mainWidget <=> keysHelpLine]
+appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
   where
     mainWidget = hBox $ agenda : toList openNoteWidget
 
     agenda =
-        borderWithLabel
-            (txt " Agenda ")
-            (renderList renderListItem True notes & withVScrollBars OnRight)
+        borderWithLabel (txt " Agenda ") $
+            renderList renderListItem True visibleNotes
+                & withVScrollBars OnRight
 
     openNoteWidget = do
         Entity{entityVal = Note{note_text}} <- openNoteM
-        let noteText = Text.pack $ fromRgaM note_text
+        let noteText = Text.pack $ filter (/= '\r') $ fromRgaM note_text
         Just $
             borderWithLabel (txt " Note ") $
-                viewport OpenNoteViewport Both (txt noteText)
-                    & withVScrollBars OnRight
+                viewport
+                    OpenNoteViewport
+                    Both
+                    (txt {- TODO txtWrap? -} noteText)
                     & withHScrollBars OnBottom
+                    & withVScrollBars OnRight
 
     keysHelpLine =
         withAttr highlightAttr (txt "Esc")
@@ -162,9 +176,9 @@ appHandleVtyEvent = \case
     EvKey (KChar 'q') [] -> halt
     EvKey KEnter [] -> do
         -- open selected note
-        selectedNoteM <- preuse $ #notes . listSelectedElementL
+        selectedNoteM <- preuse $ #visibleNotes . listSelectedElementL
         #openNoteM .= selectedNoteM
-    e -> zoom #notes $ handleListEvent e
+    e -> zoom #visibleNotes $ handleListEvent e
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
 renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
