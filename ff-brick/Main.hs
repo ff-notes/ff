@@ -7,6 +7,7 @@ import Brick (
     AttrName,
     BrickEvent (VtyEvent),
     EventM,
+    VScrollBarOrientation (OnRight),
     Widget,
     attrMap,
     attrName,
@@ -16,6 +17,7 @@ import Brick (
     on,
     str,
     withAttr,
+    withVScrollBars,
     zoom,
     (<+>),
     (<=>),
@@ -78,7 +80,9 @@ appAttrMap =
 
 appDraw :: Model -> [Widget ()]
 appDraw Model{notes} =
-    [ borderWithLabel (str "Agenda") (renderList renderListItem True notes)
+    [ borderWithLabel
+        (str "Agenda")
+        (withVScrollBars OnRight $ renderList renderListItem True notes)
         <=> (withAttr highlightAttr (str "Esc") <+> str " exit")
     ]
 
