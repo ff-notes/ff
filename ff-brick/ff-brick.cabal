@@ -9,6 +9,7 @@ executable ff-brick
     base,
     brick,
     generic-lens,
+    microlens-mtl,
     ron-storage,
     vector,
     vty,
