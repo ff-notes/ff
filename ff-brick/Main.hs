@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedLabels #-}
 
@@ -33,6 +34,7 @@ import Brick.Widgets.List (
     renderList,
  )
 import Control.Monad (void)
+import Data.Function ((&))
 import Data.Generics.Labels ()
 import Data.Vector qualified as Vector
 import GHC.Generics (Generic)
@@ -40,10 +42,12 @@ import Graphics.Vty (Event (EvKey), Key (KEsc), black, defAttr, white)
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
 
-import FF (getDataDir, loadAllNotes, noDataDirectoryMessage)
+import FF (fromRgaM, getDataDir, loadAllNotes, noDataDirectoryMessage)
 import FF.Config (loadConfig)
+import FF.Types (Entity (Entity), EntityDoc, Note (Note))
+import FF.Types qualified
 
-newtype Model = Model {notes :: List () String} deriving (Generic)
+newtype Model = Model {notes :: List () (EntityDoc Note)} deriving (Generic)
 
 main :: IO ()
 main = do
@@ -53,10 +57,7 @@ main = do
     handle <- handleM `orElse` fail noDataDirectoryMessage
     notes <- runStorage handle loadAllNotes
     let initialModel =
-            Model
-                { notes =
-                    list () (Vector.fromList $ map show notes) listItemHeight
-                }
+            Model{notes = list () (Vector.fromList notes) listItemHeight}
     void $ defaultMain app initialModel
 
 listItemHeight :: Int
@@ -88,7 +89,7 @@ appDraw :: Model -> [Widget ()]
 appDraw Model{notes} =
     [ borderWithLabel
         (str "Agenda")
-        (withVScrollBars OnRight $ renderList renderListItem True notes)
+        (renderList renderListItem True notes & withVScrollBars OnRight)
         <=> (withAttr highlightAttr (str "Esc") <+> str " exit")
     ]
 
@@ -105,5 +106,12 @@ appHandleVtyEvent = \case
     EvKey KEsc _ -> halt
     e -> zoom #notes $ handleListEvent e
 
-renderListItem :: Bool -> String -> Widget ()
-renderListItem _isSelected = str
+renderListItem :: Bool -> EntityDoc Note -> Widget ()
+renderListItem _isSelected Entity{entityVal = Note{note_text}} =
+    str
+        case textLines of
+            [] -> "..."
+            [singleLine] -> singleLine
+            firstLine : _ -> firstLine <> "..."
+  where
+    textLines = filter (not . null) $ lines $ fromRgaM note_text
