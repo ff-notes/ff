@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 import Brick (
     AttrMap,
@@ -15,7 +16,7 @@ import Brick (
     halt,
     neverShowCursor,
     on,
-    str,
+    txt,
     viewport,
     withAttr,
     withHScrollBars,
@@ -39,6 +40,8 @@ import Control.Monad (void)
 import Data.Foldable (toList)
 import Data.Function ((&))
 import Data.Generics.Labels ()
+import Data.Text (Text)
+import Data.Text qualified as Text
 import Data.Vector qualified as Vector
 import GHC.Generics (Generic)
 import Graphics.Vty (
@@ -125,25 +128,25 @@ appDraw Model{notes, openNoteM} = [mainWidget <=> keysHelpLine]
 
     agenda =
         borderWithLabel
-            (str " Agenda ")
+            (txt " Agenda ")
             (renderList renderListItem True notes & withVScrollBars OnRight)
 
     openNoteWidget = do
         Entity{entityVal = Note{note_text}} <- openNoteM
-        let text = fromRgaM note_text
-        pure $
-            borderWithLabel (str " Note ") $
-                viewport OpenNoteViewport Both (str text)
+        let noteText = Text.pack $ fromRgaM note_text
+        Just $
+            borderWithLabel (txt " Note ") $
+                viewport OpenNoteViewport Both (txt noteText)
                     & withVScrollBars OnRight
                     & withHScrollBars OnBottom
 
     keysHelpLine =
-        withAttr highlightAttr (str "Esc")
-            <+> str " "
-            <+> withAttr highlightAttr (str "q")
-            <+> str " exit  "
-            <+> withAttr highlightAttr (str "Enter")
-            <+> str " open"
+        withAttr highlightAttr (txt "Esc")
+            <+> txt " "
+            <+> withAttr highlightAttr (txt "q")
+            <+> txt " exit  "
+            <+> withAttr highlightAttr (txt "Enter")
+            <+> txt " open"
 
 highlightAttr :: AttrName
 highlightAttr = attrName "highlight"
@@ -164,11 +167,14 @@ appHandleVtyEvent = \case
     e -> zoom #notes $ handleListEvent e
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
-renderListItem _isSelected Entity{entityVal} = str $ noteTitle entityVal
+renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
 
-noteTitle :: Note -> String
+noteTitle :: Note -> Text
 noteTitle Note{note_text} =
-    case filter (not . null) $ lines $ fromRgaM note_text of
+    case textLines of
         [] -> "..."
         [singleLine] -> singleLine
         firstLine : _ -> firstLine <> "..."
+  where
+    textLines =
+        filter (not . Text.null) $ Text.lines $ Text.pack $ fromRgaM note_text

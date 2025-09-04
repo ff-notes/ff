@@ -11,6 +11,7 @@ executable ff-brick
     generic-lens,
     microlens-mtl,
     ron-storage,
+    text,
     vector,
     vty,
 
