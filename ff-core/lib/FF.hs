@@ -621,7 +621,7 @@ assertNoteIsNative = do
     for_ tracking \Track{track_url} ->
         throwErrorText $
             "A tracked note must be edited in its source"
-                <> maybe "" (" :" <>) track_url
+                <> maybe "" (": " <>) track_url
 
 getDataDir :: Config -> IO (Maybe FilePath)
 getDataDir Config{dataDir} = do
