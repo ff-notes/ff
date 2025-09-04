@@ -35,23 +35,27 @@ import Data.Generics.Labels ()
 import Data.Vector qualified as Vector
 import GHC.Generics (Generic)
 import Graphics.Vty (Event (EvKey), Key (KEsc), black, defAttr, white)
+import RON.Storage.FS (runStorage)
+import RON.Storage.FS qualified as StorageFS
 
-main :: IO ()
-main = void $ defaultMain app initialModel
+import FF (getDataDir, loadAllNotes, noDataDirectoryMessage)
+import FF.Config (loadConfig)
 
 newtype Model = Model {notes :: List () String} deriving (Generic)
 
-initialModel :: Model
-initialModel =
-    Model
-        { notes =
-            list
-                ()
-                ( Vector.fromList
-                    ["alpha", "beta", "gamma", "delta", "epsilon", "zeta"]
-                )
-                4
-        }
+main :: IO ()
+main = do
+    cfg <- loadConfig
+    dataDir <- getDataDir cfg
+    handleM <- traverse StorageFS.newHandle dataDir
+    handle <- handleM `orElse` fail noDataDirectoryMessage
+    notes <- runStorage handle loadAllNotes
+    let initialModel =
+            Model{notes = list () (Vector.fromList $ map show notes) 0}
+    void $ defaultMain app initialModel
+
+orElse :: (Applicative m) => Maybe a -> m a -> m a
+orElse m n = maybe n pure m
 
 app :: App Model () ()
 app =
