@@ -5,6 +5,7 @@
 import Brick (
     AttrMap,
     AttrName,
+    HScrollBarOrientation (OnBottom),
     VScrollBarOrientation (OnRight),
     ViewportType (Both),
     attrMap,
@@ -17,6 +18,7 @@ import Brick (
     str,
     viewport,
     withAttr,
+    withHScrollBars,
     withVScrollBars,
     zoom,
     (<+>),
@@ -123,17 +125,17 @@ appDraw Model{notes, openNoteM} = [mainWidget <=> keysHelpLine]
 
     agenda =
         borderWithLabel
-            (str "Agenda")
+            (str " Agenda ")
             (renderList renderListItem True notes & withVScrollBars OnRight)
 
     openNoteWidget = do
-        Entity{entityVal = note@Note{note_text}} <- openNoteM
-        let title = noteTitle note
-            text = fromRgaM note_text
+        Entity{entityVal = Note{note_text}} <- openNoteM
+        let text = fromRgaM note_text
         pure $
-            borderWithLabel (str title) $
-                viewport OpenNoteViewport Both $
-                    str text
+            borderWithLabel (str " Note ") $
+                viewport OpenNoteViewport Both (str text)
+                    & withVScrollBars OnRight
+                    & withHScrollBars OnBottom
 
     keysHelpLine =
         withAttr highlightAttr (str "Esc")
