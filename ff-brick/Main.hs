@@ -53,8 +53,14 @@ main = do
     handle <- handleM `orElse` fail noDataDirectoryMessage
     notes <- runStorage handle loadAllNotes
     let initialModel =
-            Model{notes = list () (Vector.fromList $ map show notes) 1}
+            Model
+                { notes =
+                    list () (Vector.fromList $ map show notes) listItemHeight
+                }
     void $ defaultMain app initialModel
+
+listItemHeight :: Int
+listItemHeight = 1
 
 orElse :: (Applicative m) => Maybe a -> m a -> m a
 orElse m n = maybe n pure m
