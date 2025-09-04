@@ -4,10 +4,12 @@
 import Brick (
     App (App),
     AttrMap,
+    AttrName,
     BrickEvent (VtyEvent),
     EventM,
     Widget,
     attrMap,
+    attrName,
     defaultMain,
     halt,
     neverShowCursor,
@@ -15,6 +17,7 @@ import Brick (
     str,
     withAttr,
     zoom,
+    (<+>),
     (<=>),
  )
 import Brick qualified
@@ -24,6 +27,7 @@ import Brick.Widgets.List (
     handleListEvent,
     list,
     listSelectedAttr,
+    listSelectedFocusedAttr,
     renderList,
  )
 import Control.Monad (void)
@@ -39,7 +43,15 @@ newtype Model = Model {notes :: List () String} deriving (Generic)
 
 initialModel :: Model
 initialModel =
-    Model{notes = list () (Vector.fromList ["3", "15", "9", "20"]) 10}
+    Model
+        { notes =
+            list
+                ()
+                ( Vector.fromList
+                    ["alpha", "beta", "gamma", "delta", "epsilon", "zeta"]
+                )
+                4
+        }
 
 app :: App Model () ()
 app =
@@ -52,13 +64,22 @@ app =
         }
 
 appAttrMap :: AttrMap
-appAttrMap = attrMap defAttr [(listSelectedAttr, black `on` white)]
+appAttrMap =
+    attrMap
+        defAttr
+        [ (listSelectedAttr, black `on` white)
+        , (listSelectedFocusedAttr, black `on` white) -- TODO `withStyle` bold?
+        , (highlightAttr, black `on` white)
+        ]
 
 appDraw :: Model -> [Widget ()]
 appDraw Model{notes} =
     [ borderWithLabel (str "Agenda") (renderList renderListItem True notes)
-        <=> str "Esc - exit"
+        <=> (withAttr highlightAttr (str "Esc") <+> str " exit")
     ]
+
+highlightAttr :: AttrName
+highlightAttr = attrName "highlight"
 
 appHandleEvent :: BrickEvent () () -> EventM () Model ()
 appHandleEvent = \case
@@ -71,5 +92,4 @@ appHandleVtyEvent = \case
     e -> zoom #notes $ handleListEvent e
 
 renderListItem :: Bool -> String -> Widget ()
-renderListItem isSelected item =
-    (if isSelected then withAttr listSelectedAttr else id) $ str item
+renderListItem _isSelected = str
