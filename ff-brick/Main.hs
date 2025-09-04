@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+module Main (main) where
+
 import Brick (
     AttrMap,
     AttrName,
@@ -20,6 +22,7 @@ import Brick (
     txt,
     viewport,
     withAttr,
+    withBorderStyle,
     withHScrollBars,
     withVScrollBars,
     zoom,
@@ -28,6 +31,7 @@ import Brick (
  )
 import Brick qualified
 import Brick.Widgets.Border (borderWithLabel)
+import Brick.Widgets.Border.Style (borderStyleFromChar, unicode)
 import Brick.Widgets.List (
     List,
     handleListEvent,
@@ -56,6 +60,7 @@ import Lens.Micro.Mtl (preuse, (.=))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
 
+import Data.Maybe (isJust, isNothing)
 import FF (fromRgaM, getDataDir, loadAllNotes, noDataDirectoryMessage)
 import FF.Config (loadConfig)
 import FF.Types (
@@ -132,27 +137,41 @@ appAttrMap =
         , (highlightAttr, black `on` white)
         ]
 
+withBorderIf :: Bool -> Widget -> Widget
+withBorderIf cond =
+    withBorderStyle if cond then unicode else borderStyleFromChar ' '
+
 appDraw :: Model -> [Widget]
 appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
   where
+    agendaIsFocused = isNothing openNoteM
+    noteIsFocused = isJust openNoteM
+
     mainWidget = hBox $ agenda : toList openNoteWidget
 
     agenda =
-        borderWithLabel (txt " Agenda ") $
-            renderList renderListItem True visibleNotes
+        borderWithLabel
+            (txt " Agenda ")
+            ( renderList renderListItem True visibleNotes
                 & withVScrollBars OnRight
+            )
+            & withBorderIf agendaIsFocused
 
     openNoteWidget = do
         Entity{entityVal = Note{note_text}} <- openNoteM
         let noteText = Text.pack $ filter (/= '\r') $ fromRgaM note_text
         Just $
-            borderWithLabel (txt " Note ") $
-                viewport
+            borderWithLabel
+                (txt " Note ")
+                ( viewport
                     OpenNoteViewport
                     Both
                     (txt {- TODO txtWrap? -} noteText)
                     & withHScrollBars OnBottom
                     & withVScrollBars OnRight
+                )
+                & withBorderStyle
+                    (if noteIsFocused then unicode else borderStyleFromChar ' ')
 
     keysHelpLine =
         withAttr highlightAttr (txt "Esc")
