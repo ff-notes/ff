@@ -156,8 +156,8 @@ appAttrMap =
         , (highlightAttr, black `on` white)
         ]
 
-withBorderIf :: Bool -> Widget -> Widget
-withBorderIf cond =
+withVisibleBorderIf :: Bool -> Widget -> Widget
+withVisibleBorderIf cond =
     withBorderStyle if cond then unicode else borderStyleFromChar ' '
 
 appDraw :: Model -> [Widget]
@@ -170,7 +170,7 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
             ( renderList renderListItem True visibleNotes
                 & withVScrollBars OnRight
             )
-            & withBorderIf (not isNoteOpen)
+            & withVisibleBorderIf (not isNoteOpen)
 
     openNoteWidget =
         border
@@ -181,7 +181,7 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
                 & withHScrollBars OnBottom
                 & withVScrollBars OnRight
             )
-            & withBorderIf isNoteOpen
+            & withVisibleBorderIf isNoteOpen
       where
         content =
             case listSelectedElement visibleNotes of
