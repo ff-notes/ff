@@ -48,10 +48,11 @@ import Brick.Widgets.List (
     listSelectedFocusedAttr,
     renderList,
  )
-import Control.Monad (void)
+import Control.Monad (void, when)
 import Data.Foldable (toList)
 import Data.Function ((&))
 import Data.Generics.Labels ()
+import Data.Maybe (isJust)
 import Data.Text (Text)
 import Data.Text qualified as Text
 import Data.Vector qualified as Vector
@@ -76,7 +77,6 @@ import Graphics.Vty (
     defAttr,
     white,
  )
-import Lens.Micro (_Just)
 import Lens.Micro.Mtl (preuse, use, (.=))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
@@ -239,9 +239,9 @@ appHandleVtyEvent event = do
                 EvKey KEsc [] ->
                     -- close note view
                     #openNoteM .= Nothing
-                e -> zoom (#openNoteM . _Just) $ handleViewportEvent e
+                e -> when (isJust openNoteM) $ handleViewportEvent e
 
-handleViewportEvent :: Event -> Brick.EventM WN s ()
+handleViewportEvent :: Event -> EventM ()
 handleViewportEvent = \case
     EvKey KUp [] -> vScrollBy vps (-1)
     EvKey KDown [] -> vScrollBy vps 1
