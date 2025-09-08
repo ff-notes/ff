@@ -44,12 +44,12 @@ import Brick.Widgets.List (
     handleListEvent,
     list,
     listSelectedAttr,
+    listSelectedElement,
     listSelectedElementL,
     listSelectedFocusedAttr,
     renderList,
  )
-import Control.Monad (void, when)
-import Data.Foldable (toList)
+import Control.Monad (void)
 import Data.Function ((&))
 import Data.Generics.Labels ()
 import Data.Maybe (isJust)
@@ -100,8 +100,7 @@ data WN
 
 data Model = Model
     { visibleNotes :: List WN (EntityDoc Note)
-    , openNoteM :: Maybe (EntityDoc Note)
-    -- ^ currently opened note, if opened
+    , isNoteOpen :: Bool
     }
     deriving (Generic)
 
@@ -125,7 +124,7 @@ main = do
             Model
                 { visibleNotes =
                     list NoteList (Vector.fromList filteredNotes) listItemHeight
-                , openNoteM = Nothing
+                , isNoteOpen = False
                 }
     void $ defaultMain app initialModel
 
@@ -162,50 +161,50 @@ withBorderIf cond =
     withBorderStyle if cond then unicode else borderStyleFromChar ' '
 
 appDraw :: Model -> [Widget]
-appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
+appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
   where
-    focusedWidget =
-        case openNoteM of
-            Nothing -> NoteList
-            Just _ -> OpenNoteViewport
-
-    mainWidget = hBox $ noteList : toList openNoteWidget
+    mainWidget = noteList <+> openNoteWidget
 
     noteList =
         border
             ( renderList renderListItem True visibleNotes
                 & withVScrollBars OnRight
             )
-            & withBorderIf (focusedWidget == NoteList)
+            & withBorderIf (not isNoteOpen)
 
-    openNoteWidget = do
-        Entity{entityVal = Note{note_text}} <- openNoteM
-        let noteText = Text.pack $ filter (/= '\r') $ fromRgaM note_text
-        Just $
-            border
-                ( viewport
-                    OpenNoteViewport
-                    Both
-                    (txt {- TODO txtWrap? -} noteText)
-                    & withHScrollBars OnBottom
-                    & withVScrollBars OnRight
-                )
-                & withBorderIf (focusedWidget == OpenNoteViewport)
+    openNoteWidget =
+        border
+            ( viewport
+                OpenNoteViewport
+                Both
+                (txt {- TODO txtWrap? -} content)
+                & withHScrollBars OnBottom
+                & withVScrollBars OnRight
+            )
+            & withBorderIf isNoteOpen
+      where
+        content =
+            case listSelectedElement visibleNotes of
+                Nothing -> ""
+                Just (_, Entity{entityVal = Note{note_text}}) ->
+                    Text.pack $ filter (/= '\r') $ fromRgaM note_text
 
     keysHelpLine =
-        case focusedWidget of
-            NoteList ->
-                withAttr highlightAttr (txt "^q")
-                    <+> txt " "
-                    <+> withAttr highlightAttr (txt "Esc")
-                    <+> txt " exit  "
-                    <+> withAttr highlightAttr (txt "Enter")
-                    <+> txt " open"
-            OpenNoteViewport ->
-                withAttr highlightAttr (txt "^q")
-                    <+> txt " exit  "
-                    <+> withAttr highlightAttr (txt "Esc")
-                    <+> txt " close"
+        hBox
+            if isNoteOpen then
+                [ withAttr highlightAttr (txt "^q")
+                , txt " exit  "
+                , withAttr highlightAttr (txt "Esc")
+                , txt " close"
+                ]
+            else
+                [ withAttr highlightAttr (txt "^q")
+                , txt " "
+                , withAttr highlightAttr (txt "Esc")
+                , txt " exit  "
+                , withAttr highlightAttr (txt "Enter")
+                , txt " open"
+                ]
 
 highlightAttr :: AttrName
 highlightAttr = attrName "highlight"
@@ -217,29 +216,22 @@ appHandleEvent = \case
 
 appHandleVtyEvent :: Event -> EventM ()
 appHandleVtyEvent event = do
-    openNoteM <- use #openNoteM
-    let focusedWidget =
-            case openNoteM of
-                Nothing -> NoteList
-                Just _ -> OpenNoteViewport
-    case focusedWidget of
-        NoteList ->
-            case event of
-                EvKey (KChar 'q') [MCtrl] -> halt
-                EvKey KEsc [] -> halt
-                EvKey KEnter [] -> do
-                    -- open selected note
-                    selectedNoteM <-
-                        preuse $ #visibleNotes . listSelectedElementL
-                    #openNoteM .= selectedNoteM
-                e -> zoom #visibleNotes $ handleListEvent e
-        OpenNoteViewport ->
-            case event of
-                EvKey (KChar 'q') [MCtrl] -> halt
-                EvKey KEsc [] ->
-                    -- close note view
-                    #openNoteM .= Nothing
-                e -> when (isJust openNoteM) $ handleViewportEvent e
+    isNoteOpen <- use #isNoteOpen
+    if isNoteOpen then case event of
+        EvKey (KChar 'q') [MCtrl] -> halt
+        EvKey KEsc [] ->
+            -- close note view
+            #isNoteOpen .= False
+        e -> handleViewportEvent e
+    else case event of
+        EvKey (KChar 'q') [MCtrl] -> halt
+        EvKey KEsc [] -> halt
+        EvKey KEnter [] -> do
+            -- open selected note
+            selectedNoteM <-
+                preuse $ #visibleNotes . listSelectedElementL
+            #isNoteOpen .= isJust selectedNoteM
+        e -> zoom #visibleNotes $ handleListEvent e
 
 handleViewportEvent :: Event -> EventM ()
 handleViewportEvent = \case
