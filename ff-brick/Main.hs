@@ -9,6 +9,7 @@ module Main (main) where
 import Brick (
     AttrMap,
     AttrName,
+    Direction (Down, Up),
     HScrollBarOrientation (OnBottom),
     VScrollBarOrientation (OnRight),
     ViewportType (Both),
@@ -16,11 +17,17 @@ import Brick (
     attrName,
     defaultMain,
     hBox,
+    hScrollBy,
     halt,
     neverShowCursor,
     on,
     txt,
+    vScrollBy,
+    vScrollPage,
+    vScrollToBeginning,
+    vScrollToEnd,
     viewport,
+    viewportScroll,
     withAttr,
     withBorderStyle,
     withHScrollBars,
@@ -51,12 +58,25 @@ import Data.Vector qualified as Vector
 import GHC.Generics (Generic)
 import Graphics.Vty (
     Event (EvKey),
-    Key (KChar, KEnter, KEsc),
+    Key (
+        KChar,
+        KDown,
+        KEnd,
+        KEnter,
+        KEsc,
+        KHome,
+        KLeft,
+        KPageDown,
+        KPageUp,
+        KRight,
+        KUp
+    ),
     Modifier (MCtrl),
     black,
     defAttr,
     white,
  )
+import Lens.Micro (_Just)
 import Lens.Micro.Mtl (preuse, use, (.=))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
@@ -133,7 +153,7 @@ appAttrMap =
     attrMap
         defAttr
         [ (listSelectedAttr, black `on` white)
-        , (listSelectedFocusedAttr, black `on` white) -- TODO `withStyle` bold?
+        , (listSelectedFocusedAttr, black `on` white)
         , (highlightAttr, black `on` white)
         ]
 
@@ -219,7 +239,21 @@ appHandleVtyEvent event = do
                 EvKey KEsc [] ->
                     -- close note view
                     #openNoteM .= Nothing
-                _ -> pure () -- TODO e -> zoom (#openNoteM . _Just) $ handleViewport e
+                e -> zoom (#openNoteM . _Just) $ handleViewportEvent e
+
+handleViewportEvent :: Event -> Brick.EventM WN s ()
+handleViewportEvent = \case
+    EvKey KUp [] -> vScrollBy vps (-1)
+    EvKey KDown [] -> vScrollBy vps 1
+    EvKey KLeft [] -> hScrollBy vps (-1)
+    EvKey KRight [] -> hScrollBy vps 1
+    EvKey KHome [] -> vScrollToBeginning vps
+    EvKey KEnd [] -> vScrollToEnd vps
+    EvKey KPageUp [] -> vScrollPage vps Up
+    EvKey KPageDown [] -> vScrollPage vps Down
+    _ -> pure ()
+  where
+    vps = viewportScroll OpenNoteViewport
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
 renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
