@@ -12,7 +12,7 @@ import Brick (
     Direction (Down, Up),
     HScrollBarOrientation (OnBottom),
     VScrollBarOrientation (OnRight),
-    ViewportType (Both),
+    ViewportType (Vertical),
     attrMap,
     attrName,
     defaultMain,
@@ -22,6 +22,7 @@ import Brick (
     neverShowCursor,
     on,
     txt,
+    txtWrap,
     vScrollBy,
     vScrollPage,
     vScrollToBeginning,
@@ -174,20 +175,17 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
 
     openNoteWidget =
         border
-            ( viewport
-                OpenNoteViewport
-                Both
-                (txt {- TODO txtWrap? -} content)
+            ( viewport OpenNoteViewport Vertical (txtWrap openNoteContent)
                 & withHScrollBars OnBottom
                 & withVScrollBars OnRight
             )
             & withVisibleBorderIf isNoteOpen
-      where
-        content =
-            case listSelectedElement visibleNotes of
-                Nothing -> ""
-                Just (_, Entity{entityVal = Note{note_text}}) ->
-                    Text.pack $ filter (/= '\r') $ fromRgaM note_text
+
+    openNoteContent =
+        case listSelectedElement visibleNotes of
+            Nothing -> ""
+            Just (_, Entity _ note) ->
+                Text.pack $ clean $ fromRgaM note.note_text
 
     keysHelpLine =
         hBox
@@ -205,6 +203,10 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
                 , withAttr highlightAttr (txt "Enter")
                 , txt " open"
                 ]
+
+-- Clean string for Brick
+clean :: String -> String
+clean = filter (/= '\r')
 
 highlightAttr :: AttrName
 highlightAttr = attrName "highlight"
@@ -248,7 +250,7 @@ handleViewportEvent = \case
     vps = viewportScroll OpenNoteViewport
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
-renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
+renderListItem _isSelected (Entity _ note) = txt $ noteTitle note
 
 noteTitle :: Note -> Text
 noteTitle Note{note_text} =
