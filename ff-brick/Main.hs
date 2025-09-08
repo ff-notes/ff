@@ -30,7 +30,7 @@ import Brick (
     (<=>),
  )
 import Brick qualified
-import Brick.Widgets.Border (borderWithLabel)
+import Brick.Widgets.Border (border)
 import Brick.Widgets.Border.Style (borderStyleFromChar, unicode)
 import Brick.Widgets.List (
     List,
@@ -52,15 +52,15 @@ import GHC.Generics (Generic)
 import Graphics.Vty (
     Event (EvKey),
     Key (KChar, KEnter, KEsc),
+    Modifier (MCtrl),
     black,
     defAttr,
     white,
  )
-import Lens.Micro.Mtl (preuse, (.=))
+import Lens.Micro.Mtl (preuse, use, (.=))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
 
-import Data.Maybe (isJust, isNothing)
 import FF (fromRgaM, getDataDir, loadAllNotes, noDataDirectoryMessage)
 import FF.Config (loadConfig)
 import FF.Types (
@@ -144,25 +144,25 @@ withBorderIf cond =
 appDraw :: Model -> [Widget]
 appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
   where
-    agendaIsFocused = isNothing openNoteM
-    noteIsFocused = isJust openNoteM
+    focusedWidget =
+        case openNoteM of
+            Nothing -> NoteList
+            Just _ -> OpenNoteViewport
 
-    mainWidget = hBox $ agenda : toList openNoteWidget
+    mainWidget = hBox $ noteList : toList openNoteWidget
 
-    agenda =
-        borderWithLabel
-            (txt " Agenda ")
+    noteList =
+        border
             ( renderList renderListItem True visibleNotes
                 & withVScrollBars OnRight
             )
-            & withBorderIf agendaIsFocused
+            & withBorderIf (focusedWidget == NoteList)
 
     openNoteWidget = do
         Entity{entityVal = Note{note_text}} <- openNoteM
         let noteText = Text.pack $ filter (/= '\r') $ fromRgaM note_text
         Just $
-            borderWithLabel
-                (txt " Note ")
+            border
                 ( viewport
                     OpenNoteViewport
                     Both
@@ -170,13 +170,12 @@ appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
                     & withHScrollBars OnBottom
                     & withVScrollBars OnRight
                 )
-                & withBorderStyle
-                    (if noteIsFocused then unicode else borderStyleFromChar ' ')
+                & withBorderIf (focusedWidget == OpenNoteViewport)
 
     keysHelpLine =
-        withAttr highlightAttr (txt "Esc")
+        withAttr highlightAttr (txt "^q")
             <+> txt " "
-            <+> withAttr highlightAttr (txt "q")
+            <+> withAttr highlightAttr (txt "Esc")
             <+> txt " exit  "
             <+> withAttr highlightAttr (txt "Enter")
             <+> txt " open"
@@ -190,14 +189,29 @@ appHandleEvent = \case
     _ -> pure ()
 
 appHandleVtyEvent :: Event -> EventM ()
-appHandleVtyEvent = \case
-    EvKey KEsc [] -> halt
-    EvKey (KChar 'q') [] -> halt
-    EvKey KEnter [] -> do
-        -- open selected note
-        selectedNoteM <- preuse $ #visibleNotes . listSelectedElementL
-        #openNoteM .= selectedNoteM
-    e -> zoom #visibleNotes $ handleListEvent e
+appHandleVtyEvent event = do
+    openNoteM <- use #openNoteM
+    let focusedWidget =
+            case openNoteM of
+                Nothing -> NoteList
+                Just _ -> OpenNoteViewport
+    case focusedWidget of
+        NoteList ->
+            case event of
+                EvKey KEsc [] -> halt
+                EvKey (KChar 'q') [MCtrl] -> halt
+                EvKey KEnter [] -> do
+                    -- open selected note
+                    selectedNoteM <-
+                        preuse $ #visibleNotes . listSelectedElementL
+                    #openNoteM .= selectedNoteM
+                e -> zoom #visibleNotes $ handleListEvent e
+        OpenNoteViewport ->
+            case event of
+                EvKey KEsc [] ->
+                    -- close note view
+                    #openNoteM .= Nothing
+                _ -> pure () -- e -> zoom (#openNoteM . _Just) $ handleViewport e
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
 renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
