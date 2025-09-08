@@ -173,12 +173,19 @@ appDraw Model{visibleNotes, openNoteM} = [mainWidget <=> keysHelpLine]
                 & withBorderIf (focusedWidget == OpenNoteViewport)
 
     keysHelpLine =
-        withAttr highlightAttr (txt "^q")
-            <+> txt " "
-            <+> withAttr highlightAttr (txt "Esc")
-            <+> txt " exit  "
-            <+> withAttr highlightAttr (txt "Enter")
-            <+> txt " open"
+        case focusedWidget of
+            NoteList ->
+                withAttr highlightAttr (txt "^q")
+                    <+> txt " "
+                    <+> withAttr highlightAttr (txt "Esc")
+                    <+> txt " exit  "
+                    <+> withAttr highlightAttr (txt "Enter")
+                    <+> txt " open"
+            OpenNoteViewport ->
+                withAttr highlightAttr (txt "^q")
+                    <+> txt " exit  "
+                    <+> withAttr highlightAttr (txt "Esc")
+                    <+> txt " close"
 
 highlightAttr :: AttrName
 highlightAttr = attrName "highlight"
@@ -198,8 +205,8 @@ appHandleVtyEvent event = do
     case focusedWidget of
         NoteList ->
             case event of
-                EvKey KEsc [] -> halt
                 EvKey (KChar 'q') [MCtrl] -> halt
+                EvKey KEsc [] -> halt
                 EvKey KEnter [] -> do
                     -- open selected note
                     selectedNoteM <-
@@ -208,10 +215,11 @@ appHandleVtyEvent event = do
                 e -> zoom #visibleNotes $ handleListEvent e
         OpenNoteViewport ->
             case event of
+                EvKey (KChar 'q') [MCtrl] -> halt
                 EvKey KEsc [] ->
                     -- close note view
                     #openNoteM .= Nothing
-                _ -> pure () -- e -> zoom (#openNoteM . _Just) $ handleViewport e
+                _ -> pure () -- TODO e -> zoom (#openNoteM . _Just) $ handleViewport e
 
 renderListItem :: Bool -> EntityDoc Note -> Widget
 renderListItem _isSelected Entity{entityVal} = txt $ noteTitle entityVal
