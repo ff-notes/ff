@@ -38,7 +38,7 @@ import Brick (
     (<=>),
  )
 import Brick qualified
-import Brick.Widgets.Border (border)
+import Brick.Widgets.Border (border, hBorderWithLabel)
 import Brick.Widgets.Border.Style (borderStyleFromChar, unicode)
 import Brick.Widgets.List (
     List,
@@ -53,9 +53,10 @@ import Brick.Widgets.List (
 import Control.Monad (void)
 import Data.Function ((&))
 import Data.Generics.Labels ()
-import Data.Maybe (isJust)
+import Data.Map.Strict qualified as Map
 import Data.Text (Text)
 import Data.Text qualified as Text
+import Data.Vector (Vector)
 import Data.Vector qualified as Vector
 import GHC.Generics (Generic)
 import Graphics.Vty (
@@ -82,25 +83,44 @@ import Lens.Micro.Mtl (preuse, use, (.=))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as StorageFS
 
-import FF (fromRgaM, getDataDir, loadAllNotes, noDataDirectoryMessage)
+import FF (
+    defaultNoteFilter,
+    fromRgaM,
+    getDataDir,
+    getUtcToday,
+    loadAllNotes,
+    noDataDirectoryMessage,
+    viewTaskSamples,
+ )
 import FF.Config (loadConfig)
+import FF.Config qualified
 import FF.Types (
     Entity (Entity),
-    EntityDoc,
+    EntityView,
+    ModeMap,
     Note (Note),
-    NoteStatus (TaskStatus),
-    Status (Active),
+    NoteSample,
+    Sample (Sample),
+    TaskMode,
+    View (NoteView),
  )
 import FF.Types qualified
+import FF.UI (sampleLabel)
 
--- | Brick widget names
+-- | Widget names
 data WN
     = NoteList
     | OpenNoteViewport
     deriving (Eq, Ord, Show)
 
 data Model = Model
-    { visibleNotes :: List WN (EntityDoc Note)
+    { visibleNotes ::
+        List
+            WN
+            ( Either
+                TaskMode -- section title
+                (EntityView Note) -- item
+            )
     , isNoteOpen :: Bool
     }
     deriving (Generic)
@@ -119,18 +139,29 @@ main = do
     dataDirM <- getDataDir cfg
     handleM <- traverse StorageFS.newHandle dataDirM
     handle <- handleM `orElse` fail noDataDirectoryMessage
-    allNotes <- runStorage handle loadAllNotes
-    let filteredNotes = filter (isNoteActive . (.entityVal)) allNotes
+    today <- getUtcToday
+    let limit = Nothing
+    samples <-
+        runStorage handle do
+            allNotes <- loadAllNotes
+            viewTaskSamples
+                defaultNoteFilter
+                cfg.ui
+                limit
+                today
+                allNotes
     let initialModel =
             Model
                 { visibleNotes =
-                    list NoteList (Vector.fromList filteredNotes) listItemHeight
+                    list NoteList (notesToModel samples) listItemHeight
                 , isNoteOpen = False
                 }
     void $ defaultMain app initialModel
 
-isNoteActive :: Note -> Bool
-isNoteActive Note{note_status} = note_status == Just (TaskStatus Active)
+notesToModel :: ModeMap NoteSample -> Vector (Either TaskMode (EntityView Note))
+notesToModel = Vector.fromList . foldMap notesToModel' . Map.assocs
+  where
+    notesToModel' (taskMode, Sample{items}) = Left taskMode : map Right items
 
 listItemHeight :: Int
 listItemHeight = 1
@@ -183,9 +214,9 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
 
     openNoteContent =
         case listSelectedElement visibleNotes of
-            Nothing -> ""
-            Just (_, Entity _ note) ->
+            Just (_, Right (Entity _ NoteView{note})) ->
                 Text.pack $ clean $ fromRgaM note.note_text
+            _ -> ""
 
     keysHelpLine =
         hBox
@@ -199,10 +230,15 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
                 [ withAttr highlightAttr (txt "^q")
                 , txt " "
                 , withAttr highlightAttr (txt "Esc")
-                , txt " exit  "
-                , withAttr highlightAttr (txt "Enter")
-                , txt " open"
+                , txt " exit"
                 ]
+                    ++ case listSelectedElement visibleNotes of
+                        Just (_, Right Entity{}) ->
+                            [ txt "  "
+                            , withAttr highlightAttr (txt "Enter")
+                            , txt " open"
+                            ]
+                        _ -> []
 
 -- Clean string for Brick
 clean :: String -> String
@@ -232,7 +268,10 @@ appHandleVtyEvent event = do
             -- open selected note
             selectedNoteM <-
                 preuse $ #visibleNotes . listSelectedElementL
-            #isNoteOpen .= isJust selectedNoteM
+            #isNoteOpen
+                .= case selectedNoteM of
+                    Just (Right Entity{}) -> True
+                    _ -> False
         e -> zoom #visibleNotes $ handleListEvent e
 
 handleViewportEvent :: Event -> EventM ()
@@ -249,8 +288,10 @@ handleViewportEvent = \case
   where
     vps = viewportScroll OpenNoteViewport
 
-renderListItem :: Bool -> EntityDoc Note -> Widget
-renderListItem _isSelected (Entity _ note) = txt $ noteTitle note
+renderListItem :: Bool -> Either TaskMode (EntityView Note) -> Widget
+renderListItem _isSelected = \case
+    Left taskMode -> hBorderWithLabel $ txt $ sampleLabel taskMode
+    Right (Entity _ NoteView{note}) -> txt $ noteTitle note
 
 noteTitle :: Note -> Text
 noteTitle Note{note_text} =

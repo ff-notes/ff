@@ -8,6 +8,7 @@ executable ff-brick
   build-depends:
     base,
     brick,
+    containers,
     generic-lens,
     microlens-mtl,
     ron-storage,
