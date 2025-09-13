@@ -51,6 +51,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State.Strict (MonadState, evalState, state)
 import Control.Monad.Trans (lift)
 import Data.Foldable (for_, toList, traverse_)
+import Data.Function (on, (&))
 import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
@@ -61,7 +62,7 @@ import Data.Map.Strict qualified as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Set (Set, disjoint, isSubsetOf, (\\))
 import Data.Set qualified as Set
-import Data.Text (Text)
+import Data.Text (Text, isInfixOf, toCaseFold)
 import Data.Text qualified as Text
 import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
 import Data.Traversable (for)
@@ -499,7 +500,7 @@ cmdSearch substr status ui limit today tags = do
     pure (tasks, wikis, contacts)
   where
     noteFilter = NoteFilter{status, tags, textPredicate}
-    textPredicate = Text.isInfixOf (Text.toCaseFold substr) . Text.toCaseFold
+    textPredicate = substr & (isInfixOf `on` toCaseFold)
 
 cmdDeleteNote :: (MonadStorage m) => NoteId -> m (EntityDoc Note)
 cmdDeleteNote nid =

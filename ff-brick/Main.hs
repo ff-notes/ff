@@ -214,8 +214,8 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
 
     openNoteContent =
         case listSelectedElement visibleNotes of
-            Just (_, Right (Entity _ NoteView{note})) ->
-                Text.pack $ clean $ fromRgaM note.note_text
+            Just (_, Right (Entity _ v)) ->
+                Text.pack $ clean $ fromRgaM v.note.note_text
             _ -> ""
 
     keysHelpLine =
