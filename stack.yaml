@@ -4,8 +4,6 @@ packages:
   - ff
   - ff-brick
   - ff-core
-  # - ff-gtk
-  # - ff-qtah
   - ff-test
 
 extra-deps:
@@ -18,25 +16,6 @@ extra-deps:
       commit: f71fb5c649fdf3cb96a311c8ca8dd8474749bd37  # ron-0.13
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
-  # ff-gtk:
-    # - gi-gtk-declarative-0.7.0
-    # - gi-gtk-declarative-app-simple-0.7.0
-
-  # ff-qtah:
-    # - haskell-src-1.0.3.1
-    # - hoppy-generator-0.8.0
-    # - hoppy-runtime-0.8.0
-    # - hoppy-std-0.8.0
-    # - qtah-cpp-qt5-0.8.0
-    # - qtah-generator-0.8.0
-    # - qtah-qt5-0.8.0
-    # - git: https://gitlab.com/khumba/qtah.git
-    #   commit: b8e9492cb7c2ccd7c3cb7308c9d1495770b0198d  # tag: release-0.8.0
-    #   subdirs: [qtah, qtah-cpp, qtah-generator]
-
 docker:
   enable: false
   image: ff-ubuntu-16.04
-
-nix:
-  packages: [zlib qt5.qtbase gtk3 gobject-introspection]
