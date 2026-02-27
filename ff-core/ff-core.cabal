@@ -44,7 +44,7 @@ library
         ron-schema,
         ron-storage
 
-    default-language: Haskell2010
+    default-language: GHC2024
     exposed-modules:
         FF
         FF.CLI
@@ -63,6 +63,6 @@ test-suite features
         base,
         blaze-html,
         interpolate
-    default-language: Haskell2010
+    default-language: GHC2024
     main-is: Features.hs
     type: exitcode-stdio-1.0
