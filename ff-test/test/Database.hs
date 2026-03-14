@@ -106,7 +106,7 @@ prop_smoke =
     property1 $ do
         (agenda', fs') <-
             evalEither $
-                runStorageSim fs123 $ do
+                runStorageSim fs123 do
                     notes <- loadAllNotes
                     viewTaskSamples
                         defaultNoteFilter
@@ -149,37 +149,25 @@ fs123 =
                 [
                     ( "event 2 93"
                     , BSLC.lines
-                        [i|
-                            *lww #7/000000001D+000000001D !
-                                @20+21  :end    >some =17 =06 =19
-                                @25+26  :start  =22 =11 =24
-                                @29+30  :status >Active
-                                @07+07  :text   >2+I9
-                                        :track  >none
-                            *rga #2+I9 :0 !
-                                @6+7            'h'
-                                @7+7            'e'
-                                @8+7            'l'
-                                @9+7            'l'
-                                @A+7            'o'
+                        [i| *set #7/000000001D+000000001D !
+                                @20+21  >end    17 06 19
+                                @25+26  >start  22 11 24
+                                @29+30  >status >Active
+                                @07+07  >text   >2+I9
+                            *rga #2+I9 !
+                                @6+7    %f 'hello'
                         |]
                     )
                 ,
                     ( "event 3 99"
                     , BSLC.lines
-                        [i|
-                            *lww #000000001Q$000000001Q !
-                                @15+16  :end    >some =12 =01 =14
-                                @07+08  :start  =09 =10 =11
-                                @27+28  :status >Active
-                                @04+05  :text   >2+I9
-                                        :track  >none
-                            *rga #2+I9 :0 !
-                                @4+5            'w'
-                                @5+5            'o'
-                                @6+5            'r'
-                                @7+5            'l'
-                                @8+5            'd'
+                        [i| *set #000000001Q$000000001Q !
+                                @15+16  >end    12 01 14
+                                @07+08  >start  09 10 11
+                                @27+28  >status >Active
+                                @04+05  >text   >2+I9
+                            *rga #2+I9 !
+                                @4+5    %f 'world'
                         |]
                     )
                 ]
@@ -238,7 +226,7 @@ prop_new =
                                     ]
                         ]
                 ]
-     in property1 do
+    in  property1 do
             (note, fs') <-
                 evalEither $
                     runStorageSim mempty $

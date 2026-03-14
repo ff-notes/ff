@@ -22,7 +22,6 @@
 module FF.Types where
 
 import Control.Monad.Except (throwError)
-import Control.Monad.Reader (ask, runReaderT)
 import Data.Aeson qualified as JSON
 import Data.Aeson.Extra (ToJSON, singletonObjectSum, toJSON, (.=))
 import Data.Aeson.Key qualified as JSON.Key
@@ -43,25 +42,28 @@ import Data.Traversable (for)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
 import RON.Data (
-    MonadObjectState,
-    Replicated (encoding),
-    ReplicatedAsPayload (fromPayload, toPayload),
+    Replicated,
+    ReplicatedAsPayload,
     evalObjectState,
+    fromPayload,
     payloadEncoding,
     readObject,
+    toPayload,
  )
+import RON.Data qualified
 import RON.Data.RGA (RGA)
 import RON.Data.Time (Day)
-import RON.Error (Error (Error), MonadE)
+import RON.Error (Error (Error))
 import RON.Schema.TH (mkReplicated)
 import RON.Storage (Collection, DocId, collectionName, loadDocument)
 import RON.Storage.Backend (
     DocId (DocId),
-    Document (Document, objectFrame),
+    Document (Document),
     MonadStorage,
  )
+import RON.Storage.Backend qualified
 import RON.Text.Serialize (serializeUuid)
-import RON.Types (Atom (AUuid), ObjectRef (ObjectRef), UUID)
+import RON.Types (Atom (AUuid), ObjectRef, UUID)
 import RON.UUID qualified as UUID
 
 deriveToJSON defaultOptions ''RGA
@@ -107,16 +109,6 @@ instance ReplicatedAsPayload NoteStatus where
         (name   merge RgaString)
     )
 
-    ; TODO(2019-08-08, #163, cblp) remove a year after release of Track(3)
-    ; ff 0.12 is released on 2019-08-14
-    (struct_lww TrackV2
-        #haskell {field_prefix "trackV2_"}
-        (provider   String)
-        (source     String)
-        (externalId String)
-        (url        String)
-    )
-
     (struct_set Track
         #haskell {field_prefix "track_"}
         (provider   lww String)
@@ -128,17 +120,6 @@ instance ReplicatedAsPayload NoteStatus where
     (struct_set Tag
         #haskell {field_prefix "tag_"}
         (text lww String)
-    )
-
-    ; TODO(2019-08-08, #163, cblp) remove a year after release of Note(3)
-    ; ff 0.12 is released on 2019-08-14
-    (struct_lww NoteV2
-        #haskell {field_prefix "noteV2_"}
-        (status NoteStatus)
-        (text   RgaString)
-        (start  Day)
-        (end    Day)
-        (track  TrackV2)
     )
 
     (struct_set Note
@@ -335,42 +316,13 @@ taskMode today Note{note_start, note_end} =
 
 type Limit = Natural
 
--- * Legacy, v2
 loadNote :: (MonadStorage m) => NoteId -> m (EntityDoc Note)
 loadNote entityId = do
     Document{objectFrame} <- loadDocument entityId
     let tryCurrentEncoding = evalObjectState objectFrame readObject
     case tryCurrentEncoding of
         Right entityVal -> pure Entity{entityId, entityVal}
-        Left e1 -> do
-            let tryNote2Encoding = evalObjectState objectFrame readNoteFromV2
-            case tryNote2Encoding of
-                Right entityVal -> pure Entity{entityId, entityVal}
-                Left e2 -> throwError $ Error "loadNote" [e1, e2]
-
-readNoteFromV2 :: (MonadE m, MonadObjectState a m) => m Note
-readNoteFromV2 = do
-    ObjectRef uuid <- ask
-    NoteV2{..} <- runReaderT readObject (ObjectRef @NoteV2 uuid)
-    pure
-        Note
-            { note_end = noteV2_end
-            , note_start = noteV2_start
-            , note_status = noteV2_status
-            , note_text = noteV2_text
-            , note_tags = []
-            , note_track = trackFromV2 <$> noteV2_track
-            , note_links = []
-            }
-
-trackFromV2 :: TrackV2 -> Track
-trackFromV2 TrackV2{..} =
-    Track
-        { track_externalId = trackV2_externalId
-        , track_provider = trackV2_provider
-        , track_source = trackV2_source
-        , track_url = trackV2_url
-        }
+        Left e1 -> throwError $ Error "loadNote" [e1]
 
 deriveToJSON defaultOptions ''Contact
 deriveToJSON defaultOptions ''TaskMode

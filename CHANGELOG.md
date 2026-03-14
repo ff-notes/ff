@@ -15,6 +15,7 @@ and this project adheres to
 
 ### Removed
 - Dropped support of old JSON note encoding.
+- Dropped support of old RON note encoding V2.
 
 ## [0.15] - 2020-03-07
 ### Added
