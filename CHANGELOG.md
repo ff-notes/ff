@@ -6,6 +6,8 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+
+## [0.16] - 2026-03-14
 ### Added
 - All subcommands output in JSON with `--json` key.
   This may be useful for scripting around _ff_ in other languages.
@@ -227,7 +229,10 @@ and this project adheres to
 - Subcommand `done`
 - Subcommand `new`
 
-[Unreleased]: https://github.com/ff-notes/ff/compare/v0.13...HEAD
+[Unreleased]: https://github.com/ff-notes/ff/compare/v0.16...HEAD
+[0.16]: https://github.com/ff-notes/ff/compare/v0.15...v0.16
+[0.15]: https://github.com/ff-notes/ff/compare/v0.14...v0.15
+[0.14]: https://github.com/ff-notes/ff/compare/v0.13...v0.14
 [0.13]: https://github.com/ff-notes/ff/compare/v0.12...v0.13
 [0.12]: https://github.com/ff-notes/ff/compare/v0.11...v0.12
 [0.11]: https://github.com/ff-notes/ff/compare/v0.10...v0.11

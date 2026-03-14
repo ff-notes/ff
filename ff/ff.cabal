@@ -1,20 +1,18 @@
-cabal-version: >= 1.2
-
-name: ff
-version: 0.15
+cabal-version: 3.8
+name:          ff
+version:       0.16
 copyright:
-    2018 Yuriy Syrovetskiy, Nikolay Loginov;
-    2019-2020 Yuriy Syrovetskiy
+  2018 Yuriy Syrovetskiy, Nikolay Loginov;
+  2019-2020, 2026 Yuriy Syrovetskiy
 
-build-type: Simple
+build-type:    Simple
 
 executable ff
-    build-depends:
-        -- global
-        base >= 4,
+  -- global
+  build-depends: base >=4
 
-        -- project
-        ff-core
-    ghc-options: -rtsopts
-    main-is: Main.hs
-    other-modules: Paths_ff
+  -- project
+  build-depends: ff-core
+  ghc-options:   -rtsopts
+  main-is:       Main.hs
+  other-modules: Paths_ff
