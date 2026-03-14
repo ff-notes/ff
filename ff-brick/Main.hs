@@ -86,13 +86,12 @@ import RON.Storage.FS qualified as StorageFS
 import FF (
     defaultNoteFilter,
     fromRgaM,
-    getDataDir,
     getUtcToday,
     loadAllNotes,
     noDataDirectoryMessage,
     viewTaskSamples,
  )
-import FF.Config (loadConfig)
+import FF.Config (Config (Config), loadConfig)
 import FF.Config qualified
 import FF.Types (
     Entity (Entity),
@@ -135,9 +134,8 @@ type BrickEvent = Brick.BrickEvent WN ()
 
 main :: IO ()
 main = do
-    cfg <- loadConfig
-    dataDirM <- getDataDir cfg
-    handleM <- traverse StorageFS.newHandle dataDirM
+    cfg@Config{dataDir} <- loadConfig
+    handleM <- traverse StorageFS.newHandle dataDir
     handle <- handleM `orElse` fail noDataDirectoryMessage
     today <- getUtcToday
     let limit = Nothing

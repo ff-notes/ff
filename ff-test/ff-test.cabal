@@ -1,48 +1,45 @@
-cabal-version: >= 1.2
-
-name: ff-test
-version: 0
-
-build-type: Simple
+cabal-version: 3.8
+name:          ff-test
+version:       0
 
 test-suite ff-test
-    build-depends:
-        -- global
-        aeson,
-        base,
-        bytestring,
-        cmark,
-        containers,
-        directory,
-        filepath,
-        github,
-        hedgehog,
-        interpolate,
-        tasty,
-        tasty-golden,
-        tasty-hedgehog,
-        tasty-th,
-        temporary,
-        text,
-        time,
-        vector,
-        yaml,
+  -- global
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , cmark
+    , containers
+    , directory
+    , filepath
+    , github
+    , hedgehog
+    , interpolate
+    , tasty
+    , tasty-golden
+    , tasty-hedgehog
+    , tasty-th
+    , temporary
+    , text
+    , time
+    , vector
+    , yaml
 
-        -- organization
-        ron,
-        ron-rdt,
-        ron-storage,
+  -- organization
+  build-depends:
+    , ron
+    , ron-rdt
+    , ron-storage
 
-        -- project
-        ff-core
-
-    hs-source-dirs: test
-    main-is: Main.hs
-    other-modules:
-        Config
-        Database
-        FF.Test.Common
-        Gen
-        Readme
-        Regression
-    type: exitcode-stdio-1.0
+  -- project
+  build-depends:    ff-core
+  default-language: GHC2024
+  hs-source-dirs:   test
+  main-is:          Main.hs
+  other-modules:
+    Config
+    Database
+    FF.Test.Common
+    Gen
+    Readme
+    Regression

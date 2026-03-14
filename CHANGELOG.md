@@ -13,9 +13,13 @@ and this project adheres to
 ### Changed
 - Config is now saved an viewed as JSON, which is still YAML anyway.
 
+### Fixed
+- Config contains proper data directory even in case of `.ff`.
+
 ### Removed
 - Dropped support of old JSON note encoding.
 - Dropped support of old RON note encoding V2.
+- `getDataDir`
 
 ## [0.15] - 2020-03-07
 ### Added

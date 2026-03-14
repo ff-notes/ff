@@ -70,7 +70,6 @@ import FF (
     cmdUnarchive,
     defaultNoteFilter,
     getContactSamples,
-    getDataDir,
     getUtcToday,
     loadAllNotes,
     loadAllTagTexts,
@@ -119,8 +118,7 @@ import FF.Upgrade (upgradeDatabase)
 
 cli :: Version -> IO ()
 cli version = do
-    cfg@Config{ui} <- loadConfig
-    dataDir <- getDataDir cfg
+    cfg@Config{dataDir, ui} <- loadConfig
     handle' <- traverse StorageFS.newHandle dataDir
     Options{customDir, cmd, actionOptions} <- parseOptions handle'
     let ActionOptions{json} = actionOptions

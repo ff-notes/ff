@@ -6,6 +6,7 @@
 
 module FF.Config where
 
+import Control.Applicative (empty, (<|>))
 import Control.Exception (throw)
 import Data.Aeson (FromJSON, withObject, (.!=), (.:?))
 import Data.Aeson qualified as JSON
@@ -14,10 +15,12 @@ import Data.Yaml qualified as Yaml
 import System.Directory (
     XdgDirectory (XdgConfig),
     createDirectoryIfMissing,
+    doesDirectoryExist,
     doesFileExist,
+    getCurrentDirectory,
     getXdgDirectory,
  )
-import System.FilePath (takeDirectory, (</>))
+import System.FilePath (normalise, splitDirectories, takeDirectory, (</>))
 
 newtype ConfigUI = ConfigUI
     { shuffle :: Bool
@@ -54,15 +57,48 @@ appName :: String
 appName = "ff"
 
 getCfgFilePath :: IO FilePath
-getCfgFilePath = getXdgDirectory XdgConfig $ appName </> "config.yaml"
+getCfgFilePath = fst <$> loadConfig'
 
 loadConfig :: IO Config
-loadConfig = do
-    path <- getCfgFilePath
-    exists <- doesFileExist path
-    if exists
-        then either throw pure =<< Yaml.decodeFileEither path
-        else pure emptyConfig
+loadConfig = snd =<< loadConfig'
+
+loadConfig' :: IO (FilePath, IO Config)
+loadConfig' =
+    ( do
+        cur <- getCurrentDirectory
+        dotFf <- findDotFf $ parents cur
+        let path = dotFf </> "config.yaml"
+        pure
+            ( path
+            , do
+                exists <- doesFileExist path
+                if exists then
+                    either throw pure =<< Yaml.decodeFileEither path
+                else
+                    pure emptyConfig{dataDir = Just dotFf}
+            )
+    )
+        <|> ( do
+                path <- getXdgDirectory XdgConfig (appName </> "config.yaml")
+                pure
+                    ( path
+                    , do
+                        exists <- doesFileExist path
+                        if exists then
+                            either throw pure =<< Yaml.decodeFileEither path
+                        else
+                            pure emptyConfig
+                    )
+            )
+  where
+    parents = reverse . scanl1 (</>) . splitDirectories . normalise
+
+    findDotFf = \case
+        [] -> empty
+        dir : dirs -> do
+            let dotFfDir = dir </> ".ff"
+            isDotFfDir <- doesDirectoryExist dotFfDir
+            if isDotFfDir then pure dotFfDir else findDotFf dirs
 
 saveConfig :: Config -> IO ()
 saveConfig cfg = do

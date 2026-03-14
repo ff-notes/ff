@@ -24,7 +24,6 @@ module FF (
     fromRga,
     fromRgaM,
     getContactSamples,
-    getDataDir,
     viewTaskSamples,
     getUtcToday,
     viewWikiSamples,
@@ -91,11 +90,10 @@ import RON.Storage.Backend (
     MonadStorage (getDocuments),
  )
 import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
-import System.Directory (doesDirectoryExist, getCurrentDirectory)
-import System.FilePath (normalise, splitDirectories, (</>))
 import System.Random (StdGen, mkStdGen, randoms, split)
 
-import FF.Config (Config (Config), ConfigUI (ConfigUI), dataDir, shuffle)
+import FF.Config (ConfigUI (ConfigUI))
+import FF.Config qualified
 import FF.Options (
     Assign (Clear, Set),
     Edit (..),
@@ -623,21 +621,6 @@ assertNoteIsNative = do
         throwErrorText $
             "A tracked note must be edited in its source"
                 <> maybe "" (": " <>) track_url
-
-getDataDir :: Config -> IO (Maybe FilePath)
-getDataDir Config{dataDir} = do
-    cur <- getCurrentDirectory
-    mFFpath <- findFF $ parents cur
-    pure $ mFFpath <|> dataDir
-  where
-    parents = reverse . scanl1 (</>) . splitDirectories . normalise
-
-    findFF = \case
-        [] -> pure Nothing
-        dir : dirs -> do
-            let ffDir = dir </> ".ff"
-            isFFdir <- doesDirectoryExist ffDir
-            if isFFdir then pure $ Just ffDir else findFF dirs
 
 noDataDirectoryMessage :: String
 noDataDirectoryMessage =
