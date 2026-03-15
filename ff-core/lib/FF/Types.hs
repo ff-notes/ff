@@ -1,3 +1,4 @@
+{-# OPTIONS -Wwarn=orphans #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -17,7 +18,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# OPTIONS_GHC -Wno-orphans #-}
 
 module FF.Types where
 
@@ -119,7 +119,8 @@ instance ReplicatedAsPayload NoteStatus where
 
     (struct_set Tag
         #haskell {field_prefix "tag_"}
-        (text lww String)
+        (text   lww     String)
+        (desc   merge   RgaString)
     )
 
     (struct_set Note
@@ -142,6 +143,13 @@ instance ReplicatedAsPayload NoteStatus where
         #haskell {field_prefix "link_"}
         (target lww (ObjectRef Note))
         (type   lww LinkType)
+    )
+
+    (struct_set TagGroup
+        #haskell {field_prefix "tagGroup_"}
+        (name       lww String)
+        (exclusive  lww Bool)
+        (member     set (ObjectRef Tag))
     )
 |]
 

@@ -3,6 +3,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
@@ -67,16 +68,16 @@ import FF.Github qualified as Github
 import FF.Options (New (..))
 import FF.Types (
     Limit,
-    Note (..),
+    Note (Note),
     NoteStatus (TaskStatus),
-    Sample (Sample, items, total),
+    Sample (Sample),
     Status (Active),
     TaskMode (Overdue),
-    Track (..),
-    View (NoteView, note, tags),
-    entityVal,
+    Track (Track),
+    View (NoteView),
     pattern Entity,
  )
+import FF.Types qualified
 
 import Gen qualified
 
@@ -240,7 +241,7 @@ prop_new =
                     ]
                     (fmap ObjectRef . evalMaybe . UUID.decodeBase32)
             let Note{note_text, note_start, note_end, note_tags} =
-                    entityVal note
+                    note.entityVal
             Just (RGA $ Text.unpack text) === note_text
             start === note_start
             end === note_end

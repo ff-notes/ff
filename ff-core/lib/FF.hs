@@ -157,14 +157,15 @@ loadAllNotes = getDocuments >>= traverse loadNote
 
 loadContacts :: (MonadStorage m) => Status -> m [EntityDoc Contact]
 loadContacts status =
-    filter ((== Just status) . contact_status . entityVal) <$> loadAll
+    filter ((== Just status) . (.contact_status) . (.entityVal)) <$> loadAll
 
 loadAllTags :: (MonadStorage m) => m [EntityDoc Tag]
 loadAllTags = loadAll
 
 -- | Load all tags as texts
 loadAllTagTexts :: (MonadStorage m) => m (Set Text)
-loadAllTagTexts = Set.fromList . mapMaybe (tag_text . entityVal) <$> loadAllTags
+loadAllTagTexts =
+    Set.fromList . mapMaybe ((.tag_text) . (.entityVal)) <$> loadAllTags
 
 -- | Load 'Tag' references only for text strings existing in the collection.
 loadTagRefsByText ::
@@ -183,13 +184,14 @@ loadTagsByRefs ::
     HashSet (ObjectRef Tag) -> m (HashMap (ObjectRef Tag) Text)
 loadTagsByRefs refs =
     HashMap.fromList . catMaybes <$> for (toList refs) \ref ->
-        fmap (ref,) . tag_text . entityVal <$> load (refToDocId ref)
+        fmap (ref,) . (.tag_text) . (.entityVal) <$> load (refToDocId ref)
 
 -- | Create tag objects with given texts.
 createTags :: (MonadStorage m) => Set Text -> m (Set (ObjectRef Tag))
 createTags tags =
     Set.fromList <$> for (toList tags) \tag -> do
-        tagFrame@ObjectFrame{uuid} <- newObjectFrame Tag{tag_text = Just tag}
+        tagFrame@ObjectFrame{uuid} <-
+            newObjectFrame Tag{tag_text = Just tag, tag_desc = Nothing}
         createDocument tagFrame
         pure $ ObjectRef uuid
 
@@ -243,7 +245,8 @@ getContactSamplesWith predicate status = do
     let items = filter predicate' contacts
     pure Sample{items, total = genericLength items}
   where
-    predicate' = predicate . Text.pack . fromRgaM . contact_name . entityVal
+    predicate' =
+        predicate . Text.pack . fromRgaM . (.contact_name) . (.entityVal)
 
 fromRga :: RGA a -> [a]
 fromRga (RGA xs) = xs
@@ -253,10 +256,10 @@ fromRgaM = maybe [] fromRga
 
 filterTasksByStatus :: Status -> [EntityDoc Note] -> [EntityDoc Note]
 filterTasksByStatus status =
-    filter $ (Just (TaskStatus status) ==) . note_status . entityVal
+    filter $ (Just (TaskStatus status) ==) . (.note_status) . (.entityVal)
 
 filterWikis :: [EntityDoc Note] -> [EntityDoc Note]
-filterWikis = filter $ (Just Wiki ==) . note_status . entityVal
+filterWikis = filter $ (Just Wiki ==) . (.note_status) . (.entityVal)
 
 data NoteFilter = NoteFilter
     { status :: Status
@@ -346,7 +349,7 @@ toWikiSamplesWith predicate ConfigUI{shuffle} limit today notes =
             Nothing -> wikis1
             Just l -> take (fromIntegral l) wikis1
 
-    predicate' = predicate . Text.pack . fromRgaM . note_text . entityVal
+    predicate' = predicate . Text.pack . fromRgaM . (.note_text) . (.entityVal)
 
     toSample ys = Sample ys $ genericLength ys
 
@@ -357,7 +360,7 @@ toWikiSamplesWith predicate ConfigUI{shuffle} limit today notes =
         | otherwise =
             -- in sorting by entityId no business-logic is involved,
             -- it's just for determinism
-            sortOn entityId
+            sortOn (.entityId)
 
 shuffleItems :: StdGen -> [b] -> [b]
 shuffleItems gen = (`evalState` gen) . shuf
@@ -376,7 +379,7 @@ splitModesBy f today = Map.unionsWith (++) . map singleton
     singleton task = Map.singleton (taskMode today $ f task) [task]
 
 splitModes :: Day -> [EntityView Note] -> ModeMap [EntityView Note]
-splitModes = splitModesBy (note . entityVal)
+splitModes = splitModesBy ((.note) . (.entityVal))
 
 takeSamples :: Maybe Limit -> ModeMap [a] -> ModeMap (Sample a)
 takeSamples Nothing = fmap mkSample
