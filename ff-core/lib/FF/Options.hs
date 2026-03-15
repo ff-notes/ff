@@ -29,7 +29,9 @@ module FF.Options (
     TagsRequest (EmptyTagsRequest, ..),
     Track (..),
     assignToMaybe,
+    parserInfo,
     parseOptions,
+    prefs,
     showHelp,
 )
 where
@@ -65,7 +67,6 @@ import Options.Applicative (
     metavar,
     option,
     parserFailure,
-    prefDisambiguate,
     prefMultiSuffix,
     prefShowHelpOnError,
     progDesc,
@@ -92,6 +93,7 @@ import FF.Types (
 import FF.Types qualified
 
 data Cmd = CmdConfig (Maybe Config) | CmdAction CmdAction | CmdVersion
+    deriving (Show)
 
 data CmdAction
     = CmdAgenda Agenda
@@ -104,11 +106,13 @@ data CmdAction
     | CmdSearch Search
     | CmdShow (NonEmpty NoteId)
     | CmdSponsors
+    | CmdTag {tag :: Text, group :: Text}
     | CmdTags
     | CmdTrack Track
     | CmdUnarchive (NonEmpty NoteId)
     | CmdUpgrade
     | CmdWiki (Maybe Limit)
+    deriving (Show)
 
 data Options = Options
     { customDir :: Maybe FilePath
@@ -116,21 +120,28 @@ data Options = Options
     , actionOptions :: ActionOptions
     -- ^ 'CmdAction'-specific options
     }
+    deriving (Show)
 
 data ActionOptions = ActionOptions {brief :: Bool, json :: Bool}
+    deriving (Show)
 
 data Track = Track {dryRun :: Bool, address :: Maybe Text, limit :: Maybe Limit}
+    deriving (Show)
 
 data Contact = Add Text | Delete ContactId
+    deriving (Show)
 
 data Config
     = ConfigDataDir (Maybe DataDir)
     | ConfigExternalEditor (Maybe FilePath)
     | ConfigUI (Maybe Shuffle)
+    deriving (Show)
 
 data DataDir = DataDirJust FilePath | DataDirYandexDisk
+    deriving (Show)
 
 data Shuffle = Shuffle | Sort
+    deriving (Show)
 
 data Assign a = Clear | Set a
     deriving (Show)
@@ -140,13 +151,22 @@ assignToMaybe = \case
     Clear -> Nothing
     Set x -> Just x
 
-data Agenda = Agenda {limit :: Maybe Limit, tags :: TagsRequest}
+data Agenda = Agenda
+    { limit :: Maybe Limit
+    , tags :: TagsRequest
+    , tagGroup :: Maybe Text
+    }
+    deriving (Show)
 
 data Tags = Tags {require, exclude :: Set Text}
-    deriving (Eq)
+    deriving (Eq, Show)
 
-data TagsRequest = TagsContain Tags | TagsAbsent
-    deriving (Eq)
+data TagsRequest
+    = -- | select items with or without specific tags
+      TagsContain Tags
+    | -- | select items without any tags
+      TagsAbsent
+    deriving (Eq, Show)
 
 emptyTagsRequest :: TagsRequest
 emptyTagsRequest = TagsContain Tags{require = mempty, exclude = mempty}
@@ -174,6 +194,7 @@ data New
     , isWiki :: Bool
     , tags :: Set Text
     }
+    deriving (Show)
 
 data Search = Search
     { text :: Text
@@ -184,6 +205,7 @@ data Search = Search
     , limit :: Maybe Limit
     , tags :: TagsRequest
     }
+    deriving (Show)
 
 parseOptions :: Maybe StorageFS.Handle -> IO Options
 parseOptions = customExecParser prefs . parserInfo
@@ -191,8 +213,7 @@ parseOptions = customExecParser prefs . parserInfo
 prefs :: ParserPrefs
 prefs =
     defaultPrefs
-        { prefDisambiguate = True
-        , -- TODO prefHelpLongEquals = True,
+        { -- TODO prefHelpLongEquals = True,
           prefMultiSuffix = "..."
         , prefShowHelpOnError = True
         }
@@ -218,6 +239,7 @@ parser h = do
             , action "postpone" iCmdPostpone
             , action "search" iCmdSearch
             , action "show" iCmdShow
+            , action "tag" iCmdTag
             , action "tags" iCmdTags
             , action "sponsors" iCmdSponsors
             , action "track" iCmdTrack
@@ -251,6 +273,7 @@ parser h = do
     iCmdSearch = i cmdSearch "search for notes with the given text"
     iCmdShow = i cmdShow "show note by id"
     iCmdSponsors = i cmdSponsors "show project sponsors"
+    iCmdTag = i cmdTag "modify a tag"
     iCmdTags = i cmdTags "show tags of all notes"
     iCmdTrack = i cmdTrack "track issues from external sources"
     iCmdUnarchive = i cmdUnarchive "restore the note from archive"
@@ -268,6 +291,11 @@ parser h = do
     cmdSearch = CmdSearch <$> search
     cmdShow = CmdShow <$> some1 noteid
     cmdSponsors = pure CmdSponsors
+    cmdTag =
+        CmdTag
+            <$> strArgument (metavar "TAG" <> help "tag name")
+            <*> strOption
+                (long "group" <> metavar "GROUP" <> help "add tag to group")
     cmdTags = pure CmdTags
     cmdTrack = CmdTrack <$> track
     cmdUnarchive = CmdUnarchive <$> some1 noteid
@@ -277,9 +305,18 @@ parser h = do
     wiki = switch $ long "wiki" <> short 'w' <> help "Handle wiki note"
 
     briefOption =
-        switch $ long "brief" <> short 'b' <> help "List only note titles and ids"
+        switch $
+            long "brief" <> short 'b' <> help "List only note titles and ids"
 
-    agenda = Agenda <$> optional limitOption <*> filterByTags
+    agenda =
+        Agenda <$> optional limitOption <*> filterByTags <*> optional tagGroup
+
+    tagGroup =
+        strOption $
+            long "tag-group"
+                <> short 'g'
+                <> metavar "TAG_GROUP"
+                <> help "Tag group name"
 
     filterByTags = filterByTagsAbsent <|> filterByTagsContain
 
@@ -365,10 +402,10 @@ parser h = do
     noteTextArgument = strArgument $ metavar "TEXT" <> help "Note's text"
 
     filterRequireTags =
-        fmap Set.fromList $
-            many $
-                strOption $
-                    long "tag" <> metavar "TAG" <> help "Filter by tag"
+        fmap Set.fromList
+            . many
+            . strOption
+            $ long "tag" <> metavar "TAG" <> help "Filter by tag"
 
     filterByTagsAbsent =
         flag' TagsAbsent $
@@ -377,22 +414,27 @@ parser h = do
                 <> help "Filter items that have no tags"
 
     addTagsOption =
-        fmap Set.fromList $
-            many $
-                strOption $
-                    long "tag" <> metavar "TAG" <> help "Add tag"
+        fmap Set.fromList
+            . many
+            . strOption
+            $ long "tag" <> metavar "TAG" <> help "Add tag"
 
     deleteTagsOption =
-        fmap Set.fromList $
-            many $
-                strOption $
-                    long "delete-tag" <> short 'd' <> metavar "TAG" <> help "Delete tag"
+        fmap Set.fromList
+            . many
+            . strOption
+            $ long "delete-tag"
+                <> short 'd'
+                <> metavar "TAG"
+                <> help "Delete tag"
 
     filterExcludeTags =
-        fmap Set.fromList $
-            many $
-                strOption $
-                    long "without-tag" <> metavar "TAG" <> help "Filter items without tag"
+        fmap Set.fromList
+            . many
+            . strOption
+            $ long "without-tag"
+                <> metavar "TAG"
+                <> help "Filter items without tag"
 
     endDateOption = dateOption $ long "end" <> short 'e' <> help "end date"
 
@@ -403,7 +445,8 @@ parser h = do
         dateOption $ long "start" <> short 's' <> help "start date"
 
     noteTextOption =
-        strOption $ long "text" <> short 't' <> help "note text" <> metavar "TEXT"
+        strOption $
+            long "text" <> short 't' <> help "note text" <> metavar "TEXT"
 
     assignEnd =
         Set <$> endDateOption
@@ -435,7 +478,10 @@ parser h = do
             pYandexDisk =
                 flag'
                     DataDirYandexDisk
-                    (long "yandex-disk" <> short 'y' <> help "detect Yandex.Disk")
+                    ( long "yandex-disk"
+                        <> short 'y'
+                        <> help "detect Yandex.Disk"
+                    )
         iExternalEditor = i pExternalEditor "the external editor to use"
         pExternalEditor =
             ConfigExternalEditor
@@ -481,5 +527,10 @@ showHelp :: String
 showHelp =
     fst $
         renderFailure
-            (parserFailure prefs (parserInfo Nothing) (ShowHelpText Nothing) mempty)
+            ( parserFailure
+                prefs
+                (parserInfo Nothing)
+                (ShowHelpText Nothing)
+                mempty
+            )
             "ff"

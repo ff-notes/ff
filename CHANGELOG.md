@@ -6,6 +6,10 @@ and this project adheres to
 [Compatible Versioning](https://github.com/staltz/comver).
 
 ## [Unreleased]
+### Added
+- Tag groups.
+- Subcommand `tag --group` to add tag to a group.
+- View agenda by a tag group.
 
 ## [0.16] - 2026-03-14
 ### Added

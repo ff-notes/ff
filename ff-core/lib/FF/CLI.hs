@@ -25,6 +25,7 @@ import Data.ByteString.Lazy.Char8 qualified as BSL
 import Data.Foldable (asum, for_, toList)
 import Data.Functor (($>))
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Map.Strict qualified as Map
 import Data.Maybe (isNothing)
 import Data.Text (Text, snoc)
 import Data.Text qualified as Text
@@ -60,6 +61,7 @@ import System.Pager (printOrPage)
 import System.Process.Typed (proc, runProcess)
 
 import FF (
+    cmdAddTagToGroup,
     cmdDeleteContact,
     cmdDeleteNote,
     cmdDone,
@@ -70,8 +72,10 @@ import FF (
     cmdSearch,
     cmdUnarchive,
     defaultNoteFilter,
+    filterTasksByStatus,
     getContactSamples,
     getUtcToday,
+    groupByTagGroup,
     loadAllNotes,
     loadAllTagTexts,
     loadAllTags,
@@ -119,22 +123,22 @@ import FF.Upgrade (upgradeDatabase)
 
 cli :: Version -> IO ()
 cli version = do
-    cfg@Config{dataDir, ui} <- loadConfig
+    baseCfg@Config{dataDir} <- loadConfig
     handle' <- traverse StorageFS.newHandle dataDir
     Options{customDir, cmd, actionOptions} <- parseOptions handle'
     let ActionOptions{json} = actionOptions
-    (handle, dataPath) <-
+    (handle, cfg) <-
         case customDir of
-            Nothing -> pure (handle', dataDir)
+            Nothing -> pure (handle', baseCfg)
             Just path -> do
                 h <- StorageFS.newHandle path
-                pure (Just h, customDir)
+                pure (Just h, baseCfg{dataDir = customDir})
     case cmd of
-        CmdConfig param -> runCmdConfig cfg param
+        CmdConfig param -> runCmdConfig baseCfg param
         CmdVersion -> runCmdVersion json version
         CmdAction action -> case handle of
             Nothing -> fail noDataDirectoryMessage
-            Just h -> runStorage h $ runCmdAction ui action actionOptions dataPath
+            Just h -> runStorage h $ runCmdAction cfg action actionOptions
 
 runCmdConfig :: Config -> Maybe Options.Config -> IO ()
 runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
@@ -178,25 +182,15 @@ runCmdConfig cfg@Config{dataDir, externalEditor, ui} = \case
 
 runCmdAction ::
     (MonadIO m, MonadStorage m) =>
-    ConfigUI ->
+    Config ->
     CmdAction ->
     ActionOptions ->
-    Maybe FilePath ->
     m ()
-runCmdAction ui cmd options@ActionOptions{brief, json} path = do
+runCmdAction cfg cmd options@ActionOptions{brief, json} = do
     today <- getUtcToday
     case cmd of
-        CmdAgenda Agenda{limit, tags} -> do
-            notes <- loadAllNotes
-            samples <-
-                viewTaskSamples defaultNoteFilter{FF.tags} ui limit today notes
-            if json then
-                jprintObject
-                    ["notes" .= foldMap (.items) samples, "database" .= path]
-            else
-                pprint $
-                    prettyTaskSections brief tags samples <//> prettyPath path
-        CmdContact contact -> cmdContact options path contact
+        CmdAgenda a -> runCmdAgenda cfg a today options
+        CmdContact contact -> cmdContact options cfg.dataDir contact
         CmdDelete noteIds -> do
             notes <-
                 for noteIds $ \noteId -> do
@@ -206,12 +200,12 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                 jprintObject
                     [ "result" .= ("deleted" :: Text)
                     , "notes" .= notes
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
                     withHeader "Deleted:" (prettyNoteList brief $ toList notes)
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdDone noteIds -> do
             notes <-
                 for noteIds $ \noteId -> do
@@ -221,12 +215,12 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                 jprintObject
                     [ "result" .= ("archived" :: Text)
                     , "notes" .= notes
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
                     withHeader "Archived:" (prettyNoteList brief $ toList notes)
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdEdit edit -> do
             notes <-
                 cmdEdit edit $
@@ -239,12 +233,12 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                 jprintObject
                     [ "result" .= ("edited" :: Text)
                     , "notes" .= notes'
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
                     withHeader "Edited:" (prettyNoteList brief notes')
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdNew new -> do
             note <- cmdNewNote new today
             noteview <- viewNote note
@@ -252,12 +246,12 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                 jprintObject
                     [ "result" .= ("added" :: Text)
                     , "note" .= noteview
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
                     withHeader "Added:" (prettyNote brief noteview)
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdPostpone noteIds -> do
             notes <-
                 for noteIds $ \noteId -> do
@@ -267,23 +261,23 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                 jprintObject
                     [ "result" .= ("postponed" :: Text)
                     , "notes" .= notes
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
                     withHeader
                         "Postponed:"
                         (prettyNoteList brief $ toList notes)
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdSearch Search{..} -> do
             (tasks, wikis, contacts) <-
-                cmdSearch text status ui limit today tags
+                cmdSearch text status cfg.ui limit today tags
             if json then
                 jprintObject
                     [ "tasks" .= foldMap (.items) tasks
                     , "wiki" .= wikis
                     , "contacts" .= contacts
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
                 pprint $
@@ -296,22 +290,34 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                         inWikis
                         inContacts
                         tags
-                        <//> prettyPath path
+                        <//> prettyPath cfg.dataDir
         CmdShow noteIds -> do
             notes <- for noteIds loadNote
             notes' <- traverse viewNote notes
             if json then
-                jprintObject ["notes" .= notes', "database" .= path]
+                jprintObject ["notes" .= notes', "database" .= cfg.dataDir]
             else
                 pprint $
-                    prettyNoteList brief (toList notes') <//> prettyPath path
+                    prettyNoteList brief (toList notes')
+                        <//> prettyPath cfg.dataDir
+        CmdTag{tag, group} -> do
+            _ <- cmdAddTagToGroup tag group
+            if json then
+                jprintObject
+                    ["result" .= ("added" :: Text), "database" .= cfg.dataDir]
+            else
+                pprint $
+                    withHeader
+                        "Added tag to group:"
+                        (pretty tag <> " → " <> pretty group)
+                        <//> prettyPath cfg.dataDir
         CmdTags
             | json -> do
                 tags <- loadAllTags
-                jprintObject ["tags" .= tags, "database" .= path]
+                jprintObject ["tags" .= tags, "database" .= cfg.dataDir]
             | otherwise -> do
                 tags <- loadAllTagTexts
-                pprint $ prettyTagsList tags <//> prettyPath path
+                pprint $ prettyTagsList tags <//> prettyPath cfg.dataDir
         CmdSponsors
             | json -> jprintObject ["sponsors" .= sponsors]
             | otherwise ->
@@ -325,28 +331,29 @@ runCmdAction ui cmd options@ActionOptions{brief, json} path = do
                     jprintObject
                         [ "result" .= ("unarchived" :: Text)
                         , "note" .= noteview
-                        , "database" .= path
+                        , "database" .= cfg.dataDir
                         ]
                 else
                     pprint $
                         withHeader "Unarchived:" (prettyNote brief noteview)
-                            <//> prettyPath path
+                            <//> prettyPath cfg.dataDir
         CmdUpgrade -> do
             upgradeDatabase
             if json then
                 jprintObject
                     [ "result" .= ("database upgraded" :: Text)
-                    , "database" .= path
+                    , "database" .= cfg.dataDir
                     ]
             else
-                pprint $ "Database upgraded" <//> prettyPath path
+                pprint $ "Database upgraded" <//> prettyPath cfg.dataDir
         CmdWiki mlimit -> do
             notes <- loadAllNotes
-            wikis <- viewWikiSamples ui mlimit today notes
+            wikis <- viewWikiSamples cfg.ui mlimit today notes
             if json then
-                jprintObject ["wiki" .= wikis, "database" .= path]
+                jprintObject ["wiki" .= wikis, "database" .= cfg.dataDir]
             else
-                pprint $ prettyWikiSample brief wikis <//> prettyPath path
+                pprint $
+                    prettyWikiSample brief wikis <//> prettyPath cfg.dataDir
 
 cmdTrack :: (MonadIO m, MonadStorage m) => Track -> Day -> Bool -> m ()
 cmdTrack Track{dryRun, address, limit} today brief
@@ -493,3 +500,50 @@ runExternalEditor textOld = do
             Left err -> fail $ "bad editor command in " <> source <> ": " <> err
             Right [] -> fail $ "empty editor command in " <> source
             Right (prog : args) -> assertExecutable prog $> prog :| args
+
+runCmdAgenda ::
+    (MonadIO m, MonadStorage m) =>
+    Config -> Agenda -> Day -> ActionOptions -> m ()
+runCmdAgenda cfg agendaCfg today actionOptions = do
+    notes <- loadAllNotes
+    case agendaCfg.tagGroup of
+        Nothing -> do
+            samples <-
+                viewTaskSamples
+                    defaultNoteFilter{FF.tags = agendaCfg.tags}
+                    cfg.ui
+                    agendaCfg.limit
+                    today
+                    notes
+            if actionOptions.json then
+                jprintObject
+                    [ "notes" .= foldMap (.items) samples
+                    , "database" .= cfg.dataDir
+                    ]
+            else
+                pprint $
+                    prettyTaskSections
+                        actionOptions.brief
+                        agendaCfg.tags
+                        samples
+                        <//> prettyPath cfg.dataDir
+        Just tagGroup -> do
+            noteGroups <-
+                groupByTagGroup tagGroup $ filterTasksByStatus Active notes
+            if actionOptions.json then
+                jprintObject
+                    [ "notes" .= Map.mapKeys tagSetLabel noteGroups
+                    , "database" .= cfg.dataDir
+                    ]
+            else
+                pprint $
+                    vsep
+                        [ withHeader (tagSetLabel tagSet) $
+                            prettyNoteList actionOptions.brief noteSample.items
+                        | (tagSet, noteSample) <- Map.toAscList noteGroups
+                        ]
+                        <//> prettyPath cfg.dataDir
+  where
+    tagSetLabel tagSet
+        | null tagSet = "untagged"
+        | otherwise = Text.intercalate " + " $ toList tagSet

@@ -196,6 +196,9 @@ instance Collection Contact where
 instance Collection Tag where
     collectionName = "tag"
 
+instance Collection TagGroup where
+    collectionName = "tag_group"
+
 data Sample a = Sample {items :: [a], total :: Natural}
     deriving (Eq, Functor, Show)
 

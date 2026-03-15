@@ -99,7 +99,8 @@ ff --bash-completion-script `which ff` | sudo tee /usr/local/etc/bash_completion
 $ ff --help
 Usage: ff [-b|--brief] [--json] [-C|--data-dir DIRECTORY]
           [(-V|--version) | COMMAND | [-l|--limit ARG]
-            [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]]
+            [(-n|--no-tag) | [--tag TAG]... [--without-tag TAG]...]
+            [-g|--tag-group TAG_GROUP]]
 
   A note taker and task tracker
 
@@ -112,6 +113,7 @@ Available options:
   -n,--no-tag              Filter items that have no tags
   --tag TAG                Filter by tag
   --without-tag TAG        Filter items without tag
+  -g,--tag-group TAG_GROUP Tag group name
   -h,--help                Show this help text
 
 Available commands:
@@ -127,6 +129,7 @@ Available commands:
   postpone                 make a task start later
   search                   search for notes with the given text
   show                     show note by id
+  tag                      modify a tag
   tags                     show tags of all notes
   sponsors                 show project sponsors
   track                    track issues from external sources

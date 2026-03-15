@@ -38,6 +38,8 @@ module FF (
     sponsors,
     takeSamples,
     updateTrackedNotes,
+    cmdAddTagToGroup,
+    groupByTagGroup,
     viewNote,
     viewNoteSample,
 )
@@ -55,8 +57,9 @@ import Data.HashMap.Strict (HashMap)
 import Data.HashMap.Strict qualified as HashMap
 import Data.HashSet (HashSet)
 import Data.HashSet qualified as HashSet
-import Data.List (genericLength, sortOn)
+import Data.List (find, genericLength, sortOn)
 import Data.List.NonEmpty (NonEmpty ((:|)))
+import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Set (Set, disjoint, isSubsetOf, (\\))
@@ -118,6 +121,7 @@ import FF.Types (
     Sample (..),
     Status (..),
     Tag (..),
+    TagGroup (..),
     Track (..),
     View (..),
     contact_name_clear,
@@ -139,6 +143,7 @@ import FF.Types (
     note_text_clear,
     note_text_zoom,
     note_track_read,
+    tagGroup_member_add,
     taskMode,
     uuidToText,
  )
@@ -640,3 +645,60 @@ docIdToRef docId =
     case decodeDocId docId of
         Nothing -> error "Decode UUID from DocId failed. DocId is "
         Just (_, uid) -> ObjectRef uid
+
+findTagGroupByName ::
+    (MonadStorage m) => Text -> m (Maybe (EntityDoc TagGroup))
+findTagGroupByName name =
+    find
+        ( \Entity{entityVal = TagGroup{tagGroup_name}} ->
+            tagGroup_name == Just name
+        )
+        <$> loadAll
+
+groupByTagGroup ::
+    (MonadStorage m) =>
+    Text -> [EntityDoc Note] -> m (Map (Set Text) NoteSample)
+groupByTagGroup tagGroupName notes = do
+    mGroup <- findTagGroupByName tagGroupName
+    case mGroup of
+        Nothing -> pure Map.empty
+        Just Entity{entityVal = TagGroup{tagGroup_member}} -> do
+            let memberUuids =
+                    Set.fromList
+                        [uuidToText uuid | ObjectRef uuid <- tagGroup_member]
+            tasks <- traverse viewNote notes
+            pure $
+                Map.fromListWith
+                    appendSamples
+                    [ (matchedTags, Sample{items = [task], total = 1})
+                    | task@Entity{entityVal = NoteView{tags}} <- tasks
+                    , let matchedTags =
+                            Set.fromList
+                                . Map.elems
+                                $ Map.restrictKeys tags memberUuids
+                    ]
+  where
+    appendSamples
+        Sample{items = a, total = ta}
+        Sample{items = b, total = tb} =
+            Sample{items = a ++ b, total = ta + tb}
+
+cmdAddTagToGroup ::
+    (MonadStorage m) => Text -> Text -> m (EntityDoc TagGroup)
+cmdAddTagToGroup tagText groupName = do
+    tagRefs <- getOrCreateTags [tagText]
+    let tagRef = Set.findMin tagRefs
+    mGroup <- findTagGroupByName groupName
+    case mGroup of
+        Just Entity{entityId} ->
+            modifyAndView entityId $ tagGroup_member_add tagRef
+        Nothing -> do
+            let group =
+                    TagGroup
+                        { tagGroup_name = Just groupName
+                        , tagGroup_exclusive = Just True
+                        , tagGroup_member = [tagRef]
+                        }
+            obj@ObjectFrame{uuid} <- newObjectFrame group
+            createDocument obj
+            pure $ Entity (docIdFromUuid uuid) group
