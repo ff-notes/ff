@@ -13,7 +13,7 @@ extra-deps:
     # - ron-schema-0.9.1
     # - ron-storage-0.11
     - github: ff-notes/ron
-      commit: 43cdd3efb778fb7063f43601e2e9496ff57efb02  # 2026-03-15
+      commit: a842c13db0dfc7b56987f50a4bebfc898df7c569  # 2026-03-16
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
 
 docker:

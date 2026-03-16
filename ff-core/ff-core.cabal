@@ -1,68 +1,67 @@
-cabal-version: >= 1.10
-
-name: ff-core
-version: 0
+cabal-version: 3.8
+name:          ff-core
+version:       0
 copyright:
-    2018      Yuriy Syrovetskiy, Nikolay Loginov;
-    2019-2020 Yuriy Syrovetskiy
-
-build-type: Simple
+  2018 Yuriy Syrovetskiy, Nikolay Loginov;
+  2019-2020, 2026 Yuriy Syrovetskiy
 
 library
-    build-depends:
-        -- global
-        aeson,
-        aeson-pretty,
-        async,
-        base,
-        bytestring,
-        containers,
-        directory,
-        filepath,
-        github,
-        gitrev,
-        hashable,
-        mtl,
-        optparse-applicative,
-        pager,
-        prettyprinter,
-        prettyprinter-ansi-terminal,
-        random,
-        shellwords,
-        temporary,
-        terminal-size,
-        text,
-        time,
-        typed-process,
-        unordered-containers,
-        vector,
-        yaml,
+  -- global
+  build-depends:
+    , aeson
+    , aeson-pretty
+    , async
+    , base
+    , bytestring
+    , containers
+    , directory
+    , filepath
+    , github
+    , gitrev
+    , hashable
+    , mtl
+    , optparse-applicative
+    , pager
+    , prettyprinter
+    , prettyprinter-ansi-terminal
+    , random
+    , shellwords
+    , temporary
+    , terminal-size
+    , text
+    , time
+    , typed-process
+    , unordered-containers
+    , vector
+    , yaml
 
-        -- organization
-        ron,
-        ron-rdt,
-        ron-schema,
-        ron-storage
+  -- organization
+  build-depends:
+    , ron
+    , ron-rdt
+    , ron-schema
+    , ron-storage
 
-    default-language: GHC2024
-    exposed-modules:
-        FF
-        FF.CLI
-        FF.Config
-        FF.Github
-        FF.Options
-        FF.Types
-        FF.UI
-        FF.Upgrade
-    other-modules:
-        Data.Aeson.Extra
-    hs-source-dirs: lib
+  default-language: GHC2024
+  exposed-modules:
+    FF
+    FF.CLI
+    FF.Config
+    FF.Github
+    FF.Options
+    FF.Types
+    FF.UI
+    FF.Upgrade
+
+  other-modules:    Data.Aeson.Extra
+  hs-source-dirs:   lib
 
 test-suite features
-    build-depends:
-        base,
-        blaze-html,
-        interpolate
-    default-language: GHC2024
-    main-is: Features.hs
-    type: exitcode-stdio-1.0
+  build-depends:
+    , base
+    , blaze-html
+    , interpolate
+
+  default-language: GHC2024
+  main-is:          Features.hs
+  type:             exitcode-stdio-1.0
