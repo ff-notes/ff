@@ -46,20 +46,21 @@ import RON.Types (
 import RON.UUID (pattern Zero)
 import qualified RON.UUID as UUID
 
-import FF.Types (Note)
+import FF.Types (Note, Tag)
 
 upgradeDatabase :: (MonadStorage m) => m ()
 upgradeDatabase = do
     collections <- getCollections
-    for_ collections $ \case
+    for_ collections \case
         "note" -> upgradeNoteCollection
+        "tag" -> pure ()
         collection ->
             throwError $ Error ("unsupported type " <> show collection) []
 
 upgradeNoteCollection :: (MonadStorage m) => m ()
 upgradeNoteCollection = do
     docs <- getDocuments @_ @Note
-    for_ docs $ \docid -> do
+    for_ docs \docid -> do
         docid' <- upgradeDocId docid
         modify docid' $ errorContext ("docid' = " <> show docid') do
             ObjectRef noteId <- ask
@@ -94,7 +95,7 @@ convertLwwToSet uuid =
     doConvert chunk = do
         LwwRep lwwRep <- stateFromWireChunk chunk
         opMap <-
-            for (Map.assocs lwwRep) $ \(field, Op{payload}) -> do
+            for (Map.assocs lwwRep) \(field, Op{payload}) -> do
                 opId <- getEventUuid
                 pure
                     ( opId
