@@ -1,0 +1,72 @@
+resolver: lts-24.30
+
+packages:
+  - ff
+  - ff-brick
+  - ff-core
+  - ff-qtah
+  - ff-test
+
+extra-deps:
+  # ff-core:
+    # - ron-0.10
+    # - ron-rdt-0.10
+    # - ron-schema-0.9.1
+    # - ron-storage-0.11
+    - github: ff-notes/ron
+      commit: 43cdd3efb778fb7063f43601e2e9496ff57efb02  # 2026-03-15
+      subdirs: [ron, ron-rdt, ron-schema, ron-storage]
+  # ff-qtah
+    - hoppy-generator-0.9.0
+    - hoppy-runtime-0.9.0
+    - hoppy-std-0.9.0
+    - qtah-cpp-qt6-0.9.1
+    - qtah-generator-0.9.0
+    - qtah-qt6-0.9.1
+
+#  In the dependencies for hoppy-generator-0.9.0:
+#    * bytestring must match >=0.10 && <0.12, but bytestring-0.12.2.0 is
+#      in the Stack configuration (latest matching version is 0.11.5.4).
+#    * containers must match >=0.5 && <0.7, but containers-0.7 is in the
+#      Stack configuration (latest matching version is 0.6.8).
+#    * filepath must match >=1.3 && <1.5, but filepath-1.5.4.0 is in the
+#      Stack configuration (latest matching version is 1.4.301.0).
+#  The above is/are needed due to ff-qtah-0 -> hoppy-generator-0.9.0
+
+#  In the dependencies for hoppy-runtime-0.9.0:
+#    * Cabal must match >=1.24 && <3.11, but Cabal-3.12.1.0 is in the
+#      Stack configuration (latest matching version is 3.10.3.0).
+#    * containers must match >=0.5 && <0.7, but containers-0.7 is in the
+#      Stack configuration (latest matching version is 0.6.8).
+#    * filepath must match >=1.3 && <1.5, but filepath-1.5.4.0 is in the
+#      Stack configuration (latest matching version is 1.4.301.0).
+#  The above is/are needed due to ff-qtah-0 -> hoppy-runtime-0.9.0
+
+#  In the dependencies for hoppy-std-0.9.0:
+#    * filepath must match >=1.0 && <1.5, but filepath-1.5.4.0 is in the
+#      Stack configuration (latest matching version is 1.4.301.0).
+#  The above is/are needed due to ff-qtah-0 -> hoppy-std-0.9.0
+
+#  In the dependencies for qtah-generator-0.9.0:
+#    * bytestring must match >=0.10 && <0.12, but bytestring-0.12.2.0 is
+#      in the Stack configuration (latest matching version is 0.11.5.4).
+#    * containers must match >=0.5 && <0.7, but containers-0.7 is in the
+#      Stack configuration (latest matching version is 0.6.8).
+#    * filepath must match >=1.3 && <1.5, but filepath-1.5.4.0 is in the
+#      Stack configuration (latest matching version is 1.4.301.0).
+#    * mtl must match >=2.2.1 && <2.3, but mtl-2.3.1 is in the Stack
+#      configuration (latest matching version is 2.2.2).
+#    * transformers must match >=0.3 && <0.6, but transformers-0.6.1.1
+#      is in the Stack configuration (latest matching version is
+#      0.5.6.2).
+#  The above is/are needed due to ff-qtah-0 -> qtah-generator-0.9.0
+
+#  In the dependencies for qtah-qt6-0.9.1:
+#    * bytestring must match >=0.10 && <0.12, but bytestring-0.12.2.0 is
+#      in the Stack configuration (latest matching version is 0.11.5.4).
+#  The above is/are needed due to ff-qtah-0 -> qtah-qt6-0.9.1
+
+
+docker:
+  enable: false
+  image: ff-ubuntu-16.04
