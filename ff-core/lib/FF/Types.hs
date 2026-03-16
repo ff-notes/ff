@@ -1,4 +1,5 @@
 {-# OPTIONS -Wwarn=orphans #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveGeneric #-}
@@ -23,7 +24,13 @@ module FF.Types where
 
 import Control.Monad.Except (throwError)
 import Data.Aeson qualified as JSON
-import Data.Aeson.Extra (ToJSON, singletonObjectSum, toJSON, (.=))
+import Data.Aeson.Extra (
+    ToJSON,
+    fieldLabelModifier,
+    singletonObjectSum,
+    toJSON,
+    (.=),
+ )
 import Data.Aeson.Key qualified as JSON.Key
 import Data.Aeson.KeyMap qualified as JSON.KeyMap
 import Data.Aeson.TH (defaultOptions, deriveToJSON)
@@ -56,11 +63,7 @@ import RON.Data.Time (Day)
 import RON.Error (Error (Error))
 import RON.Schema.TH (mkReplicated)
 import RON.Storage (Collection, DocId, collectionName, loadDocument)
-import RON.Storage.Backend (
-    DocId (DocId),
-    Document (Document),
-    MonadStorage,
- )
+import RON.Storage.Backend (DocId (DocId), Document (Document), MonadStorage)
 import RON.Storage.Backend qualified
 import RON.Text.Serialize (serializeUuid)
 import RON.Types (Atom (AUuid), ObjectRef, UUID)
@@ -254,27 +257,32 @@ data instance View Note = NoteView
     }
     deriving (Eq, Show)
 
-deriveToJSON defaultOptions ''LinkType
-deriveToJSON defaultOptions ''Status
-deriveToJSON singletonObjectSum ''NoteStatus
-deriveToJSON defaultOptions ''Tag
-deriveToJSON defaultOptions ''Track
-
-$(fold <$> for [''Link, ''Note] (deriveToJSON defaultOptions))
+$( fold
+    <$> for
+        [ (''Note, defaultOptions{fieldLabelModifier = drop 5})
+        , (''NoteStatus, singletonObjectSum)
+        , (''Status, defaultOptions)
+        , (''Tag, defaultOptions{fieldLabelModifier = drop 4})
+        , (''Track, defaultOptions{fieldLabelModifier = drop 6})
+        ]
+        \(name, options) -> deriveToJSON options name
+ )
 
 instance ToJSON (View Note) where
     toJSON NoteView{note, tags} =
-        JSON.Object $ JSON.KeyMap.insert "note_tags" tags' noteObj
+        modifyObject (JSON.KeyMap.insert "tags" tags') $ toJSON note
       where
-        noteObj = case toJSON note of
-            JSON.Object obj -> obj
-            _ -> error "Note must be serialized to Object"
         tags' =
             JSON.Object
                 . JSON.KeyMap.fromMap
                 . Map.mapKeysMonotonic JSON.Key.fromText
                 . fmap JSON.String
                 $ tags
+
+modifyObject :: (JSON.Object -> JSON.Object) -> JSON.Value -> JSON.Value
+modifyObject f val = case val of
+    JSON.Object obj -> JSON.Object $ f obj
+    _ -> error "Note must be serialized to Object"
 
 type ModeMap = Map TaskMode
 

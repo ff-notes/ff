@@ -1,10 +1,10 @@
-note_end: null
-note_links: []
-note_start: 2019-09-24
-note_status:
+end: null
+links: []
+start: 2019-09-24
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |
+tags: {}
+text: |
   Add option to remove tag from note
 
 
@@ -12,8 +12,8 @@ note_text: |
   <!-- Reviewable:start -->
   This change is [<img src="https://reviewable.io/review_button.svg" height="34" align="absmiddle" alt="Reviewable"/>](https://reviewable.io/reviews/ff-notes/ff/176)
   <!-- Reviewable:end -->
-note_track:
-  track_externalId: '176'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/pull/176
+track:
+  externalId: '176'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/pull/176

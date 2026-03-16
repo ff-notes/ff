@@ -1,8 +1,8 @@
-note_end: null
-note_links: []
-note_start: 2018-05-11
-note_status:
+end: null
+links: []
+start: 2018-05-11
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: option to specify work directory
-note_track: null
+tags: {}
+text: option to specify work directory
+track: null

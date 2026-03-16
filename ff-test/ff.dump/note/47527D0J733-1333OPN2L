@@ -1,10 +1,10 @@
-note_end: null
-note_links: []
-note_start: 2018-08-22
-note_status:
+end: null
+links: []
+start: 2018-08-22
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |
+tags: {}
+text: |
   Not yet
 
   Resolves [#88](https://github.com/ff-notes/ff/issues/88)
@@ -13,8 +13,8 @@ note_text: |
   ---
   This change is [<img src="https://reviewable.io/review_button.svg" height="34" align="absmiddle" alt="Reviewable"/>](https://reviewable.io/reviews/ff-notes/ff/89)
   <!-- Reviewable:end -->
-note_track:
-  track_externalId: '89'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/pull/89
+track:
+  externalId: '89'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/pull/89

@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2018-05-17
-note_status:
+end: null
+links: []
+start: 2018-05-17
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: "Version Upgrade\n\n-V,--version \r\nfrom [Issue 24](https://github.com/ff-notes/ff/issues/24)\n\n<!--
+tags: {}
+text: "Version Upgrade\n\n-V,--version \r\nfrom [Issue 24](https://github.com/ff-notes/ff/issues/24)\n\n<!--
   Reviewable:start -->\n---\nThis change is [<img src=\"https://reviewable.io/review_button.svg\"
   height=\"34\" align=\"absmiddle\" alt=\"Reviewable\"/>](https://reviewable.io/reviews/ff-notes/ff/48)\n<!--
   Reviewable:end -->\n"
-note_track:
-  track_externalId: '48'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/pull/48
+track:
+  externalId: '48'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/pull/48

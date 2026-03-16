@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2018-06-16
-note_status:
+end: null
+links: []
+start: 2018-06-16
+status:
   TaskStatus: Active
-note_tags: {}
-note_text: |-
+tags: {}
+text: |-
   export issue status (ff -> GitHub)
 
   close GitHub issue and sync it with ff when a user tries to complete the task in ff
-note_track:
-  track_externalId: '59'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/59
+track:
+  externalId: '59'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/59

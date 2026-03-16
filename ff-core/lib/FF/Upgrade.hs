@@ -46,7 +46,7 @@ import RON.Types (
 import RON.UUID (pattern Zero)
 import qualified RON.UUID as UUID
 
-import FF.Types (Note, Tag)
+import FF.Types (Note)
 
 upgradeDatabase :: (MonadStorage m) => m ()
 upgradeDatabase = do

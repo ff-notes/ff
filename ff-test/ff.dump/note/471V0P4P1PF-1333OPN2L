@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2018-01-08
-note_status:
+end: null
+links: []
+start: 2018-01-08
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |-
+tags: {}
+text: |-
   Add notes without subcommand
 
   Make command `ff TEXT` equivalent to `ff new TEXT`
-note_track:
-  track_externalId: '12'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/12
+track:
+  externalId: '12'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/12

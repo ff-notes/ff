@@ -1,10 +1,10 @@
-note_end: null
-note_links: []
-note_start: 2018-01-06
-note_status:
+end: null
+links: []
+start: 2018-01-06
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |
+tags: {}
+text: |
   Directory Setup
 
 
@@ -12,8 +12,8 @@ note_text: |
   <!-- Reviewable:start -->
   This change is [<img src="https://reviewable.io/review_button.svg" height="34" align="absmiddle" alt="Reviewable"/>](https://reviewable.io/reviews/cblp/ff/1)
   <!-- Reviewable:end -->
-note_track:
-  track_externalId: '1'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/pull/1
+track:
+  externalId: '1'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/pull/1

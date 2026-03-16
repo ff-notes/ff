@@ -1,12 +1,12 @@
-note_end: null
-note_links: []
-note_start: 2018-10-09
-note_status:
+end: null
+links: []
+start: 2018-10-09
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: Disallow dates when adding wiki notes
-note_track:
-  track_externalId: '97'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/97
+tags: {}
+text: Disallow dates when adding wiki notes
+track:
+  externalId: '97'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/97

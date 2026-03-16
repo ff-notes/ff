@@ -1,12 +1,12 @@
-note_end: null
-note_links: []
-note_start: 2018-07-31
-note_status:
+end: null
+links: []
+start: 2018-07-31
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: Import from gmail
-note_track:
-  track_externalId: '11'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/11
+tags: {}
+text: Import from gmail
+track:
+  externalId: '11'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/11

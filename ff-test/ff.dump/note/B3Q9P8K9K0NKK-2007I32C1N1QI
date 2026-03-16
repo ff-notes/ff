@@ -1,16 +1,16 @@
-note_end: null
-note_links: []
-note_start: 2019-02-25
-note_status:
+end: null
+links: []
+start: 2019-02-25
+status:
   TaskStatus: Archived
-note_tags:
+tags:
   B/7euI15DBES+00P01fLmVG: type_Enhancement
   B/7euI15DnJz+00P01fLmVG: level_Intermediate
   B/7euI15EbNZ+00P01fLmVG: resolution_Wontfix
   B/7f8c6IMneF+00P01fLmVG: component_ff-qtah
-note_text: "ff-qt: use delegates for tasks\n\nNow `setIndexWidget` is used.\r\n\r\nhttps://doc.qt.io/qt-5/qtwidgets-itemviews-stardelegate-example.html\r\ndelegate::paint\r\nhttps://doc.qt.io/qt-5/qstylepainter.html\r\nhttps://doc.qt.io/qt-5/qstyle.html#ComplexControl-enum"
-note_track:
-  track_externalId: '125'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/125
+text: "ff-qt: use delegates for tasks\n\nNow `setIndexWidget` is used.\r\n\r\nhttps://doc.qt.io/qt-5/qtwidgets-itemviews-stardelegate-example.html\r\ndelegate::paint\r\nhttps://doc.qt.io/qt-5/qstylepainter.html\r\nhttps://doc.qt.io/qt-5/qstyle.html#ComplexControl-enum"
+track:
+  externalId: '125'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/125

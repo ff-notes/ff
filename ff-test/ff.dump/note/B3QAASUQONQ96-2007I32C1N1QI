@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2019-03-02
-note_status:
+end: null
+links: []
+start: 2019-03-02
+status:
   TaskStatus: Archived
-note_tags:
+tags:
   B/7euI15DXH1+00P01fLmVG: type_Bug
   B/7euI15DnJz+00P01fLmVG: level_Intermediate
   B/7f8c6IMneF+00P01fLmVG: component_ff-qtah
-note_text: 'ff-qt: window state seems not being saved on exit'
-note_track:
-  track_externalId: '133'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/133
+text: 'ff-qt: window state seems not being saved on exit'
+track:
+  externalId: '133'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/133

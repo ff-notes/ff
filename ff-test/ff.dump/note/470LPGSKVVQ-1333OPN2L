@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2018-07-26
-note_status:
+end: null
+links: []
+start: 2018-07-26
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |-
+tags: {}
+text: |-
   ff serve: daemonize
 
   not default; with option `-d`
-note_track:
-  track_externalId: '76'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/76
+track:
+  externalId: '76'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/76

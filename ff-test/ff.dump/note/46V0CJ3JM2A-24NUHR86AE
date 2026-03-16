@@ -1,8 +1,8 @@
-note_end: null
-note_links: []
-note_start: 2018-07-20
-note_status:
+end: null
+links: []
+start: 2018-07-20
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: Store pretty JSON (or pretty RON)
-note_track: null
+tags: {}
+text: Store pretty JSON (or pretty RON)
+track: null

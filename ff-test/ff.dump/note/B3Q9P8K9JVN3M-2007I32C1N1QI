@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2019-02-25
-note_status:
+end: null
+links: []
+start: 2019-02-25
+status:
   TaskStatus: Active
-note_tags:
+tags:
   B/7euI15DAJq+00P01fLmVG: component_Core
   B/7euI15DBES+00P01fLmVG: type_Enhancement
   B/7euI15DnJz+00P01fLmVG: level_Intermediate
-note_text: 'git: stage versions unconditionally, even if working in the same branch'
-note_track:
-  track_externalId: '128'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/128
+text: 'git: stage versions unconditionally, even if working in the same branch'
+track:
+  externalId: '128'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/128

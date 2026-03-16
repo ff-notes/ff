@@ -1,10 +1,10 @@
-note_end: null
-note_links: []
-note_start: 2018-11-07
-note_status:
+end: null
+links: []
+start: 2018-11-07
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |
+tags: {}
+text: |
   [README] Update contact info
 
   Information about developers chat has been added.
@@ -13,8 +13,8 @@ note_text: |
   ---
   This change is [<img src="https://reviewable.io/review_button.svg" height="34" align="absmiddle" alt="Reviewable"/>](https://reviewable.io/reviews/ff-notes/ff/103)
   <!-- Reviewable:end -->
-note_track:
-  track_externalId: '103'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/pull/103
+track:
+  externalId: '103'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/pull/103

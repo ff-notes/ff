@@ -1,15 +1,15 @@
-note_end: null
-note_links: []
-note_start: 2018-07-26
-note_status:
+end: null
+links: []
+start: 2018-07-26
+status:
   TaskStatus: Archived
-note_tags: {}
-note_text: |-
+tags: {}
+text: |-
   ff serve: open browser
 
   not default; with option `-o` | `--open`
-note_track:
-  track_externalId: '77'
-  track_provider: github
-  track_source: ff-notes/ff
-  track_url: https://github.com/ff-notes/ff/issues/77
+track:
+  externalId: '77'
+  provider: github
+  source: ff-notes/ff
+  url: https://github.com/ff-notes/ff/issues/77
