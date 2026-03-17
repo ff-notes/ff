@@ -66,8 +66,8 @@ new storage = do
 
     form <- QFormLayout.newWithParent frame
     QFormLayout.addRowWidget form textContent
-    QFormLayout.addRowStringWidget form "Start:" start.dateEdit
-    QFormLayout.addRowStringWidget form "Deadline:" end.dateEdit
+    QFormLayout.addRowStringLayout form "Start:" start.box
+    QFormLayout.addRowStringLayout form "Deadline:" end.box
 
     pure TaskWidget{super, frame, textContent, storage, start, end}
 
