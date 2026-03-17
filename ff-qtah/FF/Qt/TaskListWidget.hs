@@ -15,14 +15,14 @@ module FF.Qt.TaskListWidget (
     upsertTask,
 ) where
 
--- global
 import Control.Monad (void)
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
-import Data.Time (getCurrentTime, utctDay)
+import Data.Time (getCurrentTime, toGregorian, utctDay)
 import Foreign.Hoppy.Runtime (fromCppEnum, toGc)
+import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Gui.QFont (QFont)
 import Graphics.UI.Qtah.Gui.QFont qualified as QFont
 import Graphics.UI.Qtah.Widgets.QAbstractItemView qualified as QAbstractItemView
@@ -32,14 +32,14 @@ import Graphics.UI.Qtah.Widgets.QTreeWidget qualified as QTreeWidget
 import Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
 import Graphics.UI.Qtah.Widgets.QTreeWidgetItem qualified as QTreeWidgetItem
 import RON.Storage.Backend (DocId (DocId))
+import Text.Printf (printf)
 
--- project
 import FF (fromRgaM)
 import FF.Types (
     Entity (..),
     EntityView,
     Note (..),
-    TaskMode,
+    TaskMode (..),
     View (NoteView, note),
     taskMode,
  )
@@ -50,10 +50,15 @@ data TaskListWidget = TaskListWidget
 
 {- | Value order in this enumeration defines the field order in the tree widget.
 0th column mustn't be hideable, because when 0th column is hidden,
-the tree strcuture, alternating row color, and child indicators
+the tree structure, alternating row color, and child indicators
 are hidden too.
 -}
-data Field = TitleField | IdField deriving (Bounded, Enum)
+data Field
+    = TitleField
+    | IdField
+    | -- | see NaturalTaskOrder.md
+      SortKeyField
+    deriving (Bounded, Enum)
 
 fieldCount :: Int
 fieldCount = fromEnum (maxBound :: Field) + 1
@@ -84,8 +89,14 @@ new :: IO TaskListWidget
 new = do
     parent <- QTreeWidget.new
     QAbstractItemView.setAlternatingRowColors parent True
-    QTreeView.setHeaderHidden parent True
+    QTreeView.setSortingEnabled parent True
+    QTreeWidget.sortItems parent (fromEnum SortKeyField) Qt.AscendingOrder
     QTreeWidget.setColumnCount parent fieldCount
+    QTreeWidget.setHeaderLabels parent $
+        fieldsToStrings \case
+            TitleField -> "Title"
+            IdField -> "UUID"
+            SortKeyField -> "Sort key"
 
     modeItems <- newIORef mempty
 
@@ -96,42 +107,64 @@ new = do
     pure this
 
 setDebugInfoVisible :: TaskListWidget -> Bool -> IO ()
-setDebugInfoVisible this =
-    QTreeView.setColumnHidden this.parent (fromEnum IdField) . not
+setDebugInfoVisible this v = do
+    QTreeView.setColumnHidden this.parent (fromEnum IdField) $ not v
+    QTreeView.setColumnHidden this.parent (fromEnum SortKeyField) $ not v
+    QTreeView.setHeaderHidden this.parent $ not v
 
 -- Only insertion is implemeted. TODO implement update.
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()
-upsertTask TaskListWidget{parent, modeItems} Entity{entityId, entityVal} = do
+upsertTask this entity = do
     today <- utctDay <$> getCurrentTime
     let mode = taskMode today note
-    mModeItem <- Map.lookup mode <$> readIORef modeItems
+    mModeItem <- Map.lookup mode <$> readIORef this.modeItems
     modeItem <- case mModeItem of
-        Just item ->
-            pure item
-        Nothing -> do
-            item <-
-                QTreeWidgetItem.newWithParentTreeAndStringsAndType
-                    parent
-                    ( fieldsToStrings \case
-                        IdField -> show mode
-                        TitleField -> Text.unpack $ sampleLabel mode
-                    )
-                    (itemTypeToInt ModeGroup)
-            QTreeWidgetItem.setExpanded item True
-            QTreeWidgetItem.setFont item (fromEnum TitleField) =<< makeBoldFont
-            modifyIORef modeItems $ Map.insert mode item
-            pure item
+        Just item -> pure item
+        Nothing -> createModeItem this mode
+    createTaskItem modeItem entity
+  where
+    Entity{entityVal = NoteView{note}} = entity
+
+createModeItem :: TaskListWidget -> TaskMode -> IO QTreeWidgetItem
+createModeItem this mode = do
+    item <-
+        QTreeWidgetItem.newWithParentTreeAndStringsAndType
+            this.parent
+            ( fieldsToStrings \case
+                IdField -> show mode
+                SortKeyField ->
+                    case mode of
+                        -- 999_999 days ~ 2700 years, should be enough
+                        Overdue n -> printf "0Overdue-%06d" (999_999 - n)
+                        EndToday -> printf "1EndToday"
+                        EndSoon n -> printf "2EndSoon+%06d" n
+                        Actual -> printf "3Actual"
+                        Starting n -> printf "4Starting+%06d" n
+                TitleField -> Text.unpack $ sampleLabel mode
+            )
+            (itemTypeToInt ModeGroup)
+    QTreeWidgetItem.setExpanded item True
+    QTreeWidgetItem.setFont item (fromEnum TitleField) =<< makeBoldFont
+    modifyIORef this.modeItems $ Map.insert mode item
+    pure item
+
+createTaskItem :: QTreeWidgetItem -> EntityView Note -> IO ()
+createTaskItem modeItem entity =
     void $
         QTreeWidgetItem.newWithParentItemAndStringsAndType
             modeItem
-            (fieldsToStrings \case IdField -> noteId; TitleField -> title)
+            ( fieldsToStrings \case
+                IdField -> noteId
+                SortKeyField -> sortKey
+                TitleField -> title
+            )
             (itemTypeToInt Task)
   where
-    DocId noteId = entityId
-    NoteView{note} = entityVal
-    Note{note_text} = note
-    text = fromRgaM note_text
-    title = concat $ take 1 $ lines text
+    Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
+    title = concat $ take 1 $ lines $ fromRgaM note.note_text
+    sortKey = printf "End=%04d%02d%02d,Start=%04d%02d%02d" ey em ed sy sm sd
+    (ey, em, ed) = maybe (9999, 99, 99) toGregorian note.note_end
+    (sy, sm, sd) = maybe (0, 0, 0) toGregorian note.note_start
 
 makeBoldFont :: IO QFont
 makeBoldFont = do

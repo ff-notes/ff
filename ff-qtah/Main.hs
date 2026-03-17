@@ -8,6 +8,7 @@ module Main (main) where
 
 -- global
 import Control.Concurrent (forkIO)
+import Control.Concurrent.MVar (newEmptyMVar, putMVar)
 import Control.Concurrent.STM (TChan, atomically, tryReadTChan)
 import Control.Monad (void)
 import Data.Foldable (for_)
@@ -37,7 +38,7 @@ import FF.Config qualified
 import FF.Types (Note, Status (Active), loadNote)
 
 -- package
-import FF.Qt (whenUIIdle)
+import FF.Qt (repeatInGuiThreadWheneverIdle, runInGuiThreadWhenReady)
 import FF.Qt.MainWindow (MainWindow)
 import FF.Qt.MainWindow qualified as MainWindow
 import Paths_ff_qtah qualified as PackageInfo
@@ -53,7 +54,7 @@ main = do
         window <- MainWindow.new progName storage
         QWidget.show window.parent
         initializeAsync storage window
-        whenUIIdle $ checkDBChange storage window changedDocs
+        repeatInGuiThreadWheneverIdle $ checkDBChange storage window changedDocs
         QCoreApplication.exec
 
 withApp :: (QApplication -> IO a) -> IO a
@@ -69,14 +70,17 @@ setupApp = do
     QCoreApplication.setApplicationVersion $ showVersion PackageInfo.version
 
 initializeAsync :: Storage.Handle -> MainWindow -> IO ()
-initializeAsync storage window =
+initializeAsync storage window = do
+    tasksVar <- newEmptyMVar
     void . forkIO $ do
         activeTasks <-
             runStorage storage do
                 notes <- loadAllNotes
                 let activeTaskEntities = filterTasksByStatus Active notes
                 traverse viewNote activeTaskEntities
-        for_ activeTasks $ MainWindow.upsertNote window
+        putMVar tasksVar activeTasks
+    runInGuiThreadWhenReady tasksVar \tasks ->
+        for_ tasks $ MainWindow.upsertNote window
 
 checkDBChange ::
     Storage.Handle -> MainWindow -> TChan (CollectionName, RawDocId) -> IO ()

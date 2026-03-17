@@ -1,5 +1,8 @@
-module FF.Qt (printChildrenTree, whenUIIdle) where
+{-# LANGUAGE BlockArguments #-}
 
+module FF.Qt (printChildrenTree, repeatInGuiThreadWheneverIdle, runInGuiThreadWhenReady) where
+
+import Control.Concurrent.MVar (MVar, tryTakeMVar)
 import Data.Foldable (for_)
 import Graphics.UI.Qtah.Core.QMetaClassInfo qualified as QMetaClassInfo
 import Graphics.UI.Qtah.Core.QMetaObject qualified as QMetaObject
@@ -21,8 +24,20 @@ printChildrenTree = go 0 . toQObject
         children <- QObject.children object
         for_ children $ go (level + 1)
 
-whenUIIdle :: IO () -> IO ()
-whenUIIdle action = do
+-- | Repaeat some code in the GUI thread, when it is idle
+repeatInGuiThreadWheneverIdle :: IO () -> IO ()
+repeatInGuiThreadWheneverIdle action = do
     t <- QTimer.new
     connect_ t QTimer.timeoutSignal action
+    QTimer.start t 0
+
+-- | When an MVar gets a value, run the handler once in the GUI thread.
+runInGuiThreadWhenReady :: MVar a -> (a -> IO ()) -> IO ()
+runInGuiThreadWhenReady var action = do
+    t <- QTimer.new
+    connect_ t QTimer.timeoutSignal do
+        mVal <- tryTakeMVar var
+        for_ mVal \val -> do
+            QObject.deleteLater t
+            action val
     QTimer.start t 0
