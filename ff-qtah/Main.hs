@@ -11,7 +11,7 @@ import Control.Concurrent (forkIO)
 import Control.Concurrent.MVar (newEmptyMVar, putMVar)
 import Control.Concurrent.STM (TChan, atomically, tryReadTChan)
 import Control.Monad (void)
-import Data.Foldable (for_)
+import Data.Foldable (traverse_)
 import Data.Version (showVersion)
 import Foreign.Hoppy.Runtime (withScopedPtr)
 import Graphics.UI.Qtah.Core.QCoreApplication qualified as QCoreApplication
@@ -79,8 +79,7 @@ initializeAsync storage window = do
                 let activeTaskEntities = filterTasksByStatus Active notes
                 traverse viewNote activeTaskEntities
         putMVar tasksVar activeTasks
-    runInGuiThreadWhenReady tasksVar \tasks ->
-        for_ tasks $ MainWindow.upsertNote window
+    runInGuiThreadWhenReady tasksVar . traverse_ $ MainWindow.upsertNote window
 
 checkDBChange ::
     Storage.Handle -> MainWindow -> TChan (CollectionName, RawDocId) -> IO ()
