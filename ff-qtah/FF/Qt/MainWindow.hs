@@ -1,9 +1,12 @@
+{-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Qt.MainWindow (
-    MainWindow,
+    MainWindow (super),
     new,
     upsertNote,
 ) where
@@ -13,38 +16,15 @@ import Control.Monad (void)
 import Data.ByteString (ByteString)
 import Data.Foldable (fold)
 import Data.Traversable (for)
-import Foreign (castPtr)
-import Foreign.Hoppy.Runtime (
-    CppPtr,
-    nullptr,
-    toPtr,
-    touchCppPtr,
-    withCppPtr,
-    withScopedPtr,
- )
+import Foreign.Hoppy.Runtime (withScopedPtr)
 import GHC.Stack (callStack, prettyCallStack)
-import Graphics.UI.Qtah.Core.QObject (
-    QObjectConstPtr,
-    QObjectPtr,
-    toQObject,
-    toQObjectConst,
- )
 import Graphics.UI.Qtah.Core.QSettings qualified as QSettings
 import Graphics.UI.Qtah.Core.QVariant qualified as QVariant
 import Graphics.UI.Qtah.Event (onEvent)
 import Graphics.UI.Qtah.Gui.QCloseEvent (QCloseEvent)
-import Graphics.UI.Qtah.Gui.QPaintDevice (
-    QPaintDeviceConstPtr,
-    QPaintDevicePtr,
-    toQPaintDevice,
-    toQPaintDeviceConst,
- )
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAction qualified as QAction
-import Graphics.UI.Qtah.Widgets.QMainWindow (
-    QMainWindow,
-    QMainWindowPtr,
- )
+import Graphics.UI.Qtah.Widgets.QMainWindow (QMainWindow, QMainWindowPtr)
 import Graphics.UI.Qtah.Widgets.QMainWindow qualified as QMainWindow
 import Graphics.UI.Qtah.Widgets.QMenu qualified as QMenu
 import Graphics.UI.Qtah.Widgets.QMenuBar qualified as QMenuBar
@@ -53,12 +33,7 @@ import Graphics.UI.Qtah.Widgets.QSplitter qualified as QSplitter
 import Graphics.UI.Qtah.Widgets.QTreeWidget qualified as QTreeWidget
 import Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
 import Graphics.UI.Qtah.Widgets.QTreeWidgetItem qualified as QTreeWidgetItem
-import Graphics.UI.Qtah.Widgets.QWidget (
-    QWidgetConstPtr,
-    QWidgetPtr,
-    toQWidget,
-    toQWidgetConst,
- )
+import Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr)
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
 import System.IO (hPutStrLn, stderr)
 
@@ -73,6 +48,7 @@ import FF.Types (EntityView, Note)
 import FF.Qt.TaskListWidget (
     ItemType (ModeGroup, Task),
     TaskListWidget,
+    itemTypeFromInt,
  )
 import FF.Qt.TaskListWidget qualified as TaskListWidget
 import FF.Qt.TaskWidget (TaskWidget)
@@ -83,31 +59,6 @@ data MainWindow = MainWindow
     , agendaTasks :: TaskListWidget
     , taskWidget :: TaskWidget
     }
-
-instance CppPtr MainWindow where
-    nullptr =
-        MainWindow{super = nullptr, agendaTasks = nullptr, taskWidget = nullptr}
-    withCppPtr MainWindow{super} proc = withCppPtr super $ proc . castPtr
-    toPtr = castPtr . toPtr . super
-    touchCppPtr = touchCppPtr . super
-
-instance QObjectConstPtr MainWindow where
-    toQObjectConst = toQObjectConst . super
-
-instance QObjectPtr MainWindow where
-    toQObject = toQObject . super
-
-instance QWidgetConstPtr MainWindow where
-    toQWidgetConst = toQWidgetConst . super
-
-instance QPaintDeviceConstPtr MainWindow where
-    toQPaintDeviceConst = toQPaintDeviceConst . super
-
-instance QPaintDevicePtr MainWindow where
-    toQPaintDevice = toQPaintDevice . super
-
-instance QWidgetPtr MainWindow where
-    toQWidget = toQWidget . super
 
 new :: String -> Storage.Handle -> IO MainWindow
 new progName storage = do
@@ -122,11 +73,11 @@ new progName storage = do
     QMainWindow.setCentralWidget super agendaSplitter
 
     agendaTasks <- TaskListWidget.new
-    QSplitter.addWidget agendaSplitter agendaTasks
+    QSplitter.addWidget agendaSplitter agendaTasks.super
 
     taskWidget <- TaskWidget.new storage
-    QWidget.hide taskWidget
-    QSplitter.addWidget agendaSplitter taskWidget
+    QWidget.hide taskWidget.super
+    QSplitter.addWidget agendaSplitter taskWidget.super
 
     -- sizes need widgets to be added
     QSplitter.setSizes agendaSplitter [1, 1 :: Int]
@@ -151,10 +102,10 @@ new progName storage = do
     let mainWindow = MainWindow{super, agendaTasks, taskWidget}
 
     -- handling events
-    void $ onEvent super $ \(_ :: QCloseEvent) -> saveGeometryAndState super
+    void $ onEvent super \(_ :: QCloseEvent) -> saveGeometryAndState super
     -- TODO
     -- connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
-    connect_ agendaTasks QTreeWidget.itemSelectionChangedSignal $
+    connect_ agendaTasks.super QTreeWidget.itemSelectionChangedSignal $
         resetTaskView mainWindow
 
     pure mainWindow
@@ -166,9 +117,10 @@ upsertNote MainWindow{agendaTasks} = TaskListWidget.upsertTask agendaTasks
 -- https://wiki.qt.io/Saving_Window_Size_State
 saveGeometryAndState :: (QMainWindowPtr window) => window -> IO Bool
 saveGeometryAndState window =
-    withScopedPtr QSettings.new $ \settings -> do
+    withScopedPtr QSettings.new \settings -> do
         let saveSetting name value =
-                QVariant.newWithByteArray value >>= QSettings.setValue settings name
+                QVariant.newWithByteArray value
+                    >>= QSettings.setValue settings name
         QWidget.saveGeometry window >>= saveSetting "mainWindowGeometry"
         QMainWindow.saveState window >>= saveSetting "mainWindowState"
         pure True
@@ -183,32 +135,33 @@ restoreState window =
 
 loadSetting :: String -> IO ByteString
 loadSetting name =
-    withScopedPtr QSettings.new $ \settings ->
+    withScopedPtr QSettings.new \settings ->
         QSettings.value settings name >>= QVariant.toByteArray
 
 resetTaskView :: MainWindow -> IO ()
 resetTaskView MainWindow{agendaTasks, taskWidget} = do
-    items <- QTreeWidget.selectedItems agendaTasks
-    taskItems <- fmap fold . for items $ \item -> do
-        itemType <- toEnum <$> QTreeWidgetItem.getType item
-        pure $ case itemType of
-            Task -> [item]
-            ModeGroup -> []
+    items <- QTreeWidget.selectedItems agendaTasks.super
+    taskItems <-
+        fold <$> for items \item -> do
+            itemType <- itemTypeFromInt <$> QTreeWidgetItem.getType item
+            pure case itemType of
+                Task -> [item]
+                ModeGroup -> []
     case taskItems of
-        [] -> QWidget.hide taskWidget
+        [] -> QWidget.hide taskWidget.super
         [item] -> setTaskView taskWidget item
         _ : _ : _ -> print "TODO open/replace group actions view"
 
 setTaskView :: TaskWidget -> QTreeWidgetItem -> IO ()
 setTaskView taskWidget item = do
-    itemType <- toEnum <$> QTreeWidgetItem.getType item
+    itemType <- itemTypeFromInt <$> QTreeWidgetItem.getType item
     case itemType of
         ModeGroup ->
             hPutStrLn stderr $ "internal error" ++ prettyCallStack callStack
         Task -> do
             noteId <- DocId @Note <$> TaskListWidget.getId item
             TaskWidget.update taskWidget noteId
-            QWidget.show taskWidget
+            QWidget.show taskWidget.super
 
 showAboutProgram :: (QWidgetPtr mainWindow) => mainWindow -> String -> IO ()
 showAboutProgram mainWindow progName =

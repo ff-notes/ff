@@ -1,22 +1,8 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
-module FF.Qt.DateComponent (DateComponent, new) where
+module FF.Qt.DateComponent (DateComponent (super), new) where
 
 -- global
-import Foreign (castPtr)
-import Foreign.Hoppy.Runtime (
-    CppPtr,
-    nullptr,
-    toPtr,
-    touchCppPtr,
-    withCppPtr,
- )
-import Graphics.UI.Qtah.Core.QObject (
-    QObjectConstPtr,
-    QObjectPtr,
-    toQObject,
-    toQObjectConst,
- )
 import Graphics.UI.Qtah.Widgets.QAbstractSpinBox qualified as QAbstractSpinBox
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
@@ -26,49 +12,12 @@ import Graphics.UI.Qtah.Widgets.QHBoxLayout (QHBoxLayout)
 import Graphics.UI.Qtah.Widgets.QHBoxLayout qualified as QHBoxLayout
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
-import Graphics.UI.Qtah.Widgets.QLayout (
-    QLayoutConstPtr,
-    QLayoutPtr,
-    toQLayout,
-    toQLayoutConst,
- )
-import Graphics.UI.Qtah.Widgets.QLayoutItem (
-    QLayoutItemConstPtr,
-    QLayoutItemPtr,
-    toQLayoutItem,
-    toQLayoutItemConst,
- )
 
 data DateComponent = DateComponent
     { super :: QHBoxLayout
     , label :: QLabel
     , dateEdit :: QDateEdit
     }
-
-instance CppPtr DateComponent where
-    nullptr =
-        DateComponent{super = nullptr, label = nullptr, dateEdit = nullptr}
-    withCppPtr DateComponent{super} proc = withCppPtr super $ proc . castPtr
-    toPtr = castPtr . toPtr . super
-    touchCppPtr = touchCppPtr . super
-
-instance QObjectConstPtr DateComponent where
-    toQObjectConst = toQObjectConst . super
-
-instance QObjectPtr DateComponent where
-    toQObject = toQObject . super
-
-instance QLayoutItemConstPtr DateComponent where
-    toQLayoutItemConst = toQLayoutItemConst . super
-
-instance QLayoutItemPtr DateComponent where
-    toQLayoutItem = toQLayoutItem . super
-
-instance QLayoutConstPtr DateComponent where
-    toQLayoutConst = toQLayoutConst . super
-
-instance QLayoutPtr DateComponent where
-    toQLayout = toQLayout . super
 
 new :: String -> IO DateComponent
 new title = do

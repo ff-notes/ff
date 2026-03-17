@@ -1,34 +1,15 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 
 module FF.Qt.TaskWidget (
-    TaskWidget,
+    TaskWidget (super),
     new,
     update,
 ) where
 
 -- global
-import Foreign (castPtr)
-import Foreign.Hoppy.Runtime (
-    CppPtr,
-    nullptr,
-    toGc,
-    toPtr,
-    touchCppPtr,
-    withCppPtr,
- )
-import Graphics.UI.Qtah.Core.QObject (
-    QObjectConstPtr,
-    QObjectPtr,
-    toQObject,
-    toQObjectConst,
- )
+import Foreign.Hoppy.Runtime (toGc)
 import Graphics.UI.Qtah.Core.Types (QtAlignmentFlag (AlignTop))
-import Graphics.UI.Qtah.Gui.QPaintDevice (
-    QPaintDeviceConstPtr,
-    QPaintDevicePtr,
-    toQPaintDevice,
-    toQPaintDeviceConst,
- )
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QFrame qualified as QFrame
@@ -36,18 +17,9 @@ import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
 import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
-import Graphics.UI.Qtah.Widgets.QSizePolicy (
-    QSizePolicy,
-    QSizePolicyPolicy,
- )
+import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicy, QSizePolicyPolicy)
 import Graphics.UI.Qtah.Widgets.QSizePolicy qualified as QSizePolicy
 import Graphics.UI.Qtah.Widgets.QVBoxLayout qualified as QVBoxLayout
-import Graphics.UI.Qtah.Widgets.QWidget (
-    QWidgetConstPtr,
-    QWidgetPtr,
-    toQWidget,
-    toQWidgetConst,
- )
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
@@ -72,36 +44,6 @@ data TaskWidget = TaskWidget
     , storage :: Storage.Handle
     }
 
-instance CppPtr TaskWidget where
-    nullptr =
-        TaskWidget
-            { super = nullptr
-            , frame = nullptr
-            , label = nullptr
-            , storage = undefined
-            }
-    withCppPtr TaskWidget{super} proc = withCppPtr super $ proc . castPtr
-    toPtr = castPtr . toPtr . super
-    touchCppPtr = touchCppPtr . super
-
-instance QObjectConstPtr TaskWidget where
-    toQObjectConst = toQObjectConst . super
-
-instance QObjectPtr TaskWidget where
-    toQObject = toQObject . super
-
-instance QPaintDeviceConstPtr TaskWidget where
-    toQPaintDeviceConst = toQPaintDeviceConst . super
-
-instance QPaintDevicePtr TaskWidget where
-    toQPaintDevice = toQPaintDevice . super
-
-instance QWidgetConstPtr TaskWidget where
-    toQWidgetConst = toQWidgetConst . super
-
-instance QWidgetPtr TaskWidget where
-    toQWidget = toQWidget . super
-
 new :: Storage.Handle -> IO TaskWidget
 new storage = do
     super <- QScrollArea.new
@@ -120,8 +62,8 @@ new storage = do
 
     box <- QVBoxLayout.newWithParent frame
     QBoxLayout.addWidget box label
-    QBoxLayout.addLayout box start
-    QBoxLayout.addLayout box end
+    QBoxLayout.addLayout box start.super
+    QBoxLayout.addLayout box end.super
 
     pure TaskWidget{super, frame, label, storage}
 

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -48,10 +48,10 @@ main = do
     dataDir <- getDataDirOrFail
     storage <- Storage.newHandle dataDir
     changedDocs <- Storage.subscribe storage
-    withApp $ \_ -> do
+    withApp \_ -> do
         setupApp
         window <- MainWindow.new progName storage
-        QWidget.show window
+        QWidget.show window.super
         initializeAsync storage window
         whenUIIdle $ checkDBChange storage window changedDocs
         QCoreApplication.exec
@@ -70,11 +70,12 @@ setupApp = do
 
 initializeAsync :: Storage.Handle -> MainWindow -> IO ()
 initializeAsync storage window =
-    void $ forkIO $ do
-        activeTasks <- runStorage storage $ do
-            notes <- loadAllNotes
-            let activeTaskEntities = filterTasksByStatus Active notes
-            traverse viewNote activeTaskEntities
+    void . forkIO $ do
+        activeTasks <-
+            runStorage storage do
+                notes <- loadAllNotes
+                let activeTaskEntities = filterTasksByStatus Active notes
+                traverse viewNote activeTaskEntities
         for_ activeTasks $ MainWindow.upsertNote window
 
 checkDBChange ::
@@ -100,4 +101,5 @@ upsertDocument storage window collection docid
         note <- runStorage storage $ loadNote (DocId docid) >>= viewNote
         MainWindow.upsertNote window note
     | otherwise =
-        hPutStrLn stderr $ "upsertDocument: unknown document type " <> show docid
+        hPutStrLn stderr $
+            "upsertDocument: unknown document type " <> show docid
