@@ -10,7 +10,7 @@ module FF.Qt.TaskWidget (
 
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Foreign.Hoppy.Runtime (toGc)
-import Graphics.UI.Qtah.Core.Types (QtAlignmentFlag (AlignTop))
+import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
@@ -21,7 +21,7 @@ import Graphics.UI.Qtah.Widgets.QHBoxLayout qualified as QHBoxLayout
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
 import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
-import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea, setWidget)
+import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
 import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicy, QSizePolicyPolicy)
 import Graphics.UI.Qtah.Widgets.QSizePolicy qualified as QSizePolicy
@@ -58,12 +58,12 @@ new storage = do
     parent <- QScrollArea.new
 
     innerWidget <- QFrame.new
-    setWidget parent innerWidget
+    QScrollArea.setWidget parent innerWidget
 
     textContent <- QLabel.new
     QWidget.setSizePolicy textContent
         =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
-    QLabel.setAlignment textContent AlignTop
+    QLabel.setAlignment textContent Qt.AlignTop
     QLabel.setWordWrap textContent True
 
     hline <- QFrame.new
