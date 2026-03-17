@@ -1,8 +1,10 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE ViewPatterns #-}
 
-module FF.Qt.DateComponent (DateComponent (super), new) where
+module FF.Qt.DateComponent (DateComponent (super), new, setDate) where
 
--- global
+import Data.Time (Day, toGregorian)
+import Graphics.UI.Qtah.Core.QDate qualified as QDate
 import Graphics.UI.Qtah.Widgets.QAbstractSpinBox qualified as QAbstractSpinBox
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
@@ -28,6 +30,7 @@ new title = do
 
     dateEdit <- QDateEdit.new
     QDateTimeEdit.setCalendarPopup dateEdit True
+    QDateTimeEdit.setDisplayFormat dateEdit "ddd d MMM yyyy"
     QBoxLayout.addWidget super dateEdit
 
     QBoxLayout.addStretch super
@@ -39,3 +42,12 @@ new title = do
 setEditable :: DateComponent -> Bool -> IO ()
 setEditable DateComponent{dateEdit} editable =
     QAbstractSpinBox.setReadOnly dateEdit $ not editable
+
+setDate :: DateComponent -> Maybe Day -> IO ()
+setDate DateComponent{dateEdit} day = do
+    qdate <-
+        case day of
+            Just (toGregorian -> (y, m, d)) ->
+                QDate.newWithYmd (fromInteger y) m d
+            Nothing -> QDate.new -- TODO replace with button "add date"
+    QDateTimeEdit.setDate dateEdit qdate

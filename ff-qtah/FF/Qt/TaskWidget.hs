@@ -28,20 +28,25 @@ import RON.Storage.FS qualified as Storage
 import FF (fromRgaM, viewNote)
 import FF.Types (
     Entity (..),
-    Note (Note, note_text),
+    Note (..),
     NoteId,
     View (NoteView, note),
     loadNote,
  )
 
 -- package
+import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
 
 data TaskWidget = TaskWidget
     { super :: QScrollArea
     , frame :: QFrame
-    , label :: QLabel
+    -- ^ widget inside the scroll area
+    , textLabel :: QLabel
+    -- ^ label for the text
     , storage :: Storage.Handle
+    , start :: DateComponent
+    , end :: DateComponent
     }
 
 new :: Storage.Handle -> IO TaskWidget
@@ -51,29 +56,31 @@ new storage = do
     frame <- QFrame.new
     QScrollArea.setWidget super frame
 
-    label <- QLabel.new
-    QWidget.setSizePolicy label
+    textLabel <- QLabel.new
+    QWidget.setSizePolicy textLabel
         =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
-    QLabel.setAlignment label AlignTop
-    QLabel.setWordWrap label True
+    QLabel.setAlignment textLabel AlignTop
+    QLabel.setWordWrap textLabel True
 
     start <- DateComponent.new "Start:"
     end <- DateComponent.new "Deadline:"
 
     box <- QVBoxLayout.newWithParent frame
-    QBoxLayout.addWidget box label
+    QBoxLayout.addWidget box textLabel
     QBoxLayout.addLayout box start.super
     QBoxLayout.addLayout box end.super
 
-    pure TaskWidget{super, frame, label, storage}
+    pure TaskWidget{super, frame, textLabel, storage, start, end}
 
 update :: TaskWidget -> NoteId -> IO ()
-update TaskWidget{frame, label, storage} noteId = do
-    Entity{entityVal} <- runStorage storage $ loadNote noteId >>= viewNote
+update this noteId = do
+    Entity{entityVal} <- runStorage this.storage $ loadNote noteId >>= viewNote
     let NoteView{note} = entityVal
-    let Note{note_text} = note
-    QLabel.setText label $ fromRgaM note_text
-    QWidget.adjustSize frame
+    let Note{note_text, note_start, note_end} = note
+    QLabel.setText this.textLabel $ fromRgaM note_text
+    DateComponent.setDate this.start note_start
+    DateComponent.setDate this.end note_end
+    QWidget.adjustSize this.frame
 
 makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
 makeSimpleSizePolicy policy =
