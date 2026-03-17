@@ -15,7 +15,7 @@ module FF.Qt.TaskListWidget (
     upsertTask,
 ) where
 
-import Control.Monad (void, when)
+import Control.Monad (when)
 import Data.Foldable (for_)
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import Data.Map.Strict (Map, (!))
@@ -90,6 +90,7 @@ new :: IO TaskListWidget
 new = do
     parent <- QTreeWidget.new
     QAbstractItemView.setAlternatingRowColors parent True
+    QAbstractItemView.setSelectionMode parent QAbstractItemView.SingleSelection
     QTreeWidget.setHeaderLabels parent $
         fieldsToStrings \case
             TitleField -> "Title"
@@ -116,7 +117,7 @@ setDebugInfoVisible this v = do
 
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()
 upsertTask this entity = do
-    today <- utctDay <$> getCurrentTime
+    today <- utctDay <$> getCurrentTime -- TODO get local day
     let mode = taskMode today note
     mExisting <- Map.lookup noteId <$> readIORef this.taskItems
     case mExisting of
@@ -127,11 +128,13 @@ upsertTask this entity = do
         Just (oldMode, item) -> do
             updateTaskItem item entity
             when (oldMode /= mode) do
+                wasSelected <- QTreeWidgetItem.isSelected item
                 oldModeItem <- (! oldMode) <$> readIORef this.modeItems
                 idx <- QTreeWidgetItem.indexOfChild oldModeItem item
-                void $ QTreeWidgetItem.takeChild oldModeItem idx
+                _ <- QTreeWidgetItem.takeChild oldModeItem idx
                 newModeItem <- getOrCreateModeItem this mode
                 QTreeWidgetItem.addChild newModeItem item
+                when wasSelected $ QTreeWidget.setCurrentItem this.parent item
                 modifyIORef this.taskItems $ Map.insert noteId (mode, item)
   where
     Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
