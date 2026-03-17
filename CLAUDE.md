@@ -37,7 +37,8 @@ The codebase is split into several Stack packages:
 - **`ff-core`** — all business logic and CLI code
 - **`ff-test`** — test suite (tasty + tasty-golden + tasty-hedgehog)
 - **`ff-brick`** — experimental TUI frontend (included in stack.yaml)
-- **`ff-gtk`**, **`ff-qtah`** — experimental GUI frontends (not in stack.yaml)
+- **`ff-qtah`** — experimental Qt GUI frontend (included in stack.yaml)
+- **`ff-gtk`** — experimental GTK GUI frontend (not in stack.yaml)
 
 ### Core modules (`ff-core/lib/`)
 
@@ -70,6 +71,25 @@ Main types: `Note` (tasks and wiki pages), `Contact`, `Tag`, `Track` (external i
 ### Storage backend
 
 Data is stored on the filesystem via `ron-storage` (from the `ff-notes/ron` repo, pinned by git commit in `stack.yaml`). Each collection (`note`, `contact`, `tag`) is a subdirectory under the data dir. Documents are identified by `DocId` (a RON UUID).
+
+### ff-qtah: Qt GUI frontend
+
+The Qt frontend uses [qtah](https://hackage.haskell.org/package/qtah) bindings. Key constraints:
+
+**Thread safety**: All Qt UI operations must happen on the main (GUI) thread. Never call Qt functions from `forkIO` threads — this is UB and causes unpredictable behavior (e.g., sorting not applied). The correct pattern for background data loading:
+
+```haskell
+-- background thread: only pure IO, no Qt calls
+void . forkIO $ do
+    result <- loadData
+    putMVar resultVar result
+-- main thread: receives result and updates UI
+runInGuiThreadWhenReady resultVar $ \result -> updateUI result
+```
+
+`runInGuiThreadWhenReady` (in `FF.Qt`) creates a 0ms repeating timer on the main thread, and when the `MVar` is filled it calls `QObject.deleteLater` to stop itself, then runs the action.
+
+**qtah API gaps**: `QTimer` in qtah does not expose `stop` — use `QObject.deleteLater` to destroy the timer from within its own callback.
 
 ### External dependencies (extra-deps)
 
