@@ -1,9 +1,10 @@
-resolver: lts-24.30
+resolver: lts-21.25
 
 packages:
   - ff
   - ff-brick
   - ff-core
+  - ff-qtah
   - ff-test
 
 extra-deps:
@@ -15,6 +16,15 @@ extra-deps:
     - github: ff-notes/ron
       commit: a842c13db0dfc7b56987f50a4bebfc898df7c569  # 2026-03-16
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
+  # ff-qtah
+    - hoppy-generator-0.9.0
+    - hoppy-runtime-0.9.0
+    - hoppy-std-0.9.0
+    - qtah-cpp-qt6-0.9.1
+    - qtah-generator-0.9.1
+    - qtah-qt6-0.9.1
+  # ff-test
+    - cmark-0.6.1
 
 docker:
   enable: false

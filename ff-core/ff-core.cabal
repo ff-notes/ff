@@ -42,7 +42,7 @@ library
     , ron-schema
     , ron-storage
 
-  default-language: GHC2024
+  default-language: GHC2021
   exposed-modules:
     FF
     FF.CLI
@@ -62,6 +62,6 @@ test-suite features
     , blaze-html
     , interpolate
 
-  default-language: GHC2024
+  default-language: GHC2021
   main-is:          Features.hs
   type:             exitcode-stdio-1.0

@@ -56,9 +56,58 @@ packages:
   original:
     subdir: ron-storage
     url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+- completed:
+    hackage: hoppy-generator-0.9.0@sha256:095f218d88f13ede2a6b6e32b671846f0aa026c17e925cad9027d9eec31600ae,2180
+    pantry-tree:
+      sha256: de4ea465753e0820a72bee74cd40be235ddef04cc0e2afabd51183d21e63a952
+      size: 2776
+  original:
+    hackage: hoppy-generator-0.9.0
+- completed:
+    hackage: hoppy-runtime-0.9.0@sha256:415528655deac4d49f0eee258f5c068113883be8741200705d815a328f4ca327,1150
+    pantry-tree:
+      sha256: 1b295263b258ab2a8e46252bfab668c50ea35e1e88ba2afff9f2ee73ea45a876
+      size: 297
+  original:
+    hackage: hoppy-runtime-0.9.0
+- completed:
+    hackage: hoppy-std-0.9.0@sha256:7254502d0f0f5516684ad12cf501e82e5ed1fcd901ecc2138397ca72e5f0836e,1543
+    pantry-tree:
+      sha256: 1b063682d42c4f27e06a1034c2edf70d4f017c317730d3583554897e1240e981
+      size: 1567
+  original:
+    hackage: hoppy-std-0.9.0
+- completed:
+    hackage: qtah-cpp-qt6-0.9.1@sha256:6ca8430faa90c38d1a1f4289f9436ab98bec1d9a821169873e5af5774a9658f6,1531
+    pantry-tree:
+      sha256: a5dbab3a793d15f3af50a96ff94a163c7157dac462dc8fb0cd5c2af92a626a1c
+      size: 1805
+  original:
+    hackage: qtah-cpp-qt6-0.9.1
+- completed:
+    hackage: qtah-generator-0.9.1@sha256:9964fa72160d0863ccbc581e5dc067aef8191eae812827ed8affe849700c9cf7,16397
+    pantry-tree:
+      sha256: 83fe0d82a62983984e4a103ba684334be73c97dac5a24f1101816e4e1ca3ba05
+      size: 28524
+  original:
+    hackage: qtah-generator-0.9.1
+- completed:
+    hackage: qtah-qt6-0.9.1@sha256:a8121f84c79c18b1a251966add0005757866c92849c0e491b5e802dddc35d1de,50363
+    pantry-tree:
+      sha256: 2837b99f5a1ca9a244e8a856d914f75bbe28932dcb59bb54c6746512c31412d3
+      size: 1086
+  original:
+    hackage: qtah-qt6-0.9.1
+- completed:
+    hackage: cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
+    pantry-tree:
+      sha256: 830ba0871a9ede58b41528fcb0bb1fe1b550a7536c3ff05a3cd662de164ee597
+      size: 2580
+  original:
+    hackage: cmark-0.6.1
 snapshots:
 - completed:
-    sha256: d141b089a21d9873b5febdf7c53296fb799b7fb602b9d3b003c022a81cc1cc01
-    size: 726795
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/24/30.yaml
-  original: lts-24.30
+    sha256: a81fb3877c4f9031e1325eb3935122e608d80715dc16b586eb11ddbff8671ecd
+    size: 640086
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
+  original: lts-21.25

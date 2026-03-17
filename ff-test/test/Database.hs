@@ -360,7 +360,7 @@ issues =
             , issueId = Id 334520780
             , issueComments = 0
             , issueMilestone = Just milestone
-            , issueStateReason = Nothing
+            -- , issueStateReason = Nothing
             }
   where
     api x = URL $ "https://api.github.com/repos/ff-notes/ff/" <> x

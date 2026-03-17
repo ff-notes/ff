@@ -33,7 +33,7 @@ test-suite ff-test
 
   -- project
   build-depends:    ff-core
-  default-language: GHC2024
+  default-language: GHC2021
   hs-source-dirs:   test
   main-is:          Main.hs
   other-modules:

@@ -2,112 +2,164 @@
 {-# LANGUAGE NamedFieldPuns #-}
 
 module FF.Qt.TaskListWidget (
-  ItemType (..), TaskListWidget,
-  getId, getTitle, new, setDebugInfoVisible, upsertTask
+    ItemType (..),
+    TaskListWidget,
+    getId,
+    getTitle,
+    new,
+    setDebugInfoVisible,
+    upsertTask,
 ) where
 
 -- global
-import           Control.Monad (void)
-import           Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import           Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-import qualified Data.Text as Text
-import           Data.Time (getCurrentTime, utctDay)
-import           Foreign (castPtr)
-import           Foreign.Hoppy.Runtime (CppPtr, fromCppEnum, nullptr, toGc,
-                                        toPtr, touchCppPtr, withCppPtr)
-import           Graphics.UI.Qtah.Core.QObject (QObjectConstPtr, QObjectPtr,
-                                                toQObject, toQObjectConst)
-import           Graphics.UI.Qtah.Gui.QFont (QFont)
-import qualified Graphics.UI.Qtah.Gui.QFont as QFont
-import           Graphics.UI.Qtah.Widgets.QAbstractItemView (QAbstractItemViewConstPtr,
-                                                             QAbstractItemViewPtr,
-                                                             toQAbstractItemView,
-                                                             toQAbstractItemViewConst)
-import qualified Graphics.UI.Qtah.Widgets.QAbstractItemView as QAbstractItemView
-import           Graphics.UI.Qtah.Widgets.QAbstractScrollArea (QAbstractScrollAreaConstPtr,
-                                                               QAbstractScrollAreaPtr,
-                                                               toQAbstractScrollArea,
-                                                               toQAbstractScrollAreaConst)
-import           Graphics.UI.Qtah.Widgets.QFrame (QFrameConstPtr, QFramePtr,
-                                                  toQFrame, toQFrameConst)
-import           Graphics.UI.Qtah.Widgets.QTreeView (QTreeViewConstPtr,
-                                                     QTreeViewPtr, toQTreeView,
-                                                     toQTreeViewConst)
-import qualified Graphics.UI.Qtah.Widgets.QTreeView as QTreeView
-import           Graphics.UI.Qtah.Widgets.QTreeWidget (QTreeWidget,
-                                                       QTreeWidgetConstPtr,
-                                                       QTreeWidgetPtr,
-                                                       toQTreeWidget,
-                                                       toQTreeWidgetConst)
-import qualified Graphics.UI.Qtah.Widgets.QTreeWidget as QTreeWidget
-import           Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
-import qualified Graphics.UI.Qtah.Widgets.QTreeWidgetItem as QTreeWidgetItem
-import           Graphics.UI.Qtah.Widgets.QWidget (QWidgetConstPtr, QWidgetPtr,
-                                                   toQWidget, toQWidgetConst)
-import           RON.Storage.Backend (DocId (DocId))
+import Control.Monad (void)
+import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
+import Data.Map.Strict (Map)
+import Data.Map.Strict qualified as Map
+import Data.Text qualified as Text
+import Data.Time (getCurrentTime, utctDay)
+import Foreign (castPtr)
+import Foreign.Hoppy.Runtime (
+    CppPtr,
+    fromCppEnum,
+    nullptr,
+    toGc,
+    toPtr,
+    touchCppPtr,
+    withCppPtr,
+ )
+import Graphics.UI.Qtah.Core.QObject (
+    QObjectConstPtr,
+    QObjectPtr,
+    toQObject,
+    toQObjectConst,
+ )
+import Graphics.UI.Qtah.Gui.QFont (QFont)
+import Graphics.UI.Qtah.Gui.QFont qualified as QFont
+import Graphics.UI.Qtah.Gui.QPaintDevice (
+    QPaintDeviceConstPtr,
+    QPaintDevicePtr,
+    toQPaintDevice,
+    toQPaintDeviceConst,
+ )
+import Graphics.UI.Qtah.Widgets.QAbstractItemView (
+    QAbstractItemViewConstPtr,
+    QAbstractItemViewPtr,
+    toQAbstractItemView,
+    toQAbstractItemViewConst,
+ )
+import Graphics.UI.Qtah.Widgets.QAbstractItemView qualified as QAbstractItemView
+import Graphics.UI.Qtah.Widgets.QAbstractScrollArea (
+    QAbstractScrollAreaConstPtr,
+    QAbstractScrollAreaPtr,
+    toQAbstractScrollArea,
+    toQAbstractScrollAreaConst,
+ )
+import Graphics.UI.Qtah.Widgets.QFrame (
+    QFrameConstPtr,
+    QFramePtr,
+    toQFrame,
+    toQFrameConst,
+ )
+import Graphics.UI.Qtah.Widgets.QTreeView (
+    QTreeViewConstPtr,
+    QTreeViewPtr,
+    toQTreeView,
+    toQTreeViewConst,
+ )
+import Graphics.UI.Qtah.Widgets.QTreeView qualified as QTreeView
+import Graphics.UI.Qtah.Widgets.QTreeWidget (
+    QTreeWidget,
+    QTreeWidgetConstPtr,
+    QTreeWidgetPtr,
+    toQTreeWidget,
+    toQTreeWidgetConst,
+ )
+import Graphics.UI.Qtah.Widgets.QTreeWidget qualified as QTreeWidget
+import Graphics.UI.Qtah.Widgets.QTreeWidgetItem (QTreeWidgetItem)
+import Graphics.UI.Qtah.Widgets.QTreeWidgetItem qualified as QTreeWidgetItem
+import Graphics.UI.Qtah.Widgets.QWidget (
+    QWidgetConstPtr,
+    QWidgetPtr,
+    toQWidget,
+    toQWidgetConst,
+ )
+import RON.Storage.Backend (DocId (DocId))
 
 -- project
-import           FF (fromRgaM)
-import           FF.Types (Entity (..), EntityView, Note (..), TaskMode,
-                           View (NoteView, note), taskMode)
-import           FF.UI (sampleLabel)
+import FF (fromRgaM)
+import FF.Types (
+    Entity (..),
+    EntityView,
+    Note (..),
+    TaskMode,
+    View (NoteView, note),
+    taskMode,
+ )
+import FF.UI (sampleLabel)
 
 data TaskListWidget = TaskListWidget
-  {super :: QTreeWidget, modeItems :: IORef (Map TaskMode QTreeWidgetItem)}
+    {super :: QTreeWidget, modeItems :: IORef (Map TaskMode QTreeWidgetItem)}
 
 instance CppPtr TaskListWidget where
-  nullptr = TaskListWidget{super = nullptr, modeItems = undefined}
-  withCppPtr TaskListWidget{super} proc = withCppPtr super $ proc . castPtr
-  toPtr = castPtr . toPtr . super
-  touchCppPtr = touchCppPtr . super
+    nullptr = TaskListWidget{super = nullptr, modeItems = undefined}
+    withCppPtr TaskListWidget{super} proc = withCppPtr super $ proc . castPtr
+    toPtr = castPtr . toPtr . super
+    touchCppPtr = touchCppPtr . super
 
 instance QObjectConstPtr TaskListWidget where
-  toQObjectConst = toQObjectConst . super
+    toQObjectConst = toQObjectConst . super
 
 instance QObjectPtr TaskListWidget where
-  toQObject = toQObject . super
+    toQObject = toQObject . super
+
+instance QPaintDeviceConstPtr TaskListWidget where
+    toQPaintDeviceConst = toQPaintDeviceConst . super
+
+instance QPaintDevicePtr TaskListWidget where
+    toQPaintDevice = toQPaintDevice . super
 
 instance QWidgetConstPtr TaskListWidget where
-  toQWidgetConst = toQWidgetConst . super
+    toQWidgetConst = toQWidgetConst . super
 
 instance QWidgetPtr TaskListWidget where
-  toQWidget = toQWidget . super
+    toQWidget = toQWidget . super
 
 instance QFrameConstPtr TaskListWidget where
-  toQFrameConst = toQFrameConst . super
+    toQFrameConst = toQFrameConst . super
 
 instance QFramePtr TaskListWidget where
-  toQFrame = toQFrame . super
+    toQFrame = toQFrame . super
 
 instance QAbstractScrollAreaConstPtr TaskListWidget where
-  toQAbstractScrollAreaConst = toQAbstractScrollAreaConst . super
+    toQAbstractScrollAreaConst = toQAbstractScrollAreaConst . super
 
 instance QAbstractScrollAreaPtr TaskListWidget where
-  toQAbstractScrollArea = toQAbstractScrollArea . super
+    toQAbstractScrollArea = toQAbstractScrollArea . super
 
 instance QAbstractItemViewConstPtr TaskListWidget where
-  toQAbstractItemViewConst = toQAbstractItemViewConst . super
+    toQAbstractItemViewConst = toQAbstractItemViewConst . super
 
 instance QAbstractItemViewPtr TaskListWidget where
-  toQAbstractItemView = toQAbstractItemView . super
+    toQAbstractItemView = toQAbstractItemView . super
 
 instance QTreeViewConstPtr TaskListWidget where
-  toQTreeViewConst = toQTreeViewConst . super
+    toQTreeViewConst = toQTreeViewConst . super
 
 instance QTreeViewPtr TaskListWidget where
-  toQTreeView = toQTreeView . super
+    toQTreeView = toQTreeView . super
 
 instance QTreeWidgetConstPtr TaskListWidget where
-  toQTreeWidgetConst = toQTreeWidgetConst . super
+    toQTreeWidgetConst = toQTreeWidgetConst . super
 
 instance QTreeWidgetPtr TaskListWidget where
-  toQTreeWidget = toQTreeWidget . super
+    toQTreeWidget = toQTreeWidget . super
 
--- | Value order in this enumeration defines the field order in the tree widget.
--- 0th column mustn't be hideable, because when 0th column is hidden,
--- the tree strcuture, alternating row color, and child indicators
--- are hidden too.
+{- | Value order in this enumeration defines the field order in the tree widget.
+0th column mustn't be hideable, because when 0th column is hidden,
+the tree strcuture, alternating row color, and child indicators
+are hidden too.
+-}
 data Field = TitleField | IdField deriving (Bounded, Enum)
 
 fieldCount :: Int
@@ -119,69 +171,66 @@ fieldsToStrings f = map f [minBound .. maxBound]
 data ItemType = ModeGroup | Task
 
 instance Enum ItemType where
-  toEnum i = case i - userType of
-    0 -> ModeGroup
-    1 -> Task
-    _ -> error $ "toEnum @ItemType " <> show i
-  fromEnum t =
-    userType
-    + case t of
-        ModeGroup -> 0
-        Task      -> 1
+    toEnum i = case i - userType of
+        0 -> ModeGroup
+        1 -> Task
+        _ -> error $ "toEnum @ItemType " <> show i
+    fromEnum t = userType + case t of ModeGroup -> 0; Task -> 1
 
 -- | Int value of QTreeWidgetItem.UserType
 userType :: Int
 userType = fromIntegral $ fromCppEnum QTreeWidgetItem.UserType
 
 getId, getTitle :: QTreeWidgetItem -> IO String
-getId    item = QTreeWidgetItem.text item $ fromEnum IdField
+getId item = QTreeWidgetItem.text item $ fromEnum IdField
 getTitle item = QTreeWidgetItem.text item $ fromEnum TitleField
 
 new :: IO TaskListWidget
 new = do
-  super <- QTreeWidget.new
-  QAbstractItemView.setAlternatingRowColors super True
-  QTreeView.setHeaderHidden                 super True
-  QTreeWidget.setColumnCount                super fieldCount
+    super <- QTreeWidget.new
+    QAbstractItemView.setAlternatingRowColors super True
+    QTreeView.setHeaderHidden super True
+    QTreeWidget.setColumnCount super fieldCount
 
-  modeItems <- newIORef mempty
+    modeItems <- newIORef mempty
 
-  let this = TaskListWidget{super, modeItems}
+    let this = TaskListWidget{super, modeItems}
 
-  setDebugInfoVisible this False
+    setDebugInfoVisible this False
 
-  pure this
+    pure this
 
 setDebugInfoVisible :: TaskListWidget -> Bool -> IO ()
 setDebugInfoVisible this =
-  QTreeView.setColumnHidden this (fromEnum IdField) . not
+    QTreeView.setColumnHidden this (fromEnum IdField) . not
 
 -- Only insertion is implemeted. TODO implement update.
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()
 upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
-  today <- utctDay <$> getCurrentTime
-  let mode = taskMode today note
-  mModeItem <- Map.lookup mode <$> readIORef modeItems
-  modeItem <- case mModeItem of
-    Just item ->
-      pure item
-    Nothing -> do
-      item <-
-        QTreeWidgetItem.newWithParentTreeAndStringsAndType
-          super
-          (fieldsToStrings $ \case
-            IdField    -> show mode
-            TitleField -> Text.unpack $ sampleLabel mode)
-          (fromEnum ModeGroup)
-      QTreeWidgetItem.setExpanded item True
-      QTreeWidgetItem.setFont item (fromEnum TitleField) =<< makeBoldFont
-      modifyIORef modeItems $ Map.insert mode item
-      pure item
-  void $
-    QTreeWidgetItem.newWithParentItemAndStringsAndType
-      modeItem
-      (fieldsToStrings $ \case IdField -> noteId; TitleField -> title)
-      (fromEnum Task)
+    today <- utctDay <$> getCurrentTime
+    let mode = taskMode today note
+    mModeItem <- Map.lookup mode <$> readIORef modeItems
+    modeItem <- case mModeItem of
+        Just item ->
+            pure item
+        Nothing -> do
+            item <-
+                QTreeWidgetItem.newWithParentTreeAndStringsAndType
+                    super
+                    ( fieldsToStrings $ \case
+                        IdField -> show mode
+                        TitleField -> Text.unpack $ sampleLabel mode
+                    )
+                    (fromEnum ModeGroup)
+            QTreeWidgetItem.setExpanded item True
+            QTreeWidgetItem.setFont item (fromEnum TitleField) =<< makeBoldFont
+            modifyIORef modeItems $ Map.insert mode item
+            pure item
+    void $
+        QTreeWidgetItem.newWithParentItemAndStringsAndType
+            modeItem
+            (fieldsToStrings $ \case IdField -> noteId; TitleField -> title)
+            (fromEnum Task)
   where
     DocId noteId = entityId
     NoteView{note} = entityVal
@@ -191,6 +240,6 @@ upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
 
 makeBoldFont :: IO QFont
 makeBoldFont = do
-  font <- toGc =<< QFont.new
-  QFont.setBold font True
-  pure font
+    font <- toGc =<< QFont.new
+    QFont.setBold font True
+    pure font

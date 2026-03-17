@@ -18,6 +18,6 @@ executable ff-brick
 
   -- project
   build-depends: ff-core
-  default-language: GHC2024
+  default-language: GHC2021
   ghc-options: -threaded
   main-is: Main.hs

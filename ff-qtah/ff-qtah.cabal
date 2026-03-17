@@ -4,7 +4,7 @@ version:       0
 
 common language
   build-depends:    base
-  default-language: GHC2024
+  default-language: GHC2021
   ghc-options:      -threaded -rtsopts -with-rtsopts=-N
 
 executable ff-qtah
@@ -22,7 +22,7 @@ executable ff-qtah
 
   -- organization
   build-depends:
-    , ron-rdt
+    -- , ron-rdt
     , ron-storage
 
   -- project

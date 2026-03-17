@@ -17,4 +17,3 @@ track:
   provider: github
   source: ff-notes/ff
   url: https://github.com/ff-notes/ff/issues/204
-...
