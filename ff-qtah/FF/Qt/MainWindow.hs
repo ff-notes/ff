@@ -160,7 +160,7 @@ setTaskView taskWidget item = do
             hPutStrLn stderr $ "internal error" ++ prettyCallStack callStack
         Task -> do
             noteId <- DocId @Note <$> TaskListWidget.getId item
-            TaskWidget.update taskWidget noteId
+            TaskWidget.reload taskWidget noteId
             QWidget.show taskWidget.parent
 
 showAboutProgram :: (QWidgetPtr mainWindow) => mainWindow -> String -> IO ()

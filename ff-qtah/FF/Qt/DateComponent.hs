@@ -5,6 +5,7 @@
 module FF.Qt.DateComponent (DateComponent (..), new, setDate) where
 
 import Data.Time (Day, toGregorian)
+import Foreign.Hoppy.Runtime (toGc)
 import Graphics.UI.Qtah.Core.QDate qualified as QDate
 import Graphics.UI.Qtah.Widgets.QAbstractSpinBox qualified as QAbstractSpinBox
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
@@ -56,7 +57,7 @@ setDate this day =
             QWidget.show this.date
             QWidget.hide this.add
             QWidget.show this.remove
-            qdate <- QDate.newWithYmd (fromInteger y) m d
+            qdate <- toGc =<< QDate.newWithYmd (fromInteger y) m d
             QDateTimeEdit.setDate this.date qdate
         Nothing -> do
             -- TODO replace with button "add date"
