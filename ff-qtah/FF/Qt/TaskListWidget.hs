@@ -7,7 +7,7 @@ module FF.Qt.TaskListWidget (
     ItemType (..),
     itemTypeFromInt,
     itemTypeToInt,
-    TaskListWidget (super),
+    TaskListWidget (parent),
     getId,
     getTitle,
     new,
@@ -46,7 +46,7 @@ import FF.Types (
 import FF.UI (sampleLabel)
 
 data TaskListWidget = TaskListWidget
-    {super :: QTreeWidget, modeItems :: IORef (Map TaskMode QTreeWidgetItem)}
+    {parent :: QTreeWidget, modeItems :: IORef (Map TaskMode QTreeWidgetItem)}
 
 {- | Value order in this enumeration defines the field order in the tree widget.
 0th column mustn't be hideable, because when 0th column is hidden,
@@ -82,14 +82,14 @@ getTitle item = QTreeWidgetItem.text item $ fromEnum TitleField
 
 new :: IO TaskListWidget
 new = do
-    super <- QTreeWidget.new
-    QAbstractItemView.setAlternatingRowColors super True
-    QTreeView.setHeaderHidden super True
-    QTreeWidget.setColumnCount super fieldCount
+    parent <- QTreeWidget.new
+    QAbstractItemView.setAlternatingRowColors parent True
+    QTreeView.setHeaderHidden parent True
+    QTreeWidget.setColumnCount parent fieldCount
 
     modeItems <- newIORef mempty
 
-    let this = TaskListWidget{super, modeItems}
+    let this = TaskListWidget{parent, modeItems}
 
     setDebugInfoVisible this False
 
@@ -97,11 +97,11 @@ new = do
 
 setDebugInfoVisible :: TaskListWidget -> Bool -> IO ()
 setDebugInfoVisible this =
-    QTreeView.setColumnHidden this.super (fromEnum IdField) . not
+    QTreeView.setColumnHidden this.parent (fromEnum IdField) . not
 
 -- Only insertion is implemeted. TODO implement update.
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()
-upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
+upsertTask TaskListWidget{parent, modeItems} Entity{entityId, entityVal} = do
     today <- utctDay <$> getCurrentTime
     let mode = taskMode today note
     mModeItem <- Map.lookup mode <$> readIORef modeItems
@@ -111,7 +111,7 @@ upsertTask TaskListWidget{super, modeItems} Entity{entityId, entityVal} = do
         Nothing -> do
             item <-
                 QTreeWidgetItem.newWithParentTreeAndStringsAndType
-                    super
+                    parent
                     ( fieldsToStrings \case
                         IdField -> show mode
                         TitleField -> Text.unpack $ sampleLabel mode

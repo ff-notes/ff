@@ -18,7 +18,7 @@ import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
 
 data DateComponent = DateComponent
-    { box :: QHBoxLayout
+    { parent :: QHBoxLayout
     , date :: QDateEdit
     , add :: QPushButton
     , remove :: QPushButton
@@ -26,22 +26,22 @@ data DateComponent = DateComponent
 
 new :: IO DateComponent
 new = do
-    box <- QHBoxLayout.new
+    parent <- QHBoxLayout.new
 
     date <- QDateEdit.new
     QDateTimeEdit.setCalendarPopup date True
     QDateTimeEdit.setDisplayFormat date "ddd d MMM yyyy"
-    QBoxLayout.addWidget box date
+    QBoxLayout.addWidget parent date
 
-    add <- QPushButton.newWithText "+"
+    add <- QPushButton.newWithText "➕ Set"
     QWidget.setEnabled add False
-    QBoxLayout.addWidget box add
+    QBoxLayout.addWidget parent add
 
-    remove <- QPushButton.newWithText "−"
+    remove <- QPushButton.newWithText "╳"
     QWidget.setEnabled remove False
-    QBoxLayout.addWidget box remove
+    QBoxLayout.addWidget parent remove
 
-    let this = DateComponent{box, date, add, remove}
+    let this = DateComponent{parent, date, add, remove}
     setEditable this False
     pure this
 

@@ -51,7 +51,7 @@ main = do
     withApp \_ -> do
         setupApp
         window <- MainWindow.new progName storage
-        QWidget.show window.super
+        QWidget.show window.parent
         initializeAsync storage window
         whenUIIdle $ checkDBChange storage window changedDocs
         QCoreApplication.exec

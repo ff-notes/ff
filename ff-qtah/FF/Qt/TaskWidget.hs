@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 
 module FF.Qt.TaskWidget (
-    TaskWidget (super),
+    TaskWidget (parent),
     new,
     update,
 ) where
@@ -10,11 +10,14 @@ module FF.Qt.TaskWidget (
 -- global
 import Foreign.Hoppy.Runtime (toGc)
 import Graphics.UI.Qtah.Core.Types (QtAlignmentFlag (AlignTop))
+import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QFormLayout qualified as QFormLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QFrame qualified as QFrame
+import Graphics.UI.Qtah.Widgets.QHBoxLayout qualified as QHBoxLayout
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
+import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
 import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicy, QSizePolicyPolicy)
@@ -38,11 +41,10 @@ import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
 
 data TaskWidget = TaskWidget
-    { super :: QScrollArea
-    , frame :: QFrame
-    -- ^ widget inside the scroll area
+    { parent :: QScrollArea
+    , innerWidget :: QFrame
+    -- ^ the main widget inside the scroll area
     , textContent :: QLabel
-    -- ^ label for the text
     , storage :: Storage.Handle
     , start :: DateComponent
     , end :: DateComponent
@@ -50,10 +52,10 @@ data TaskWidget = TaskWidget
 
 new :: Storage.Handle -> IO TaskWidget
 new storage = do
-    super <- QScrollArea.new
+    parent <- QScrollArea.new
 
-    frame <- QFrame.new
-    QScrollArea.setWidget super frame
+    innerWidget <- QFrame.new
+    QScrollArea.setWidget parent innerWidget
 
     textContent <- QLabel.new
     QWidget.setSizePolicy textContent
@@ -61,15 +63,27 @@ new storage = do
     QLabel.setAlignment textContent AlignTop
     QLabel.setWordWrap textContent True
 
+    hline <- QFrame.new
+    QFrame.setFrameShape hline QFrame.HLine
+
     start <- DateComponent.new
+
     end <- DateComponent.new
 
-    form <- QFormLayout.newWithParent frame
+    form <- QFormLayout.newWithParent innerWidget
     QFormLayout.addRowWidget form textContent
-    QFormLayout.addRowStringLayout form "Start:" start.box
-    QFormLayout.addRowStringLayout form "Deadline:" end.box
+    QFormLayout.addRowWidget form hline
+    QFormLayout.addRowStringLayout form "Start:" start.parent
+    QFormLayout.addRowStringLayout form "Deadline:" end.parent
 
-    pure TaskWidget{super, frame, textContent, storage, start, end}
+    postpone <- QPushButton.newWithText "Postpone"
+
+    actions <- QHBoxLayout.new
+    QBoxLayout.addWidget actions postpone
+    QBoxLayout.addStretch actions
+    QFormLayout.addRowLayout form actions
+
+    pure TaskWidget{parent, innerWidget, textContent, storage, start, end}
 
 update :: TaskWidget -> NoteId -> IO ()
 update this noteId = do
@@ -79,7 +93,7 @@ update this noteId = do
     QLabel.setText this.textContent $ fromRgaM note_text
     DateComponent.setDate this.start note_start
     DateComponent.setDate this.end note_end
-    QWidget.adjustSize this.frame
+    QWidget.adjustSize this.innerWidget
 
 makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
 makeSimpleSizePolicy policy =

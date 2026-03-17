@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 
 module FF.Qt.MainWindow (
-    MainWindow (super),
+    MainWindow (parent),
     new,
     upsertNote,
 ) where
@@ -55,35 +55,35 @@ import FF.Qt.TaskWidget (TaskWidget)
 import FF.Qt.TaskWidget qualified as TaskWidget
 
 data MainWindow = MainWindow
-    { super :: QMainWindow
+    { parent :: QMainWindow
     , agendaTasks :: TaskListWidget
     , taskWidget :: TaskWidget
     }
 
 new :: String -> Storage.Handle -> IO MainWindow
 new progName storage = do
-    super <- QMainWindow.new
-    QWidget.setWindowTitle super progName
+    parent <- QMainWindow.new
+    QWidget.setWindowTitle parent progName
 
-    restoreGeometry super -- must be before widgets creation
+    restoreGeometry parent -- must be before widgets creation
 
     -- UI setup and widgets creation
     agendaSplitter <- QSplitter.new
     QSplitter.setChildrenCollapsible agendaSplitter False
-    QMainWindow.setCentralWidget super agendaSplitter
+    QMainWindow.setCentralWidget parent agendaSplitter
 
     agendaTasks <- TaskListWidget.new
-    QSplitter.addWidget agendaSplitter agendaTasks.super
+    QSplitter.addWidget agendaSplitter agendaTasks.parent
 
     taskWidget <- TaskWidget.new storage
-    QWidget.hide taskWidget.super
-    QSplitter.addWidget agendaSplitter taskWidget.super
+    QWidget.hide taskWidget.parent
+    QSplitter.addWidget agendaSplitter taskWidget.parent
 
     -- sizes need widgets to be added
     QSplitter.setSizes agendaSplitter [1, 1 :: Int]
 
     do
-        menuBar <- QMainWindow.menuBar super
+        menuBar <- QMainWindow.menuBar parent
         do
             debugMenu <- QMenuBar.addNewMenu menuBar "&Debug"
             showUuidsAction <-
@@ -96,16 +96,16 @@ new progName storage = do
             aboutProgramAction <- QMenu.addNewAction helpMenu "&About ff"
             connect_ aboutProgramAction QAction.triggeredSignal $
                 const $
-                    showAboutProgram super progName
+                    showAboutProgram parent progName
 
-    restoreState super -- must be after widgets creation
-    let mainWindow = MainWindow{super, agendaTasks, taskWidget}
+    restoreState parent -- must be after widgets creation
+    let mainWindow = MainWindow{parent, agendaTasks, taskWidget}
 
     -- handling events
-    void $ onEvent super \(_ :: QCloseEvent) -> saveGeometryAndState super
+    void $ onEvent parent \(_ :: QCloseEvent) -> saveGeometryAndState parent
     -- TODO
     -- connect_ editor QTextEdit.textChangedSignal $ saveTheText storage editor
-    connect_ agendaTasks.super QTreeWidget.itemSelectionChangedSignal $
+    connect_ agendaTasks.parent QTreeWidget.itemSelectionChangedSignal $
         resetTaskView mainWindow
 
     pure mainWindow
@@ -140,7 +140,7 @@ loadSetting name =
 
 resetTaskView :: MainWindow -> IO ()
 resetTaskView MainWindow{agendaTasks, taskWidget} = do
-    items <- QTreeWidget.selectedItems agendaTasks.super
+    items <- QTreeWidget.selectedItems agendaTasks.parent
     taskItems <-
         fold <$> for items \item -> do
             itemType <- itemTypeFromInt <$> QTreeWidgetItem.getType item
@@ -148,7 +148,7 @@ resetTaskView MainWindow{agendaTasks, taskWidget} = do
                 Task -> [item]
                 ModeGroup -> []
     case taskItems of
-        [] -> QWidget.hide taskWidget.super
+        [] -> QWidget.hide taskWidget.parent
         [item] -> setTaskView taskWidget item
         _ : _ : _ -> print "TODO open/replace group actions view"
 
@@ -161,7 +161,7 @@ setTaskView taskWidget item = do
         Task -> do
             noteId <- DocId @Note <$> TaskListWidget.getId item
             TaskWidget.update taskWidget noteId
-            QWidget.show taskWidget.super
+            QWidget.show taskWidget.parent
 
 showAboutProgram :: (QWidgetPtr mainWindow) => mainWindow -> String -> IO ()
 showAboutProgram mainWindow progName =
