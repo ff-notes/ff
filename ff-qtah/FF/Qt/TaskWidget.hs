@@ -33,6 +33,7 @@ import FF (cmdPostpone, fromRgaM, viewNote)
 import FF.Types (
     Entity (..),
     EntityDoc,
+    EntityView,
     Note (..),
     NoteId,
     View (NoteView, note),
@@ -51,10 +52,11 @@ data TaskWidget = TaskWidget
     , start :: DateComponent
     , end :: DateComponent
     , noteId :: IORef (Maybe NoteId)
+    , onTaskUpdated :: EntityView Note -> IO ()
     }
 
-new :: Storage.Handle -> IO TaskWidget
-new storage = do
+new :: Storage.Handle -> (EntityView Note -> IO ()) -> IO TaskWidget
+new storage onTaskUpdated = do
     parent <- QScrollArea.new
 
     innerWidget <- QFrame.new
@@ -97,6 +99,7 @@ new storage = do
                 , start
                 , end
                 , noteId
+                , onTaskUpdated
                 }
 
     connect_ postpone QAbstractButton.clickedSignal $ postponeSlot this
@@ -118,13 +121,15 @@ reload this noteId = do
 
 update :: TaskWidget -> EntityDoc Note -> IO ()
 update this noteDoc = do
-    Entity{entityVal} <- runStorage this.storage $ viewNote noteDoc
+    entity <- runStorage this.storage $ viewNote noteDoc
+    let Entity{entityVal} = entity
     let NoteView{note} = entityVal
     let Note{note_text, note_start, note_end} = note
     QLabel.setText this.textContent $ fromRgaM note_text
     DateComponent.setDate this.start note_start
     DateComponent.setDate this.end note_end
     QWidget.adjustSize this.innerWidget
+    this.onTaskUpdated entity
 
 makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
 makeSimpleSizePolicy policy =

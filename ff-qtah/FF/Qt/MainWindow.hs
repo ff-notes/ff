@@ -75,7 +75,10 @@ new progName storage = do
     agendaTasks <- TaskListWidget.new
     QSplitter.addWidget agendaSplitter agendaTasks.parent
 
-    taskWidget <- TaskWidget.new storage
+    taskWidget <-
+        TaskWidget.new
+            storage
+            (TaskListWidget.upsertTask agendaTasks) -- on task updated
     QWidget.hide taskWidget.parent
     QSplitter.addWidget agendaSplitter taskWidget.parent
 

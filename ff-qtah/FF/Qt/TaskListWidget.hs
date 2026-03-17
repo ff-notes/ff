@@ -15,9 +15,10 @@ module FF.Qt.TaskListWidget (
     upsertTask,
 ) where
 
-import Control.Monad (void)
+import Control.Monad (void, when)
+import Data.Foldable (for_)
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import Data.Map.Strict (Map)
+import Data.Map.Strict (Map, (!))
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Data.Time (getCurrentTime, toGregorian, utctDay)
@@ -46,7 +47,10 @@ import FF.Types (
 import FF.UI (sampleLabel)
 
 data TaskListWidget = TaskListWidget
-    {parent :: QTreeWidget, modeItems :: IORef (Map TaskMode QTreeWidgetItem)}
+    { parent :: QTreeWidget
+    , modeItems :: IORef (Map TaskMode QTreeWidgetItem)
+    , taskItems :: IORef (Map String (TaskMode, QTreeWidgetItem))
+    }
 
 {- | Value order in this enumeration defines the field order in the tree widget.
 0th column mustn't be hideable, because when 0th column is hidden,
@@ -59,9 +63,6 @@ data Field
     | -- | see NaturalTaskOrder.md
       SortKeyField
     deriving (Bounded, Enum)
-
-fieldCount :: Int
-fieldCount = fromEnum (maxBound :: Field) + 1
 
 fieldsToStrings :: (Field -> String) -> [String]
 fieldsToStrings f = map f [minBound .. maxBound]
@@ -99,8 +100,9 @@ new = do
     QTreeWidget.sortItems parent (fromEnum SortKeyField) Qt.AscendingOrder
 
     modeItems <- newIORef mempty
+    taskItems <- newIORef mempty
 
-    let this = TaskListWidget{parent, modeItems}
+    let this = TaskListWidget{parent, modeItems, taskItems}
 
     setDebugInfoVisible this False
 
@@ -112,18 +114,34 @@ setDebugInfoVisible this v = do
     QTreeView.setColumnHidden this.parent (fromEnum SortKeyField) $ not v
     QTreeView.setHeaderHidden this.parent $ not v
 
--- Only insertion is implemeted. TODO implement update.
 upsertTask :: TaskListWidget -> EntityView Note -> IO ()
 upsertTask this entity = do
     today <- utctDay <$> getCurrentTime
     let mode = taskMode today note
+    mExisting <- Map.lookup noteId <$> readIORef this.taskItems
+    case mExisting of
+        Nothing -> do
+            modeItem <- getOrCreateModeItem this mode
+            item <- createTaskItem modeItem entity
+            modifyIORef this.taskItems $ Map.insert noteId (mode, item)
+        Just (oldMode, item) -> do
+            updateTaskItem item entity
+            when (oldMode /= mode) do
+                oldModeItem <- (! oldMode) <$> readIORef this.modeItems
+                idx <- QTreeWidgetItem.indexOfChild oldModeItem item
+                void $ QTreeWidgetItem.takeChild oldModeItem idx
+                newModeItem <- getOrCreateModeItem this mode
+                QTreeWidgetItem.addChild newModeItem item
+                modifyIORef this.taskItems $ Map.insert noteId (mode, item)
+  where
+    Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
+
+getOrCreateModeItem :: TaskListWidget -> TaskMode -> IO QTreeWidgetItem
+getOrCreateModeItem this mode = do
     mModeItem <- Map.lookup mode <$> readIORef this.modeItems
-    modeItem <- case mModeItem of
+    case mModeItem of
         Just item -> pure item
         Nothing -> createModeItem this mode
-    createTaskItem modeItem entity
-  where
-    Entity{entityVal = NoteView{note}} = entity
 
 createModeItem :: TaskListWidget -> TaskMode -> IO QTreeWidgetItem
 createModeItem this mode = do
@@ -148,17 +166,26 @@ createModeItem this mode = do
     modifyIORef this.modeItems $ Map.insert mode item
     pure item
 
-createTaskItem :: QTreeWidgetItem -> EntityView Note -> IO ()
+createTaskItem :: QTreeWidgetItem -> EntityView Note -> IO QTreeWidgetItem
 createTaskItem modeItem entity =
-    void $
-        QTreeWidgetItem.newWithParentItemAndStringsAndType
-            modeItem
-            ( fieldsToStrings \case
-                IdField -> noteId
-                SortKeyField -> sortKey
-                TitleField -> title
-            )
-            (itemTypeToInt Task)
+    QTreeWidgetItem.newWithParentItemAndStringsAndType
+        modeItem
+        (fieldsToStrings $ taskItemField entity)
+        (itemTypeToInt Task)
+
+updateTaskItem :: QTreeWidgetItem -> EntityView Note -> IO ()
+updateTaskItem item entity =
+    for_ [minBound .. maxBound] \field ->
+        QTreeWidgetItem.setText
+            item
+            (fromEnum field)
+            (taskItemField entity field)
+
+taskItemField :: EntityView Note -> Field -> String
+taskItemField entity = \case
+    IdField -> noteId
+    SortKeyField -> sortKey
+    TitleField -> title
   where
     Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
     title = concat $ take 1 $ lines $ fromRgaM note.note_text
