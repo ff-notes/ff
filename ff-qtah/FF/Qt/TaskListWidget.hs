@@ -89,14 +89,14 @@ new :: IO TaskListWidget
 new = do
     parent <- QTreeWidget.new
     QAbstractItemView.setAlternatingRowColors parent True
-    QTreeView.setSortingEnabled parent True
-    QTreeWidget.sortItems parent (fromEnum SortKeyField) Qt.AscendingOrder
-    QTreeWidget.setColumnCount parent fieldCount
     QTreeWidget.setHeaderLabels parent $
         fieldsToStrings \case
             TitleField -> "Title"
             IdField -> "UUID"
             SortKeyField -> "Sort key"
+    -- columns must be defined before sorting
+    QTreeView.setSortingEnabled parent True
+    QTreeWidget.sortItems parent (fromEnum SortKeyField) Qt.AscendingOrder
 
     modeItems <- newIORef mempty
 
