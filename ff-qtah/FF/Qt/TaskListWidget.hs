@@ -12,7 +12,7 @@ module FF.Qt.TaskListWidget (
     getTitle,
     new,
     setDebugInfoVisible,
-    upsertTask,
+    syncTask,
 ) where
 
 import Control.Monad (when)
@@ -37,19 +37,23 @@ import Text.Printf (printf)
 
 import FF (fromRgaM)
 import FF.Types (
-    Entity (..),
+    Entity (Entity),
     EntityView,
-    Note (..),
+    Note,
+    NoteId,
+    NoteStatus (TaskStatus),
+    Status (Active, Archived),
     TaskMode (..),
     View (NoteView, note),
     taskMode,
  )
+import FF.Types qualified
 import FF.UI (sampleLabel)
 
 data TaskListWidget = TaskListWidget
     { parent :: QTreeWidget
     , modeItems :: IORef (Map TaskMode QTreeWidgetItem)
-    , taskItems :: IORef (Map String (TaskMode, QTreeWidgetItem))
+    , taskItems :: IORef (Map NoteId (TaskMode, QTreeWidgetItem))
     }
 
 {- | Value order in this enumeration defines the field order in the tree widget.
@@ -115,6 +119,15 @@ setDebugInfoVisible this v = do
     QTreeView.setColumnHidden this.parent (fromEnum SortKeyField) $ not v
     QTreeView.setHeaderHidden this.parent $ not v
 
+syncTask :: TaskListWidget -> Bool -> EntityView Note -> IO ()
+syncTask this keepTaskOpen entity = do
+    case note.note_status of
+        Just (TaskStatus Active) -> upsertTask this keepTaskOpen entity
+        Just (TaskStatus Archived) -> deleteTaskFromUi this noteId
+        _ -> undefined
+  where
+    Entity noteId NoteView{note} = entity
+
 upsertTask :: TaskListWidget -> Bool -> EntityView Note -> IO ()
 upsertTask this keepTaskOpen entity = do
     today <- utctDay <$> getCurrentTime -- TODO get local day
@@ -142,7 +155,17 @@ upsertTask this keepTaskOpen entity = do
                     this.parent
                     (nullptr :: QTreeWidgetItem)
   where
-    Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
+    Entity noteId NoteView{note} = entity
+
+deleteTaskFromUi :: TaskListWidget -> NoteId -> IO ()
+deleteTaskFromUi this noteId = do
+    mExisting <- Map.lookup noteId <$> readIORef this.taskItems
+    for_ mExisting \(oldMode, item) -> do
+        oldModeItem <- (! oldMode) <$> readIORef this.modeItems
+        idx <- QTreeWidgetItem.indexOfChild oldModeItem item
+        _ <- QTreeWidgetItem.takeChild oldModeItem idx
+        modifyIORef this.taskItems $ Map.delete noteId
+    QTreeWidget.setCurrentItem this.parent (nullptr :: QTreeWidgetItem)
 
 getOrCreateModeItem :: TaskListWidget -> TaskMode -> IO QTreeWidgetItem
 getOrCreateModeItem this mode = do
@@ -195,7 +218,7 @@ taskItemField entity = \case
     SortKeyField -> sortKey
     TitleField -> title
   where
-    Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
+    Entity (DocId noteId) NoteView{note} = entity
     title = concat $ take 1 $ lines $ fromRgaM note.note_text
     sortKey = printf "End=%04d%02d%02d,Start=%04d%02d%02d" ey em ed sy sm sd
     (ey, em, ed) = maybe (9999, 99, 99) toGregorian note.note_end

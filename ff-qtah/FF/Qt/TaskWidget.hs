@@ -10,6 +10,7 @@ module FF.Qt.TaskWidget (
     reload,
 ) where
 
+import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Signal (connect_)
@@ -22,7 +23,7 @@ import Named (defaults, (!))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
 
-import FF (cmdPostpone, fromRgaM, viewNote)
+import FF (cmdDone, cmdPostpone, fromRgaM, viewNote)
 import FF.Types (
     Entity (..),
     EntityDoc,
@@ -76,30 +77,37 @@ new storage onTaskUpdated = do
             ! #wordWrap True
             ! defaults
     postpone <- QPushButton.newWithText "Postpone"
+    done <- QPushButton.newWithText "Done"
     parent <-
         qFrame . QFormLayout $
             [ RowWidget $ qScrollArea textContent
             , StringLayout "Start:" start.parent
             , StringLayout "Deadline:" end.parent
-            , RowLayout $ qHBoxLayout [Widget $< postpone, Stretch]
+            , RowLayout . qHBoxLayout $
+                [Widget $< postpone, Widget $< done, Stretch]
             ]
     -- end setup UI
 
     noteId <- newIORef Nothing
     let this = TaskWidget{..}
-    connect_ postpone QAbstractButton.clickedSignal $ postponeSlot this
+    connect_ postpone QAbstractButton.clickedSignal $ onPostponeClicked this
+    connect_ done QAbstractButton.clickedSignal $ onDoneClicked this
     pure this
 
-($<) :: Applicative f => (f a -> b) -> a -> b
+($<) :: (Applicative f) => (f a -> b) -> a -> b
 f $< x = f $ pure x
 
-postponeSlot :: TaskWidget -> Bool -> IO ()
-postponeSlot this _checked = do
+onPostponeClicked :: TaskWidget -> Bool -> IO ()
+onPostponeClicked this _checked = do
     mNoteId <- readIORef this.noteId
-    case mNoteId of
-        Just noteId ->
-            runStorage this.storage (cmdPostpone noteId) >>= update False this
-        Nothing -> pure ()
+    for_ mNoteId \noteId ->
+        runStorage this.storage (cmdPostpone noteId) >>= update False this
+
+onDoneClicked :: TaskWidget -> Bool -> IO ()
+onDoneClicked this _checked = do
+    mNoteId <- readIORef this.noteId
+    for_ mNoteId \noteId ->
+        runStorage this.storage (cmdDone noteId) >>= update False this
 
 reload :: TaskWidget -> NoteId -> IO ()
 reload this noteId = do

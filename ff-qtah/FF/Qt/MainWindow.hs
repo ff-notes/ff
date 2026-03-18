@@ -78,7 +78,7 @@ new progName storage = do
     taskWidget <-
         TaskWidget.new
             storage
-            (TaskListWidget.upsertTask agendaTasks) -- on task updated
+            (TaskListWidget.syncTask agendaTasks) -- on task updated
     QWidget.hide taskWidget.parent
     QSplitter.addWidget agendaSplitter taskWidget.parent
 
@@ -115,7 +115,7 @@ new progName storage = do
 
 -- | Only task notes are supported. TODO support wiki notes too
 upsertNote :: MainWindow -> EntityView Note -> IO ()
-upsertNote MainWindow{agendaTasks} = TaskListWidget.upsertTask agendaTasks True
+upsertNote MainWindow{agendaTasks} = TaskListWidget.syncTask agendaTasks True
 
 -- https://wiki.qt.io/Saving_Window_Size_State
 saveGeometryAndState :: (QMainWindowPtr window) => window -> IO Bool
