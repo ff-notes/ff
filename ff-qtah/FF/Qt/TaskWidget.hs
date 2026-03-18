@@ -1,6 +1,7 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module FF.Qt.TaskWidget (
     TaskWidget (parent),
@@ -63,11 +64,13 @@ data TaskWidget = TaskWidget
 
 new :: Storage.Handle -> OnTaskUpdated -> IO TaskWidget
 new storage onTaskUpdated = do
-    parent <- QScrollArea.new
+    start <- DateComponent.new
+    end <- DateComponent.new
 
+    -- TODO generate this from .ui
+    parent <- QScrollArea.new
     innerWidget <- QFrame.new
     QScrollArea.setWidget parent innerWidget
-
     textContent <- QLabel.new
     QWidget.setSizePolicy textContent
         =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
@@ -76,43 +79,23 @@ new storage onTaskUpdated = do
     QLabel.setTextFormat textContent Qt.MarkdownText
     QLabel.setTextInteractionFlags textContent Qt.TextBrowserInteraction
     QLabel.setOpenExternalLinks textContent True
-
     hline <- QFrame.new
     QFrame.setFrameShape hline QFrame.HLine
-
-    start <- DateComponent.new
-
-    end <- DateComponent.new
-
     form <- QFormLayout.newWithParent innerWidget
     QFormLayout.addRowWidget form textContent
     QFormLayout.addRowWidget form hline
     QFormLayout.addRowStringLayout form "Start:" start.parent
     QFormLayout.addRowStringLayout form "Deadline:" end.parent
-
     postpone <- QPushButton.newWithText "Postpone"
-
     actions <- QHBoxLayout.new
     QBoxLayout.addWidget actions postpone
     QBoxLayout.addStretch actions
     QFormLayout.addRowLayout form actions
+    -- end generated
 
     noteId <- newIORef Nothing
-
-    let this =
-            TaskWidget
-                { parent
-                , innerWidget
-                , textContent
-                , storage
-                , start
-                , end
-                , noteId
-                , onTaskUpdated
-                }
-
+    let this = TaskWidget{..}
     connect_ postpone QAbstractButton.clickedSignal $ postponeSlot this
-
     pure this
 
 postponeSlot :: TaskWidget -> Bool -> IO ()
