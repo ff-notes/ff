@@ -81,7 +81,7 @@ new storage onTaskUpdated = do
             [ RowWidget $ qScrollArea textContent
             , StringLayout "Start:" start.parent
             , StringLayout "Deadline:" end.parent
-            , RowLayout $ qHBoxLayout [Widget $ pure postpone, Stretch]
+            , RowLayout $ qHBoxLayout [Widget $< postpone, Stretch]
             ]
     -- end setup UI
 
@@ -89,6 +89,9 @@ new storage onTaskUpdated = do
     let this = TaskWidget{..}
     connect_ postpone QAbstractButton.clickedSignal $ postponeSlot this
     pure this
+
+($<) :: Applicative f => (f a -> b) -> a -> b
+f $< x = f $ pure x
 
 postponeSlot :: TaskWidget -> Bool -> IO ()
 postponeSlot this _checked = do
