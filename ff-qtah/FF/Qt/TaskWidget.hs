@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -10,23 +11,19 @@ module FF.Qt.TaskWidget (
 ) where
 
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
-import Foreign.Hoppy.Runtime (toGc)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
-import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
-import Graphics.UI.Qtah.Widgets.QFormLayout qualified as QFormLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
-import Graphics.UI.Qtah.Widgets.QFrame qualified as QFrame
-import Graphics.UI.Qtah.Widgets.QHBoxLayout qualified as QHBoxLayout
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
 import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
-import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
-import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicy, QSizePolicyPolicy)
-import Graphics.UI.Qtah.Widgets.QSizePolicy qualified as QSizePolicy
+import Graphics.UI.Qtah.Widgets.QSizePolicy (
+    QSizePolicyPolicy (..),
+ )
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
+import Named ((!))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
 
@@ -43,6 +40,15 @@ import FF.Types (
 
 import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
+import FF.Qt.EDSL (
+    QBoxLayoutItem (..),
+    QFormLayoutItem (..),
+    hline,
+    qFrame,
+    qHBoxLayout,
+    qLabel,
+    qScrollArea,
+ )
 
 type OnTaskUpdated =
     -- | Keep open task view (e.g. on postpone)
@@ -67,31 +73,26 @@ new storage onTaskUpdated = do
     start <- DateComponent.new
     end <- DateComponent.new
 
-    -- TODO generate this from .ui
-    parent <- QScrollArea.new
-    innerWidget <- QFrame.new
-    QScrollArea.setWidget parent innerWidget
-    textContent <- QLabel.new
-    QWidget.setSizePolicy textContent
-        =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
-    QLabel.setAlignment textContent Qt.AlignTop
-    QLabel.setWordWrap textContent True
-    QLabel.setTextFormat textContent Qt.MarkdownText
-    QLabel.setTextInteractionFlags textContent Qt.TextBrowserInteraction
-    QLabel.setOpenExternalLinks textContent True
-    hline <- QFrame.new
-    QFrame.setFrameShape hline QFrame.HLine
-    form <- QFormLayout.newWithParent innerWidget
-    QFormLayout.addRowWidget form textContent
-    QFormLayout.addRowWidget form hline
-    QFormLayout.addRowStringLayout form "Start:" start.parent
-    QFormLayout.addRowStringLayout form "Deadline:" end.parent
+    -- setup UI (TODO xDSL?)
+    textContent <-
+        qLabel
+            ! #alignment Qt.AlignTop
+            ! #openExternalLinks True
+            ! #sizePolicy (MinimumExpanding, MinimumExpanding)
+            ! #textInteractionFlags Qt.TextBrowserInteraction
+            ! #textFormat Qt.MarkdownText
+            ! #wordWrap True
     postpone <- QPushButton.newWithText "Postpone"
-    actions <- QHBoxLayout.new
-    QBoxLayout.addWidget actions postpone
-    QBoxLayout.addStretch actions
-    QFormLayout.addRowLayout form actions
-    -- end generated
+    innerWidget <-
+        qFrame
+            [ RowWidget $ pure textContent
+            , RowWidget hline
+            , StringLayout "Start:" start.parent
+            , StringLayout "Deadline:" end.parent
+            , RowLayout $ qHBoxLayout [Widget $ pure postpone, Stretch]
+            ]
+    parent <- qScrollArea innerWidget
+    -- end setup UI
 
     noteId <- newIORef Nothing
     let this = TaskWidget{..}
@@ -122,7 +123,3 @@ update keepOpen this noteDoc = do
     DateComponent.setDate this.end note_end
     QWidget.adjustSize this.innerWidget
     this.onTaskUpdated keepOpen entity
-
-makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
-makeSimpleSizePolicy policy =
-    toGc =<< QSizePolicy.newWithOptions policy policy QSizePolicy.DefaultType

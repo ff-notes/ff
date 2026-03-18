@@ -15,6 +15,7 @@ executable ff-qtah
     , bytestring
     , containers
     , hoppy-runtime
+    , named
     , qtah
     , stm
     , text
@@ -31,6 +32,7 @@ executable ff-qtah
   other-modules:
     FF.Qt
     FF.Qt.DateComponent
+    FF.Qt.EDSL
     FF.Qt.MainWindow
     FF.Qt.TaskListWidget
     FF.Qt.TaskWidget
