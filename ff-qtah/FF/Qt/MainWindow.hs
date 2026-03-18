@@ -115,7 +115,7 @@ new progName storage = do
 
 -- | Only task notes are supported. TODO support wiki notes too
 upsertNote :: MainWindow -> EntityView Note -> IO ()
-upsertNote MainWindow{agendaTasks} = TaskListWidget.upsertTask agendaTasks
+upsertNote MainWindow{agendaTasks} = TaskListWidget.upsertTask agendaTasks True
 
 -- https://wiki.qt.io/Saving_Window_Size_State
 saveGeometryAndState :: (QMainWindowPtr window) => window -> IO Bool

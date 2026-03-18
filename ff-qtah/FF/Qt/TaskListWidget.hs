@@ -22,7 +22,7 @@ import Data.Map.Strict (Map, (!))
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Data.Time (getCurrentTime, toGregorian, utctDay)
-import Foreign.Hoppy.Runtime (fromCppEnum, toGc)
+import Foreign.Hoppy.Runtime (fromCppEnum, nullptr, toGc)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Gui.QFont (QFont)
 import Graphics.UI.Qtah.Gui.QFont qualified as QFont
@@ -115,8 +115,8 @@ setDebugInfoVisible this v = do
     QTreeView.setColumnHidden this.parent (fromEnum SortKeyField) $ not v
     QTreeView.setHeaderHidden this.parent $ not v
 
-upsertTask :: TaskListWidget -> EntityView Note -> IO ()
-upsertTask this entity = do
+upsertTask :: TaskListWidget -> Bool -> EntityView Note -> IO ()
+upsertTask this keepTaskOpen entity = do
     today <- utctDay <$> getCurrentTime -- TODO get local day
     let mode = taskMode today note
     mExisting <- Map.lookup noteId <$> readIORef this.taskItems
@@ -127,15 +127,20 @@ upsertTask this entity = do
             modifyIORef this.taskItems $ Map.insert noteId (mode, item)
         Just (oldMode, item) -> do
             updateTaskItem item entity
+            wasSelected <- QTreeWidgetItem.isSelected item
             when (oldMode /= mode) do
-                wasSelected <- QTreeWidgetItem.isSelected item
                 oldModeItem <- (! oldMode) <$> readIORef this.modeItems
                 idx <- QTreeWidgetItem.indexOfChild oldModeItem item
                 _ <- QTreeWidgetItem.takeChild oldModeItem idx
                 newModeItem <- getOrCreateModeItem this mode
                 QTreeWidgetItem.addChild newModeItem item
-                when wasSelected $ QTreeWidget.setCurrentItem this.parent item
                 modifyIORef this.taskItems $ Map.insert noteId (mode, item)
+            if keepTaskOpen then
+                when wasSelected $ QTreeWidget.setCurrentItem this.parent item
+            else
+                QTreeWidget.setCurrentItem
+                    this.parent
+                    (nullptr :: QTreeWidgetItem)
   where
     Entity{entityId = DocId noteId, entityVal = NoteView{note}} = entity
 

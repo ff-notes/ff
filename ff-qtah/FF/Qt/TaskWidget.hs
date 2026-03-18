@@ -43,6 +43,12 @@ import FF.Types (
 import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
 
+type OnTaskUpdated =
+    -- | Keep open task view (e.g. on postpone)
+    Bool ->
+    EntityView Note ->
+    IO ()
+
 data TaskWidget = TaskWidget
     { parent :: QScrollArea
     , innerWidget :: QFrame
@@ -52,10 +58,10 @@ data TaskWidget = TaskWidget
     , start :: DateComponent
     , end :: DateComponent
     , noteId :: IORef (Maybe NoteId)
-    , onTaskUpdated :: EntityView Note -> IO ()
+    , onTaskUpdated :: OnTaskUpdated
     }
 
-new :: Storage.Handle -> (EntityView Note -> IO ()) -> IO TaskWidget
+new :: Storage.Handle -> OnTaskUpdated -> IO TaskWidget
 new storage onTaskUpdated = do
     parent <- QScrollArea.new
 
@@ -111,16 +117,16 @@ postponeSlot this _checked = do
     mNoteId <- readIORef this.noteId
     case mNoteId of
         Just noteId ->
-            runStorage this.storage (cmdPostpone noteId) >>= update this
+            runStorage this.storage (cmdPostpone noteId) >>= update False this
         Nothing -> pure ()
 
 reload :: TaskWidget -> NoteId -> IO ()
 reload this noteId = do
     atomicWriteIORef this.noteId $ Just noteId
-    runStorage this.storage (loadNote noteId) >>= update this
+    runStorage this.storage (loadNote noteId) >>= update True this
 
-update :: TaskWidget -> EntityDoc Note -> IO ()
-update this noteDoc = do
+update :: Bool -> TaskWidget -> EntityDoc Note -> IO ()
+update keepOpen this noteDoc = do
     entity <- runStorage this.storage $ viewNote noteDoc
     let Entity{entityVal} = entity
     let NoteView{note} = entityVal
@@ -129,7 +135,7 @@ update this noteDoc = do
     DateComponent.setDate this.start note_start
     DateComponent.setDate this.end note_end
     QWidget.adjustSize this.innerWidget
-    this.onTaskUpdated entity
+    this.onTaskUpdated keepOpen entity
 
 makeSimpleSizePolicy :: QSizePolicyPolicy -> IO QSizePolicy
 makeSimpleSizePolicy policy =
