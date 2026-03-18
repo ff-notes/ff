@@ -1,5 +1,6 @@
 end: null
 links: []
+recurring: null
 start: 2019-08-13
 status:
   TaskStatus: Archived

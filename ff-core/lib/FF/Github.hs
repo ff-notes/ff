@@ -172,6 +172,7 @@ issueToNote address Issue{..} =
                             , track_url = Just trackUrl
                             }
                 , note_links = []
+                , note_recurring = Nothing
                 }
         , tags = labels
         }

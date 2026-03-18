@@ -128,13 +128,14 @@ instance ReplicatedAsPayload NoteStatus where
 
     (struct_set Note
         #haskell {field_prefix "note_"}
-        (status lww   NoteStatus)
-        (text   merge RgaString)
-        (start  lww   Day)
-        (end    lww   Day)
-        (tags   set   (ObjectRef Tag))
-        (track  merge Track)
-        (links  set   (ObjectRef Link))
+        (status     lww     NoteStatus)
+        (text       merge   RgaString)
+        (start      lww     Day)
+        (end        lww     Day)
+        (tags       set     (ObjectRef Tag))
+        (track      merge   Track)
+        (links      set     (ObjectRef Link))
+        (recurring  lww     Bool)
     )
 
     (enum LinkType

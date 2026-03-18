@@ -135,6 +135,7 @@ prop_smoke =
                                     , note_tags = []
                                     , note_track = Nothing
                                     , note_links = []
+                                    , note_recurring = Nothing
                                     }
                             , tags = mempty
                             }
@@ -309,6 +310,7 @@ prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
                                                         \ff-notes/ff/issues/60"
                                                 }
                                     , note_links = []
+                                    , note_recurring = Nothing
                                     }
                             , tags =
                                 Map.fromList

@@ -1,5 +1,6 @@
 end: null
 links: []
+recurring: null
 start: 2020-03-06
 status:
   TaskStatus: Archived

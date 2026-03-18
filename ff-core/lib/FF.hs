@@ -464,6 +464,7 @@ cmdNewNote New{text, start, end, isWiki, tags} today = do
                 , note_tags = toList refs
                 , note_track = Nothing
                 , note_links = []
+                , note_recurring = Nothing
                 }
     obj@ObjectFrame{uuid} <- newObjectFrame note
     createDocument obj

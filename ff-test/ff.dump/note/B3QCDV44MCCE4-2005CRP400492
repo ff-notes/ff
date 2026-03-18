@@ -1,5 +1,6 @@
 end: null
 links: []
+recurring: null
 start: 2019-05-27
 status:
   TaskStatus: Active
