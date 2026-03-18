@@ -8,6 +8,7 @@ module FF.Qt.EDSL where
 
 import Data.Foldable (for_)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
+import Graphics.UI.Qtah.Widgets.QBoxLayout (QBoxLayoutPtr)
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QFormLayout qualified as QFormLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
@@ -20,9 +21,10 @@ import Graphics.UI.Qtah.Widgets.QLayout (QLayoutPtr (toQLayout))
 import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
 import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicyPolicy)
+import Graphics.UI.Qtah.Widgets.QVBoxLayout qualified as QVBoxLayout
 import Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, toQWidget)
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
-import Named (arg, (:!))
+import Named (arg, argF, (:!), (:?))
 
 data QBoxLayoutItem
     = Stretch
@@ -33,21 +35,31 @@ data QFormLayoutItem
     | forall a. (QWidgetPtr a) => RowWidget (IO a)
     | forall a. (QLayoutPtr a) => StringLayout String a
 
--- newtype Layout = QFormLayout [QFormLayoutItem]
+data Layout
+    = QFormLayout [QFormLayoutItem]
+    | QVBoxLayout [QBoxLayoutItem]
 
-qFrame :: [QFormLayoutItem] -> IO QFrame
-qFrame items = do
+qFrame :: Layout -> IO QFrame
+qFrame lo = do
     obj <- QFrame.new
-    -- case lo of
-    --     QFormLayout items -> do
-    form <- QFormLayout.newWithParent obj
-    for_ items $ addRow form
+    case lo of
+        QFormLayout items -> do
+            form <- QFormLayout.newWithParent obj
+            for_ items $ addRow form
+        QVBoxLayout items -> do
+            box <- QVBoxLayout.newWithParent obj
+            for_ items $ addBoxLayoutItem box
     pure obj
   where
     addRow form = \case
         RowLayout io -> QFormLayout.addRowLayout form . toQLayout =<< io
         RowWidget io -> QFormLayout.addRowWidget form . toQWidget =<< io
         StringLayout s c -> QFormLayout.addRowStringLayout form s $ toQLayout c
+
+addBoxLayoutItem :: (QBoxLayoutPtr p) => p -> QBoxLayoutItem -> IO ()
+addBoxLayoutItem box = \case
+    Stretch -> QBoxLayout.addStretch box
+    Widget io -> QBoxLayout.addWidget box =<< io
 
 hline :: IO QFrame
 hline = do
@@ -58,16 +70,14 @@ hline = do
 qHBoxLayout :: [QBoxLayoutItem] -> IO QHBoxLayout
 qHBoxLayout items = do
     obj <- QHBoxLayout.new
-    for_ items \case
-        Stretch -> QBoxLayout.addStretch obj
-        Widget io -> QBoxLayout.addWidget obj =<< io
+    for_ items $ addBoxLayoutItem obj
     pure obj
 
 qLabel ::
     (Qt.IsQtTextInteractionFlags textInteractionFlags) =>
     "alignment" :! Qt.QtAlignmentFlag ->
     "openExternalLinks" :! Bool ->
-    "sizePolicy" :! (QSizePolicyPolicy, QSizePolicyPolicy) ->
+    "sizePolicy" :? (QSizePolicyPolicy, QSizePolicyPolicy) ->
     "textInteractionFlags" :! textInteractionFlags ->
     "textFormat" :! Qt.QtTextFormat ->
     "wordWrap" :! Bool ->
@@ -75,14 +85,14 @@ qLabel ::
 qLabel
     (arg #alignment -> a)
     (arg #openExternalLinks -> oel)
-    (arg #sizePolicy -> (sp1, sp2))
+    (argF #sizePolicy -> sp)
     (arg #textInteractionFlags -> tif)
     (arg #textFormat -> tf)
     (arg #wordWrap -> ww) = do
         obj <- QLabel.new
         QLabel.setAlignment obj a
         QLabel.setOpenExternalLinks obj oel
-        QWidget.setSizePolicyRaw obj sp1 sp2
+        for_ sp \(sp1, sp2) -> QWidget.setSizePolicyRaw obj sp1 sp2
         QLabel.setTextInteractionFlags obj tif
         QLabel.setTextFormat obj tf
         QLabel.setWordWrap obj ww
@@ -92,4 +102,5 @@ qScrollArea :: (QWidgetPtr widget) => widget -> IO QScrollArea
 qScrollArea w = do
     obj <- QScrollArea.new
     QScrollArea.setWidget obj w
+    QScrollArea.setWidgetResizable obj True
     pure obj

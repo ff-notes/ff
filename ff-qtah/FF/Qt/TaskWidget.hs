@@ -18,12 +18,7 @@ import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
 import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
-import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
-import Graphics.UI.Qtah.Widgets.QSizePolicy (
-    QSizePolicyPolicy (..),
- )
-import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
-import Named ((!))
+import Named (defaults, (!))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
 
@@ -41,9 +36,9 @@ import FF.Types (
 import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
 import FF.Qt.EDSL (
+    Layout (..),
     QBoxLayoutItem (..),
     QFormLayoutItem (..),
-    hline,
     qFrame,
     qHBoxLayout,
     qLabel,
@@ -57,9 +52,7 @@ type OnTaskUpdated =
     IO ()
 
 data TaskWidget = TaskWidget
-    { parent :: QScrollArea
-    , innerWidget :: QFrame
-    -- ^ the main widget inside the scroll area
+    { parent :: QFrame
     , textContent :: QLabel
     , storage :: Storage.Handle
     , start :: DateComponent
@@ -78,20 +71,18 @@ new storage onTaskUpdated = do
         qLabel
             ! #alignment Qt.AlignTop
             ! #openExternalLinks True
-            ! #sizePolicy (MinimumExpanding, MinimumExpanding)
             ! #textInteractionFlags Qt.TextBrowserInteraction
             ! #textFormat Qt.MarkdownText
             ! #wordWrap True
+            ! defaults
     postpone <- QPushButton.newWithText "Postpone"
-    innerWidget <-
-        qFrame
-            [ RowWidget $ pure textContent
-            , RowWidget hline
+    parent <-
+        qFrame . QFormLayout $
+            [ RowWidget $ qScrollArea textContent
             , StringLayout "Start:" start.parent
             , StringLayout "Deadline:" end.parent
             , RowLayout $ qHBoxLayout [Widget $ pure postpone, Stretch]
             ]
-    parent <- qScrollArea innerWidget
     -- end setup UI
 
     noteId <- newIORef Nothing
@@ -121,5 +112,4 @@ update keepOpen this noteDoc = do
     QLabel.setText this.textContent $ fromRgaM note_text
     DateComponent.setDate this.start note_start
     DateComponent.setDate this.end note_end
-    QWidget.adjustSize this.innerWidget
     this.onTaskUpdated keepOpen entity
