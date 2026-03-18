@@ -73,6 +73,9 @@ new storage onTaskUpdated = do
         =<< makeSimpleSizePolicy QSizePolicy.MinimumExpanding
     QLabel.setAlignment textContent Qt.AlignTop
     QLabel.setWordWrap textContent True
+    QLabel.setTextFormat textContent Qt.MarkdownText
+    QLabel.setTextInteractionFlags textContent Qt.TextBrowserInteraction
+    QLabel.setOpenExternalLinks textContent True
 
     hline <- QFrame.new
     QFrame.setFrameShape hline QFrame.HLine

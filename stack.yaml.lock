@@ -78,26 +78,44 @@ packages:
   original:
     hackage: hoppy-std-0.9.0
 - completed:
-    hackage: qtah-cpp-qt6-0.9.1@sha256:6ca8430faa90c38d1a1f4289f9436ab98bec1d9a821169873e5af5774a9658f6,1531
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    name: qtah-cpp
     pantry-tree:
-      sha256: a5dbab3a793d15f3af50a96ff94a163c7157dac462dc8fb0cd5c2af92a626a1c
-      size: 1805
+      sha256: a3dcf0c8b4802a5b3ab5fb431e4a0119600c01e884f6f4b4642ca3b578bf0fd3
+      size: 1906
+    subdir: qtah-cpp
+    version: 0.9.2
   original:
-    hackage: qtah-cpp-qt6-0.9.1
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    subdir: qtah-cpp
 - completed:
-    hackage: qtah-generator-0.9.1@sha256:9964fa72160d0863ccbc581e5dc067aef8191eae812827ed8affe849700c9cf7,16397
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    name: qtah-generator
     pantry-tree:
-      sha256: 83fe0d82a62983984e4a103ba684334be73c97dac5a24f1101816e4e1ca3ba05
-      size: 28524
+      sha256: ab3ed50eed88812493768039c745b07f48f90314875151c55011fbc919b508dd
+      size: 28576
+    subdir: qtah-generator
+    version: 0.9.2
   original:
-    hackage: qtah-generator-0.9.1
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    subdir: qtah-generator
 - completed:
-    hackage: qtah-qt6-0.9.1@sha256:a8121f84c79c18b1a251966add0005757866c92849c0e491b5e802dddc35d1de,50363
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    name: qtah
     pantry-tree:
-      sha256: 2837b99f5a1ca9a244e8a856d914f75bbe28932dcb59bb54c6746512c31412d3
-      size: 1086
+      sha256: e38993914a2b44c8603afa33cb919ef5f08951eea71af70c788e0be23d377ad6
+      size: 1134
+    subdir: qtah
+    version: 0.9.2
   original:
-    hackage: qtah-qt6-0.9.1
+    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    git: https://git.sr.ht/~cblp/qtah
+    subdir: qtah
 - completed:
     hackage: cmark-0.6.1@sha256:5994e5d56d286e857063375154eac4128aea835ec867955963c27237823b8085,3361
     pantry-tree:

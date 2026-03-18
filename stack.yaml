@@ -20,9 +20,12 @@ extra-deps:
     - hoppy-generator-0.9.0
     - hoppy-runtime-0.9.0
     - hoppy-std-0.9.0
-    - qtah-cpp-qt6-0.9.1
-    - qtah-generator-0.9.1
-    - qtah-qt6-0.9.1
+    # - qtah-cpp-qt6-0.9.1
+    # - qtah-generator-0.9.1
+    # - qtah-qt6-0.9.1
+    - git: https://git.sr.ht/~cblp/qtah
+      commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5  # 0.9.1 + cblp's patches
+      subdirs: [qtah-cpp, qtah-generator, qtah]
   # ff-test
     - cmark-0.6.1
 

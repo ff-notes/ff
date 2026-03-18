@@ -15,16 +15,15 @@ executable ff-qtah
     , bytestring
     , containers
     , hoppy-runtime
-    , qtah-qt6
+    , qtah
     , stm
     , text
     , time
 
   -- organization
-  build-depends:
-    -- , ron-rdt
-    , ron-storage
+  build-depends: ron-storage
 
+  -- , ron-rdt
   -- project
   build-depends: ff-core
   ghc-options:   -dynamic
