@@ -160,10 +160,10 @@ upsertTask this keepTaskOpen entity = do
 deleteTaskFromUi :: TaskListWidget -> NoteId -> IO ()
 deleteTaskFromUi this noteId = do
     mExisting <- Map.lookup noteId <$> readIORef this.taskItems
+    QTreeWidget.setCurrentItem this.parent (nullptr :: QTreeWidgetItem)
     for_ mExisting \(_oldMode, item) -> do
         delete item
         modifyIORef this.taskItems $ Map.delete noteId
-    QTreeWidget.setCurrentItem this.parent (nullptr :: QTreeWidgetItem)
 
 getOrCreateModeItem :: TaskListWidget -> TaskMode -> IO QTreeWidgetItem
 getOrCreateModeItem this mode = do
