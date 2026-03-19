@@ -1,8 +1,6 @@
 {-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module FF.Qt.EDSL where
 
@@ -24,7 +22,7 @@ import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicyPolicy)
 import Graphics.UI.Qtah.Widgets.QVBoxLayout qualified as QVBoxLayout
 import Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, toQWidget)
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
-import Named (arg, argF, (:!), (:?))
+import Named (NamedF (ArgF), (:?))
 
 data QBoxLayoutItem
     = Stretch
@@ -34,6 +32,7 @@ data QFormLayoutItem
     = forall a. (QLayoutPtr a) => RowLayout (IO a)
     | forall a. (QWidgetPtr a) => RowWidget (IO a)
     | forall a. (QLayoutPtr a) => StringLayout String a
+    | forall a. (QWidgetPtr a) => StringWidget String (IO a)
 
 data Layout
     = QFormLayout [QFormLayoutItem]
@@ -52,9 +51,11 @@ qFrame lo = do
     pure obj
   where
     addRow form = \case
-        RowLayout io -> QFormLayout.addRowLayout form . toQLayout =<< io
-        RowWidget io -> QFormLayout.addRowWidget form . toQWidget =<< io
-        StringLayout s c -> QFormLayout.addRowStringLayout form s $ toQLayout c
+        RowLayout a -> QFormLayout.addRowLayout form . toQLayout =<< a
+        RowWidget a -> QFormLayout.addRowWidget form . toQWidget =<< a
+        StringLayout s a -> QFormLayout.addRowStringLayout form s $ toQLayout a
+        StringWidget s a ->
+            QFormLayout.addRowStringWidget form s . toQWidget =<< a
 
 addBoxLayoutItem :: (QBoxLayoutPtr p) => p -> QBoxLayoutItem -> IO ()
 addBoxLayoutItem box = \case
@@ -75,27 +76,30 @@ qHBoxLayout items = do
 
 qLabel ::
     (Qt.IsQtTextInteractionFlags textInteractionFlags) =>
-    "alignment" :! Qt.QtAlignmentFlag ->
-    "openExternalLinks" :! Bool ->
+    "alignment" :? Qt.QtAlignmentFlag ->
+    "openExternalLinks" :? Bool ->
     "sizePolicy" :? (QSizePolicyPolicy, QSizePolicyPolicy) ->
-    "textInteractionFlags" :! textInteractionFlags ->
-    "textFormat" :! Qt.QtTextFormat ->
-    "wordWrap" :! Bool ->
+    "text" :? String ->
+    "textFormat" :? Qt.QtTextFormat ->
+    "textInteractionFlags" :? textInteractionFlags ->
+    "wordWrap" :? Bool ->
     IO QLabel
 qLabel
-    (arg #alignment -> a)
-    (arg #openExternalLinks -> oel)
-    (argF #sizePolicy -> sp)
-    (arg #textInteractionFlags -> tif)
-    (arg #textFormat -> tf)
-    (arg #wordWrap -> ww) = do
+    (ArgF alignment)
+    (ArgF openExternalLinks)
+    (ArgF sizePolicy)
+    (ArgF text)
+    (ArgF textFormat)
+    (ArgF textInteractionFlags)
+    (ArgF wordWrap) = do
         obj <- QLabel.new
-        QLabel.setAlignment obj a
-        QLabel.setOpenExternalLinks obj oel
-        for_ sp \(sp1, sp2) -> QWidget.setSizePolicyRaw obj sp1 sp2
-        QLabel.setTextInteractionFlags obj tif
-        QLabel.setTextFormat obj tf
-        QLabel.setWordWrap obj ww
+        for_ alignment $ QLabel.setAlignment obj
+        for_ openExternalLinks $ QLabel.setOpenExternalLinks obj
+        for_ sizePolicy \(sp1, sp2) -> QWidget.setSizePolicyRaw obj sp1 sp2
+        for_ text $ QLabel.setText obj
+        for_ textFormat $ QLabel.setTextFormat obj
+        for_ textInteractionFlags $ QLabel.setTextInteractionFlags obj
+        for_ wordWrap $ QLabel.setWordWrap obj
         pure obj
 
 qScrollArea :: (QWidgetPtr widget) => widget -> IO QScrollArea

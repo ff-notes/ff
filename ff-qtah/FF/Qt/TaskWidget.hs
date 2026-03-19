@@ -12,6 +12,7 @@ module FF.Qt.TaskWidget (
 
 import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
+import Data.Maybe (fromMaybe)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
@@ -60,6 +61,9 @@ data TaskWidget = TaskWidget
     , end :: DateComponent
     , noteId :: IORef (Maybe NoteId)
     , onTaskUpdated :: OnTaskUpdated
+    , created :: QLabel
+    , updated :: QLabel
+    , recurring :: QLabel
     }
 
 new :: Storage.Handle -> OnTaskUpdated -> IO TaskWidget
@@ -72,17 +76,23 @@ new storage onTaskUpdated = do
         qLabel
             ! #alignment Qt.AlignTop
             ! #openExternalLinks True
-            ! #textInteractionFlags Qt.TextBrowserInteraction
             ! #textFormat Qt.MarkdownText
+            ! #textInteractionFlags Qt.TextBrowserInteraction
             ! #wordWrap True
             ! defaults
     postpone <- QPushButton.newWithText "Postpone"
     done <- QPushButton.newWithText "Done"
+    created <- QLabel.new
+    updated <- QLabel.new
+    recurring <- QLabel.new
     parent <-
         qFrame . QFormLayout $
             [ RowWidget $ qScrollArea textContent
             , StringLayout "Start:" start.parent
             , StringLayout "Deadline:" end.parent
+            , StringWidget "Created:" $< created
+            , StringWidget "Updated:" $< updated
+            , StringWidget "Recurring:" $< recurring
             , RowLayout . qHBoxLayout $
                 [Widget $< postpone, Widget $< done, Stretch]
             ]
@@ -117,10 +127,13 @@ reload this noteId = do
 update :: Bool -> TaskWidget -> EntityDoc Note -> IO ()
 update keepOpen this noteDoc = do
     entity <- runStorage this.storage $ viewNote noteDoc
-    let Entity{entityVal} = entity
-    let NoteView{note} = entityVal
-    let Note{note_text, note_start, note_end} = note
-    QLabel.setText this.textContent $ fromRgaM note_text
-    DateComponent.setDate this.start note_start
-    DateComponent.setDate this.end note_end
+    let Entity{entityVal = NoteView{note}} = entity
+    QLabel.setText this.textContent $ fromRgaM note.note_text
+    DateComponent.setDate this.start note.note_start
+    DateComponent.setDate this.end note.note_end
+    -- TODO created
+    -- TODO updated
+    QLabel.setText
+        this.recurring
+        if fromMaybe False note.note_recurring then "Yes" else "No"
     this.onTaskUpdated keepOpen entity
