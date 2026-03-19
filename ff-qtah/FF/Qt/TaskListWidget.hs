@@ -22,7 +22,7 @@ import Data.Map.Strict (Map, (!))
 import Data.Map.Strict qualified as Map
 import Data.Text qualified as Text
 import Data.Time (getCurrentTime, toGregorian, utctDay)
-import Foreign.Hoppy.Runtime (fromCppEnum, nullptr, toGc)
+import Foreign.Hoppy.Runtime (delete, fromCppEnum, nullptr, toGc)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Gui.QFont (QFont)
 import Graphics.UI.Qtah.Gui.QFont qualified as QFont
@@ -160,10 +160,8 @@ upsertTask this keepTaskOpen entity = do
 deleteTaskFromUi :: TaskListWidget -> NoteId -> IO ()
 deleteTaskFromUi this noteId = do
     mExisting <- Map.lookup noteId <$> readIORef this.taskItems
-    for_ mExisting \(oldMode, item) -> do
-        oldModeItem <- (! oldMode) <$> readIORef this.modeItems
-        idx <- QTreeWidgetItem.indexOfChild oldModeItem item
-        _ <- QTreeWidgetItem.takeChild oldModeItem idx
+    for_ mExisting \(_oldMode, item) -> do
+        delete item
         modifyIORef this.taskItems $ Map.delete noteId
     QTreeWidget.setCurrentItem this.parent (nullptr :: QTreeWidgetItem)
 
