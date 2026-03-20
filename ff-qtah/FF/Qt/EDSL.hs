@@ -10,6 +10,9 @@ import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
 import Graphics.UI.Qtah.Widgets.QBoxLayout (QBoxLayoutPtr)
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
+import Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
+import Graphics.UI.Qtah.Widgets.QDateEdit qualified as QDateEdit
+import Graphics.UI.Qtah.Widgets.QDateTimeEdit qualified as QDateTimeEdit
 import Graphics.UI.Qtah.Widgets.QFormLayout qualified as QFormLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QFrame qualified as QFrame
@@ -41,6 +44,12 @@ data QFormLayoutItem
 data Layout
     = QFormLayout [QFormLayoutItem]
     | QVBoxLayout [QBoxLayoutItem]
+
+qDateEdit :: "displayFormat" :? String -> IO QDateEdit
+qDateEdit (ArgF displayFormat) = do
+    obj <- QDateEdit.new
+    for_ displayFormat $ QDateTimeEdit.setDisplayFormat obj
+    pure obj
 
 qFrame :: "objectName" :? String -> Layout -> IO QFrame
 qFrame (ArgF objectName) lo = do
@@ -132,3 +141,6 @@ qScrollArea w = do
     QScrollArea.setWidget obj w
     QScrollArea.setWidgetResizable obj True
     pure obj
+
+($<) :: (Applicative f) => (f a -> b) -> a -> b
+f $< x = f $ pure x

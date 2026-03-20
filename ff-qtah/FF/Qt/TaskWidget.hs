@@ -13,12 +13,10 @@ module FF.Qt.TaskWidget (
 import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Maybe (fromMaybe)
-import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Flags (Flags (enumToFlags))
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
-import Graphics.UI.Qtah.Widgets.QDateEdit qualified as QDateEdit
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
@@ -48,6 +46,7 @@ import FF.Qt.EDSL (
     qLabel,
     qPushButton,
     qScrollArea,
+    ($<),
  )
 
 type OnTaskUpdated =
@@ -74,7 +73,6 @@ new storage onTaskUpdated = do
     start <- DateComponent.new
     end <- DateComponent.new
 
-    -- setup UI (TODO xDSL?)
     textContent <-
         qLabel
             ! #alignment Qt.AlignTop
@@ -94,7 +92,6 @@ new storage onTaskUpdated = do
             QFormLayout
                 [ RowWidget $ qScrollArea textContent
                 , StringLayout "Start:" start.parent
-                -- , StringWidget "TEST" QDateEdit.new
                 , StringLayout "Deadline:" end.parent
                 , StringWidget "Created:" $< created
                 , StringWidget "Updated:" $< updated
@@ -103,16 +100,12 @@ new storage onTaskUpdated = do
                     qHBoxLayout ! #objectName "actionsRow" ! defaults $
                         [Widget $< postpone, Widget $< done, Stretch]
                 ]
-    -- end setup UI
 
     noteId <- newIORef Nothing
     let this = TaskWidget{..}
     connect_ postpone QAbstractButton.clickedSignal $ onPostponeClicked this
     connect_ done QAbstractButton.clickedSignal $ onDoneClicked this
     pure this
-
-($<) :: (Applicative f) => (f a -> b) -> a -> b
-f $< x = f $ pure x
 
 onPostponeClicked :: TaskWidget -> Bool -> IO ()
 onPostponeClicked this _checked = do
