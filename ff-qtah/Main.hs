@@ -59,8 +59,12 @@ main = do
 
 withApp :: (QApplication -> IO a) -> IO a
 withApp action = do
+    prog <- getProgName
     args <- getArgs
-    withScopedPtr (QApplication.new args) action
+    -- let args'
+    --         | any ("-style" `isPrefixOf`) args = args
+    --         | otherwise = "-style=Fusion" : args
+    withScopedPtr (QApplication.new $ prog : args) action
 
 setupApp :: IO ()
 setupApp = do
