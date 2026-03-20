@@ -1,4 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -7,16 +8,19 @@ module FF.Qt.DateComponent (DateComponent (..), new, setDate) where
 import Data.Time (Day, toGregorian)
 import Foreign.Hoppy.Runtime (toGc)
 import Graphics.UI.Qtah.Core.QDate qualified as QDate
+import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Widgets.QAbstractSpinBox qualified as QAbstractSpinBox
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
 import Graphics.UI.Qtah.Widgets.QDateEdit qualified as QDateEdit
 import Graphics.UI.Qtah.Widgets.QDateTimeEdit qualified as QDateTimeEdit
 import Graphics.UI.Qtah.Widgets.QHBoxLayout (QHBoxLayout)
-import Graphics.UI.Qtah.Widgets.QHBoxLayout qualified as QHBoxLayout
 import Graphics.UI.Qtah.Widgets.QPushButton (QPushButton)
 import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
+import Named ((!))
+
+import FF.Qt.EDSL (qHBoxLayout)
 
 data DateComponent = DateComponent
     { parent :: QHBoxLayout
@@ -27,7 +31,8 @@ data DateComponent = DateComponent
 
 new :: IO DateComponent
 new = do
-    parent <- QHBoxLayout.new
+    parent <-
+        qHBoxLayout ! #objectName "[DateComponent]parent" ! #spacing 0 $ []
 
     date <- QDateEdit.new
     QDateTimeEdit.setCalendarPopup date True
@@ -35,10 +40,12 @@ new = do
     QBoxLayout.addWidget parent date
 
     add <- QPushButton.newWithText "➕ Set"
+    QObject.setObjectName add "set"
     QWidget.setEnabled add False
     QBoxLayout.addWidget parent add
 
     remove <- QPushButton.newWithText "╳"
+    QObject.setObjectName remove "remove"
     QWidget.setEnabled remove False
     QBoxLayout.addWidget parent remove
 

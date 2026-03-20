@@ -1,28 +1,12 @@
 {-# LANGUAGE BlockArguments #-}
 
-module FF.Qt (printChildrenTree, repeatInGuiThreadWheneverIdle, runInGuiThreadWhenReady) where
+module FF.Qt (repeatInGuiThreadWheneverIdle, runInGuiThreadWhenReady) where
 
 import Control.Concurrent.MVar (MVar, tryTakeMVar)
 import Data.Foldable (for_)
-import Graphics.UI.Qtah.Core.QMetaClassInfo qualified as QMetaClassInfo
-import Graphics.UI.Qtah.Core.QMetaObject qualified as QMetaObject
-import Graphics.UI.Qtah.Core.QObject (QObjectPtr, toQObject)
 import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Core.QTimer qualified as QTimer
 import Graphics.UI.Qtah.Signal (connect_)
-
-printChildrenTree :: (QObjectPtr object) => object -> IO ()
-printChildrenTree = go 0 . toQObject
-  where
-    go level object = do
-        name <- QObject.objectName object
-        meta <- QObject.metaObject object
-        classInfo <- QMetaObject.classInfo meta 0
-        className <- QMetaClassInfo.name classInfo
-        putStrLn . unwords $
-            replicate level "| " ++ [show name, ":", show className]
-        children <- QObject.children object
-        for_ children $ go (level + 1)
 
 -- | Repaeat some code in the GUI thread, when it is idle
 repeatInGuiThreadWheneverIdle :: IO () -> IO ()

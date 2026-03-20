@@ -13,13 +13,15 @@ module FF.Qt.TaskWidget (
 import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Maybe (fromMaybe)
+import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Core.Types qualified as Qt
+import Graphics.UI.Qtah.Flags (Flags (enumToFlags))
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
+import Graphics.UI.Qtah.Widgets.QDateEdit qualified as QDateEdit
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
-import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Named (defaults, (!))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
@@ -44,6 +46,7 @@ import FF.Qt.EDSL (
     qFrame,
     qHBoxLayout,
     qLabel,
+    qPushButton,
     qScrollArea,
  )
 
@@ -75,27 +78,31 @@ new storage onTaskUpdated = do
     textContent <-
         qLabel
             ! #alignment Qt.AlignTop
+            ! #objectName "textContent"
             ! #openExternalLinks True
             ! #textFormat Qt.MarkdownText
-            ! #textInteractionFlags Qt.TextBrowserInteraction
+            ! #textInteractionFlags (enumToFlags Qt.TextBrowserInteraction)
             ! #wordWrap True
             ! defaults
-    postpone <- QPushButton.newWithText "Postpone"
-    done <- QPushButton.newWithText "Done"
-    created <- QLabel.new
-    updated <- QLabel.new
-    recurring <- QLabel.new
+    postpone <- qPushButton ! #objectName "postpone" ! #text "Postpone"
+    done <- qPushButton ! #objectName "postpone" ! #text "Done"
+    created <- qLabel ! #objectName "created" ! defaults
+    updated <- qLabel ! #objectName "updated" ! defaults
+    recurring <- qLabel ! #objectName "recurring" ! defaults
     parent <-
-        qFrame . QFormLayout $
-            [ RowWidget $ qScrollArea textContent
-            , StringLayout "Start:" start.parent
-            , StringLayout "Deadline:" end.parent
-            , StringWidget "Created:" $< created
-            , StringWidget "Updated:" $< updated
-            , StringWidget "Recurring:" $< recurring
-            , RowLayout . qHBoxLayout $
-                [Widget $< postpone, Widget $< done, Stretch]
-            ]
+        qFrame ! #objectName "parent" $
+            QFormLayout
+                [ RowWidget $ qScrollArea textContent
+                , StringLayout "Start:" start.parent
+                -- , StringWidget "TEST" QDateEdit.new
+                , StringLayout "Deadline:" end.parent
+                , StringWidget "Created:" $< created
+                , StringWidget "Updated:" $< updated
+                , StringWidget "Recurring:" $< recurring
+                , RowLayout $
+                    qHBoxLayout ! #objectName "actionsRow" ! defaults $
+                        [Widget $< postpone, Widget $< done, Stretch]
+                ]
     -- end setup UI
 
     noteId <- newIORef Nothing
