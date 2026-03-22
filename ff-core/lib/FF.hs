@@ -35,6 +35,7 @@ module FF (
     loadTagsByRefs,
     noDataDirectoryMessage,
     splitModes,
+    splitModesBy,
     sponsors,
     takeSamples,
     updateTrackedNotes,
@@ -66,8 +67,16 @@ import Data.Set (Set, disjoint, isSubsetOf, (\\))
 import Data.Set qualified as Set
 import Data.Text (Text, isInfixOf, toCaseFold)
 import Data.Text qualified as Text
-import Data.Time (Day, addDays, getCurrentTime, toModifiedJulianDay, utctDay)
+import Data.Time (
+    Day,
+    UTCTime,
+    addDays,
+    getCurrentTime,
+    toModifiedJulianDay,
+    utctDay,
+ )
 import Data.Traversable (for)
+import GHC.Stack (HasCallStack)
 import RON.Data (
     MonadObjectState,
     ObjectStateT,
@@ -77,11 +86,12 @@ import RON.Data (
  )
 import RON.Data.RGA (RGA (RGA))
 import RON.Data.RGA qualified as RGA
+import RON.Epoch qualified as Epoch
 import RON.Error (MonadE, throwErrorText)
 import RON.Event (ReplicaClock)
+import RON.Event qualified as Event
 import RON.Storage (
     Collection,
-    DocId,
     createDocument,
     decodeDocId,
     docIdFromUuid,
@@ -89,7 +99,8 @@ import RON.Storage (
     modify,
  )
 import RON.Storage.Backend (
-    Document (Document, objectFrame),
+    DocId (DocId),
+    Document (Document, objectFrame, versions),
     MonadStorage (getDocuments),
  )
 import RON.Types (ObjectFrame (ObjectFrame, uuid), ObjectRef (ObjectRef))
@@ -150,9 +161,14 @@ import FF.Types (
 
 load :: (Collection a, MonadStorage m) => DocId a -> m (EntityDoc a)
 load docid = do
-    Document{objectFrame} <- loadDocument docid
-    entityVal <- evalObjectState objectFrame readObject
-    pure Entity{entityId = docid, entityVal}
+    document <- loadDocument docid
+    entityVal <- evalObjectState document.objectFrame readObject
+    pure
+        Entity
+            { entityId = docid
+            , entityVal
+            , entityVersion = maximum document.versions
+            }
 
 loadAll :: (Collection a, MonadStorage m) => m [EntityDoc a]
 loadAll = getDocuments >>= traverse load
@@ -197,7 +213,7 @@ createTags tags =
     Set.fromList <$> for (toList tags) \tag -> do
         tagFrame@ObjectFrame{uuid} <-
             newObjectFrame Tag{tag_text = Just tag, tag_desc = Nothing}
-        createDocument tagFrame
+        _ <- createDocument tagFrame
         pure $ ObjectRef uuid
 
 {- | Add new tags to Collection of tags.
@@ -217,18 +233,32 @@ getOrCreateTags tags
         createdTagRefs <- createTags newTags
         pure $ existentTagRefs <> createdTagRefs
 
-viewNote :: (MonadStorage m) => EntityDoc Note -> m (EntityView Note)
-viewNote Entity{entityId, entityVal} = do
+viewNote ::
+    (HasCallStack, MonadStorage m) => EntityDoc Note -> m (EntityView Note)
+viewNote (Entity noteId note version) = do
     tagsLoaded <- loadTagsByRefs tagRefs
     let tags =
             Map.fromList
                 [ (uuidToText uuid, tag)
                 | (ObjectRef uuid, tag) <- HashMap.toList tagsLoaded
                 ]
-    pure Entity{entityId, entityVal = NoteView{note = entityVal, tags}}
+    let created = docIdToTime noteId
+    let lastUpdated = docIdToTime $ DocId version
+    let nv = NoteView{note, tags, created, lastUpdated}
+    pure $ Entity noteId nv version
   where
     tagRefs = HashSet.fromList note_tags
-    Note{note_tags} = entityVal
+    Note{note_tags} = note
+
+docIdToTime :: (HasCallStack) => DocId a -> UTCTime
+docIdToTime docid@(DocId rawdocid) =
+    decodeDocId docid
+        & fromMaybe (error $ "can't parse " <> show rawdocid)
+        & snd
+        & Event.unsafeDecodeEvent
+        & (.time)
+        & Event.timeValue
+        & Epoch.decode
 
 viewNoteSample :: (MonadStorage m) => Sample (EntityDoc Note) -> m NoteSample
 viewNoteSample Sample{items, total} = do
@@ -281,7 +311,7 @@ defaultNoteFilter =
         }
 
 viewTaskSamples ::
-    (MonadStorage m) =>
+    (HasCallStack, MonadStorage m) =>
     NoteFilter ->
     ConfigUI ->
     Maybe Limit ->
@@ -418,7 +448,7 @@ updateTrackedNote oldNotes NoteView{note, tags} =
             case HashMap.lookup track oldNotes of
                 Nothing -> do
                     obj <- newObjectFrame note{note_tags = toList newRefs}
-                    createDocument obj
+                    void $ createDocument obj
                 Just noteid ->
                     void $ modify noteid do
                         note_status_setIfDiffer note.note_status
@@ -467,8 +497,8 @@ cmdNewNote New{text, start, end, isWiki, tags} today = do
                 , note_recurring = Nothing
                 }
     obj@ObjectFrame{uuid} <- newObjectFrame note
-    createDocument obj
-    pure $ Entity (docIdFromUuid uuid) note
+    doc <- createDocument obj
+    pure $ Entity (docIdFromUuid uuid) note $ maximum doc.versions
 
 cmdNewContact :: (MonadStorage m) => Text -> m (EntityDoc Contact)
 cmdNewContact name = do
@@ -478,8 +508,8 @@ cmdNewContact name = do
                 , contact_status = Just Active
                 }
     obj@ObjectFrame{uuid} <- newObjectFrame contact
-    createDocument obj
-    pure $ Entity (docIdFromUuid uuid) contact
+    doc <- createDocument obj
+    pure $ Entity (docIdFromUuid uuid) contact $ maximum doc.versions
 
 cmdDeleteContact :: (MonadStorage m) => ContactId -> m (EntityDoc Contact)
 cmdDeleteContact cid =
@@ -604,8 +634,8 @@ modifyAndView ::
     ObjectStateT a m () ->
     m (EntityDoc a)
 modifyAndView docid f = do
-    entityVal <- modify docid $ f *> readObject
-    pure $ Entity docid entityVal
+    _ <- modify docid $ f *> readObject
+    load docid
 
 getUtcToday :: (MonadIO io) => io Day
 getUtcToday = liftIO $ utctDay <$> getCurrentTime
@@ -701,5 +731,5 @@ cmdAddTagToGroup tagText groupName = do
                         , tagGroup_member = [tagRef]
                         }
             obj@ObjectFrame{uuid} <- newObjectFrame group
-            createDocument obj
-            pure $ Entity (docIdFromUuid uuid) group
+            doc <- createDocument obj
+            pure $ Entity (docIdFromUuid uuid) group $ maximum doc.versions

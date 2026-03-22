@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments #-}
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
@@ -44,7 +45,7 @@ import FF.Types (
     NoteStatus (TaskStatus),
     Status (Active, Archived),
     TaskMode (..),
-    View (NoteView, note),
+    View (NoteView),
     taskMode,
  )
 import FF.Types qualified
@@ -126,7 +127,7 @@ syncTask this keepTaskOpen entity = do
         Just (TaskStatus Archived) -> deleteTaskFromUi this noteId
         _ -> undefined
   where
-    Entity noteId NoteView{note} = entity
+    Entity noteId NoteView{note} _ = entity
 
 upsertTask :: TaskListWidget -> Bool -> EntityView Note -> IO ()
 upsertTask this keepTaskOpen entity = do
@@ -155,7 +156,7 @@ upsertTask this keepTaskOpen entity = do
                     this.parent
                     (nullptr :: QTreeWidgetItem)
   where
-    Entity noteId NoteView{note} = entity
+    Entity noteId NoteView{note} _ = entity
 
 deleteTaskFromUi :: TaskListWidget -> NoteId -> IO ()
 deleteTaskFromUi this noteId = do
@@ -216,7 +217,7 @@ taskItemField entity = \case
     SortKeyField -> sortKey
     TitleField -> title
   where
-    Entity (DocId noteId) NoteView{note} = entity
+    Entity (DocId noteId) NoteView{note} _ = entity
     title = concat $ take 1 $ lines $ fromRgaM note.note_text
     sortKey = printf "End=%04d%02d%02d,Start=%04d%02d%02d" ey em ed sy sm sd
     (ey, em, ed) = maybe (9999, 99, 99) toGregorian note.note_end

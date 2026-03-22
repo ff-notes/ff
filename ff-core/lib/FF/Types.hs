@@ -9,6 +9,7 @@
 {-# LANGUAGE ImportQualifiedPost #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ParallelListComp #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -44,7 +45,7 @@ import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Data.Text.Encoding qualified as Text
-import Data.Time (diffDays)
+import Data.Time (UTCTime, diffDays)
 import Data.Traversable (for)
 import GHC.Generics (Generic)
 import Numeric.Natural (Natural)
@@ -63,7 +64,7 @@ import RON.Data.Time (Day)
 import RON.Error (Error (Error))
 import RON.Schema.TH (mkReplicated)
 import RON.Storage (Collection, DocId, collectionName, loadDocument)
-import RON.Storage.Backend (DocId (DocId), Document (Document), MonadStorage)
+import RON.Storage.Backend (DocId (DocId), DocVersion, MonadStorage)
 import RON.Storage.Backend qualified
 import RON.Text.Serialize (serializeUuid)
 import RON.Types (Atom (AUuid), ObjectRef, UUID)
@@ -213,8 +214,13 @@ instance (ToJSON a) => ToJSON (Sample a) where
   A value identified with some document.
   Should not be used directly, use 'EntityDoc' or 'EntityView' instead.
 -}
-data Entity doc val
-    = (Collection doc) => Entity {entityId :: DocId doc, entityVal :: val}
+data Entity a val
+    = (Collection a) =>
+    Entity
+    { entityId :: DocId a
+    , entityVal :: val
+    , entityVersion :: DocVersion
+    }
 
 deriving instance (Eq val) => Eq (Entity doc val)
 
@@ -255,6 +261,8 @@ data instance View Note = NoteView
     { note :: Note
     , tags :: Map Text Text
     -- ^ the key is UUID or URI of the tag
+    , created :: UTCTime
+    , lastUpdated :: UTCTime
     }
     deriving (Eq, Show)
 
@@ -338,10 +346,16 @@ type Limit = Natural
 
 loadNote :: (MonadStorage m) => NoteId -> m (EntityDoc Note)
 loadNote entityId = do
-    Document{objectFrame} <- loadDocument entityId
-    let tryCurrentEncoding = evalObjectState objectFrame readObject
+    document <- loadDocument entityId
+    let tryCurrentEncoding = evalObjectState document.objectFrame readObject
     case tryCurrentEncoding of
-        Right entityVal -> pure Entity{entityId, entityVal}
+        Right entityVal ->
+            pure
+                Entity
+                    { entityId
+                    , entityVal
+                    , entityVersion = maximum document.versions
+                    }
         Left e1 -> throwError $ Error "loadNote" [e1]
 
 deriveToJSON defaultOptions ''Contact

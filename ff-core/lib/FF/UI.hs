@@ -22,14 +22,14 @@ module FF.UI (
 import Data.Char (isSpace)
 import Data.Foldable (fold, toList)
 import Data.List (genericLength, intersperse)
-import qualified Data.Map.Strict as Map
+import Data.Map.Strict qualified as Map
 import Data.Maybe (fromJust)
 import Data.Set (Set)
 import Data.Text (Text)
-import qualified Data.Text as Text
+import Data.Text qualified as Text
 import Data.Time (Day)
 import FF (fromRgaM)
-import FF.Options (Tags (..), TagsRequest (TagsContain, TagsAbsent))
+import FF.Options (Tags (..), TagsRequest (TagsAbsent, TagsContain))
 import FF.Types (
     Contact (..),
     ContactSample,
@@ -166,7 +166,7 @@ prettyNote ::
 prettyNote isBrief Entity{entityId, entityVal}
     | isBrief =
         let meta = green "|" <+> cyan "id" <+> prettyDocId entityId
-         in fillSep [title text, meta]
+        in  fillSep [title text, meta]
     | otherwise =
         let meta =
                 fold
@@ -187,7 +187,7 @@ prettyNote isBrief Entity{entityId, entityVal}
                     ++ [ green "|" <+> cyan "tracking" <+> pretty track_url
                        | Just Track{..} <- [note_track]
                        ]
-         in sparsedStack [wrapLines $ Text.pack text, sep meta]
+        in  sparsedStack [wrapLines $ Text.pack text, sep meta]
   where
     NoteView{note, tags} = entityVal
     Note
@@ -246,7 +246,7 @@ prettyTaskSample isBrief mode = \case
             stack isBrief $
                 map ((bullet <>) . indent 1 . prettyNote isBrief) items
                     ++ [ hang indentation $
-                        fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
+                            fillSep [toSeeAllLabel, blue $ cmdToSeeAll mode]
                        | count /= total
                        ]
       where
@@ -278,7 +278,7 @@ sampleLabel = \case
         _ -> "Starting in " <> Text.pack (show n) <> " days"
 
 prettyContact :: Bool -> EntityDoc Contact -> Doc AnsiStyle
-prettyContact _isBrief (Entity entityId Contact{..}) = sep [pretty name, meta]
+prettyContact _isBrief (Entity entityId Contact{..} _) = sep [pretty name, meta]
   where
     name = fromRgaM contact_name
     meta = green "|" <+> cyan "id" <+> prettyDocId entityId

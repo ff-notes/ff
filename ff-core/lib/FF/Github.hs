@@ -53,7 +53,7 @@ import System.Process.Typed (proc, readProcessStdout_)
 
 import FF (splitModes, takeSamples)
 import FF.Types (
-    Entity (..),
+    Entity (Entity),
     Limit,
     ModeMap,
     Note (..),
@@ -63,6 +63,7 @@ import FF.Types (
     Track (..),
     View (..),
  )
+import FF.Types qualified
 
 getIssues ::
     Maybe Text ->
@@ -139,7 +140,11 @@ sampleMap address mlimit today issues =
     takeSamples mlimit $
         splitModes
             today
-            [ Entity{entityId = DocId "", entityVal = noteview}
+            [ Entity
+                { entityId = DocId "" -- TODO fill this too
+                , entityVal = noteview
+                , entityVersion = "" -- TODO fill this too
+                }
             | issue <- sample
             , let noteview = issueToNote address issue
             ]
@@ -175,6 +180,8 @@ issueToNote address Issue{..} =
                 , note_recurring = Nothing
                 }
         , tags = labels
+        , created = issueCreatedAt
+        , lastUpdated = issueUpdatedAt
         }
   where
     externalId = Text.pack . show @Int $ unIssueNumber issueNumber

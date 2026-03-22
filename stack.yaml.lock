@@ -9,53 +9,53 @@ packages:
     pantry-tree:
       sha256: 9dc10d02bf93fe3c16ec042fc583613330c25b0640e069e7eff0cdf31871f74d
       size: 1698
-    sha256: 8f18745f43b9fc2f93ab36969b277e91e4c3a34ff988b2d8961770967e7b9750
-    size: 283828
+    sha256: a713a425ce3ab68cab811ce68efebc1725f00e451f08a5b79faffaf5b42431b2
+    size: 284026
     subdir: ron
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
     version: '0.13'
   original:
     subdir: ron
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
 - completed:
     name: ron-rdt
     pantry-tree:
-      sha256: 3d5c6fff8d3e08cfc1bedf4dbdfbbb6a3ad4a4fafe7a5fb875a5f8e44737b51f
+      sha256: 782c7fd0b9978cec2bf98029bba1816ed6f1574415277b590299da51bd735237
       size: 1255
-    sha256: 8f18745f43b9fc2f93ab36969b277e91e4c3a34ff988b2d8961770967e7b9750
-    size: 283828
+    sha256: a713a425ce3ab68cab811ce68efebc1725f00e451f08a5b79faffaf5b42431b2
+    size: 284026
     subdir: ron-rdt
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
     version: '0.12'
   original:
     subdir: ron-rdt
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
 - completed:
     name: ron-schema
     pantry-tree:
       sha256: 55b80685bd0a89de9e827e0687d2d594446fd51ce9cff214d0b144ce24a96570
       size: 542
-    sha256: 8f18745f43b9fc2f93ab36969b277e91e4c3a34ff988b2d8961770967e7b9750
-    size: 283828
+    sha256: a713a425ce3ab68cab811ce68efebc1725f00e451f08a5b79faffaf5b42431b2
+    size: 284026
     subdir: ron-schema
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
     version: '0.10'
   original:
     subdir: ron-schema
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
 - completed:
     name: ron-storage
     pantry-tree:
-      sha256: 8b6b42c188584552466b7c50c951592276f6cc4adfb22397d41bad047ae64408
+      sha256: 8bd417aa1c29e3928bcd18eb1d84b86f2be3c914d2dadd9befb8645ce8a6a712
       size: 477
-    sha256: 8f18745f43b9fc2f93ab36969b277e91e4c3a34ff988b2d8961770967e7b9750
-    size: 283828
+    sha256: a713a425ce3ab68cab811ce68efebc1725f00e451f08a5b79faffaf5b42431b2
+    size: 284026
     subdir: ron-storage
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
     version: '0.11'
   original:
     subdir: ron-storage
-    url: https://github.com/ff-notes/ron/archive/a842c13db0dfc7b56987f50a4bebfc898df7c569.tar.gz
+    url: https://github.com/ff-notes/ron/archive/3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca.tar.gz
 - completed:
     hackage: hoppy-generator-0.9.0@sha256:095f218d88f13ede2a6b6e32b671846f0aa026c17e925cad9027d9eec31600ae,2180
     pantry-tree:
@@ -78,42 +78,42 @@ packages:
   original:
     hackage: hoppy-std-0.9.0
 - completed:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     name: qtah-cpp
     pantry-tree:
-      sha256: a3dcf0c8b4802a5b3ab5fb431e4a0119600c01e884f6f4b4642ca3b578bf0fd3
+      sha256: 84eddbb5dabe1c4256382f18ddda1e2b96fd1cd9d27264d5e7fe6ae99e76ceea
       size: 1906
     subdir: qtah-cpp
     version: 0.9.2
   original:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     subdir: qtah-cpp
 - completed:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     name: qtah-generator
     pantry-tree:
-      sha256: ab3ed50eed88812493768039c745b07f48f90314875151c55011fbc919b508dd
+      sha256: 28d6cedaad0053e95b3dcfb23b76ba08f5b17b951de39a1dccfeb7f849e7513a
       size: 28576
     subdir: qtah-generator
     version: 0.9.2
   original:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     subdir: qtah-generator
 - completed:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     name: qtah
     pantry-tree:
-      sha256: e38993914a2b44c8603afa33cb919ef5f08951eea71af70c788e0be23d377ad6
+      sha256: 240f24683cc43fe71225f5b7f86219f840ba291cfea6cd401943812e514ca42c
       size: 1134
     subdir: qtah
-    version: 0.9.2
+    version: 0.9.2.1
   original:
-    commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5
+    commit: 64645f0882fa74faa49a3881debf80af007a7425
     git: https://git.sr.ht/~cblp/qtah
     subdir: qtah
 - completed:

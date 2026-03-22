@@ -13,6 +13,7 @@ module FF.Qt.TaskWidget (
 import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Maybe (fromMaybe)
+import Data.Time (defaultTimeLocale, formatTime)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Flags (Flags (enumToFlags))
 import Graphics.UI.Qtah.Signal (connect_)
@@ -31,10 +32,12 @@ import FF.Types (
     EntityView,
     Note (..),
     NoteId,
-    View (NoteView, note),
+    View (NoteView),
     loadNote,
  )
+import FF.Types qualified
 
+import FF.Qt (hDateFormat)
 import FF.Qt.DateComponent (DateComponent)
 import FF.Qt.DateComponent qualified as DateComponent
 import FF.Qt.EDSL (
@@ -127,12 +130,14 @@ reload this noteId = do
 update :: Bool -> TaskWidget -> EntityDoc Note -> IO ()
 update keepOpen this noteDoc = do
     entity <- runStorage this.storage $ viewNote noteDoc
-    let Entity{entityVal = NoteView{note}} = entity
+    let Entity{entityVal = view@NoteView{note}} = entity
     QLabel.setText this.textContent $ fromRgaM note.note_text
     DateComponent.setDate this.start note.note_start
     DateComponent.setDate this.end note.note_end
-    -- TODO created
-    -- TODO updated
+    QLabel.setText this.created $
+        formatTime defaultTimeLocale hDateFormat view.created
+    QLabel.setText this.updated $
+        formatTime defaultTimeLocale hDateFormat view.lastUpdated
     QLabel.setText
         this.recurring
         if fromMaybe False note.note_recurring then "Yes" else "No"

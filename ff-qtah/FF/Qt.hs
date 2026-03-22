@@ -1,6 +1,11 @@
 {-# LANGUAGE BlockArguments #-}
 
-module FF.Qt (repeatInGuiThreadWheneverIdle, runInGuiThreadWhenReady) where
+module FF.Qt (
+    hDateFormat,
+    qDateFormat,
+    repeatInGuiThreadWheneverIdle,
+    runInGuiThreadWhenReady,
+) where
 
 import Control.Concurrent.MVar (MVar, tryTakeMVar)
 import Data.Foldable (for_)
@@ -25,3 +30,9 @@ runInGuiThreadWhenReady var action = do
             QObject.deleteLater t
             action val
     QTimer.start t 0
+
+qDateFormat :: String
+qDateFormat = "ddd, d MMM yyyy"
+
+hDateFormat :: String
+hDateFormat = "%a, %-e %b %Y"

@@ -13,8 +13,9 @@ extra-deps:
     # - ron-rdt-0.10
     # - ron-schema-0.9.1
     # - ron-storage-0.11
+    # TODO stabilize deps:
     - github: ff-notes/ron
-      commit: a842c13db0dfc7b56987f50a4bebfc898df7c569  # 2026-03-16
+      commit: 3031fd21bc5c0bb02cb8acbd39840ebf8c3ebbca  # 2026-03-22
       subdirs: [ron, ron-rdt, ron-schema, ron-storage]
   # ff-qtah
     - hoppy-generator-0.9.0
@@ -23,8 +24,9 @@ extra-deps:
     # - qtah-cpp-qt6-0.9.1
     # - qtah-generator-0.9.1
     # - qtah-qt6-0.9.1
+    # TODO stabilize deps:
     - git: https://git.sr.ht/~cblp/qtah
-      commit: dc830718ca0be46f1fb7408f237a5b3d0aae26a5  # 0.9.1 + cblp's patches
+      commit: 64645f0882fa74faa49a3881debf80af007a7425  # 0.9.1 + cblp's patches
       subdirs: [qtah-cpp, qtah-generator, qtah]
   # ff-test
     - cmark-0.6.1

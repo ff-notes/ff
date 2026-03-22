@@ -17,6 +17,7 @@ import Graphics.UI.Qtah.Widgets.QPushButton (QPushButton)
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
 import Named ((!))
 
+import FF.Qt (qDateFormat)
 import FF.Qt.EDSL (
     QBoxLayoutItem (Widget),
     qDateEdit,
@@ -37,7 +38,7 @@ new = do
     date <-
         qDateEdit
             -- ! #calendarPopup True -- TODO bad styling on Mac
-            ! #displayFormat "ddd d MMM yyyy"
+            ! #displayFormat qDateFormat
     add <- qPushButton ! #objectName "set" ! #text "➕ Set"
     remove <- qPushButton ! #objectName "remove" ! #text "╳"
     parent <-

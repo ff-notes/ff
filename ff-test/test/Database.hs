@@ -104,54 +104,59 @@ prop_not_exist =
 
 prop_smoke :: Property
 prop_smoke =
-    property1 $ do
-        (agenda', fs') <-
-            evalEither $
-                runStorageSim fs123 do
-                    notes <- loadAllNotes
-                    viewTaskSamples
-                        defaultNoteFilter
-                        defaultConfigUI
-                        agendaLimit
-                        today
-                        notes
-        agenda === agenda'
-        fs123 === fs'
-  where
-    agenda =
-        Map.singleton
-            (Overdue 365478)
-            Sample
-                { items =
-                    [ Entity
-                        (DocId "700000000002D-200000000002D")
-                        NoteView
-                            { note =
-                                Note
-                                    { note_status = Just $ TaskStatus Active
-                                    , note_text = Just $ RGA "helloworld"
-                                    , note_start = Just $ fromGregorian 22 11 24
-                                    , note_end = Just $ fromGregorian 17 06 19
-                                    , note_tags = []
-                                    , note_track = Nothing
-                                    , note_links = []
-                                    , note_recurring = Nothing
-                                    }
-                            , tags = mempty
-                            }
-                    ]
-                , total = 1
-                }
+    let agenda =
+            Map.singleton
+                (Overdue 365478)
+                Sample
+                    { items =
+                        [ Entity
+                            (DocId "8400000000001-200000000002D")
+                            NoteView
+                                { note =
+                                    Note
+                                        { note_status = Just $ TaskStatus Active
+                                        , note_text = Just $ RGA "helloworld"
+                                        , note_start =
+                                            Just $ fromGregorian 22 11 24
+                                        , note_end =
+                                            Just $ fromGregorian 17 06 19
+                                        , note_tags = []
+                                        , note_track = Nothing
+                                        , note_links = []
+                                        , note_recurring = Nothing
+                                        }
+                                , tags = mempty
+                                , created = read "2039-06-20 23:40:07.5855873"
+                                , lastUpdated =
+                                    read "2039-06-20 23:40:07.5855875"
+                                }
+                            "8400000000003-2000000000099"
+                        ]
+                    , total = 1
+                    }
+    in  property1 do
+            (agenda', fs') <-
+                evalEither $
+                    runStorageSim fs123 do
+                        notes <- loadAllNotes
+                        viewTaskSamples
+                            defaultNoteFilter
+                            defaultConfigUI
+                            agendaLimit
+                            today
+                            notes
+            agenda === agenda'
+            fs123 === fs'
 
 fs123 :: TestDB
 fs123 =
     Map.singleton "note" $
-        Map.singleton "700000000002D-200000000002D" $
+        Map.singleton "8400000000001-200000000002D" $
             Map.fromList
                 [
-                    ( "event 2 93"
+                    ( "8400000000002-2000000000093"
                     , BSLC.lines
-                        [i| *set #7/000000001D+000000001D !
+                        [i| *set #8/8000000001+000000001D !
                                 @20+21  >end    17 06 19
                                 @25+26  >start  22 11 24
                                 @29+30  >status >Active
@@ -161,9 +166,9 @@ fs123 =
                         |]
                     )
                 ,
-                    ( "event 3 99"
+                    ( "8400000000003-2000000000099"
                     , BSLC.lines
-                        [i| *set #000000001Q$000000001Q !
+                        [i| *set #8/8000000001+000000001D !
                                 @15+16  >end    12 01 14
                                 @07+08  >start  09 10 11
                                 @27+28  >status >Active
@@ -326,7 +331,10 @@ prop_issues_imported_from_GitHub_can_be_viewed_as_notes =
                                         , "type_Enhancement"
                                         )
                                     ]
+                            , created = read "2018-06-21 14:30:00 UTC"
+                            , lastUpdated = read "2018-06-21 14:30:41 UTC"
                             }
+                        ""
                     ]
                 , total = 1
                 }

@@ -214,8 +214,8 @@ appDraw Model{visibleNotes, isNoteOpen} = [mainWidget <=> keysHelpLine]
 
     openNoteContent =
         case listSelectedElement visibleNotes of
-            Just (_, Right (Entity _ v)) ->
-                Text.pack $ clean $ fromRgaM v.note.note_text
+            Just (_, Right e) ->
+                Text.pack $ clean $ fromRgaM e.entityVal.note.note_text
             _ -> ""
 
     keysHelpLine =
@@ -291,7 +291,7 @@ handleViewportEvent = \case
 renderListItem :: Bool -> Either TaskMode (EntityView Note) -> Widget
 renderListItem _isSelected = \case
     Left taskMode -> hBorderWithLabel $ txt $ sampleLabel taskMode
-    Right (Entity _ NoteView{note}) -> txt $ noteTitle note
+    Right (Entity{entityVal = NoteView{note}}) -> txt $ noteTitle note
 
 noteTitle :: Note -> Text
 noteTitle Note{note_text} =

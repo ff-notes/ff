@@ -5,6 +5,13 @@
 module FF.Qt.EDSL where
 
 import Data.Foldable (for_)
+import Data.Time (Day, UTCTime, toGregorian)
+import Data.Time.Clock.POSIX (utcTimeToPOSIXSeconds)
+import Foreign.Hoppy.Runtime (toGc)
+import Graphics.UI.Qtah.Core.QDate (QDate)
+import Graphics.UI.Qtah.Core.QDate qualified as QDate
+import Graphics.UI.Qtah.Core.QDateTime (QDateTime)
+import Graphics.UI.Qtah.Core.QDateTime qualified as QDateTime
 import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
@@ -44,6 +51,17 @@ data QFormLayoutItem
 data Layout
     = QFormLayout [QFormLayoutItem]
     | QVBoxLayout [QBoxLayoutItem]
+
+qDate :: Day -> IO QDate
+qDate day = toGc =<< QDate.newWithYmd (fromInteger y) m d
+  where
+    (y, m, d) = toGregorian day
+
+qDateTime :: UTCTime -> IO QDateTime
+qDateTime datetime =
+    toGc
+        =<< QDateTime.fromMSecsSinceEpoch
+            (round $ utcTimeToPOSIXSeconds datetime * 1_000)
 
 qDateEdit :: "displayFormat" :? String -> IO QDateEdit
 qDateEdit (ArgF displayFormat) = do
