@@ -15,6 +15,8 @@ import Graphics.UI.Qtah.Core.QDateTime qualified as QDateTime
 import Graphics.UI.Qtah.Core.QObject qualified as QObject
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
+import Graphics.UI.Qtah.Widgets.QAction (QAction)
+import Graphics.UI.Qtah.Widgets.QAction qualified as QAction
 import Graphics.UI.Qtah.Widgets.QBoxLayout (QBoxLayoutPtr)
 import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QDateEdit (QDateEdit)
@@ -33,6 +35,8 @@ import Graphics.UI.Qtah.Widgets.QPushButton qualified as QPushButton
 import Graphics.UI.Qtah.Widgets.QScrollArea (QScrollArea)
 import Graphics.UI.Qtah.Widgets.QScrollArea qualified as QScrollArea
 import Graphics.UI.Qtah.Widgets.QSizePolicy (QSizePolicyPolicy)
+import Graphics.UI.Qtah.Widgets.QToolButton (QToolButton)
+import Graphics.UI.Qtah.Widgets.QToolButton qualified as QToolButton
 import Graphics.UI.Qtah.Widgets.QVBoxLayout qualified as QVBoxLayout
 import Graphics.UI.Qtah.Widgets.QWidget (QWidgetPtr, toQWidget)
 import Graphics.UI.Qtah.Widgets.QWidget qualified as QWidget
@@ -45,12 +49,18 @@ data QBoxLayoutItem
 data QFormLayoutItem
     = forall a. (QLayoutPtr a) => RowLayout (IO a)
     | forall a. (QWidgetPtr a) => RowWidget (IO a)
-    | forall a. (QLayoutPtr a) => StringLayout String a
+    | forall a. (QLayoutPtr a) => StringLayout String (IO a)
     | forall a. (QWidgetPtr a) => StringWidget String (IO a)
 
 data Layout
     = QFormLayout [QFormLayoutItem]
     | QVBoxLayout [QBoxLayoutItem]
+
+qAction :: "text" :? String -> IO QAction
+qAction (ArgF text) = do
+    obj <- QAction.new
+    for_ text $ QAction.setText obj
+    pure obj
 
 qDate :: Day -> IO QDate
 qDate day = toGc =<< QDate.newWithYmd (fromInteger y) m d
@@ -89,7 +99,8 @@ qFrame (ArgF objectName) lo = do
     addRow form = \case
         RowLayout a -> QFormLayout.addRowLayout form . toQLayout =<< a
         RowWidget a -> QFormLayout.addRowWidget form . toQWidget =<< a
-        StringLayout s a -> QFormLayout.addRowStringLayout form s $ toQLayout a
+        StringLayout s a ->
+            QFormLayout.addRowStringLayout form s . toQLayout =<< a
         StringWidget s a ->
             QFormLayout.addRowStringWidget form s . toQWidget =<< a
 
@@ -146,10 +157,17 @@ qLabel
         for_ wordWrap $ QLabel.setWordWrap obj
         pure obj
 
-qPushButton :: "objectName" :? String -> "text" :? String -> IO QPushButton
-qPushButton (ArgF objectName) (ArgF text) = do
+qPushButton ::
+    "flat" :? Bool ->
+    "objectName" :? String ->
+    "styleSheet" :? String ->
+    "text" :? String ->
+    IO QPushButton
+qPushButton (ArgF flat) (ArgF objectName) (ArgF styleSheet) (ArgF text) = do
     obj <- QPushButton.new
+    for_ flat $ QPushButton.setFlat obj
     for_ objectName $ QObject.setObjectName obj
+    for_ styleSheet $ QWidget.setStyleSheet obj
     for_ text $ QAbstractButton.setText obj
     pure obj
 
@@ -158,6 +176,16 @@ qScrollArea w = do
     obj <- QScrollArea.new
     QScrollArea.setWidget obj w
     QScrollArea.setWidgetResizable obj True
+    pure obj
+
+qToolButton ::
+    "objectName" :? String ->
+    "text" :? String ->
+    IO QToolButton
+qToolButton (ArgF objectName) (ArgF text) = do
+    obj <- QToolButton.new
+    for_ objectName $ QObject.setObjectName obj
+    for_ text $ QAbstractButton.setText obj
     pure obj
 
 ($<) :: (Applicative f) => (f a -> b) -> a -> b

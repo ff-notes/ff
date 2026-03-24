@@ -10,17 +10,24 @@ module FF.Qt.TaskWidget (
     reload,
 ) where
 
+import Control.Monad (void, when)
 import Data.Foldable (for_)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Maybe (fromMaybe)
+import Data.Text qualified as Text
 import Data.Time (defaultTimeLocale, formatTime)
+import Foreign.Hoppy.Runtime (delete, nullptr)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
-import Graphics.UI.Qtah.Flags (Flags (enumToFlags))
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
+import Graphics.UI.Qtah.Widgets.QBoxLayout qualified as QBoxLayout
 import Graphics.UI.Qtah.Widgets.QFrame (QFrame)
+import Graphics.UI.Qtah.Widgets.QHBoxLayout (QHBoxLayout)
 import Graphics.UI.Qtah.Widgets.QLabel (QLabel)
 import Graphics.UI.Qtah.Widgets.QLabel qualified as QLabel
+import Graphics.UI.Qtah.Widgets.QLayout (QLayoutPtr)
+import Graphics.UI.Qtah.Widgets.QLayout qualified as QLayout
+import Graphics.UI.Qtah.Widgets.QLayoutItem qualified as QLayoutItem
 import Named (defaults, (!))
 import RON.Storage.FS (runStorage)
 import RON.Storage.FS qualified as Storage
@@ -59,13 +66,15 @@ type OnTaskUpdated =
     IO ()
 
 data TaskWidget = TaskWidget
-    { parent :: QFrame
-    , textContent :: QLabel
-    , storage :: Storage.Handle
-    , start :: DateComponent
-    , end :: DateComponent
+    { storage :: Storage.Handle
     , noteId :: IORef (Maybe NoteId)
     , onTaskUpdated :: OnTaskUpdated
+    , -- UI
+      parent :: QFrame
+    , textContent :: QLabel
+    , tags :: QHBoxLayout
+    , start :: DateComponent
+    , end :: DateComponent
     , created :: QLabel
     , updated :: QLabel
     , recurring :: QLabel
@@ -82,11 +91,13 @@ new storage onTaskUpdated = do
             ! #objectName "textContent"
             ! #openExternalLinks True
             ! #textFormat Qt.MarkdownText
-            ! #textInteractionFlags (enumToFlags Qt.TextBrowserInteraction)
+            ! #textInteractionFlags Qt.textBrowserInteraction
             ! #wordWrap True
             ! defaults
-    postpone <- qPushButton ! #objectName "postpone" ! #text "Postpone"
-    done <- qPushButton ! #objectName "postpone" ! #text "Done"
+    tags <- qHBoxLayout ! #spacing 0 ! defaults $ []
+    postpone <-
+        qPushButton ! #objectName "postpone" ! #text "Postpone" ! defaults
+    done <- qPushButton ! #objectName "done" ! #text "Done" ! defaults
     created <- qLabel ! #objectName "created" ! defaults
     updated <- qLabel ! #objectName "updated" ! defaults
     recurring <- qLabel ! #objectName "recurring" ! defaults
@@ -94,8 +105,9 @@ new storage onTaskUpdated = do
         qFrame ! #objectName "parent" $
             QFormLayout
                 [ RowWidget $ qScrollArea textContent
-                , StringLayout "Start:" start.parent
-                , StringLayout "Deadline:" end.parent
+                , StringLayout "Tags:" $< tags
+                , StringLayout "Start:" $< start.parent
+                , StringLayout "Deadline:" $< end.parent
                 , StringWidget "Created:" $< created
                 , StringWidget "Updated:" $< updated
                 , StringWidget "Recurring:" $< recurring
@@ -132,6 +144,7 @@ update keepOpen this noteDoc = do
     entity <- runStorage this.storage $ viewNote noteDoc
     let Entity{entityVal = view@NoteView{note}} = entity
     QLabel.setText this.textContent $ fromRgaM note.note_text
+    resetTags view.tags
     DateComponent.setDate this.start note.note_start
     DateComponent.setDate this.end note.note_end
     QLabel.setText this.created $
@@ -142,3 +155,20 @@ update keepOpen this noteDoc = do
         this.recurring
         if fromMaybe False note.note_recurring then "Yes" else "No"
     this.onTaskUpdated keepOpen entity
+  where
+    resetTags tags = do
+        deleteChildrenWidgets this.tags
+        for_ tags \tag ->
+            void $
+                QBoxLayout.addWidget this.tags
+                    =<< qPushButton ! #text (Text.unpack tag) ! defaults
+
+deleteChildrenWidgets :: (QLayoutPtr layout) => layout -> IO ()
+deleteChildrenWidgets layout = loop
+  where
+    loop = do
+        child <- QLayout.takeAt layout 0
+        when (child /= nullptr) do
+            delete =<< QLayoutItem.widget child
+            delete child
+            loop
