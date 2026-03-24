@@ -12,11 +12,12 @@ module FF.Qt.TaskWidget (
 
 import Control.Monad (void, when)
 import Data.Foldable (for_)
+import Data.Function (fix)
 import Data.IORef (IORef, atomicWriteIORef, newIORef, readIORef)
 import Data.Maybe (fromMaybe)
 import Data.Text qualified as Text
 import Data.Time (defaultTimeLocale, formatTime)
-import Foreign.Hoppy.Runtime (delete, nullptr)
+import Foreign.Hoppy.Runtime (CppPtr, delete, nullptr)
 import Graphics.UI.Qtah.Core.Types qualified as Qt
 import Graphics.UI.Qtah.Signal (connect_)
 import Graphics.UI.Qtah.Widgets.QAbstractButton qualified as QAbstractButton
@@ -157,18 +158,18 @@ update keepOpen this noteDoc = do
     this.onTaskUpdated keepOpen entity
   where
     resetTags tags = do
-        deleteChildrenWidgets this.tags
+        deleteAllLayoutWidgets this.tags
         for_ tags \tag ->
             void $
                 QBoxLayout.addWidget this.tags
                     =<< qPushButton ! #text (Text.unpack tag) ! defaults
 
-deleteChildrenWidgets :: (QLayoutPtr layout) => layout -> IO ()
-deleteChildrenWidgets layout = loop
-  where
-    loop = do
-        child <- QLayout.takeAt layout 0
-        when (child /= nullptr) do
-            delete =<< QLayoutItem.widget child
-            delete child
-            loop
+deleteAllLayoutWidgets :: (QLayoutPtr layout) => layout -> IO ()
+deleteAllLayoutWidgets layout =
+    whilePtrAlive (QLayout.takeAt layout 0) \childItem -> do
+        delete =<< QLayoutItem.widget childItem
+        delete childItem
+
+whilePtrAlive :: (CppPtr t, Eq t, Monad m) => m t -> (t -> m a) -> m ()
+whilePtrAlive get action =
+    fix \w -> do x <- get; when (x /= nullptr) $ action x *> w
